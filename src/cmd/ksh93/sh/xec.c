@@ -1114,6 +1114,24 @@ int sh_exec(register const Shnode_t *t, int flags)
 					}
 					if(np)
 						flgs |= NV_UNJUST;
+
+					/* Prohibit usage of the local builtin outside of functions */
+					if(np==SYSLOCAL && !shp->st.funname)
+						errormsg(SH_DICT,ERROR_exit(1),"%s: can only be used in a function",com0);
+					/*
+					 * The declare and local builtins have a dynamic scope limited
+					 * to the function in which they are called. This should be
+					 * skipped when not in a function.
+					 */
+					if((np == SYSLOCAL || (shp->st.funname && np == SYSDECLARE)) && shp->st.var_local != shp->var_tree)
+					{
+						sh_scope(shp,(struct argnod*)0,0);
+						shp->st.var_local = shp->var_tree;
+					}
+					/* The other typeset builtins have a static scope */
+					else if (!(np == SYSLOCAL || np == SYSDECLARE) && shp->st.var_local == shp->var_tree)
+						shp->st.var_local = shp->var_base;
+
 					if(np && np->nvalue.bfp==SYSTYPESET->nvalue.bfp)
 					{
 						/* command calls b_typeset(); treat as a typeset variant */
@@ -3296,11 +3314,12 @@ static void sh_funct(Shell_t *shp,Namval_t *np,int argn, char *argv[],struct arg
 		argv[-1] = 0;
 		shp->st.funname = nv_name(np);
 		shp->last_root = nv_dict(DOTSHNOD);
-		nv_putval(SH_FUNNAMENOD, nv_name(np),NV_NOFREE);
+		nv_putval(SH_FUNNAMENOD, nv_name(np), NV_NOFREE);
 		opt_info.index = opt_info.offset = 0;
 		error_info.errors = 0;
 		shp->st.loopcnt = 0;
-		b_dot_cmd(argn+1,argv-1,&shp->bltindata);
+		b_dot_cmd(argn+1,argv-1,&shp->bltindata); /* NOTE: This can be replaced with sh_funscope to get a local scope */
+		shp->st.funname = NULL; /* Delete the function name after completion */
 		shp->st.loopcnt = loopcnt;
 		argv[-1] = save;
 	}

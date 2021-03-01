@@ -54,6 +54,7 @@
 /*
  * IMPORTANT: The order of these struct members must be synchronous
  * with the offsets on the macros defined in include/builtins.h!
+ * The order up through "return" is significant.
  */
 const struct shtable3 shtab_builtins[] =
 {
@@ -73,6 +74,8 @@ const struct shtable3 shtab_builtins[] =
 	"functions",	NV_BLTIN|BLT_ENV,		bltin(typeset),
 	"integer",	NV_BLTIN|BLT_ENV|BLT_DCL,	bltin(typeset),
 	"nameref",	NV_BLTIN|BLT_ENV|BLT_DCL,	bltin(typeset),
+	"local",	NV_BLTIN|BLT_ENV|BLT_DCL,	bltin(typeset),
+	"declare",	NV_BLTIN|BLT_ENV|BLT_DCL,	bltin(typeset),
 	"test",		NV_BLTIN|BLT_ENV,		bltin(test),
 	"[",		NV_BLTIN|BLT_ENV,		bltin(test),
 	"let",		NV_BLTIN|BLT_ENV,		bltin(let),
@@ -661,7 +664,7 @@ const char sh_optexport[] =
         "[+>0?An error occurred.]"
 "}"
 
-"[+SEE ALSO?\bsh\b(1), \btypeset\b(1)]"
+"[+SEE ALSO?\bsh\b(1), \btypeset\b(1), \blocal\b(1)]"
 ;
 
 const char sh_optgetopts[] =
@@ -1461,7 +1464,7 @@ const char sh_optreadonly[] =
         "[+>0?An error occurred.]"
 "}"
 
-"[+SEE ALSO?\bsh\b(1), \btypeset\b(1)]"
+"[+SEE ALSO?\bsh\b(1), \btypeset\b(1), \blocal\b(1)]"
 ;
 
 const char sh_optredirect[] =
@@ -1602,6 +1605,7 @@ const char sh_optksh[] =
 
 "[+SEE ALSO?\bset\b(1), \bbuiltin\b(1)]"
 ;
+
 const char sh_optset[] =
 "+[-1c?\n@(#)$Id: set (AT&T Research) 1999-09-28 $\n]"
 "[--catalog?" SH_DICT "]"
@@ -1638,10 +1642,8 @@ const char sh_optset[] =
         "[+>0?An error occurred.]"
 "}"
 
-"[+SEE ALSO?\btypeset\b(1), \bshift\b(1)]"
+"[+SEE ALSO?\btypeset\b(1), \blocal\b(1), \bshift\b(1)]"
 ;
-
-
 
 const char sh_optshift[] =
 "[-1c?\n@(#)$Id: shift (AT&T Research) 1999-07-07 $\n]"
@@ -1754,10 +1756,16 @@ const char sh_opttrap[] =
 ;
 
 const char sh_opttypeset[] =
-"+[-1c?\n@(#)$Id: typeset (ksh 93u+m) 2021-02-10 $\n]"
+"+[-1c?\n@(#)$Id: typeset (ksh 93u+m) 2021-03-01 $\n]"
 "[--catalog?" SH_DICT "]"
 "[+NAME?typeset - declare or display variables with attributes]"
-"[+DESCRIPTION?Without the \b-f\b option, \btypeset\b sets, unsets, "
+"[+DESCRIPTION?\btypeset\b can also be invoked as \bdeclare\b, or (in functions "
+	"only) as \blocal\b. Variables created or modified by \bdeclare\b and \blocal\b "
+	"are be given a dynamic scope; variables created with \btypeset\b are given a global "
+	"scope in POSIX functions and static scope in functions declared with the "
+	"\bfunction\b keyword."
+	"\n"
+	"Without the \b-f\b option, \b\f?\f\b sets, unsets, "
 	"or displays attributes of variables as specified with the "
 	"options.  If the first option is specified with a \b-\b "
 	"then the attributes are set for each of the given \aname\as. "
@@ -1984,7 +1992,7 @@ const char sh_optunset[] =
 	"or an error occurred.]"
 "}"
 
-"[+SEE ALSO?\btypeset\b(1)]"
+"[+SEE ALSO?\btypeset\b(1), \blocal\b(1)]"
 ;
 
 const char sh_optunalias[] =
