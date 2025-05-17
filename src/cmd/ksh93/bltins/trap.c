@@ -345,18 +345,18 @@ int	b_suspend(int argc,char *argv[],Shbltin_t *context)
 static int sig_number(const char *string)
 {
 	const Shtable_t	*tp;
-	int		n, o, sig=0;
+	int		n, sig=0;
 	char		*last, *name;
 	if(isdigit(*string))
 	{
-		n = strtol(string,&last,10);
+		n = (int)strtol(string,&last,10);
 		if(*last)
 			n = -1;
 	}
 	else
 	{
 		int c;
-		o = stktell(sh.stk);
+		ssize_t o = stktell(sh.stk);
 		do
 		{
 			c = *string++;
@@ -372,7 +372,7 @@ static int sig_number(const char *string)
 			o += 3;
 			if(isdigit(*stkptr(sh.stk,o)))
 			{
-				n = strtol(stkptr(sh.stk,o),&last,10);
+				n = (int)strtol(stkptr(sh.stk,o),&last,10);
 				if(!*last)
 					return n;
 			}
@@ -492,7 +492,7 @@ static void sig_list(int flag)
 		}
 		else if(sig&SH_TRAP)
 			traps[sig&~SH_TRAP] = (char*)tp->sh_name;
-		else if(sig-- && sig < elementsof(names))
+		else if(sig-- && sig < (ssize_t)elementsof(names))
 			names[sig] = (char*)tp->sh_name;
 	}
 	if(flag > 0)

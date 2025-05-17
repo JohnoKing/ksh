@@ -269,11 +269,11 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	z = 0;
 	if (!pfx && !(pfx = tmp.pfx))
 		pfx = "ast";
-	m = strlen(pfx);
+	m = (int)strlen(pfx);
 	if (buf && dir && (buf == (char*)dir && (buf + strlen(buf) + 1) == (char*)pfx || buf == (char*)pfx && !*dir) && !strcmp((char*)pfx + m + 1, "XXXXX"))
 	{
 		d = (char*)dir;
-		len = m += strlen(d) + 8;
+		len = m += (int)strlen(d) + 8;
 		l = 3;
 		r = 3;
 	}

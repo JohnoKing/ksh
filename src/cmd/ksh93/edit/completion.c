@@ -39,7 +39,7 @@ static char *fmtx(const char *string)
 	int	 	n = 0, c;
 	int		pos = 0;
 	unsigned char 	*state = (unsigned char*)sh_lexstates[ST_NORM];
-	int		offset = stktell(sh.stk);
+	ssize_t		offset = stktell(sh.stk);
 	char		hc[3];
 #if SHOPT_HISTEXPAND
 	const char	hexp = sh_isoption(SH_HISTEXPAND)!=0;
@@ -58,7 +58,7 @@ static char *fmtx(const char *string)
 	sfwrite(sh.stk,string,--cp-string);
 	for(string=cp;c=mbchar(cp);string=cp)
 	{
-		if((n=cp-string)==1)
+		if((n=(int)(cp-string))==1)
 		{
 			if(((n=state[c]) && n!=S_EPAT) || (hexp && ((c==hc[0]) || (c==hc[2] && !pos))))
 				sfputc(sh.stk,'\\');
@@ -434,7 +434,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			goto done;
 		}
 		/* see if there is enough room */
-		size = *eol - (out-begin);
+		size = (int)(*eol - (out-begin));
 		if(mode=='\\')
 		{
 			int c;
@@ -451,7 +451,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			if(dir)
 				*dir = c;
 			/* just expand until name is unique */
-			size += strlen(*com);
+			size += (int)strlen(*com);
 		}
 		else
 		{
@@ -459,7 +459,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			{
 				char **savcom = com;
 				while (*com)
-					size += strlen(cp=fmtx(*com++));
+					size += (int)strlen(cp=fmtx(*com++));
 				com = savcom;
 			}
 		}
@@ -555,11 +555,11 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 				out--;
 			*out = 0;
 		}
-		*cur = (out-outbuff);
+		*cur = (int)(out-outbuff);
 		/* restore rest of buffer */
 		if(left)
 			out = strcopy(out,left);
-		*eol = (out-outbuff);
+		*eol = (int)(out-outbuff);
 	}
  done:
 	sh_offstate(SH_FCOMPLETE);
@@ -652,9 +652,9 @@ int ed_fulledit(Edit_t *ep)
 	cp = strcopy((char*)ep->e_inbuf,e_runvi);
 	cp = strcopy(cp, fmtint(ep->e_hline,1));
 #if SHOPT_VSH
-	ep->e_eol = ((unsigned char*)cp - (unsigned char*)ep->e_inbuf)-(sh_isoption(SH_VI)!=0);
+	ep->e_eol = (int)(((unsigned char*)cp - (unsigned char*)ep->e_inbuf)-(sh_isoption(SH_VI)!=0));
 #else
-	ep->e_eol = ((unsigned char*)cp - (unsigned char*)ep->e_inbuf);
+	ep->e_eol = (int)((unsigned char*)cp - (unsigned char*)ep->e_inbuf);
 #endif
 	return 0;
 }

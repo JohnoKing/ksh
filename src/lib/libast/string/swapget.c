@@ -38,8 +38,8 @@ swapget(int op, const void* b, int n)
 	intmax_t		v;
 	unsigned char		tmp[sizeof(intmax_t)];
 
-	if (n > sizeof(intmax_t))
-		n = sizeof(intmax_t);
+	if (n > (int)sizeof(intmax_t))
+		n = (int)sizeof(intmax_t);
 	if (op) swapmem(op, b, d = tmp, n);
 	else d = (unsigned char*)b;
 	p = d + n;

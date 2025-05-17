@@ -86,18 +86,18 @@ range(char* s, char** e, char* set, int lo, int hi)
 	memset(set, 0, hi + 1);
 	for (;;)
 	{
-		n = strtol(s, &t, 10);
+		n = (int)strtol(s, &t, 10);
 		if (s == t || n < lo || n > hi)
 			return -1;
 		i = 1;
 		if (*(s = t) == '-')
 		{
-			m = strtol(++s, &t, 10);
+			m = (int)strtol(++s, &t, 10);
 			if (s == t || m < n || m > hi)
 				return -1;
 			if (*(s = t) == '/')
 			{
-				i = strtol(++s, &t, 10);
+				i = (int)strtol(++s, &t, 10);
 				if (s == t || i < 1)
 					return -1;
 				s = t;
@@ -157,7 +157,7 @@ tmxdate(const char* s, char** e, Time_t now)
 {
 	Tm_t*		tm;
 	long		n;
-	int		w = 0;
+	long		w = 0;
 	unsigned long	set;
 	unsigned long	state;
 	unsigned long	flags;
@@ -215,7 +215,7 @@ tmxdate(const char* s, char** e, Time_t now)
 	zone = TM_LOCALZONE;
 	skip[0] = 0;
 	for (n = 1; n <= UCHAR_MAX; n++)
-		skip[n] = isspace(n) || strchr("_,;@=|!^()[]{}", n);
+		skip[n] = isspace(n) || strchr("_,;@=|!^()[]{}", (int)n);
 
 	/*
 	 * get <weekday year month day hour minutes seconds ?[ds]t [ap]m>
@@ -714,7 +714,7 @@ tmxdate(const char* s, char** e, Time_t now)
 					n += 100;
 				m = n;
 				n = strtol(++u, &t, 10);
-				if ((i = (t - u)) < 2 || i > 3)
+				if ((i = (int)(t - u)) < 2 || i > 3)
 					break;
 				if (i == 3)
 				{
@@ -729,10 +729,10 @@ tmxdate(const char* s, char** e, Time_t now)
 					break;
 				if (k == 7)
 					k = 0;
-				tm->tm_year = m;
+				tm->tm_year = (int)m;
 				if (!(state & LAST))	/* use 'exact' to get HHMMSS */
 					tm->tm_hour = tm->tm_min = tm->tm_sec = tm->tm_nsec = 0;
-				tmweek(tm, 2, n, k);
+				tmweek(tm, 2, (int)n, k);
 				set |= YEAR|MONTH|DAY;
 				s = t;
 				continue;
@@ -812,7 +812,7 @@ tmxdate(const char* s, char** e, Time_t now)
 				if (n && k != TM_PARTS)
 					n--;	/* Not for TM_PARTS on par with gdate(1) */
 				message((-1, "AHA#%d n=%d", __LINE__, n));
-				state |= ((f = n) ? NEXT : THIS)|ORDINAL;
+				state |= ((f = (int)n) ? NEXT : THIS)|ORDINAL;
 				set &= ~(EXACT|LAST|NEXT|THIS);
 				set |= state & (EXACT|LAST|NEXT|THIS);
 				for (s = t; skip[*((unsigned char*)s)]; s++);
@@ -839,7 +839,7 @@ tmxdate(const char* s, char** e, Time_t now)
 				else
 				{
 					message((-1, "AHA#%d t=\"%s\"", __LINE__, t));
-					if (!(state & (LAST|NEXT|THIS)) && ((i = t - s) == 4 && (*t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && *(t + 3) != '.' || (!*t || isspace(*t) || *t == '_' || isalnum(*t)) && n >= 0 && (n % 100) < 60 && ((m = (n / 100)) < 20 || m < 24 && !((set|state) & (YEAR|MONTH|HOUR|MINUTE)))) || i > 4 && i <= 12))
+					if (!(state & (LAST|NEXT|THIS)) && ((i = (int)(t - s)) == 4 && (*t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && *(t + 3) != '.' || (!*t || isspace(*t) || *t == '_' || isalnum(*t)) && n >= 0 && (n % 100) < 60 && ((m = (n / 100)) < 20 || m < 24 && !((set|state) & (YEAR|MONTH|HOUR|MINUTE)))) || i > 4 && i <= 12))
 					{
 						/*
 						 * various { date(1) touch(1) } formats
@@ -957,13 +957,13 @@ tmxdate(const char* s, char** e, Time_t now)
 					save:
 						tm->tm_hour = j;
 						tm->tm_min = i;
-						tm->tm_sec = n;
-						tm->tm_nsec = p;
+						tm->tm_sec = (int)n;
+						tm->tm_nsec = (int)p;
 					save_yymmdd:
 						tm->tm_mday = k;
 					save_yymm:
 						tm->tm_mon = l - 1;
-						tm->tm_year = m;
+						tm->tm_year = (int)m;
 						s = t;
 						set |= flags;
 						if ((*s == '-' || *s == '+') && (i = tmgoff(s, &t, TM_LOCALZONE)) != TM_LOCALZONE)
@@ -985,12 +985,12 @@ tmxdate(const char* s, char** e, Time_t now)
 						while (isspace(*++s) || *s == '_');
 						if (!isdigit(*s))
 							break;
-						i = n;
+						i = (int)n;
 						n = strtol(s, &t, 10);
 						for (s = t; isspace(*s) || *s == '_'; s++);
 						if (n > 59)
 							break;
-						j = n;
+						j = (int)n;
 						m = 0;
 						if (*s == c)
 						{
@@ -1020,8 +1020,8 @@ tmxdate(const char* s, char** e, Time_t now)
 						tm->tm_hour = i;
 						l = tm->tm_min;
 						tm->tm_min = j;
-						tm->tm_sec = n;
-						tm->tm_nsec = m;
+						tm->tm_sec = (int)n;
+						tm->tm_nsec = (int)m;
 						while (isspace(*s))
 							s++;
 						switch (tmlex(s, &t, tm_info.format, TM_NFORM, tm_info.format + TM_MERIDIAN, 2))
@@ -1283,7 +1283,7 @@ tmxdate(const char* s, char** e, Time_t now)
 						{
 							if (n > 24)
 								goto done;
-							tm->tm_hour = n;
+							tm->tm_hour = (int)n;
 						}
 						for (k = tm->tm_hour; k < 0; k += 24);
 						k %= 24;
@@ -1444,7 +1444,7 @@ tmxdate(const char* s, char** e, Time_t now)
 							if ((state & (LAST|NEXT|THIS)) == LAST)
 								tm->tm_mday = tm_data.days[tm->tm_mon] + (tm->tm_mon == 1 && tmisleapyear(tm->tm_year));
 							else if (state & ORDINAL)
-								tm->tm_mday = m + 1;
+								tm->tm_mday = (int)m + 1;
 							else
 								tm->tm_mday += m;
 							if (!(set & (FINAL|WORK)))
@@ -1487,7 +1487,7 @@ tmxdate(const char* s, char** e, Time_t now)
 						tm = tmxtm(tm, tmxtime(tm, zone), tm->tm_zone, 0);
 						day = j -= TM_DAY;
 						if (!dir)
-							dir = m;
+							dir = (int)m;
 						message((-1, "AHA#%d j=%d m=%d", __LINE__, j, m));
 						j -= tm->tm_wday;
 						message((-1, "AHA#%d mday=%d wday=%d day=%d dir=%d f=%d i=%d j=%d l=%d m=%d", __LINE__, tm->tm_mday, tm->tm_wday, day, dir, f, i, j, l, m));
@@ -1552,7 +1552,7 @@ tmxdate(const char* s, char** e, Time_t now)
 							if (n > 31)
 								goto done;
 							state |= DAY|MDAY;
-							tm->tm_mday = n;
+							tm->tm_mday = (int)n;
 							if (f > 0)
 								tm->tm_year += f;
 						}
@@ -1610,10 +1610,10 @@ tmxdate(const char* s, char** e, Time_t now)
 		}
 		else if (*s == '/')
 		{
-			if (!(state & (YEAR|MONTH)) && n >= 1969 && n < 3000 && (i = strtol(s + 1, &t, 10)) > 0 && i <= 12)
+			if (!(state & (YEAR|MONTH)) && n >= 1969 && n < 3000 && (i = (int)strtol(s + 1, &t, 10)) > 0 && i <= 12)
 			{
 				state |= YEAR;
-				tm->tm_year = n - 1900;
+				tm->tm_year = (int)n - 1900;
 				s = t;
 				i--;
 			}
@@ -1631,7 +1631,7 @@ tmxdate(const char* s, char** e, Time_t now)
 				}
 				else
 				{
-					i = n - 1;
+					i = (int)n - 1;
 					n = strtol(s, &t, 10);
 					s = t;
 					if (n <= 0 || n > 31)
@@ -1640,7 +1640,7 @@ tmxdate(const char* s, char** e, Time_t now)
 						break;
 				}
 				state |= DAY;
-				tm->tm_mday = n;
+				tm->tm_mday = (int)n;
 			}
 			state |= MONTH;
 			n = tm->tm_mon;
@@ -1678,7 +1678,7 @@ tmxdate(const char* s, char** e, Time_t now)
 			if ((state & YEAR) || n < 1969 || n >= 3000)
 				break;
 			state |= YEAR;
-			tm->tm_year = n - 1900;
+			tm->tm_year = (int)n - 1900;
 		}
 		else if (w == 3)
 		{
@@ -1686,24 +1686,24 @@ tmxdate(const char* s, char** e, Time_t now)
 				break;
 			state |= MONTH|DAY|MDAY;
 			tm->tm_mon = 0;
-			tm->tm_mday = n;
+			tm->tm_mday = (int)n;
 		}
 		else if (w == 2 && !(state & YEAR))
 		{
 			state |= YEAR;
 			if (n < TM_WINDOW)
 				n += 100;
-			tm->tm_year = n;
+			tm->tm_year = (int)n;
 		}
 		else if (!(state & MONTH) && n >= 1 && n <= 12)
 		{
 			state |= MONTH;
-			tm->tm_mon = n - 1;
+			tm->tm_mon = (int)n - 1;
 		}
 		else if (!(state & (MDAY|WDAY)) && n >= 1 && n <= 31)
 		{
 			state |= DAY|MDAY|WDAY;
-			tm->tm_mday = n;
+			tm->tm_mday = (int)n;
 		}
 		else
 			break;

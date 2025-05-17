@@ -817,7 +817,7 @@ static int escape(Emacs_t* ep,genchar *out,int count)
 				beep();
 				break;
 			}
-			if ((eol - cur) >= sizeof(name))
+			if ((eol - cur) >= (ssize_t)sizeof(name))
 			{
 				beep();
 				return -1;
@@ -1141,7 +1141,7 @@ static void xcommands(Emacs_t *ep,int count)
 			if(hline == histlines && sh.hist_ptr)
 			{
 				hist_eof(sh.hist_ptr);
-				histlines = (int)sh.hist_ptr->histind;
+				histlines = sh.hist_ptr->histind;
 				hline = histlines;
 				if(histlines >= sh.hist_ptr->histsize)
 					hist_flush(sh.hist_ptr);
@@ -1463,7 +1463,7 @@ static void draw(Emacs_t *ep,Draw_t option)
 	 If not, adjust the screen offset so it does.
 	**********************/
 
-	i = ncursor - nscreen;
+	i = (int)(ncursor - nscreen);
 	if ((ep->offset && i<=ep->offset)||(i >= (ep->offset+w_size)))
 	{
 		/* Center the cursor on the screen */
@@ -1499,7 +1499,7 @@ static void draw(Emacs_t *ep,Draw_t option)
 			sptr++;
 			continue;
 		}
-		setcursor(ep,sptr-ep->screen,*nptr);
+		setcursor(ep,(int)(sptr-ep->screen),*nptr);
 		*sptr++ = *nptr++;
 #if SHOPT_MULTIBYTE
 		while(*nptr==MARKER)
@@ -1541,10 +1541,10 @@ static void draw(Emacs_t *ep,Draw_t option)
 		setcursor(ep,w_size,longline);
 		ep->overflow = longline;
 	}
-	i = (ncursor-nscreen) - ep->offset;
+	i = (int)((ncursor-nscreen) - ep->offset);
 	setcursor(ep,i,0);
 	if(option==FINAL && ep->ed->e_multiline)
-		setcursor(ep,nscend+1-nscreen,0);
+		setcursor(ep,(int)(nscend+1-nscreen),0);
 	ep->scvalid = 1;
 	return;
 }
@@ -1569,7 +1569,7 @@ void emacs_redraw(void *vp)
 
 static void setcursor(Emacs_t *ep,int newp,int c)
 {
-	int oldp = ep->cursor - ep->screen;
+	int oldp = (int)(ep->cursor - ep->screen);
 	newp  = ed_setcursor(ep->ed, ep->screen, oldp, newp, 0);
 	if(c)
 	{

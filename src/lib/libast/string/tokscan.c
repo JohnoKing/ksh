@@ -77,7 +77,7 @@ lextok(char* s, int c, char** p, int* n)
 
 	if (*s == '(' && (!c || c == ' ' || c == '\n'))
 	{
-		q = strtol(s + 1, &b, 10);
+		q = (int)strtol(s + 1, &b, 10);
 		if (*b == ':')
 		{
 			if (*(t = ++b + q) == ')' || *t == '\t')

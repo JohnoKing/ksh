@@ -29,7 +29,7 @@ fmttv(const char* fmt, Tv_t* tv)
 {
 	char*	s;
 	char*	t;
-	int	n;
+	size_t	n;
 
 	s = fmttime(fmt, (time_t)tv->tv_sec);
 	if (!tv->tv_nsec || tv->tv_nsec == TV_NSEC_IGNORE)

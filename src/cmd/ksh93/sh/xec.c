@@ -175,7 +175,8 @@ static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
 
 static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
 {
-	int		c,n,offset = stktell(sh.stk);
+	int		c;
+	ssize_t		offset = stktell(sh.stk), o;
 	const char	*first;
 	struct timeval	tv_cpu_sum;
 	struct timeval	*tvp;
@@ -261,8 +262,8 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
 	if(format>first)
 		sfwrite(sh.stk,first, format-first);
 	sfputc(sh.stk,'\n');
-	n = stktell(sh.stk)-offset;
-	sfwrite(out,stkptr(sh.stk,offset),n);
+	o = stktell(sh.stk)-offset;
+	sfwrite(out,stkptr(sh.stk,offset),o);
 	stkseek(sh.stk,offset);
 }
 
@@ -419,7 +420,7 @@ static void out_string(Sfio_t *iop, const char *cp, int c, int quoted)
 {
 	if(quoted)
 	{
-		int n = stktell(sh.stk);
+		ssize_t n = stktell(sh.stk);
 		cp = sh_fmtq(cp);
 		if(iop==sh.stk && cp==stkptr(sh.stk,n))
 		{
@@ -469,7 +470,9 @@ static Namfun_t level_disc_fun = { &level_disc, 1 };
 int sh_debug(const char *trap, const char *name, const char *subscript, char *const argv[], int flags)
 {
 	Namval_t		*np = SH_COMMANDNOD;
-	int			n=4, offset=stktell(sh.stk);
+	ssize_t			n=4;
+	ssize_t			offset=stktell(sh.stk);
+	int			r;
 	void			*sav = stkfreeze(sh.stk,0);
 	struct sh_scoped	*savst = stkalloc(sh.stk,sizeof(struct sh_scoped));
 	const char		*cp = "+=( ";
@@ -513,7 +516,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
 		nv_disc(SH_LEVELNOD,&level_disc_fun,NV_FIRST);
 	nv_offattr(SH_LEVELNOD,NV_RDONLY);
 	/* run the trap */
-	n = sh_trap(trap,0);
+	r = sh_trap(trap,0);
 	nv_onattr(SH_LEVELNOD,NV_RDONLY);
 	np->nvalue = NULL;
 	sh.indebug = 0;
@@ -526,7 +529,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
 		stkset(sh.stk,sav,offset);
 	else
 		stkseek(sh.stk,offset);
-	return n;
+	return r;
 }
 
 /*
@@ -2301,7 +2304,7 @@ int sh_exec(const Shnode_t *t, int flags)
 			{
 				Dt_t *root;
 				Namval_t *oldnspace = sh.namespace;
-				int offset = stktell(sh.stk);
+				ssize_t offset = stktell(sh.stk);
 				int	flags=NV_NOARRAY|NV_VARNAME;
 				struct checkpt *chkp = stkalloc(sh.stk,sizeof(struct checkpt));
 				int jmpval;
@@ -2345,7 +2348,7 @@ int sh_exec(const Shnode_t *t, int flags)
 			error_info.line = t->funct.functline-sh.st.firstline;
 			if(cp || sh.prefix)
 			{
-				int offset = stktell(sh.stk);
+				ssize_t offset = stktell(sh.stk);
 				if(sh.prefix)
 				{
 					cp = sh.prefix;
@@ -2619,14 +2622,14 @@ int sh_run(int argn, char *argv[])
 {
 	struct dolnod	*dp;
 	struct comnod	*t = stkalloc(sh.stk,sizeof(struct comnod));
-	int		savtop = stktell(sh.stk);
+	ssize_t		savtop = stktell(sh.stk);
 	void		*savptr = stkfreeze(sh.stk,0);
 	Opt_t		*op, *np = optctx(0, 0);
 	Shbltin_t	bltindata;
 	bltindata = sh.bltindata;
 	op = optctx(np, 0);
 	memset(t, 0, sizeof(struct comnod));
-	dp = stkalloc(sh.stk, (unsigned)sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + argn*sizeof(char*));
+	dp = stkalloc(sh.stk, sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + argn*sizeof(char*));
 	dp->dolnum = argn;
 	dp->dolbot = ARG_SPARE;
 	memcpy(dp->dolval+ARG_SPARE, argv, (argn+1)*sizeof(char*));
@@ -3156,7 +3159,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
 	struct checkpt	*checkpoint;
 	int		jmpval = 0;
 	int		jmpthresh;
-	int		offset = 0;
+	ssize_t		offset = 0;
 	char		*base;
 	Namval_t	node;
 	struct Namref	nr;

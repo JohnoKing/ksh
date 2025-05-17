@@ -269,7 +269,7 @@ static char	*sh_fmtcsv(const char *string)
 {
 	const char *cp = string;
 	int c;
-	int offset;
+	ssize_t offset;
 	if(!cp)
 		return NULL;
 	offset = stktell(sh.stk);
@@ -333,7 +333,7 @@ char	*sh_fmtq(const char *string)
 {
 	const char *cp = string, *op;
 	int c, state;
-	int offset;
+	ssize_t offset;
 	if(!cp)
 		return NULL;
 	offset = stktell(sh.stk);
@@ -346,12 +346,13 @@ char	*sh_fmtq(const char *string)
 			return (char*)string;
 		if(c=='=' || c=='+' && *cp=='=')
 		{
+			size_t write_len;
 			if(*cp==0)
 				return (char*)string;
 			if(*cp=='=')
 				cp++;
-			c = cp - string;
-			sfwrite(sh.stk,string,c);
+			write_len = (size_t)(cp - string);
+			sfwrite(sh.stk,string,write_len);
 			string = cp;
 			c = mbchar(cp);
 		}
@@ -369,8 +370,8 @@ char	*sh_fmtq(const char *string)
 	{
 		if(state==1)
 			sfputc(sh.stk,'\'');
-		if(c = --cp - string)
-			sfwrite(sh.stk,string,c);
+		if(--cp - string)
+			sfwrite(sh.stk,string,(size_t)(cp-string));
 		if(state==1)
 			sfputc(sh.stk,'\'');
 	}
@@ -463,13 +464,13 @@ char	*sh_fmtqf(const char *string, int single, int fold)
 	int n;
 	int q;
 	int a;
-	int offset;
+	ssize_t offset;
 
 	if (--fold < 8)
 		fold = 0;
 	if(single)
 		return sh_fmtcsv(cp);
-	if (!cp || !*cp || !fold || fold && strlen(string) < fold)
+	if (!cp || !*cp || !fold || fold && (ssize_t)strlen(string) < fold)
 		return sh_fmtq(cp);
 	offset = stktell(sh.stk);
 	single = single ? 1 : 3;
@@ -671,14 +672,14 @@ int sh_strchr(const char *string, const char *dp)
 		while(c = mbchar(cp))
 		{
 			if(c==d)
-				return cp-string;
+				return (int)(cp-string);
 		}
 		if(d==0)
-			return cp-string;
+			return (int)(cp-string);
 		return -1;
 	}
 	cp = strchr(string,*dp);
-	return cp ? cp-string : -1;
+	return cp ? (int)(cp-string) : -1;
 }
 
 const char *_sh_translate(const char *message)

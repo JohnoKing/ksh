@@ -22,5 +22,5 @@
 extern int
 _filbuf(Sfio_t* f)
 {
-	return _sffilbuf(f, 0);
+	return (int)_sffilbuf(f, 0);
 }

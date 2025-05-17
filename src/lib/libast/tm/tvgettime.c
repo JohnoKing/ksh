@@ -32,7 +32,7 @@ tvgettime(Tv_t* tv)
 
 	clock_gettime(CLOCK_REALTIME, &s);
 	tv->tv_sec = s.tv_sec;
-	tv->tv_nsec = s.tv_nsec;
+	tv->tv_nsec = (uint32_t)s.tv_nsec;
 
 #else
 

@@ -44,7 +44,6 @@ aso_init_fcntl(void* data, const char* details)
 	char*		opt;
 	size_t		size;
 	size_t		references;
-	int		n;
 	int		fd;
 	int		drop;
 	int		perm;
@@ -60,14 +59,14 @@ aso_init_fcntl(void* data, const char* details)
 		lock.l_len = sizeof(references);
 		if (fcntl(apl->fd, F_SETLKW, &lock) >= 0)
 		{
-			if (lseek(apl->fd, apl->size, SEEK_SET) != apl->size)
+			if (lseek(apl->fd, apl->size, SEEK_SET) != (ssize_t)apl->size)
 				references = 0;
 			else if (read(apl->fd, &references, sizeof(references)) != sizeof(references))
 				references = 0;
 			else if (references > 0)
 			{
 				references--;
-				if (lseek(apl->fd, apl->size, SEEK_SET) != apl->size)
+				if (lseek(apl->fd, apl->size, SEEK_SET) != (ssize_t)apl->size)
 					references = 0;
 				else if (write(apl->fd, &references, sizeof(references)) != sizeof(references))
 					references = 0;
@@ -90,8 +89,9 @@ aso_init_fcntl(void* data, const char* details)
 		{
 			if (strneq(path, "perm=", 5))
 			{
-				if ((n = opt - (path + 5)) >= sizeof(tmp))
-					n = sizeof(tmp) - 1;
+				ssize_t n;
+				if ((n = opt - (path + 5)) >= (ssize_t)sizeof(tmp))
+					n = (ssize_t)sizeof(tmp) - 1;
 				memcpy(tmp, path + 5, n);
 				tmp[n] = 0;
 				perm = strperm(tmp, NULL, perm);
@@ -115,7 +115,7 @@ aso_init_fcntl(void* data, const char* details)
 		goto bad;
 	if (fd >= 0 || (fd = open(path, O_RDWR|O_cloexec)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_cloexec, perm)) >= 0)
 	{
-		if (lseek(fd, size, SEEK_SET) != size)
+		if (lseek(fd, size, SEEK_SET) != (ssize_t)size)
 			goto bad;
 		references = 1;
 		if (write(fd, &references, sizeof(references)) != sizeof(references))
@@ -132,12 +132,12 @@ aso_init_fcntl(void* data, const char* details)
 		lock.l_len = sizeof(references);
 		if (fcntl(fd, F_SETLKW, &lock) < 0)
 			goto bad;
-		if (lseek(fd, size, SEEK_SET) != size)
+		if (lseek(fd, size, SEEK_SET) != (ssize_t)size)
 			goto bad;
 		if (read(fd, &references, sizeof(references)) != sizeof(references))
 			goto bad;
 		references++;
-		if (lseek(fd, size, SEEK_SET) != size)
+		if (lseek(fd, size, SEEK_SET) != (ssize_t)size)
 			goto bad;
 		if (write(fd, &references, sizeof(references)) != sizeof(references))
 			goto bad;

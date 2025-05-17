@@ -26,7 +26,7 @@ sprintf(char* s, const char* fmt, ...)
 	int	v;
 
 	va_start(args, fmt);
-	v = s ? sfvsprintf(s, INT_MAX, fmt, args) : -1;
+	v = s ? (int)sfvsprintf(s, INT_MAX, fmt, args) : -1;
 	va_end(args);
 	return v;
 }

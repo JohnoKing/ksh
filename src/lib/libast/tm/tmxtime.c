@@ -124,10 +124,10 @@ tmxtime(Tm_t* tm, int west)
 		 * leap second adjustments
 		 */
 
-		for (lp = &tm_data.leap[0]; t < lp->time - (lp+1)->total; lp++);
+		for (lp = &tm_data.leap[0]; (signed)t < lp->time - (lp+1)->total; lp++);
 		t += lp->total;
 		n = lp->total - (lp+1)->total;
-		if (t <= (lp->time + n) && (n > 0 && sec > 59 || n < 0 && sec > (59 + n) && sec <= 59))
+		if ((signed)t <= (lp->time + n) && (n > 0 && sec > 59 || n < 0 && sec > (59 + n) && sec <= 59))
 			t -= n;
 	}
 	return tmxsns(t, tm->tm_nsec);

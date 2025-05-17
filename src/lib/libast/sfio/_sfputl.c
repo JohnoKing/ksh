@@ -24,8 +24,8 @@
 **	Written by Kiem-Phong Vo.
 */
 
-int _sfputl(Sfio_t*	f,	/* write a portable long to this stream */
-	    Sflong_t	v)	/* the value to be written */
+ssize_t _sfputl(Sfio_t*	f,	/* write a portable long to this stream */
+		Sflong_t v)	/* the value to be written */
 {
 #define N_ARRAY		(2*sizeof(Sflong_t))
 	uchar	*s, *ps;

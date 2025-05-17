@@ -237,11 +237,11 @@ extern int		sfdlen(Sfdouble_t);
 extern int		sfllen(Sflong_t);
 extern int		sfulen(Sfulong_t);
 
-extern int		sfputd(Sfio_t*, Sfdouble_t);
-extern int		sfputl(Sfio_t*, Sflong_t);
-extern int		sfputu(Sfio_t*, Sfulong_t);
-extern int		sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
-extern int		sfputc(Sfio_t*, int);
+extern ssize_t		sfputd(Sfio_t*, Sfdouble_t);
+extern ssize_t		sfputl(Sfio_t*, Sflong_t);
+extern ssize_t		sfputu(Sfio_t*, Sfulong_t);
+extern ssize_t		sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
+extern ssize_t		sfputc(Sfio_t*, int);
 
 extern Sfdouble_t	sfgetd(Sfio_t*);
 extern Sflong_t		sfgetl(Sfio_t*);
@@ -249,13 +249,13 @@ extern Sfulong_t	sfgetu(Sfio_t*);
 extern Sfulong_t	sfgetm(Sfio_t*, Sfulong_t);
 extern int		sfgetc(Sfio_t*);
 
-extern int		_sfputd(Sfio_t*, Sfdouble_t);
-extern int		_sfputl(Sfio_t*, Sflong_t);
-extern int		_sfputu(Sfio_t*, Sfulong_t);
-extern int		_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
-extern int		_sfflsbuf(Sfio_t*, int);
+extern ssize_t		_sfputd(Sfio_t*, Sfdouble_t);
+extern ssize_t		_sfputl(Sfio_t*, Sflong_t);
+extern ssize_t		_sfputu(Sfio_t*, Sfulong_t);
+extern ssize_t		_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
 
-extern int		_sffilbuf(Sfio_t*, int);
+extern ssize_t		_sfflsbuf(Sfio_t*, ssize_t);
+extern ssize_t		_sffilbuf(Sfio_t*, ssize_t);
 
 extern int		_sfdlen(Sfdouble_t);
 extern int		_sfllen(Sflong_t);
@@ -294,7 +294,7 @@ extern ssize_t		sfmaxr(ssize_t, int);
 #define __sf_putc(f,c)	(_SFIO_(f)->_next >= _SFIO_(f)->_endw ? \
 			 _sfflsbuf(_SFIO_(f),(int)((unsigned char)(c))) : \
 			 (int)(*_SFIO_(f)->_next++ = (unsigned char)(c)) )
-#define __sf_getc(f)	(_SFIO_(f)->_next >= _SFIO_(f)->_endr ? _sffilbuf(_SFIO_(f),0) : \
+#define __sf_getc(f)	(_SFIO_(f)->_next >= _SFIO_(f)->_endr ? (int)_sffilbuf(_SFIO_(f),0) : \
 			 (int)(*_SFIO_(f)->_next++) )
 
 #define __sf_dlen(v)	(_sfdlen((Sfdouble_t)(v)) )

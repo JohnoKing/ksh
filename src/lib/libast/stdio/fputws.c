@@ -32,7 +32,7 @@ fputws(const wchar_t* s, Sfio_t* f)
 
 	FWIDE(f, WEOF);
 	n = wcslen(s) * sizeof(wchar_t);
-	return (sfwrite(f, s, n) == n) ? 0 : -1;
+	return (sfwrite(f, s, n) == (ssize_t)n) ? 0 : -1;
 }
 
 #endif /* !_has_multibyte */

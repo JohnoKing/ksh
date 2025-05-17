@@ -35,7 +35,7 @@ optesc(Sfio_t* sp, const char* s, int esc)
 
 	if (*s == '[' && *(s + 1) == '+' && *(s + 2) == '?')
 	{
-		c = strlen(s);
+		c = (int)strlen(s);
 		if (s[c - 1] == ']')
 		{
 			sfprintf(sp, "%-.*s", c - 4, s + 3);

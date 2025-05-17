@@ -137,15 +137,15 @@ pretty(Sfio_t *out, int o, int delim, int flags)
 static int
 cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfoff_t count, Sfoff_t differences)
 {
-	int		c1;
-	int		c2;
+	ssize_t		c1;
+	ssize_t		c2;
 	unsigned char*	p1 = 0;
 	unsigned char*	p2 = 0;
 	Sfoff_t	lines = 1;
 	unsigned char*	e1 = 0;
 	unsigned char*	e2 = 0;
 	Sfoff_t		pos = 0;
-	int		n1 = 0;
+	ssize_t		n1 = 0;
 	int		ret = 0;
 	unsigned char*	last;
 
@@ -179,7 +179,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 				return ret;
 			}
 			if (count > 0 && c1 > count)
-				c1 = (int)count;
+				c1 = count;
 			e1 = p1 + c1;
 			n1 = c1;
 		}
@@ -231,7 +231,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 					if (flags & (CMP_BYTES|CMP_CHARS|CMP_VERBOSE))
 					{
 						sfputc(sfstdout, (flags & CMP_VERBOSE) ? ' ' : ',');
-						pretty(sfstdout, c1, -1, flags);
+						pretty(sfstdout, (int)c1, -1, flags);
 						pretty(sfstdout, *(p2-1), '\n', flags);
 					}
 					else

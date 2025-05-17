@@ -57,7 +57,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 	Splice_t*	d = (Splice_t*)ad;
 	char*		b;
 	int		c;
-	int		n;
+	ssize_t		n;
 	int		q;
 	int		j;
 	char*		e;
@@ -179,7 +179,7 @@ tokline(const char* arg, int flags, int* line)
 	}
 	else if ((p = sfreserve(f, 0, 0)) && sfvalue(f) > 11 && strmatch(p, "#!!! +([-0-9]) *([!\n]) !!!\n*") && (e = strchr(p, '\n')))
 	{
-		flags = strtol(p + 5, &p, 10);
+		flags = (int)strtol(p + 5, &p, 10);
 		error(flags, "%s:%-.*s", arg, e - p - 4, p);
 	}
 	d->disc.exceptf = spliceline;

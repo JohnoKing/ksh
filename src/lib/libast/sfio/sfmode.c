@@ -252,7 +252,7 @@ static int _sfpmode(Sfio_t* f, int type)
 
 	if(type == SFIO_WRITE)
 	{	/* save unread data */
-		p->ndata = f->endb-f->next;
+		p->ndata = (int)(f->endb-f->next);
 		if(p->ndata > p->size)
 		{	if(p->rdata)
 				free(p->rdata);
@@ -270,7 +270,7 @@ static int _sfpmode(Sfio_t* f, int type)
 	else
 	{	/* restore read data */
 		if(p->ndata > f->size)	/* may lose data!!! */
-			p->ndata = f->size;
+			p->ndata = (int)f->size;
 		if(p->ndata > 0)
 		{	memcpy(f->data,p->rdata,p->ndata);
 			f->endb = f->data+p->ndata;
@@ -512,7 +512,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 			wanted = SFIO_READ;
 
 		/* set errno for operations that access wrong stream type */
-		if(wanted != (f->mode&SFIO_RDWR) && f->file >= 0)
+		if(wanted != (int)(f->mode&SFIO_RDWR) && f->file >= 0)
 			errno = EBADF;
 
 		if(_Sfnotify) /* notify application of the error */

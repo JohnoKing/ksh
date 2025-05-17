@@ -46,11 +46,11 @@ typedef struct _dosdisc
 	Sfoff_t		phere;
 	Sfoff_t		plast;
 	Sfoff_t		begin;
-	int		skip;
+	ssize_t		skip;
 	void		*buff;
 	char		last;
 	char		extra;
-	int		bsize;
+	ssize_t		bsize;
 } Dosdisc_t;
 
 static void addmapping(Dosdisc_t *dp)
@@ -94,7 +94,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 {
 	Dosdisc_t *dp = (Dosdisc_t*)disc;
 	char *cp = (char*)buff, *first, *cpmax;
-	int n, count, m;
+	ssize_t m, n, count;
 	if(dp->extra)
 	{
 		dp->extra=0;
@@ -238,7 +238,7 @@ static Sfoff_t dos_seek(Sfio_t *iop, Sfoff_t offset, int whence, Sfdisc_t* disc)
 	Dosdisc_t *dp = (Dosdisc_t*)disc;
 	struct map dummy, *mp=0;
 	Sfoff_t physical;
-	int n,size;
+	ssize_t n,size;
 retry:
 	switch(whence)
 	{

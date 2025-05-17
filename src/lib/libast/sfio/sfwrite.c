@@ -56,7 +56,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 			ssize_t	r;
 
 			for(w = n; w > 0; )
-			{	if((r = w) > sizeof(buf))
+			{	if((r = w) > (ssize_t)sizeof(buf))
 					r = sizeof(buf);
 				if((r = read(f->file,buf,r)) <= 0)
 				{	n -= w;
@@ -117,7 +117,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 		}
 
 		if(!(f->flags&SFIO_STRING) && f->next == f->data &&
-		   (((f->flags&SFIO_WHOLE) && w <= n) || SFDIRECT(f,n)) )
+		   (((f->flags&SFIO_WHOLE) && w <= (ssize_t)n) || SFDIRECT(f,n)) )
 		{	/* bypass buffering */
 			if((w = SFWR(f,s,n,f->disc)) <= 0 )
 				break;

@@ -23,7 +23,7 @@
 **	Written by Kiem-Phong Vo.
 */
 
-int _sfputd(Sfio_t* f, Sfdouble_t v)
+ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
 {
 #define N_ARRAY		(16*sizeof(Sfdouble_t))
 	ssize_t		n, w;

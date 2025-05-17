@@ -42,7 +42,7 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 	time_t			now;
 	int			leapsec;
 	int			y;
-	uint32_t		n;
+	Time_t			n;
 	int32_t			o;
 #if TMX_FLOAT
 	Time_t			z;
@@ -53,10 +53,10 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 	leapsec = 0;
 	if ((tm_info.flags & (TM_ADJUST|TM_LEAP)) == (TM_ADJUST|TM_LEAP) && (n = tmxsec(t)))
 	{
-		for (lp = &tm_data.leap[0]; n < lp->time; lp++);
+		for (lp = &tm_data.leap[0]; n < (Time_t)lp->time; lp++);
 		if (lp->total)
 		{
-			if (n == lp->time && (leapsec = (lp->total - (lp+1)->total)) < 0)
+			if (n == (Time_t)lp->time && (leapsec = (lp->total - (lp+1)->total)) < 0)
 				leapsec = 0;
 			t = tmxsns(n - lp->total, tmxnsec(t));
 		}
@@ -69,7 +69,7 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 		else
 			tm->tm_zone = tm_info.zone;
 	}
-	if ((o = 60 * tm->tm_zone->west) && x > o)
+	if ((o = 60 * tm->tm_zone->west) && x > (unsigned)o)
 	{
 		x -= o;
 		o = 0;
@@ -93,11 +93,11 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 	x /= 24;
 #endif
 	tm->tm_wday = (x + 4) % 7;
-	tm->tm_year = (400 * (x + 25202)) / 146097 + 1;
+	tm->tm_year = (400 * ((int)x + 25202)) / 146097 + 1;
 	n = tm->tm_year - 1;
 	x -= n * 365 + n / 4 - n / 100 + (n + (1900 - 1600)) / 400 - (1970 - 1901) * 365 - (1970 - 1901) / 4;
 	tm->tm_mon = 0;
-	tm->tm_mday = x + 1;
+	tm->tm_mday = (int)x + 1;
 	tm->tm_nsec = tmxnsec(t);
 	tmfix(tm);
 	n += 1900;

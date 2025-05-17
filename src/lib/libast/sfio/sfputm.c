@@ -20,7 +20,7 @@
 
 #undef sfputm
 
-int sfputm(Sfio_t* f, Sfulong_t u, Sfulong_t m)
+ssize_t sfputm(Sfio_t* f, Sfulong_t u, Sfulong_t m)
 {
 	return __sf_putm(f, u, m);
 }

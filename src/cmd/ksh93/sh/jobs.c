@@ -91,10 +91,7 @@ pid_t	pid_fromstring(char *str)
 	pid_t	pid;
 	char	*last;
 	errno = 0;
-	if(sizeof(pid)==sizeof(Sflong_t))
-		pid = (pid_t)strtoll(str, &last, 10);
-	else
-		pid = (pid_t)strtol(str, &last, 10);
+	pid = (pid_t)strtoll(str, &last, 10);
 	if(errno==ERANGE || *last)
 	{
 		errormsg(SH_DICT,ERROR_exit(1),"%s: invalid process ID",str);
@@ -783,7 +780,8 @@ int job_list(struct process *pw,int flag)
 	struct process *px = pw;
 	int  n;
 	const char *msg;
-	int msize;
+	size_t mlen;
+	char c;
 	if(!pw || pw->p_job<=0)
 		return 1;
 	if(pw->p_env != sh.jobenv)
@@ -800,14 +798,14 @@ int job_list(struct process *pw,int flag)
 	job_lock();
 	n = px->p_job;
 	if(px==job.pwlist)
-		msize = '+';
+		c = '+';
 	else if(px==job.pwlist->p_nxtjob)
-		msize = '-';
+		c = '-';
 	else
-		msize = ' ';
+		c = ' ';
 	if(flag&JOB_NLFLAG)
 		sfputc(outfile,'\n');
-	sfprintf(outfile,"[%d] %c ",n, msize);
+	sfprintf(outfile,"[%d] %c ",n, c);
 	do
 	{
 		n = 0;
@@ -824,19 +822,19 @@ int job_list(struct process *pw,int flag)
 			msg = sh_translate(e_running);
 		px->p_flag &= ~P_NOTIFY;
 		sfputr(outfile,msg,-1);
-		msize = strlen(msg);
+		mlen = strlen(msg);
 		if(n)
 		{
 			sfprintf(outfile,"(%d)",n);
-			msize += (3+(n>10)+(n>100));
+			mlen += (3+(n>10)+(n>100));
 		}
 		if(px->p_flag&P_COREDUMP)
 		{
 			msg = sh_translate(e_coredump);
 			sfputr(outfile, msg, -1);
-			msize += strlen(msg);
+			mlen += strlen(msg);
 		}
-		sfnputc(outfile,' ',MAXMSG>msize?MAXMSG-msize:1);
+		sfnputc(outfile,' ',MAXMSG>mlen?MAXMSG-mlen:1);
 		if(flag&JOB_LFLAG)
 			px = px->p_nxtproc;
 		else

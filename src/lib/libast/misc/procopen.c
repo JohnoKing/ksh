@@ -175,12 +175,12 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 			{
 				if (arg2 != PROC_ARG_NULL)
 				{
-					close(arg2);
-					if (fcntl(arg1, F_DUPFD, arg2) != arg2)
+					close((int)arg2);
+					if (fcntl((int)arg1, F_DUPFD, arg2) != arg2)
 						return -1;
 				}
 				if (op & PROC_FD_CHILD)
-					close(arg1);
+					close((int)arg1);
 			}
 			break;
 		case PROC_fd_ctty:
@@ -190,7 +190,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 					close(i);
 			arg2 = -1;
 #ifdef TIOCSCTTY
-			if (ioctl(arg1, TIOCSCTTY, NULL) < 0)
+			if (ioctl((int)arg1, TIOCSCTTY, NULL) < 0)
 				return -1;
 #else
 			if (!(s = ttyname(arg1)))
@@ -199,18 +199,18 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 				return -1;
 #endif /* TIOCSCTTY */
 			for (i = 0; i <= 2; i++)
-				if (arg1 != i && arg2 != i && fcntl(arg1, F_DUPFD, i) != i)
+				if (arg1 != i && (int)arg2 != i && fcntl((int)arg1, F_DUPFD, i) != i)
 					return -1;
 			if (arg1 > 2)
-				close(arg1);
+				close((int)arg1);
 			if (arg2 > 2)
-				close(arg2);
+				close((int)arg2);
 			break;
 		case PROC_sig_dfl:
-			signal(arg1, SIG_DFL);
+			signal((int)arg1, SIG_DFL);
 			break;
 		case PROC_sig_ign:
-			signal(arg1, SIG_IGN);
+			signal((int)arg1, SIG_IGN);
 			break;
 		case PROC_sys_pgrp:
 			if (arg1 < 0)
@@ -219,12 +219,12 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 			{
 				if (arg1 == 1)
 					arg1 = 0;
-				if (setpgid(0, arg1) < 0 && arg1 && errno == EPERM)
+				if (setpgid(0, (int)arg1) < 0 && arg1 && errno == EPERM)
 					setpgid(0, 0);
 			}
 			break;
 		case PROC_sys_umask:
-			umask(arg1);
+			umask((int)arg1);
 			break;
 		default:
 			return -1;

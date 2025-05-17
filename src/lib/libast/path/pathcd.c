@@ -61,8 +61,8 @@ pathcd(const char* path, const char* home)
 {
 	char*	p = (char*)path;
 	char*	s;
-	int	n;
-	int	i;
+	ssize_t	n;
+	ssize_t	i;
 	int	r;
 
 	r = 0;
@@ -79,7 +79,7 @@ pathcd(const char* path, const char* home)
 		 * chdir failed
 		 */
 
-		if ((n = strlen(p)) < PATH_MAX)
+		if ((n = (ssize_t)strlen(p)) < PATH_MAX)
 			return -1;
 #ifdef ENAMETOOLONG
 		if (errno != ENAMETOOLONG)

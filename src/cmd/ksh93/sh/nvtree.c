@@ -39,7 +39,7 @@ struct nvdir
 	Namval_t	*(*nextnode)(Namval_t*,Dt_t*,Namfun_t*);
 	Namfun_t	*fun;
 	struct nvdir	*prev;
-	int		len;
+	size_t		len;
 	char		*data;
 };
 
@@ -142,7 +142,8 @@ static  Namfun_t *nextdisc(Namval_t *np)
 void *nv_diropen(Namval_t *np,const char *name)
 {
 	char *next,*last;
-	int c,len=strlen(name);
+	int c;
+	size_t len=strlen(name);
 	struct nvdir *save, *dp = new_of(struct nvdir,len+1);
 	Namval_t *nq=0,fake;
 	Namfun_t *nfp=0;
@@ -176,8 +177,8 @@ void *nv_diropen(Namval_t *np,const char *name)
 		if(dp->hp = (Namval_t*)dtprev(dp->root,&fake))
 		{
 			char *cp = nv_name(dp->hp);
-			c = strlen(cp);
-			if(strncmp(name,cp,c) || name[c]!='[')
+			len = strlen(cp);
+			if(strncmp(name,cp,len) || name[len]!='[')
 				dp->hp = (Namval_t*)dtnext(dp->root,dp->hp);
 			else
 			{
@@ -292,7 +293,7 @@ char *nv_dirnext(void *dir)
 				if(nfp || nv_istable(np))
 				{
 					Dt_t *root;
-					int len;
+					size_t len;
 					if(nv_istable(np))
 						root = nv_dict(np);
 					else
@@ -793,7 +794,8 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 {
 	char *cp,*nextcp,*arg;
 	Sfio_t *outfile = wp->out;
-	int m,r,l;
+	size_t m,l;
+	int r;
 	if(n==0)
 		m = strlen(prefix);
 	else if(cp=nextdot(prefix))
@@ -848,7 +850,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 							sp = tp->nvname;
 						sfputr(outfile,sp,' ');
 					}
-					nv_outname(outfile,cp,nextcp-cp);
+					nv_outname(outfile,cp,(int)(nextcp-cp));
 					sfputc(outfile,'=');
 					*nextcp = '.';
 				}
@@ -857,7 +859,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 					outval(cp,arg,wp);
 					continue;
 				}
-				argv = genvalue(argv,cp,n+m+r,wp);
+				argv = genvalue(argv,cp,(int)(n+m+r),wp);
 				if(wp->indent>=0)
 					sfputc(outfile,'\n');
 				if(*argv)
@@ -883,7 +885,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 					continue;
 				}
 				wp->nofollow=1;
-				argv = genvalue(argv,cp,cp-arg ,wp);
+				argv = genvalue(argv,cp,(int)(cp-arg) ,wp);
 				sfputc(outfile,wp->indent<0?';':'\n');
 			}
 			else if(outfile && *cp=='[' && cp[-1]!='.')
@@ -898,7 +900,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 				sfputr(outfile,cp,'=');
 				if(*cp=='.')
 					cp++;
-				argv = genvalue(++argv,cp,cp-arg ,wp);
+				argv = genvalue(++argv,cp,(int)(cp-arg),wp);
 				sfputc(outfile,wp->indent>0?'\n':';');
 			}
 			else
@@ -944,7 +946,8 @@ static char *walk_tree(Namval_t *np, Namval_t *xp, int flags)
 	struct Walk walk;
 	Sfio_t *outfile;
 	Sfoff_t	off = 0;
-	int len, savtop = stktell(sh.stk);
+	size_t len;
+	ssize_t savtop = stktell(sh.stk);
 	void *savptr = stkfreeze(sh.stk,0);
 	struct argnod *ap=0;
 	struct argnod *arglist=0;
@@ -1062,7 +1065,8 @@ Namfun_t *nv_isvtree(Namval_t *np)
  */
 char *nv_getvtree(Namval_t *np, Namfun_t *fp)
 {
-	int flags=0, dsize=fp?fp->dsize:0;
+	int flags=0;
+	size_t dsize=fp?fp->dsize:0;
 	for(; fp && fp->next; fp=fp->next)
 	{
 		if(fp->next->disc && (fp->next->disc->getnum || fp->next->disc->getval))

@@ -25,7 +25,7 @@ char *stkcopy(Stk_t *\fIstack\fP, const char *\fIstring\fP);
 void *stkset(Stk_t *\fIstack\fP, void *\fIaddress\fP, unsigned \fIoffset\fP);
 
 void *stkseek(Stk_t *\fIstack\fP, unsigned \fIoffset\fP);
-int stktell(Stk_t *\fIstack\fP);
+ssize_t stktell(Stk_t *\fIstack\fP);
 char *stkptr(Stk_t *\fIstack\fP, unsigned \fIoffset\fP);
 void *stkfreeze(Stk_t *\fIstack\fP, unsigned \fIextra\fP);
 \fR

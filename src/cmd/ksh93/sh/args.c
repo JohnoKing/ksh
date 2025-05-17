@@ -477,7 +477,7 @@ struct dolnod *sh_argcreate(char *argv[])
 {
 	struct dolnod *dp;
 	char **pp=argv, *sp;
-	int 	n;
+	ssize_t	n;
 	size_t	size=0;
 	/* count args and number of bytes of arglist */
 	while(sp= *pp++)
@@ -485,7 +485,7 @@ struct dolnod *sh_argcreate(char *argv[])
 	n = (pp - argv)-1;
 	dp=new_of(struct dolnod,n*sizeof(char*)+size+n);
 	dp->dolrefcnt=1;	/* use count */
-	dp->dolnum = n;
+	dp->dolnum = (int)n;
 	dp->dolnxt = 0;
 	pp = dp->dolval;
 	sp = (char*)dp + sizeof(struct dolnod) + n*sizeof(char*);
@@ -567,7 +567,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 			name = tp->sh_name;
 			if(name[0] == 'n' && name[1] == 'o' && name[2] != 't')
 				name += 2;
-			if(c<(w=strlen(name)))
+			if(c<(w=(int)strlen(name)))
 				c = w;
 		}
 		c += 4;
@@ -703,7 +703,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
 				sh_trim(*comargn);
 			if(!(argp=nextarg) || (argp->argflag&ARG_MAKE))
 			{
-				if((argn=comargm-comargn)>1)
+				if((argn=(int)(comargm-comargn))>1)
 					strsort(comargn,argn,strcoll);
 				comargm = comargn;
 			}

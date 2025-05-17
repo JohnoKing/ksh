@@ -247,7 +247,7 @@ typedef struct
 
 	struct				/* ast.mb.* -- multibyte encoding/decoding state */
 	{
-	int		cur_max;	/* current maximum length in bytes of a character: > 1 == multibyte locale */
+	size_t		cur_max;	/* current maximum length in bytes of a character: > 1 == multibyte locale */
 	uint32_t	sync;		/* length of invalid multibyte character */
 	wchar_t		tmp_w;		/* scratch */
 	int		tmp_i;		/* scratch */

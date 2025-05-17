@@ -38,7 +38,7 @@ hashsize(Hash_table_t* tab, int size)
 	Hash_bucket_t*		old_b;
 	Hash_bucket_t*		new_b;
 	Hash_bucket_t**		old_sx;
-	unsigned int		index;
+	unsigned long		index;
 	Hash_region_f		region;
 	void*			handle;
 

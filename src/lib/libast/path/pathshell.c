@@ -54,10 +54,10 @@ char*
 pathshell(void)
 {
 	char*		sh;
-	int		ru;
-	int		eu;
-	int		rg;
-	int		eg;
+	uid_t		ru;
+	uid_t		eu;
+	gid_t		rg;
+	gid_t		eg;
 	struct stat	st;
 
 	static char*	val;

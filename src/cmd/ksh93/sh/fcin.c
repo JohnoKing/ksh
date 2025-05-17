@@ -34,9 +34,9 @@ Fcin_t _Fcin = {0};
 /*
  * open stream <f> for fast character input
  */
-int	fcfopen(Sfio_t* f)
+ssize_t	fcfopen(Sfio_t* f)
 {
-	int	n;
+	ssize_t	n;
 	char	*buff;
 	Fcin_t	save;
 	errno = 0;
@@ -71,9 +71,9 @@ int	fcfopen(Sfio_t* f)
  * If last is non-zero, and the stream is a file, 0 is returned when
  * the previous character is a 0 byte.
  */
-int	fcfill(void)
+int fcfill(void)
 {
-	int	n;
+	int n;
 	Sfio_t	*f;
 	unsigned char	*last=_Fcin.fclast, *ptr=_Fcin.fcptr;
 	if(!(f=fcfile()))
@@ -94,7 +94,7 @@ int	fcfill(void)
 		if(ptr > last)
 			_Fcin.fcptr = ptr = last;
 	}
-	if((n = ptr-_Fcin.fcbuff) && _Fcin.fcfun)
+	if((n = (int)(ptr-_Fcin.fcbuff)) && _Fcin.fcfun)
 		(*_Fcin.fcfun)(f,(const char*)_Fcin.fcbuff,n,_Fcin.context);
 	sfread(f, (char*)_Fcin.fcbuff, n);
 	_Fcin.fcoff +=n;
@@ -109,7 +109,7 @@ int	fcfill(void)
 /*
  * Synchronize and close the current stream
  */
-int fcclose(void)
+ssize_t fcclose(void)
 {
 	unsigned char *ptr;
 	if(_Fcin.fclast==0)
@@ -126,7 +126,7 @@ int fcclose(void)
 /*
  * Set the notify function that is called for each fcfill()
  */
-void fcnotify(void (*fun)(Sfio_t*,const char*,int,void*),void* context)
+void fcnotify(void (*fun)(Sfio_t*,const char*,ssize_t,void*),void* context)
 {
 	_Fcin.fcfun = fun;
 	_Fcin.context = context;

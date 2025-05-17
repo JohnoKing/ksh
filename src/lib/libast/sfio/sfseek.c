@@ -210,19 +210,19 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
 		f->iosz = (f->next - f->data) + (f->endb - f->next)/2;
 		f->iosz = ((f->iosz + f->blksz-1)/f->blksz)*f->blksz;
 	}
-	if(f->iosz >= f->size)
+	if(f->iosz >= (size_t)f->size)
 		f->iosz = 0;
 
 	/* buffer is now considered empty */
 	f->next = f->endr = f->endb = f->data;
 
 	/* small backseeks often come in bunches, so seek back as far as possible */
-	if(p < f->lpos && f->size > f->blksz && (p + f->blksz) > s)
+	if(p < f->lpos && (size_t)f->size > f->blksz && (p + f->blksz) > (unsigned)s)
 	{	if((r = s - f->size) < 0)
 			r = 0;
 	}
 	/* try to align buffer to block boundary to enhance I/O speed */
-	else if(f->blksz > 0 && f->size >= 2*f->blksz)
+	else if(f->blksz > 0 && (size_t)f->size >= 2*f->blksz)
 		r = p - (p%f->blksz);
 	else
 	{	r = p;

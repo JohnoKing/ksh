@@ -111,7 +111,8 @@ static char *getbuf(size_t len)
 void nv_outname(Sfio_t *out, char *name, int len)
 {
 	const char *cp=name, *sp;
-	int c, offset = stktell(sh.stk);
+	int c;
+	ssize_t offset = stktell(sh.stk);
 	while(sp= strchr(cp,'['))
 	{
 		if(len>0 && cp+len <= sp)
@@ -154,7 +155,7 @@ void nv_outname(Sfio_t *out, char *name, int len)
 Namval_t *nv_addnode(Namval_t* np, int remove)
 {
 	struct sh_type	*sp = (struct sh_type*)sh.mktype;
-	int		i;
+	size_t		i;
 	char		*name=0;
 	if(sp->numnodes==0 && !nv_isnull(np) && sh.last_table)
 	{
@@ -185,13 +186,13 @@ Namval_t *nv_addnode(Namval_t* np, int remove)
 			UNREACHABLE();
 		}
 	}
-	for(i=0; i < sp->numnodes; i++)
+	for(i=0; i < (unsigned)sp->numnodes; i++)
 	{
 		if(np == sp->nodes[i])
 		{
 			if(remove)
 			{
-				while(++i < sp->numnodes)
+				while(++i < (unsigned)sp->numnodes)
 					sp->nodes[i-1] = sp->nodes[i];
 				sp->numnodes--;
 			}
@@ -698,7 +699,7 @@ static void stak_subscript(const char *sub, int last)
  */
 static char *copystack(const char *prefix, const char *name, const char *sub)
 {
-	int last=0,offset = stktell(sh.stk);
+	ssize_t last=0,offset = stktell(sh.stk);
 	if(prefix)
 	{
 		sfputr(sh.stk,prefix,-1);
@@ -729,15 +730,15 @@ static char *copystack(const char *prefix, const char *name, const char *sub)
  * grow this stack string <name> by <n> bytes and move from cp-1 to end
  * right by <n>.  Returns beginning of string on the stack
  */
-static char *stack_extend(const char *cname, char *cp, int n)
+static char *stack_extend(const char *cname, char *cp, ssize_t n)
 {
 	char *name = (char*)cname;
-	int offset = name - stkptr(sh.stk,0);
-	int m = cp-name;
+	ssize_t offset = name - stkptr(sh.stk,0);
+	ssize_t m = cp-name;
 	stkseek(sh.stk,offset + strlen(name)+n+1);
 	name = stkptr(sh.stk,offset);
 	cp =  name + m;
-	m = strlen(cp)+1;
+	m = (ssize_t)strlen(cp)+1;
 	while(m-->0)
 		cp[n+m]=cp[m];
 	return (char*)name;
@@ -750,8 +751,9 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 	Namval_t		*np=0, *nq=0;
 	Namfun_t		*fp=0;
 	long			mode, add=0;
-	int			copy=0,isref,top=0,noscope=(flags&NV_NOSCOPE);
+	int			isref,top=0,noscope=(flags&NV_NOSCOPE);
 	int			nofree=0, level=0;
+	ssize_t			copy=0;
 	Namarr_t		*ap;
 	if(root==sh.var_tree)
 	{
@@ -785,12 +787,13 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 				flags &= ~NV_EXPORT;
 			if(!copy && !(flags&NV_NOREF))
 			{
-				c = sp-name;
+				ssize_t z;
+				z = sp-name;
 				copy = cp-name;
 				dp->nofree |= 1;
 				name = copystack(NULL, name,NULL);
 				cp = (char*)name+copy;
-				sp = (char*)name+c;
+				sp = (char*)name+z;
 				c = '.';
 			}
 			/* FALLTHROUGH */
@@ -868,7 +871,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 			if(!np && !noscope && *name!='.' && sh.namespace && root==sh.var_tree)
 				root = nv_dict(sh.namespace);
 #endif /* SHOPT_NAMESPACE */
-			if(np ||  (np = nv_search(name,root,mode)))
+			if(np ||  (np = nv_search(name,root,(int)mode)))
 			{
 				isref = nv_isref(np);
 				sh.openmatch = root->walk?root->walk:root;
@@ -995,7 +998,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #if SHOPT_FIXEDARRAY
 					static char null[1] = "";
 #endif /* SHOPT_FIXEDARRAY */
-					c = (cp-sp);
+					ssize_t z = (cp-sp);
 					copy = strlen(cp=nv_name(np));
 					dp->nofree |= 1;
 #if SHOPT_FIXEDARRAY
@@ -1005,7 +1008,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #endif /* SHOPT_FIXEDARRAY */
 						name = copystack(cp,sp,sub);
 					sp = (char*)name + copy;
-					cp = sp+c;
+					cp = sp+z;
 					c = *sp;
 					if(!noscope)
 						flags &= ~NV_NOSCOPE;
@@ -1066,7 +1069,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #if SHOPT_FIXEDARRAY
 						ap = nv_arrayptr(np);
 #endif /* SHOPT_FIXEDARRAY */
-						n = mode|nv_isarray(np);
+						n = (int)(mode|nv_isarray(np));
 						if(!mode && (flags&NV_ARRAY) && ((c=sp[1])=='*' || c=='@') && sp[2]==']')
 						{
 							/* not implemented yet */
@@ -1101,7 +1104,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #endif
 					           (flags&NV_ASSIGN)) && (flags&NV_ARRAY)))
 					{
-						int m = cp-sp;
+						ssize_t m = cp-sp;
 						sub = m?nv_getsub(np):0;
 						if(!sub)
 						{
@@ -1109,7 +1112,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 								return NULL;
 							sub = "0";
 						}
-						n = strlen(sub)+2;
+						n = (int)strlen(sub)+2;
 						if(!copy)
 						{
 							copy = cp-name;
@@ -1134,7 +1137,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 						}
 						else
 						{
-							int r = n-m;
+							ssize_t r = n-m;
 							m = sp-name;
 							name = stack_extend(name, cp-1, r);
 							sp = (char*)name + m;
@@ -1179,7 +1182,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 							Namarr_t *ap = nv_arrayptr(np);
 							if(!sub && (flags&NV_NOADD))
 								return NULL;
-							n = mode|((flags&NV_NOADD)?0:NV_ADD);
+							n = (int)(mode|((flags&NV_NOADD)?0:NV_ADD));
 							if(!ap && (n&NV_ADD))
 							{
 								nv_putsub(np,sub,ARRAY_FILL);
@@ -1356,7 +1359,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 	int			append=0;
 	const char		*msg = e_varname;
 	char			*fname = 0;
-	int			offset = stktell(sh.stk);
+	ssize_t			offset = stktell(sh.stk);
 	Dt_t			*funroot = NULL;
 #if NVCACHE
 	struct Cache_entry	*xp;
@@ -1388,7 +1391,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 		long mode = ((flags&NV_NOADD)?0:NV_ADD);
 		if(flags&NV_NOSCOPE)
 			mode |= NV_NOSCOPE;
-		np = nv_search(name,root,mode);
+		np = nv_search(name,root,(int)mode);
 		if(np && !(flags&NV_REF))
 		{
 			while(nv_isref(np))
@@ -1757,35 +1760,35 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 				int32_t l=0;
 				if(flags&NV_INTEGER)
 				{
+					Sflong_t ll;
 					if((flags&NV_DOUBLE) == NV_DOUBLE)
 					{
-						Sflong_t ll;
 						if(flags&NV_LONG)
 							ll = *((Sfdouble_t*)sp);
 						else if(flags&NV_SHORT)
 							ll = *((float*)sp);
 						else
 							ll = *((double*)sp);
-						l = (int32_t)ll;
 					}
 					else if(nv_isattr(np,NV_UNSIGN))
 					{
 						if(flags&NV_LONG)
-							l = *((Sfulong_t*)sp);
+							ll = *((Sfulong_t*)sp);
 						else if(flags&NV_SHORT)
-							l = *((uint16_t*)sp);
+							ll = *((uint16_t*)sp);
 						else
-							l = *(uint32_t*)sp;
+							ll = *(uint32_t*)sp;
 					}
 					else
 					{
 						if(flags&NV_LONG)
-							l = *((Sflong_t*)sp);
+							ll = *((Sflong_t*)sp);
 						else if(flags&NV_SHORT)
-							l = *((int16_t*)sp);
+							ll = *((int16_t*)sp);
 						else
-							l = *(int32_t*)sp;
+							ll = *(int32_t*)sp;
 					}
+					l = (int32_t)ll;
 				}
 				else if(sp)
 				{
@@ -1821,7 +1824,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 	else
 	{
 		void *tofree=0;
-		int offset = 0;
+		ssize_t offset = 0;
 		char buff[PATH_MAX];
 		if(flags&NV_INTEGER)
 		{
@@ -1888,15 +1891,15 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 			*vpp = NULL;
 		else
 		{
-			char *cp = NULL;		/* pointer to new string */
-			unsigned int dot;		/* attribute or type length; defaults to string length */
-			unsigned int append = 0;	/* offset for appending */
+			char *cp = NULL;	/* pointer to new string */
+			unsigned int dot;	/* attribute or type length; defaults to string length */
+			size_t append = 0;	/* offset for appending */
 			if(sp==*vpp && !(flags&NV_APPEND))
 				return;
-			dot = strlen(sp);
+			dot = (unsigned int)strlen(sp);
 			if(nv_isattr(np,NV_BINARY))
 			{
-				int oldsize = (flags&NV_APPEND)?nv_size(np):0;
+				size_t oldsize = (flags&NV_APPEND)?nv_size(np):0;
 				if(flags&NV_RAW)
 				{
 					if(tofree)
@@ -1911,7 +1914,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 				if(nv_isattr(np,NV_ZFILL))
 					size = nv_size(np);
 				if(size==0)
-					size = oldsize + (3*dot/4);
+					size = (unsigned int)(oldsize + (3*dot/4));
 				cp = (char*)sh_malloc(size+1);
 				*cp = 0;
 				nv_offattr(np,NV_NOFREE);
@@ -1920,7 +1923,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 				*vpp = cp;
 				if(size <= oldsize)
 					return;
-				dot = base64decode(sp,dot, NULL, cp+oldsize, size-oldsize,NULL);
+				dot = (unsigned int)base64decode(sp,dot, NULL, cp+oldsize, size-oldsize,NULL);
 				dot += oldsize;
 				if(!nv_isattr(np,NV_ZFILL) || nv_size(np)==0)
 					nv_setsize(np,dot);
@@ -2023,9 +2026,8 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
  */
 static void rightjust(char *str, int size, int fill)
 {
-	int n;
 	char *cp,*sp;
-	n = strlen(str);
+	int n = (int)strlen(str);
 
 	/* ignore trailing blanks */
 	for(cp=str+n;n && *--cp == ' ';n--);
@@ -2076,8 +2078,8 @@ static int ja_size(char *str,int size,int type)
 		if((outsize = mbwidth(w)) <0)
 			outsize = 0;
 		size -= outsize;
-		c = cp-oldcp;
-		n += (c-outsize);
+		c = (int)(cp-oldcp);
+		n += (int)(c-outsize);
 		oldcp = cp;
 		if(size<=0 && type==0)
 			break;
@@ -2187,7 +2189,7 @@ static int scanfilter(Namval_t *np, struct scan *sp)
 		{
 			if(sp->scanflags==NV_FUNCTION || sp->scanflags==(NV_NOFREE|NV_BINARY|NV_RAW))
 			{
-				int n = strlen(tp->mapname);
+				size_t n = strlen(tp->mapname);
 				if(strncmp(np->nvname,tp->mapname,n) || np->nvname[n]!='.' || strchr(&np->nvname[n+1],'.'))
 					return 0;
 			}
@@ -2306,7 +2308,7 @@ static void table_unset(Dt_t *root, int flags, Dt_t *oroot)
 		sh.last_table = 0;
 		if(nv_isvtree(np))
 		{
-			int len = strlen(np->nvname);
+			size_t len = strlen(np->nvname);
 			npnext = (Namval_t*)dtnext(root,np);
 			while((nq=npnext) && strncmp(np->nvname,nq->nvname,len)==0 && nq->nvname[len]=='.')
 			{
@@ -2795,6 +2797,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
 	char *sp;
 	char *cp = 0;
 	unsigned int n;
+	size_t len;
 	Namval_t *mp = 0;
 	Namarr_t *ap = 0;
 	int oldsize,oldatts,trans;
@@ -2874,8 +2877,8 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
 				while(*sp=='0') sp++;	/* skip initial zeros */
 				if(!*sp) sp--;		/* if number was 0, leave one zero */
 			}
-			n = strlen(sp);
-			cp = (char*)sh_malloc((n >= (unsigned)size ? n : (unsigned)size) + 1);
+			len = strlen(sp);
+			cp = (char*)sh_malloc((len >= (unsigned)size ? len : (unsigned)size) + 1);
 			strcpy(cp, sp);
 			if(sp && (mp=nv_opensub(np)))
 			{
@@ -2909,7 +2912,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
 				while(c = mbchar(cq))
 					if ((w = mbwidth(c)) > 0)
 						n += w;
-				size = n;
+				size = (int)n;
 			}
 		}
 		else if(!trans)
@@ -3332,7 +3335,7 @@ void nv_setref(Namval_t *np, Dt_t *hp, int flags)
 			ep = nv_getsub(nq);
 		else
 		{
-			int n;
+			size_t n;
 			ep[n=strlen(ep)-1] = 0;
 			nv_putsub(nr, ep, ARRAY_FILL);
 			ep[n] = ']';
@@ -3470,7 +3473,7 @@ char *nv_name(Namval_t *np)
 		if(sh.namespace && is_afunction(np))
 		{
 			char *name = nv_name(sh.namespace);
-			int n = strlen(name);
+			size_t n = strlen(name);
 			if(strncmp(np->nvname,name,n)==0 && np->nvname[n]=='.')
 				return np->nvname+n+1;
 		}

@@ -35,9 +35,10 @@ initconformance(void)
 	char*			m;
 	char**			p;
 	char*			t;
-	int			h;
-	int			i;
-	int			j;
+	size_t			h;
+	size_t			i;
+	size_t			j;
+	ssize_t			d;
 	int			c;
 	Sfio_t*			sp;
 
@@ -58,12 +59,12 @@ initconformance(void)
 				}
 				sfputc(sp, 0);
 				j++;
-				if ((c = (m - t)) == 6 && strneq(t, "linux", 5))
+				if ((d = (m - t)) == 6 && strneq(t, "linux", 5))
 				{
 					sfputr(sp, "gnu", 0);
 					j++;
 				}
-				else if (c > 3 && strneq(t, "bsd", 3) || c == 7 && strneq(t, "debian", 7))
+				else if (d > 3 && strneq(t, "bsd", 3) || d == 7 && strneq(t, "debian", 7))
 				{
 					sfputr(sp, "bsd", 0);
 					j++;

@@ -34,13 +34,13 @@
  * the link text string length is returned
  */
 
-int
-pathgetlink(const char* name, char* buf, int siz)
+ssize_t
+pathgetlink(const char* name, char* buf, size_t siz)
 {
-	int	n;
+	ssize_t n;
 
 	if ((n = readlink(name, buf, siz)) < 0) return -1;
-	if (n >= siz)
+	if (n >= (ssize_t)siz)
 	{
 		errno = EINVAL;
 		return -1;

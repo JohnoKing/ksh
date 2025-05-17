@@ -54,7 +54,7 @@ strexp(char* s, int flags)
 		*t++ = c;
 	}
 	*t = 0;
-	return t - b;
+	return (int)(t - b);
 }
 
 int

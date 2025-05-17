@@ -22,5 +22,5 @@
 int
 puts(const char* s)
 {
-	return sfputr(sfstdout, s, '\n');
+	return (int)sfputr(sfstdout, s, '\n');
 }

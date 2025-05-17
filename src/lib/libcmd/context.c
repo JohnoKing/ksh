@@ -30,10 +30,10 @@
 	char*		buf;		\
 	char*		cur;		\
 	char*		end;		\
-	unsigned int	before;		\
-	unsigned int	after;		\
-	unsigned int	total;		\
-	unsigned int	curline;	\
+	size_t		before;		\
+	size_t		after;		\
+	size_t		total;		\
+	size_t		curline;	\
 	uintmax_t	lineno;		\
 	Context_line_t	line[1];
 
@@ -128,7 +128,7 @@ context_line(Context_t* cp)
 				return 0;
 			cp->end = cp->buf + r;
 			n = (s = memchr(cp->buf, '\n', r)) ? (s - cp->buf + 1) : r;
-			if (n > (e - t))
+			if ((ssize_t)n > (e - t))
 			{
 				r = t - lp->data;
 				m = r + (s - cp->buf);
@@ -150,8 +150,8 @@ context_line(Context_t* cp)
 int
 context_show(Context_t* cp)
 {
-	int	i;
-	int	j;
+	size_t		i;
+	size_t		j;
 
 	j = cp->curline;
 	for (i = 0; i < cp->after; i++)
@@ -178,7 +178,7 @@ context_show(Context_t* cp)
 int
 context_close(Context_t* cp)
 {
-	int	j;
+	size_t		j;
 
 	for (j = 0; j < cp->total; j++)
 	{

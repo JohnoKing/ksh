@@ -309,7 +309,7 @@ main(void)
 
 	k = 0;
 	for (i = 0; map[i].name; i++)
-		if ((j = map[i].value) > 0 && j < elementsof(mapindex) && !mapindex[j])
+		if ((j = map[i].value) > 0 && j < (ssize_t)elementsof(mapindex) && !mapindex[j])
 		{
 			if (j > k)
 				k = j;
@@ -323,9 +323,9 @@ main(void)
 #else
 	j = i;
 #endif
-	if (j >= elementsof(mapindex))
-		j = elementsof(mapindex) - 1;
-	if (i <= j && i > 0 && i < elementsof(mapindex) && j > 0 && j < elementsof(mapindex))
+	if (j >= (ssize_t)elementsof(mapindex))
+		j = (ssize_t)elementsof(mapindex) - 1;
+	if (i <= j && i > 0 && i < (ssize_t)elementsof(mapindex) && j > 0 && j < (ssize_t)elementsof(mapindex))
 	{
 		if (j > k)
 			k = j;

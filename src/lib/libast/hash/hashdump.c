@@ -51,7 +51,7 @@ dumpbucket(Hash_table_t* tab, int flags)
 	Hash_bucket_t**		sp;
 	Hash_bucket_t*		b;
 	Hash_bucket_t**		sx;
-	int			n;
+	size_t			n;
 	unsigned char*		s;
 
 	NoP(flags);
@@ -64,7 +64,7 @@ dumpbucket(Hash_table_t* tab, int flags)
 				n++;
 		if (n)
 		{
-			sfprintf(sfstderr, "%5d %2d :", sp - tab->table, n);
+			sfprintf(sfstderr, "%5d %2zu :", sp - tab->table, n);
 			for (b = *sp; b; b = b->next)
 				if (!(b->hash & HASH_DELETED) && (!(tab->flags & HASH_VALUE) || b->value))
 				{

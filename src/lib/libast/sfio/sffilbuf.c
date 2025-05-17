@@ -28,10 +28,10 @@
 **	Written by Kiem-Phong Vo
 */
 
-int _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
-	      int	n)	/* see above */
+ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
+		  ssize_t	n)	/* see above */
 {
-	ssize_t		r;
+	ssize_t		r, ret;
 	int		first, local, rcrv, rc, justseek;
 
 	if(!f)
@@ -86,7 +86,7 @@ int _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 			if(n > 0)
 			{	if(r > n && f->extent < 0 && (f->flags&SFIO_SHARE) )
 					r = n;	/* read only as much as requested */
-				else if(justseek && n <= f->iosz && f->iosz <= f->size)
+				else if(justseek && n <= (ssize_t)f->iosz && (ssize_t)f->iosz <= f->size)
 					r = f->iosz;	/* limit buffer filling */
 			}
 		}
@@ -102,7 +102,7 @@ int _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 
 	SFOPEN(f,local);
 
-	rcrv = (n == 0) ? (r > 0 ? (int)(*f->next++) : EOF) : (int)r;
+	ret = (n == 0) ? (r > 0 ? *f->next++ : EOF) : r;
 
-	return rcrv;
+	return ret;
 }

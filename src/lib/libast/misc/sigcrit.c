@@ -56,7 +56,7 @@ signals[] =		/* held inside critical region	*/
 int
 sigcritical(int op)
 {
-	int			i;
+	size_t			i;
 	static int		region;
 	static int		level;
 	static sigset_t		mask;

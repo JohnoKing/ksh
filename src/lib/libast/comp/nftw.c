@@ -37,8 +37,8 @@ nftw_user(Ftw_t* ftw)
 		n = FTW_DNR;
 	else if ((n & FTW_SL) && (!(nftw_flags & FTW_PHYSICAL) || stat(ftw->path, &st)))
 		n = FTW_SLN;
-	nftw.base = ftw->pathlen - ftw->namelen;
-	nftw.level = ftw->level;
+	nftw.base = (int)(ftw->pathlen - ftw->namelen);
+	nftw.level = (int)ftw->level;
 	nftw.quit = 0;
 	n = (*nftw_userf)(ftw->path, &ftw->statb, n, &nftw);
 	ftw->status = nftw.quit;

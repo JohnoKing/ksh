@@ -63,7 +63,7 @@ static const char usage[] =
 static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
 {
 	char *cp1, *cp2;
-	int n1 = 0, n2 = 0, n, comp;
+	ssize_t n1 = 0, n2 = 0, n, comp;
 	if(cp1 = sfgetr(in1,'\n',0))
 		n1 = sfvalue(in1);
 	if(cp2 = sfgetr(in2,'\n',0))

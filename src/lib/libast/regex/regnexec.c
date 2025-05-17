@@ -162,7 +162,7 @@ vecopen(int inc, int siz)
 }
 
 static void*
-vecseek(Vector_t** p, int index)
+vecseek(Vector_t** p, ssize_t index)
 {
 	Vector_t*	v = *p;
 
@@ -574,7 +574,7 @@ parsetrie(Env_t* env, Trie_node_t* x, Rex_t* rex, Rex_t* cont, unsigned char* s)
 }
 
 static int
-collelt(Celt_t* ce, char* key, int c, int x)
+collelt(Celt_t* ce, char* key, int c, ssize_t x)
 {
 	Ckey_t	elt;
 
@@ -610,7 +610,7 @@ collelt(Celt_t* ce, char* key, int c, int x)
 }
 
 static int
-collic(Celt_t* ce, char* key, char* nxt, int c, int x)
+collic(Celt_t* ce, char* key, char* nxt, int c, ssize_t x)
 {
 	if (!x)
 	{
@@ -646,9 +646,10 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 {
 	unsigned char*		t;
 	wchar_t			c;
-	int			w;
+	size_t			z;
 	int			r;
-	int			x;
+	ssize_t			w;
+	ssize_t			x;
 	int			ic;
 	Ckey_t			key;
 	Ckey_t			elt;
@@ -682,12 +683,12 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 				c = s[w];
 				if (!isalpha(c))
 					break;
-				r = mbxfrm(elt, key, COLL_KEY_MAX);
+				z = mbxfrm(elt, key, COLL_KEY_MAX);
 				if (ic && isupper(c))
 					c = tolower(c);
 				key[w] = c;
 				key[w + 1] = 0;
-				if (mbxfrm(elt, key, COLL_KEY_MAX) != r)
+				if (mbxfrm(elt, key, COLL_KEY_MAX) != z)
 					break;
 				w++;
 			}
@@ -831,7 +832,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 					((Pos_t*)env->pos->vec + env->pos->cur - 1)->serial = catcher.serial = rex->re.group.expr.binary.serial;
 					n = parse(env, rex->re.group.expr.binary.right, &catcher, s);
 					if (n != NONE)
-						r = n;
+						r = (int)n;
 				}
 				pospop(env);
 				matchpop(env, rex);
@@ -1032,7 +1033,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			if (!env->stack)
 				return BEST;
 			n = s - env->beg;
-			r = env->nsub;
+			r = (int)env->nsub;
 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
 			if ((i = env->best[0].rm_eo) >= 0)
 			{
@@ -1468,7 +1469,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 						for (i = 0; s < e && i < n; i++, s = t)
 						{
 							t = s;
-							if (towupper(mbchar(t)) != c)
+							if (towupper(mbchar(t)) != (wint_t)c)
 								break;
 							b[i] = t - s;
 						}
@@ -1576,7 +1577,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 						for (i = 0; i < m && s < e; i++, s = t)
 						{
 							t = s;
-							if (towupper(mbchar(t)) != c)
+							if (towupper(mbchar(t)) != (wint_t)c)
 								return r;
 						}
 						while (i++ <= n)
@@ -1593,7 +1594,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 							}
 							if (s >= e)
 								break;
-							if (towupper(mbchar(s)) != c)
+							if (towupper(mbchar(s)) != (wint_t)c)
 								break;
 						}
 					}
@@ -1635,7 +1636,7 @@ DEBUG_TEST(0x0002,(sfprintf(sfstdout, "AHA#%04d %p re.group.back=%d re.group.exp
 			return r;
 		case REX_STRING:
 DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'\n", __LINE__, debug_flag, rexname(rex), rex->re.string.size, rex->re.string.base, env->end - s, s)),(0));
-			if (rex->re.string.size > (env->end - s))
+			if (rex->re.string.size > (size_t)(env->end - s))
 				return NONE;
 			t = rex->re.string.base;
 			e = t + rex->re.string.size;
@@ -1657,7 +1658,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
 				{
 					c = mbchar(s);
 					d = mbchar(t);
-					if (towupper(c) != d)
+					if (towupper(c) != (wint_t)d)
 						return NONE;
 				}
 			}
@@ -1780,9 +1781,9 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
 {
 	ssize_t		n = 0;
 	int		i;
-	int		j;
+	size_t		j;
 	int		k;
-	int		m;
+	size_t		m;
 	int		advance;
 	Env_t*		env;
 
@@ -1826,7 +1827,7 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
 	DEBUG_TEST(0x1000,(list(env,env->rex)),(0));
 	k = REG_NOMATCH;
 	j = env->once || (flags & REG_LEFT);
-	DEBUG_TEST(0x0080,(sfprintf(sfstdout, "AHA#%04d parse once=%d\n", __LINE__, j)),(0));
+	DEBUG_TEST(0x0080,(sfprintf(sfstdout, "AHA#%04d parse once=%zu\n", __LINE__, j)),(0));
 	while ((i = parse(env, env->rex, &env->done, (unsigned char*)s)) == NONE || advance && !env->best[0].rm_eo && !(advance = 0))
 	{
 		if (j)
@@ -1917,7 +1918,7 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
 	if (oldmatch)
 	{
 		regmatch_t*	match;
-		ssize_t		i;
+		size_t		i;
 		int		r;
 
 		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
@@ -1925,8 +1926,8 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
 		if (!(r = regnexec_20120528(p, s, len, nmatch, match, flags)))
 			for (i = 0; i < nmatch; i++)
 			{
-				oldmatch[i].rm_so = match[i].rm_so;
-				oldmatch[i].rm_eo = match[i].rm_eo;
+				oldmatch[i].rm_so = (int)match[i].rm_so;
+				oldmatch[i].rm_eo = (int)match[i].rm_eo;
 			}
 		free(match);
 		return r;

@@ -60,7 +60,7 @@ recfmt(const void* buf, size_t size, off_t total)
 
 	s = (unsigned char*)buf;
 	t = s + size;
-	while ((k = (t - s)) >= 4 && !s[2] && !s[3])
+	while ((k = (unsigned int)(t - s)) >= 4 && !s[2] && !s[3])
 	{
 		if ((i = (s[0]<<8)|s[1]) > k)
 			break;
@@ -75,7 +75,7 @@ recfmt(const void* buf, size_t size, off_t total)
 	 */
 
 	for (i = 0; i < elementsof(terminators); i++)
-		if ((t = (unsigned char*)memchr(s, k = terminators[i], size / 2)) && (n = t - s + 1) > 1 && (total <= 0 || !(total % n)))
+		if ((t = (unsigned char*)memchr(s, k = terminators[i], size / 2)) && (n = (unsigned int)(t - s + 1)) > 1 && (total <= 0 || !(total % n)))
 		{
 			for (j = n - 1; j < size; j += n)
 				if (s[j] != k)
@@ -134,7 +134,7 @@ recfmt(const void* buf, size_t size, off_t total)
 			for (j = 0; j < elementsof(terminators); j++)
 				if (s[i] == terminators[j])
 					n++;
-		n = n ? 0 : total;
+		n = n ? 0 : (unsigned int)total;
 	}
 	free(q);
 	return n ? REC_F_TYPE(n) : REC_N_TYPE();

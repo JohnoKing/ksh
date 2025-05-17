@@ -53,9 +53,9 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 	int		children;
 	int		rv;
 	int		oi;
-	int		ns;
 	int		os;
-	int		nd;
+	size_t		ns;
+	size_t		nd;
 	FTSENT*		x;
 	FTSENT*		dd[2];
 
@@ -142,7 +142,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 		}
 		rv = (*userf)((Ftw_t*)e);
 		e->info = oi;
-		if (e->status == ns)
+		if (e->status == (ssize_t)ns)
 			e->status = os;
 		while (nd > 0)
 			dd[--nd]->info |= FTS_DD;

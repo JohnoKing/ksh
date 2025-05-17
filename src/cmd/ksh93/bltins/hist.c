@@ -91,7 +91,7 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
 	    case 'N':
 		if(indx<=0)
 		{
-			if((flag = hist_max(hp) - opt_info.num-1) < 0)
+			if((flag = hist_max(hp) - (int)opt_info.num-1) < 0)
 				flag = 1;
 			range[++indx] = flag;
 			break;

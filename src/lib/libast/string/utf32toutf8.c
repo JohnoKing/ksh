@@ -51,7 +51,7 @@ static const Utf8_t	ops[] =
 size_t
 utf32toutf8(char* s, uint32_t w)
 {
-	int	i;
+	size_t	i;
 	char*	b;
 	char	tmp[UTF8_LEN_MAX];
 

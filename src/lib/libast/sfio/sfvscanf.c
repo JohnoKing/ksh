@@ -172,7 +172,8 @@ static char* _sfsetclass(const char*	form,	/* format string			*/
 #if _has_multibyte
 static int _sfwaccept(wchar_t wc, Accept_t* ac)
 {
-	int		endc, c, n;
+	int		endc, c;
+	size_t		n;
 	wchar_t		fwc;
 	char		*form = ac->form;
 	SFMBDCL(mbs)
@@ -211,7 +212,8 @@ static int _sfgetwc(Scan_t*	sc,	/* the scanning handle		*/
 		    Accept_t*	ac,	/* accept handle for %[		*/
 		    void*	mbs)	/* multibyte parsing state	*/
 {
-	int		n, v;
+	size_t		n;
+	int		v;
 	unsigned char	b[16];		/* assuming that SFMBMAX <= 16! */
 
 	/* shift left data so that there will be more room to back up on error.

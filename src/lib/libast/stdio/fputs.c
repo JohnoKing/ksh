@@ -22,5 +22,5 @@
 int
 fputs(const char* s, Sfio_t* f)
 {
-	return sfputr(f, s, -1);
+	return (int)sfputr(f, s, -1);
 }

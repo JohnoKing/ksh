@@ -80,7 +80,7 @@ strgid(const char* name)
 		id = pw->pw_gid;
 	else
 	{
-		id = strtol(name, &e, 0);
+		id = (int)strtol(name, &e, 0);
 #if _WINIX
 		if (!*e)
 		{

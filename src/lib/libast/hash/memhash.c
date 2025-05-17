@@ -29,12 +29,12 @@
  * return the hash of buffer s of length n
  */
 
-unsigned int
+size_t
 memhash(const void* as, int n)
 {
 	const unsigned char*	s = (const unsigned char*)as;
 	const unsigned char*	e = s + n;
-	unsigned int		c = 0;
+	size_t			c = 0;
 
 	while (s < e) HASHPART(c, *s++);
 	return c;

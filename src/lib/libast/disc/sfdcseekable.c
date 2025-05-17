@@ -63,7 +63,7 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
 
 	addr = sfseek(sf,0,SEEK_CUR);
 
-	if(addr+n <= sk->extent)
+	if((ssize_t)(addr+n) <= sk->extent)
 		return sfread(sf,buf,n);
 
 	if((r = (ssize_t)(sk->extent-addr)) > 0)
@@ -122,7 +122,7 @@ static Sfoff_t skseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
 
 		/* read enough to reach the seek point */
 		while(addr > sk->extent)
-		{	if(addr > sk->extent+sizeof(buf) )
+		{	if(addr > sk->extent+(ssize_t)sizeof(buf) )
 				w = sizeof(buf);
 			else	w = (int)(addr-sk->extent);
 			if((r = sfrd(f,buf,w,disc)) <= 0)

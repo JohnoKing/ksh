@@ -306,7 +306,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 	char*		d;
 	char*		v;
 	char*		p;
-	int		n;
+	ssize_t		n;
 
 #if DEBUG_astconf
 	if (fp)
@@ -320,7 +320,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 		char*		de;
 		char*		ve;
 
-		state.prefix = strlen(state.name) + 1;
+		state.prefix = (int)strlen(state.name) + 1;
 		n = state.prefix + 3 * MAXVAL;
 		if ((s = getenv(state.name)) || getenv(state.strict) && (s = (char*)state.standard))
 			n += strlen(s) + 1;
@@ -393,7 +393,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 			for (; isspace(*s); s++);
 			for (v = s; *s && !isspace(*s); s++);
 			n = s - v;
-			if ((!path || *path == *p && strlen(path) == (v - p - 1) && !memcmp(path, p, v - p - 1)) && strneq(v, value, n))
+			if ((!path || *path == *p && (ssize_t)strlen(path) == (v - p - 1) && !memcmp(path, p, v - p - 1)) && strneq(v, value, n))
 				goto ok;
 			for (; isspace(*s); s++);
 			if (*s)
@@ -423,11 +423,11 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 		value = "0";
 	if (!path || !path[0] || path[0] == '/' && !path[1])
 		path = "-";
-	n += strlen(path) + strlen(value) + 3;
+	n += (ssize_t)(strlen(path) + strlen(value) + 3);
 	if (d + n >= state.last)
 	{
-		int	c;
-		int	i;
+		ssize_t	c;
+		ssize_t	i;
 
 		i = d - state.data;
 		state.data -= state.prefix;
@@ -508,7 +508,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
 	default:
 		if (p = getenv("PATH"))
 		{
-			int		r = 1;
+			ssize_t		r = 1;
 			char*		d = p;
 			Sfio_t*		tmp;
 
@@ -701,7 +701,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 			{
 				if (!(fp->flags & CONF_ALLOC))
 					fp->value = 0;
-				n = strlen(value);
+				n = (int)strlen(value);
 				if (!(fp->value = newof(fp->value, char, n, 1)))
 					fp->value = null;
 				else
@@ -757,7 +757,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 			return NULL;
 		if (state.notify && !(*state.notify)(name, path, value))
 			return NULL;
-		n = strlen(name);
+		n = (int)strlen(name);
 		if (!(fp = newof(0, Feature_t, 1, n + 1)))
 		{
 			if (conferror)
@@ -939,7 +939,6 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 	char*		f;
 	const char*	s;
 	int		i;
-	int		n;
 	int		olderrno;
 	int		drop;
 	int		defined;
@@ -1084,7 +1083,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 		{
 			if (streq(p->name, "RELEASE") && (i = open("/proc/version", O_RDONLY|O_cloexec)) >= 0)
 			{
-				n = read(i, buf, sizeof(buf) - 1);
+				ssize_t n = read(i, buf, sizeof(buf) - 1);
 				close(i);
 				if (n > 0 && buf[n - 1] == '\n')
 					n--;
@@ -1354,7 +1353,7 @@ char*
 astgetconf(const char* name, const char* path, const char* value, int flags, Error_f conferror)
 {
 	char*		s;
-	int		n;
+	size_t		n;
 	Lookup_t	look;
 	Sfio_t*		tmp;
 

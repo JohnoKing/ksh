@@ -74,7 +74,7 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
 	for(;; f->mode &= ~SFIO_LOCK)
 	{	/* check stream mode */
 		if(SFMODE(f,local) != SFIO_READ && _sfmode(f,SFIO_READ,local) < 0)
-		{	n = s > begs ? s-begs : (size_t)(-1);
+		{	n = s > begs ? (size_t)(s-begs) : (size_t)(-1);
 			return (ssize_t)n;
 		}
 
@@ -100,7 +100,7 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
 			if(SFDIRECT(f,n) ||
 			   ((f->flags&SFIO_SHARE) && f->extent < 0) )
 				r = (ssize_t)n;
-			else if(justseek && n <= f->iosz && f->iosz <= f->size)
+			else if(justseek && n <= f->iosz && f->iosz <= (size_t)f->size)
 				r = f->iosz;	/* limit buffering */
 			else	r = f->size;	/* full buffering */
 

@@ -211,7 +211,8 @@ const Namdisc_t ENUM_disc = { 0, put_enum, get_enum, nv_getn, 0, 0, clone_enum }
 
 int b_enum(int argc, char** argv, Shbltin_t *context)
 {
-	int			sz,i,n,iflag = 0;
+	int			i,iflag = 0;
+	size_t			sz,n;
 	Namval_t		*np, *tp;
 	Namarr_t		*ap;
 	char			*cp,*sp;

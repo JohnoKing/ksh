@@ -31,9 +31,9 @@ fmtelapsed(unsigned long u, int n)
 	char*		buf;
 	int		z;
 
-	if (u == 0L)
+	if (u == 0UL)
 		return "0";
-	if (u == ~0L)
+	if (u == ~0UL)
 		return "%";
 	buf = fmtbuf(z = 8);
 	t = u / n;

@@ -22,7 +22,7 @@
 #include <tv.h>
 
 int
-asorelax(long nsec)
+asorelax(uint32_t nsec)
 {
 	Tv_t		tv;
 

@@ -603,7 +603,7 @@ static const unsigned char tab[] =
 };
 
 #define MAP	256
-#define MAPS	(sizeof(tab)/MAP)
+#define MAPS	((int)sizeof(tab)/MAP)
 
 struct Map_s; typedef struct Map_s Map_t;
 

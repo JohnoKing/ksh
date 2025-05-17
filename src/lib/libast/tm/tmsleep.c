@@ -28,7 +28,7 @@
 #include <tv.h>
 
 int
-tmsleep(time_t sec, time_t nsec)
+tmsleep(time_t sec, uint32_t nsec)
 {
 	Tv_t	tv;
 

@@ -143,7 +143,7 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
 			 */
 
 			made = 0;
-			n = strlen(path);
+			n = (int)strlen(path);
 			while (n > 0 && path[--n] == '/');
 			path[n + 1] = 0;
 			for (part = path, n = *part; n;)

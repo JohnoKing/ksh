@@ -33,11 +33,11 @@ char*
 hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 {
 	Hash_bucket_t*	b;
-	unsigned int	n;
+	size_t		n;
 	Hash_last_t*	last;
 	Hash_table_t*	top;
 	Hash_bucket_t*	prev;
-	unsigned int	i;
+	size_t		i;
 
 	if ((flags & (HASH_LOOKUP|HASH_INTERNAL)) == (HASH_LOOKUP|HASH_INTERNAL))
 	{
@@ -209,7 +209,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 				}
 				else
 				{
-					int	m;
+					size_t	m;
 					char*	t;
 
 					if (!(i = tab->bucketsize))
@@ -279,7 +279,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 	}
 	else
 	{
-		int	m = tab->bucketsize * sizeof(char*);
+		size_t	m = tab->bucketsize * sizeof(char*);
 
 		if (flags & HASH_VALUE)
 		{

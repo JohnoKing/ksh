@@ -26,7 +26,8 @@
 Sfdouble_t sfgetd(Sfio_t* f)
 {
 	uchar		*s, *ends, c;
-	int		p, sign, exp;
+	int		sign, exp;
+	ssize_t		p;
 	Sfdouble_t	v;
 
 	if(!f || (sign = sfgetc(f)) < 0 || (exp = (int)sfgetu(f)) < 0)

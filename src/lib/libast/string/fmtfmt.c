@@ -47,15 +47,15 @@ fmtfmt(const char* as)
 {
 	char*		s = (char*)as;
 	char*		buf;
-	int		i;
+	size_t		i;
 	int		c;
 	int		a;
 	int		q;
 	int		x;
 	int		t;
-	int		m;
+	size_t		m;
 	int		n;
-	int		z;
+	size_t		z;
 	char		formats[256];
 	unsigned int	extra[elementsof(formats)];
 

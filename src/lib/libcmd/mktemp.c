@@ -136,7 +136,7 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
 	}
 	if (t = strrchr(pfx, '/'))
 	{
-		i = ++t - pfx;
+		i = (int)(++t - pfx);
 		dir = fmtbuf(i);
 		memcpy(dir, pfx, i);
 		dir[i] = 0;

@@ -29,7 +29,7 @@
 void
 systrace(const char* id)
 {
-	int		n;
+	size_t		n;
 	char*		out;
 	char*		s;
 	char		buf[PATH_MAX];

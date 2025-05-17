@@ -738,7 +738,7 @@ static struct regnod*	syncase(Lex_t *lexp,int esym)
 static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
 {
 	Shnode_t	*t, *tw = tf;
-	int		offset;
+	ssize_t		offset;
 	struct argnod	*argp;
 	int		n;
 	int		argflag = lexp->arg->argflag;
@@ -762,7 +762,7 @@ static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
 		if(!lexp->token)
 			break;
 		/* remove trailing white space */
-		while(offset>ARGVAL && ((c= *stkptr(sh.stk,offset-1)),isspace(c)))
+		while(offset>(signed)ARGVAL && ((c= *stkptr(sh.stk,offset-1)),isspace(c)))
 			offset--;
 		/* check for empty initialization expression */
 		if(offset==ARGVAL && n==0)
@@ -819,7 +819,8 @@ static Shnode_t *funct(Lex_t *lexp)
 #if SHOPT_KIA
 	unsigned long current = kia.current;
 #endif /* SHOPT_KIA */
-	int nargs=0,size=0,jmpval;
+	ssize_t nargs=0;
+	int size=0,jmpval;
 	struct  checkpt buff;
 	int save_optget = opt_get;
 	void	*in_mktype = sh.mktype;
@@ -997,25 +998,26 @@ static int check_array(Lex_t *lexp)
 static struct argnod *assign(Lex_t *lexp, struct argnod *ap, int type)
 {
 	int n;
+	size_t len;
 	Shnode_t *t, **tp;
 	struct comnod *ac = NULL;
 	int array=0, index=0;
 	Namval_t *np;
 	lexp->assignlevel++;
-	n = strlen(ap->argval)-1;
-	if(ap->argval[n]!='=')
+	len = strlen(ap->argval)-1;
+	if(ap->argval[len]!='=')
 		sh_syntax(lexp,0);
-	if(ap->argval[n-1]=='+')
+	if(ap->argval[len-1]=='+')
 	{
-		ap->argval[n--]=0;
+		ap->argval[len--]=0;
 		array = ARG_APPEND;
 		type |= NV_APPEND;
 	}
 	/* shift right */
-	while(n > 0)
+	while(len > 0)
 	{
-		ap->argval[n] = ap->argval[n-1];
-		n--;
+		ap->argval[len] = ap->argval[len-1];
+		len--;
 	}
 	*ap->argval=0;
 	t = getnode(fornod);
@@ -1857,7 +1859,7 @@ static struct argnod *qscan(struct comnod *ac,int argn)
 			errormsg(SH_DICT,ERROR_warn(0),message,ac->comline);
 	}
 	/* leave space for an extra argument at the front */
-	dp = stkalloc(sh.stk,(unsigned)sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + argn*sizeof(char*));
+	dp = stkalloc(sh.stk,sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + argn*sizeof(char*));
 	cp = dp->dolval+ARG_SPARE;
 	dp->dolnum = argn;
 	dp->dolbot = ARG_SPARE;
@@ -2035,7 +2037,7 @@ static Shnode_t *test_primary(Lex_t *lexp)
 unsigned long kiaentity(Lex_t *lexp,const char *name,int len,int type,int first,int last,unsigned long parent, int pkind, int width, const char *attr)
 {
 	Namval_t *np;
-	long offset = stktell(sh.stk);
+	ssize_t offset = stktell(sh.stk);
 	sfputc(sh.stk,type);
 	if(len>0)
 		sfwrite(sh.stk,name,len);

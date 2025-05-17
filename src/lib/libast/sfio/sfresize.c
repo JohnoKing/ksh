@@ -38,7 +38,7 @@ int sfresize(Sfio_t* f, Sfoff_t size)
 		{	if((f->flags&SFIO_MALLOC) && (f->next - f->data) <= size)
 			{	size_t	s = (((size_t)size + 1023)/1024)*1024;
 				void*	d;
-				if(s < f->size && (d = realloc(f->data, s)) )
+				if(s < (size_t)f->size && (d = realloc(f->data, s)) )
 				{	f->data = d;
 					f->size = s;
 					f->extent = s;

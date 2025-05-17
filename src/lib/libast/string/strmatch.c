@@ -139,7 +139,7 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, int n, int fl
 		return 0;
 	if (!sub || n <= 0)
 		return 1;
-	i = re->re_nsub;
+	i = (int)re->re_nsub;
 	if (flags & STR_INT)
 	{
 		int*	subi = (int*)sub;
@@ -147,8 +147,8 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, int n, int fl
 
 		for (n = 0; subi < endi && n <= i; n++)
 		{
-			*subi++ = matchstate.match[n].rm_so;
-			*subi++ = matchstate.match[n].rm_eo;
+			*subi++ = (int)matchstate.match[n].rm_so;
+			*subi++ = (int)matchstate.match[n].rm_eo;
 		}
 	}
 	else

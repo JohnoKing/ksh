@@ -267,7 +267,7 @@ S2I_function(const char* a, char** e, int base)
 				if (n >= 2 && n <= 64)
 				{
 					k = s = p + 1;
-					base = n;
+					base = (int)n;
 				}
 			}
 			else if (base)
@@ -551,9 +551,9 @@ S2I_function(const char* a, char** e, int base)
 				}
 				else
 #if S2I_unsigned
-				if (shift >= (sizeof(S2I_type) * CHAR_BIT))
+				if (shift >= ((ssize_t)sizeof(S2I_type) * CHAR_BIT))
 #else
-				if (shift >= (sizeof(S2I_type) * CHAR_BIT - 1))
+				if (shift >= ((ssize_t)sizeof(S2I_type) * CHAR_BIT - 1))
 #endif
 				{
 					v = 0;

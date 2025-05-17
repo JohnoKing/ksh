@@ -139,8 +139,8 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 		{	Sfdouble_t	g;
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
-			if(n_digit <= 0 || n_digit >= (size - 9))
-				n_digit = size - 9;
+			if(n_digit <= 0 || (unsigned)n_digit >= (size - 9))
+				n_digit = (int)size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexpl(f, &x);
@@ -287,8 +287,8 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 		{	double		g;
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
-			if(n_digit <= 0 || n_digit >= (size - 9))
-				n_digit = size - 9;
+			if(n_digit <= 0 || (unsigned)n_digit >= (size - 9))
+				n_digit = (int)size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexp(f, &x);
@@ -427,7 +427,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
  done:
 	*--ep = '\0';
 	if(len)
-		*len = ep-b;
+		*len = (int)(ep-b);
 	return b;
  around:
 	if (((m >> x) & 0xf) >= 8)

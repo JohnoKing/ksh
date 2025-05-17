@@ -102,7 +102,7 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
 	int		c;
 	int		m;
 	int		argc;
-	long		x;
+	int		x;
 
 	char**		post = 0;
 
@@ -120,18 +120,18 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
 			else
 				n += strlen(*p) + 1;
 		}
-		argc = p - argv;
+		argc = (int)(p - argv);
 	}
 	else
 		argc = 0;
 	for (p = environ; *p; p++)
 		n += sizeof(char**) + strlen(*p) + 1;
-	if ((x = astconf_long(CONF_ARG_MAX)) <= 0)
+	if ((x = (int)astconf_long(CONF_ARG_MAX)) <= 0)
 		x = ARG_MAX;
 	if (size <= 0 || size > x)
 		size = x;
 	sh = pathshell();
-	m = n + (argc + 4) * sizeof(char**) + strlen(sh) + 1;
+	m = (int)(n + (argc + 4) * sizeof(char**) + strlen(sh) + 1);
 	m = roundof(m, sizeof(char**));
 	if (size < m)
 	{
@@ -144,7 +144,7 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
 	if (size > (x - m))
 		size = x - m;
 	n = size - n;
-	m = ((disc->flags & CMD_INSERT) && argpat) ? (strlen(argpat) + 1) : 0;
+	m = ((disc->flags & CMD_INSERT) && argpat) ? ((int)strlen(argpat) + 1) : 0;
 	if (!(cmd = newof(0, Cmdarg_t, 1, n + m)))
 	{
 		if (disc->errorf)
@@ -218,7 +218,7 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
 	cmd->laststr = cmd->nextstr = cmd->buf + n;
 	cmd->argmax = argmax;
 	cmd->flags = disc->flags;
-	cmd->offset = ((cmd->postarg = post) ? (argc - (post - argv)) : 0) + 3;
+	cmd->offset = ((cmd->postarg = post) ? (argc - (int)(post - argv)) : 0) + 3;
 	return cmd;
 }
 

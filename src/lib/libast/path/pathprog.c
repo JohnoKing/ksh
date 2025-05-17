@@ -43,6 +43,7 @@ static size_t
 prog(const char* command, char* path, size_t size)
 {
 	ssize_t		n;
+	size_t		len;
 	char*		s;
 #if _WINIX
 	char*		t;
@@ -57,7 +58,7 @@ prog(const char* command, char* path, size_t size)
 #ifdef _PROC_PROG
 	if ((n = readlink(_PROC_PROG, path, size)) > 0 && *path == '/')
 	{
-		if (n < size)
+		if ((size_t)n < size)
 			path[n] = 0;
 		return n;
 	}
@@ -103,17 +104,17 @@ prog(const char* command, char* path, size_t size)
 	}
 	return 0;
  found:
-	n = strlen(s);
-	if (n < size)
-		memcpy(path, s, n + 1);
-	return n;
+	len = strlen(s);
+	if (len < size)
+		memcpy(path, s, len + 1);
+	return len;
 }
 
 size_t
 pathprog(const char* command, char* path, size_t size)
 {
 	char*		rel;
-	ssize_t		n;
+	size_t		n;
 
 	if ((n = prog(command, path, size)) > 0 && n < size && *path != '/' && (rel = strdup(path)))
 	{

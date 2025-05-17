@@ -66,7 +66,7 @@ fixup(Lc_info_t* li, char** b)
 {
 	char**			v;
 	char**			e;
-	int			n;
+	unsigned int		n;
 
 	static int		must[] =
 	{
@@ -510,8 +510,8 @@ native_lc_time(Lc_info_t* li)
 	char*	s;
 	char*	t;
 	char**	b;
-	int	n;
-	int	i;
+	size_t	n;
+	unsigned int	i;
 
 	n = 0;
 	for (i = 0; i < elementsof(map); i++)

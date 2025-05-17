@@ -270,7 +270,7 @@ mcopen(Sfio_t* ip)
 
 		mc->nstrs = sfgetu(ip);
 		mc->nmsgs = sfgetu(ip);
-		mc->num = sfgetu(ip);
+		mc->num = (int)sfgetu(ip);
 		if (sfeof(ip))
 			goto bad;
 	}
@@ -294,12 +294,12 @@ mcopen(Sfio_t* ip)
 	 * get the set dimensions and initialize the msg pointers
 	 */
 
-	while (i = sfgetu(ip))
+	while (i = (int)sfgetu(ip))
 	{
 		if (i > mc->num)
 			goto bad;
 		n = sfgetu(ip);
-		mc->set[i].num = n;
+		mc->set[i].num = (int)n;
 		mc->set[i].msg = mp;
 		mp += n + 1;
 	}
@@ -320,7 +320,7 @@ mcopen(Sfio_t* ip)
 	 * read the string table
 	 */
 
-	if (sfread(ip, rp, mc->nstrs) != mc->nstrs || sfgetc(ip) != EOF)
+	if (sfread(ip, rp, mc->nstrs) != (ssize_t)mc->nstrs || sfgetc(ip) != EOF)
 		goto bad;
 	if (!(mc->tmp = sfstropen()))
 		goto bad;
@@ -344,7 +344,7 @@ mcget(Mc_t* mc, int set, int num, const char* msg)
 {
 	char*		s;
 	size_t		n;
-	int		p;
+	ssize_t		p;
 
 	if (!mc || set < 0 || set > mc->num || num < 1 || num > mc->set[set].num || !(s = mc->set[set].msg[num]))
 		return (char*)msg;
@@ -512,7 +512,7 @@ mcdump(Mc_t* mc, Sfio_t* op)
 {
 	int		i;
 	int		j;
-	int		n;
+	size_t		n;
 	char*		s;
 	Mcset_t*	sp;
 
@@ -618,7 +618,7 @@ mcindex(const char* s, char** e, int* set, int* msg)
 	char*		t;
 
 	m = 0;
-	n = strtol(s, &t, 0);
+	n = (int)strtol(s, &t, 0);
 	if (t == (char*)s)
 	{
 		SFCVINIT();
@@ -635,7 +635,7 @@ mcindex(const char* s, char** e, int* set, int* msg)
 		s = (const char*)t;
 	r = n;
 	if (*s)
-		m = strtol(s + 1, e, 0);
+		m = (int)strtol(s + 1, e, 0);
 	else
 	{
 		if (e)

@@ -140,8 +140,8 @@ struct Tail_s
 	Sfoff_t		cur;
 	Sfoff_t		end;
 	unsigned long	expire;
-	long		dev;
-	long		ino;
+	dev_t		dev;
+	ino_t		ino;
 	int		fifo;
 };
 
@@ -221,7 +221,7 @@ pipetail(Sfio_t* infile, Sfio_t* outfile, Sfoff_t number, int delim)
 	Sfoff_t		offset[2];
 	Sfio_t*		tmp[2];
 
-	if (delim < 0 && a > number)
+	if (delim < 0 && (ssize_t)a > number)
 		a = number;
 	out = tmp[0] = sftmp(a);
 	tmp[1] = sftmp(a);
@@ -567,7 +567,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 				{
 				case 0:
 					if (r)
-						opt_info.offset = t - r - 1;
+						opt_info.offset = (int)(t - r - 1);
 					break;
 				case 'c':
 					flags &= ~LINES;
@@ -584,7 +584,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 				default:
 					error(2, "%s: invalid suffix", t - 1);
 					if (r)
-						opt_info.offset = strlen(r);
+						opt_info.offset = (int)strlen(r);
 					break;
 				}
 				break;

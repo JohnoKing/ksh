@@ -80,8 +80,7 @@ static int e3(struct test*);
 
 static int test_strmatch(const char *str, const char *pat)
 {
-	int match[2*(MATCH_MAX+1)],n;
-	int c, m=0;
+	int match[2*(MATCH_MAX+1)],n,c,m=0;
 	const char *cp=pat;
 	while(c = *cp++)
 	{
@@ -94,8 +93,8 @@ static int test_strmatch(const char *str, const char *pat)
 		m++;
 	else
 		match[0] = 0;
-	if(m >  elementsof(match)/2)
-		m = elementsof(match)/2;
+	if(m > (int)elementsof(match)/2)
+		m = (int)elementsof(match)/2;
 	n = strgrpmatch(str, pat, (ssize_t*)match, m, STR_GROUP|STR_MAXIMAL|STR_LEFT|STR_RIGHT|STR_INT);
 	if(m==0 && n==1)
 		match[1] = (int)strlen(str);
@@ -355,7 +354,7 @@ static int e3(struct test *tp)
 		 */
 		if(cp)
 		{
-			op = strtol(cp,&binop, 10);
+			op = (int)strtol(cp,&binop, 10);
 			return *binop ? 0 : tty_check(op);
 		}
 		else
@@ -482,7 +481,7 @@ int test_unop(int op,const char *arg)
 	    case 't':
 	    {
 		char *last;
-		op = strtol(arg,&last, 10);
+		op = (int)strtol(arg,&last, 10);
 		return *last ? 0 : tty_check(op);
 	    }
 	    case 'v':

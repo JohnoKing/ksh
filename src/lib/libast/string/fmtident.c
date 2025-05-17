@@ -63,7 +63,7 @@ fmtident(const char* a)
 				break;
 		while (t > s && isspace(t[-1]))
 			t--;
-		i = t - s;
+		i = (int)(t - s);
 		buf = fmtbuf(i + 1);
 		memcpy(buf, s, i);
 		s = buf;

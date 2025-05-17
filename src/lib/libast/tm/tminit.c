@@ -173,7 +173,7 @@ tmopt(void* a, const void* p, int n, const char* v)
 		switch (((Namval_t*)p)->value)
 		{
 		case TM_DEFAULT:
-			tm_info.deformat = (n && (n = strlen(v)) > 0 && (n < 2 || v[n-2] != '%' || v[n-1] != '?')) ? strdup(v) : tm_info.format[TM_DEFAULT];
+			tm_info.deformat = (n && (n = (int)strlen(v)) > 0 && (n < 2 || v[n-2] != '%' || v[n-1] != '?')) ? strdup(v) : tm_info.format[TM_DEFAULT];
 			break;
 		case TM_type:
 			tm_info.local->type = (n && *v) ? ((zp = tmtype(v, NULL)) ? zp->type : strdup(v)) : 0;

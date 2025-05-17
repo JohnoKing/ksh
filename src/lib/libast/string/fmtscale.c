@@ -47,7 +47,7 @@ fmtscale(Sfulong_t n, int k)
 	else
 	{
 		m = 0;
-		while (n >= k && *(u + 1))
+		while ((k < 0 || n >= (unsigned)k) && *(u + 1))
 		{
 			m = n;
 			n /= k;

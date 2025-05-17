@@ -134,6 +134,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 	int		m;
 	int		any;
 	int		header;
+	ssize_t		sz;
 
 	unsigned char	meta[3];
 	unsigned char	tmp[32];
@@ -169,7 +170,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 							{
 								*end = last;
 								last = -1;
-								c = end - pp + 1;
+								c = (int)(end - pp + 1);
 								if ((m = mbsize(pp)) == c)
 								{
 									any = 1;
@@ -190,9 +191,9 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 										*(cp = end = tmp + sizeof(tmp) - 1) = 0;
 										last = -1;
 									}
-									else if ((n = sfvalue(ip)) <= 0)
+									else if ((sz = sfvalue(ip)) <= 0)
 									{
-										states[0] = n ? T_ERROR : T_EOF;
+										states[0] = sz ? T_ERROR : T_EOF;
 										*(cp = end = tmp + sizeof(tmp) - 1) = 0;
 										last = -1;
 									}
@@ -204,8 +205,8 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 										*end = 0;
 									}
  mb:
-									if ((n = end - cp + 1) >= (sizeof(tmp) - c))
-										n = sizeof(tmp) - c - 1;
+									if ((n = (int)(end - cp + 1)) >= ((int)sizeof(tmp) - c))
+										n = (int)sizeof(tmp) - c - 1;
 									memcpy(tmp + c, cp, n);
 									if ((m = mbsize(tmp)) >= c)
 									{
@@ -232,7 +233,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 				}
 			}
 		c = *--cp;
-		if ((m = cp - cur) || n >= T_CONTROL)
+		if ((m = (int)(cp - cur)) || n >= T_CONTROL)
 		{
  flush:
 			any = 1;
@@ -271,10 +272,10 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 			if (!(nxt = (unsigned char*)(*reserve)(ip, SFIO_UNBOUND, 0)))
 			{
 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
-				states[0] = (m = sfvalue(ip)) ? T_ERROR : T_EOF;
+				states[0] = (m = (int)sfvalue(ip)) ? T_ERROR : T_EOF;
 				last = -1;
 			}
-			else if ((m = sfvalue(ip)) <= 0)
+			else if ((m = (int)sfvalue(ip)) <= 0)
 			{
 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
 				states[0] = m ? T_ERROR : T_EOF;
@@ -352,7 +353,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 						*cp-- = 0;
 						last = -1;
 					}
-					else if ((n = sfvalue(ip)) <= 0)
+					else if ((n = (int)sfvalue(ip)) <= 0)
 					{
 						states[0] = n ? T_ERROR : T_EOF;
 						cp = end = tmp;

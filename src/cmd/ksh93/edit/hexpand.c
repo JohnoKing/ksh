@@ -62,7 +62,8 @@ struct subst
 static char *parse_subst(const char *s, struct subst *sb)
 {
 	char	*cp,del;
-	int	off,n = 0;
+	ssize_t off;
+	int	n = 0;
 
 	/* build the strings on the stack, mainly for '&' substitution in "new" */
 	off = stktell(sh.stk);
@@ -149,8 +150,8 @@ void hist_setchars(char *hc)
 
 int hist_expand(const char *ln, char **xp)
 {
-	int	off,	/* stack offset */
-		q,	/* quotation flags */
+	ssize_t off;	/* stack offset */
+	int	q,	/* quotation flags */
 		p,	/* flag */
 		c,	/* current char */
 		flag=0;	/* HIST_* flags */
@@ -316,7 +317,7 @@ getline:
 			if(n < 0) /* determine index for backref */
 				n = sh.hist_ptr->histind + n;
 			/* search and use history file if found */
-			if(n > 0 && hist_seek(sh.hist_ptr, n) != -1)
+			if(n > 0 && hist_seek(sh.hist_ptr, (int)n) != -1)
 				ref = sh.hist_ptr->histfp;
 
 		}
@@ -558,30 +559,30 @@ getsel:
 
 			if(c == 'h' || c == 'r') /* head or base */
 			{
-				n = -1;
+				ssize_t sfloc = -1;
 				while((c = sfgetc(tmp)) > 0)
 				{	/* remember position of / or . */
 					if((c == '/' && *cp == 'h') || (c == '.' && *cp == 'r'))
-						n = sftell(tmp2);
+						sfloc = sftell(tmp2);
 					sfputc(tmp2, c);
 				}
-				if(n > 0)
+				if(sfloc > 0)
 				{	 /* rewind to last / or . */
-					sfseek(tmp2, n, SEEK_SET);
+					sfseek(tmp2, sfloc, SEEK_SET);
 					/* end string there */
 					sfputc(tmp2, '\0');
 				}
 			}
 			else if(c == 't' || c == 'e') /* tail or suffix */
 			{
-				n = 0;
+				ssize_t sfloc = 0;
 				while((c = sfgetc(tmp)) > 0)
 				{	/* remember position of / or . */
 					if((c == '/' && *cp == 't') || (c == '.' && *cp == 'e'))
-						n = sftell(tmp);
+						sfloc = sftell(tmp);
 				}
 				/* rewind to last / or . */
-				sfseek(tmp, n, SEEK_SET);
+				sfseek(tmp, sfloc, SEEK_SET);
 				/* copy from there on */
 				while((c = sfgetc(tmp)) > 0)
 					sfputc(tmp2, c);
@@ -596,10 +597,10 @@ getsel:
 					if(!sb.str[0] && wm)
 					{
 						char *sbuf = sfsetbuf(wm, (void*)1, 0);
-						int n = sftell(wm);
-						sb.str[0] = sh_malloc(n + 1);
-						sb.str[0][n] = '\0';
-						memcpy(sb.str[0], sbuf, n);
+						ssize_t sfloc = sftell(wm);
+						sb.str[0] = sh_malloc(sfloc + 1);
+						sb.str[0][sfloc] = '\0';
+						memcpy(sb.str[0], sbuf, sfloc);
 					}
 					cp = parse_subst(cp, &sb);
 				}

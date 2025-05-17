@@ -42,6 +42,6 @@
 
 #endif
 
-#define HASHPART(h,c)	(h = HASH_MPY(h) + HASH_ADD(h) + (c))
+#define HASHPART(h,c)	(h = (size_t)(HASH_MPY(h) + HASH_ADD(h) + (c)))
 
 #endif

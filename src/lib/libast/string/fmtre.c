@@ -49,8 +49,7 @@ fmtre(const char* as)
 	Stack_t		stack[32];
 
 	end = 1;
-	c = 2 * strlen(s) + 1;
-	t = buf = fmtbuf(c);
+	t = buf = fmtbuf(2 * strlen(s) + 1);
 	p = stack;
 	if (*s != '*' || *(s + 1) == '(' || *(s + 1) == '-' && *(s + 2) == '(')
 		*t++ = '^';

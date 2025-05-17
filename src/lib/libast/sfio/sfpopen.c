@@ -31,7 +31,7 @@ Sfio_t*	sfpopen(Sfio_t*		f,
 {
 	Proc_t*		proc;
 	int		sflags;
-	long		flags;
+	int		flags;
 	int		pflags;
 	char*		av[4];
 

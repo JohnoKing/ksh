@@ -357,7 +357,7 @@ convert(const char* d, const char* s)
 {
 	const char*	t;
 	const char*	v;
-	int		i;
+	size_t		i;
 
 	for (i = 0; i < elementsof(convertvars); i++)
 	{

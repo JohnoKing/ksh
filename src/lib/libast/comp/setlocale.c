@@ -127,7 +127,7 @@ header(void)
 #define DR0	'>'
 #define DR1	0xbb		/* 8-bit mini >> on xterm	*/
 
-#define DB	((int)sizeof(wchar_t)*8-1)
+#define DB	((ssize_t)sizeof(wchar_t)*8-1)
 #define DC	7		/* wchar_t embedded char bits	*/
 #define DX	(DB/DC)		/* wchar_t max embedded chars	*/
 #define DZ	(DB-DX*DC+1)	/* wchar_t embedded size bits	*/
@@ -202,7 +202,7 @@ debug_mbtowc(wchar_t* p, const char* s, size_t n)
 		return -1;
 	if ((w = ((unsigned char*)s)[1]) < '0' || w > ('0' + DX))
 		goto single;
-	if ((w -= '0' - DD) > n)
+	if ((w -= '0' - DD) > (ssize_t)n)
 		return -1;
 	r = s + w - 1;
 	q = s += 2;
@@ -458,7 +458,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
 		*p = *s;
 		return 1;
 	}
-	return mbrtowc(p, s, n, &sjis_state);
+	return (int)mbrtowc(p, s, n, &sjis_state);
 }
 
 #else
@@ -509,7 +509,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
 {
 	unsigned char*	sp = (unsigned char*)str;
 	size_t		m;
-	int		i;
+	size_t		i;
 	int		c;
 	wchar_t		w = 0;
 
@@ -538,13 +538,13 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
 				goto invalid;
 			*wp = w;
 		}
-		return m;
+		return (int)m;
 	}
 	if (!*sp)
 		return ast.mb.sync = 0;
  invalid:
 	errno = EILSEQ;
-	ast.mb.sync = (const char*)sp - str;
+	ast.mb.sync = (int)((const char*)sp - str);
 	return -1;
 }
 
@@ -2486,15 +2486,15 @@ single(int category, Lc_t* lc, unsigned int flags)
  * return <0:composite-error 0:not-composite >0:composite-ok
  */
 
-static int
+static size_t
 composite(const char* s, int initialize)
 {
 	const char*	t;
-	int		i;
-	int		j;
-	int		k;
-	int		n;
-	int		m;
+	size_t		i;
+	size_t		j;
+	size_t		k;
+	size_t		n;
+	size_t		m;
 	const char*	w;
 	Lc_t*		p;
 	int		cat[AST_LC_COUNT];
@@ -2514,7 +2514,7 @@ composite(const char* s, int initialize)
 			while (*t && *s++ == *t++);
 			if (!*t && *s++ == '=')
 			{
-				cat[j++] = i;
+				cat[j++] = (int)i;
 				if (s[0] != 'L' || s[1] != 'C' || s[2] != '_')
 					break;
 				w = s;
@@ -2576,10 +2576,10 @@ composite(const char* s, int initialize)
 		}
 		if (!initialize)
 		{
-			if (!single(n, p, 0))
+			if (!single((int)n, p, 0))
 			{
 				for (i = 1; i < n; i++)
-					single(i, NULL, 0);
+					single((int)i, NULL, 0);
 				return -1;
 			}
 		}

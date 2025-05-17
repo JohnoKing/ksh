@@ -65,12 +65,12 @@ struct vars				/* vars stacked per invocation */
 	const char	*errchr; 	/* next char after error	*/
 	const char	*errstr;	/* error string			*/
 	struct lval	errmsg;	 	/* error message text		*/
-	int		offset;		/* offset for pushchr macro	*/
+	ssize_t		offset;		/* offset for pushchr macro	*/
 	int		staksize;	/* current stack size needed	*/
 	int		stakmaxsize;	/* maximum stack size needed	*/
+	int		emode;
 	unsigned char	paren;	 	/* parenthesis level		*/
 	char		infun;	/* incremented by comma inside function	*/
-	int		emode;
 	Sfdouble_t	(*convert)(const char**,struct lval*,int,Sfdouble_t);
 };
 
@@ -90,7 +90,7 @@ typedef int        (*Math_3i_f)(Sfdouble_t,Sfdouble_t,Sfdouble_t);
 /*
  * convert ASCII char to math expression token
  */
-#define getop(c)	(((c) >= sizeof(strval_states))? \
+#define getop(c)	(((c) >= ((ssize_t)(sizeof(strval_states))))? \
 				((c)=='|'?A_OR:((c)=='^'?A_XOR:((c)=='~'?A_TILDE:A_REG))):\
 				strval_states[(c)])
 
@@ -761,7 +761,7 @@ again:
 
 		case A_QUEST:
 		{
-			int offset1,offset2;
+			ssize_t offset1,offset2;
 			sfputc(sh.stk,A_JMPZ);
 			offset1 = stkpush(sh.stk,vp,0,short);
 			sfputc(sh.stk,A_POP);
@@ -789,7 +789,7 @@ again:
 		case A_ANDAND:
 		case A_OROR:
 		{
-			int offset;
+			ssize_t offset;
 			if(op==A_ANDAND)
 				op = A_JMPZ;
 			else
@@ -886,7 +886,7 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 {
 	struct vars cur;
 	Arith_t *ep;
-	int offset;
+	ssize_t offset;
 	memset(&cur,0,sizeof(cur));
      	cur.expr = cur.nextchr = string;
 	cur.convert = fun;
@@ -938,7 +938,7 @@ Sfdouble_t arith_strval(const char *s, char **end, Sfdouble_t(*convert)(const ch
 	Arith_t *ep;
 	Sfdouble_t d;
 	char *sp=0;
-	int offset;
+	ssize_t offset;
 	if(offset=stktell(sh.stk))
 		sp = stkfreeze(sh.stk,1);
 	ep = arith_compile(s,end,convert,emode);

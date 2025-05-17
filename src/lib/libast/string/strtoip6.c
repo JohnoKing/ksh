@@ -39,15 +39,16 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 	unsigned char*	b = addr;
 	unsigned char*	x = b + IP6ADDR;
 	unsigned char*	z;
-	int		c;
+	int		c = 0;
 	uint32_t	a;
 
 	static unsigned char	lex[256];
 
 	if (!lex[0])
 	{
-		for (c = 0; c < sizeof(lex); ++c)
-			lex[c] = END;
+		size_t i;
+		for (i = 0; i < sizeof(lex); ++i)
+			lex[i] = END;
 		lex['0'] = 0;
 		lex['1'] = 1;
 		lex['2'] = 2;

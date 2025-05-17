@@ -37,7 +37,7 @@ temp(char* buf, int* fdp)
 {
 	char*	s;
 	char*	d;
-	int	n;
+	size_t	n;
 	size_t	len;
 
 	len = strlen(buf);

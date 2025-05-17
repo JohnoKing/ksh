@@ -118,7 +118,7 @@ typedef struct Hash_table Hash_table_t;
 
 #define HASH_HEADER			/* common bucket header		*/ \
 	Hash_bucket_t*	next;		/* next in collision chain	*/ \
-	unsigned int	hash;		/* hash flags and value		*/ \
+	unsigned long	hash;		/* hash flags and value		*/ \
 	char*		name		/* key name			*/
 
 #define HASH_DEFAULT			/* HASH_VALUE bucket elements	*/ \

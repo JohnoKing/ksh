@@ -222,12 +222,12 @@ trim(char* sp, char* p1, int* n1, char* p2, int* n2)
 		if (sp == p1)
 		{
 			p1 = 0;
-			*n1 = sp - dp - 1;
+			*n1 = (int)(sp - dp - 1);
 		}
 		if (sp == p2)
 		{
 			p2 = 0;
-			*n2 = sp - dp - 1;
+			*n2 = (int)(sp - dp - 1);
 		}
 	} while (*dp++ = c);
 }
@@ -236,7 +236,7 @@ static void
 addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, int meta)
 {
 	globlist_t*	ap;
-	int		offset;
+	ssize_t		offset;
 	int		type;
 
 	stkseek(globstk,MATCHPATH(gp));
@@ -610,8 +610,8 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	int		re_flags;
 
 	const char*	nocheck = pattern;
-	int		optlen = 0;
-	int		suflen = 0;
+	ssize_t		optlen = 0;
+	size_t		suflen = 0;
 	int		extra = 1;
 	unsigned char	intr = 0;
 
@@ -748,7 +748,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 					f &= ~GLOB_STARSTAR;
 				continue;
 			case ')':
-				flags = (gp->gl_flags = f) & GLOB_FLAGMASK;
+				flags = (gp->gl_flags = (int)f) & GLOB_FLAGMASK;
 				if (f & GLOB_ICASE)
 					gp->re_flags |= REG_ICASE;
 				else
@@ -825,9 +825,9 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 		*argv = 0;
 		if (!(flags & GLOB_NOSORT) && (argv - av) > 1)
 		{
-			strsort(av, argv - av, strcoll);
+			strsort(av, (int)(argv - av), strcoll);
 			if (gp->gl_starstar > 1)
-				av[gp->gl_pathc = struniq(av, argv - av)] = 0;
+				av[gp->gl_pathc = struniq(av, (int)(argv - av))] = 0;
 			gp->gl_starstar = 0;
 		}
 	}

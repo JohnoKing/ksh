@@ -129,10 +129,10 @@ typedef struct File_s
 	Sfio_t*		iop;
 	char*		name;
 	char*		recptr;
-	int		reclen;
+	ssize_t		reclen;
+	ssize_t		nfields;
 	int		field;
 	int		fieldlen;
-	int		nfields;
 	int		maxfields;
 	int		spaces;
 	int		hit;
@@ -215,7 +215,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 	int		c;
 	int*		outptr;
 	int*		outmax;
-	int		nfield = NFIELD;
+	ssize_t		nfield = NFIELD;
 	char*		str;
 
 	outptr = jp->outlist = newof(0, int, NFIELD + 1, 0);
@@ -231,7 +231,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 			c = JOINFIELD;
 			goto skip;
 		}
-		if (cp[1]!='.' || (*cp!='1' && *cp!='2') || (c=strtol(cp+2,&str,10)) <=0)
+		if (cp[1]!='.' || (*cp!='1' && *cp!='2') || (c=(int)strtol(cp+2,&str,10)) <=0)
 		{
 			error(2,"%s: invalid field list",first);
 			break;
@@ -264,7 +264,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 			break;
 		}
 		str = (char*)cp;
-		c = strtol(cp+2, &str,10);
+		c = (int)strtol(cp+2, &str,10);
 		if (*str || --c<0)
 			break;
 		argv++;
@@ -282,7 +282,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 		*outptr++ = c;
 	}
 	*outptr = -1;
-	return argv-arglist;
+	return (int)(argv-arglist);
 }
 
 /*
@@ -298,6 +298,7 @@ getrec(Join_t* jp, int index, int discard)
 	char*		cp;
 	int		n;
 	char*		tp;
+	ssize_t		j;
 
 	if (sh_checksig(jp->context))
 		return NULL;
@@ -409,9 +410,9 @@ getrec(Join_t* jp, int index, int discard)
 			field++;
 		} while (n != S_NL);
 	fp->nfields = field - fp->fields;
-	if ((n = fp->field) < fp->nfields)
+	if ((j = fp->field) < fp->nfields)
 	{
-		cp = fp->fields[n].beg;
+		cp = fp->fields[j].beg;
 		/* eliminate leading spaces */
 		if (fp->spaces)
 		{
@@ -437,7 +438,7 @@ getrec(Join_t* jp, int index, int discard)
 				while (sp[*(unsigned char*)cp++]==S_SPACE);
 			cp--;
 		}
-		fp->fieldlen = fp->fields[n].end - cp;
+		fp->fieldlen = (int)(fp->fields[j].end - cp);
 		return (unsigned char*)cp;
 	}
 	fp->fieldlen = 0;
@@ -505,7 +506,7 @@ outfield(Join_t* jp, int index, int n, int last)
 	if (last)
 		n = '\n';
 	if (cp)
-		size = cpmax - cp;
+		size = (int)(cpmax - cp);
 	else
 		size = 0;
 	if (n == -1)
@@ -570,7 +571,7 @@ outrec(Join_t* jp, int mode)
 			{
 				i = n & 1;
 				j = (mode<0 && i || mode>0 && !i) ?
-					jp->file[i].nfields :
+					(int)jp->file[i].nfields :
 					n >> 2;
 			}
 			if (outfield(jp, i, j, *out < 0) < 0)
@@ -578,7 +579,7 @@ outrec(Join_t* jp, int mode)
 		}
 		return 0;
 	}
-	k = jp->file[0].nfields;
+	k = (int)jp->file[0].nfields;
 	if (mode >= 0)
 		k += jp->file[1].nfields - 1;
 	for (i=0; i<2; i++)
@@ -839,7 +840,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 			if (opt_info.offset == 0)
 			{
 				cp = argv[opt_info.index - 1];
-				for (n = strlen(cp) - 1; n > 0 && cp[n] != 'j'; n--);
+				for (n = (int)strlen(cp) - 1; n > 0 && cp[n] != 'j'; n--);
 				n = cp[n] == 'j';
 			}
 			else
@@ -848,7 +849,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 			{
 				if (opt_info.num!=1 && opt_info.num!=2)
 					error(2,"-jfileno field: fileno must be 1 or 2");
-				n = '0' + opt_info.num;
+				n = (int)('0' + opt_info.num);
 				if (!(cp = argv[opt_info.index]))
 				{
 					argc = 0;
@@ -896,7 +897,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 			{
 				cp = opt_info.arg;
 				jp->delim = mbchar(cp);
-				if ((n = cp - opt_info.arg) > 1)
+				if ((n = (int)(cp - opt_info.arg)) > 1)
 				{
 					jp->delimlen = n;
 					jp->delimstr = opt_info.arg;

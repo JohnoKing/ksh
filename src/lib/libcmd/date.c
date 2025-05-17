@@ -242,7 +242,7 @@ settime(Shbltin_t* context, Time_t now, int adjust, int network)
 	}
 	*argv++ = buf;
 	*argv = 0;
-	if (!sh_run(context, argv - args, args))
+	if (!sh_run(context, (int)(argv - args), args))
 		return 0;
 	return -1;
 }

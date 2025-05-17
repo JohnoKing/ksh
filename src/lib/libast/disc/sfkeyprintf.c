@@ -262,14 +262,14 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 
 						fmt = *fp;
 						fmt.fmt.form = v;
-						for (h = 0; h < elementsof(fmt.tmp); h++)
+						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
 							fmt.tmp[h] = 0;
 						if (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
 							s = "";
 						*(v - 1) = d;
 						if (f.delimiter)
 							*f.next = d;
-						for (h = 0; h < elementsof(fmt.tmp); h++)
+						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
 							if (fmt.tmp[h])
 								sfclose(fmt.tmp[h]);
 						h = 1;
@@ -317,7 +317,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 		value->s = "\n";
 		break;
 	case '.':
-		value->i = n;
+		value->i = (int)n;
 		break;
 	default:
 		if ((!fp->convert || !(value->s = (*fp->convert)(fp->handle, &fp->fmt, a, s, n))) && (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%%%c", fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp->tmp[0]))))
@@ -337,7 +337,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 int
 sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
 {
-	int		i;
+	size_t		i;
 	int		r;
 	Fmt_t		fmt;
 
@@ -369,7 +369,7 @@ sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup
 int
 sfkeyprintf_20000308(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
 {
-	int		i;
+	size_t		i;
 	int		r;
 	Fmt_t		fmt;
 

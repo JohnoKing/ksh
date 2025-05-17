@@ -53,11 +53,11 @@ union types_t
 struct printf
 {
 	Sffmt_t		hdr;
-	int		argsize;
-	int		intvar;
 	char		**argv0; /* see reload() below */
 	char		**nextarg;
 	char		*lastarg;
+	ssize_t		argsize;
+	int		intvar;
 	char		cescape;
 	char		err;
 };
@@ -85,7 +85,7 @@ static int		echolist(Sfio_t*, int, char**);
 static int		extend(Sfio_t*,void*, Sffmt_t*);
 static int		reload(int argn, char fmt, void* v, Sffmt_t* fe);
 static char		*genformat(char*);
-static int		fmtvecho(const char*, struct printf*);
+static ssize_t		fmtvecho(const char*, struct printf*);
 static ssize_t		fmtbase64(Sfio_t*, char*, int);
 struct print
 {
@@ -444,7 +444,7 @@ printf_v:
 static int echolist(Sfio_t *outfile, int raw, char *argv[])
 {
 	char	*cp;
-	int	n;
+	ssize_t	n;
 	struct printf pdata;
 	pdata.cescape = 0;
 	pdata.err = 0;
@@ -523,7 +523,8 @@ static char *genformat(char *format)
 static char *fmthtml(const char *string, int flags)
 {
 	const char *cp = string, *op;
-	int c, offset = stktell(sh.stk);
+	int c;
+	ssize_t offset = stktell(sh.stk);
 	/*
 	 * The only multibyte locale ksh currently supports is UTF-8, which is a superset of ASCII. So, if we're on an
 	 * EBCDIC system, below we attempt to convert EBCDIC to ASCII only if we're not in a multibyte locale (mbwide()).
@@ -688,14 +689,15 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 	}
 }
 
-static int varname(const char *str, int n)
+static int varname(const char *str, ssize_t n)
 {
-	int c,dot=1,len=1;
+	int c,dot=1;
+	ssize_t len=1;
 	if(n < 0)
 	{
 		if(*str=='.')
 			str++;
-		n = strlen(str);
+		n = (ssize_t)strlen(str);
 	}
 	for(;n > 0; n-=len)
 	{
@@ -719,7 +721,7 @@ static const char *mapformat(Sffmt_t *fe)
 	const struct printmap *pm = Pmap;
 	while(pm->size>0)
 	{
-		if(pm->size==fe->n_str && strncmp(pm->name,fe->t_str,fe->n_str)==0)
+		if((ssize_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,fe->n_str)==0)
 			return pm->map;
 		pm++;
 	}
@@ -734,6 +736,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	Sfdouble_t	longmax = LDBL_LLONG_MAX;
 	int		format = fe->fmt;
 	int		n;
+	ssize_t		m;
 	int		fold = fe->base;
 	union types_t*	value = (union types_t*)v;
 	struct printf*	pp = (struct printf*)fe;
@@ -1008,7 +1011,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 			UNREACHABLE();
 		}
 		if (format == '.')
-			value->i = value->ll;
+			value->i = (int)value->ll;
 		if(*lastchar)
 		{
 			errormsg(SH_DICT,ERROR_warn(0),e_argtype,format);
@@ -1024,15 +1027,15 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		value->c = 0;
 		break;
 	case 'b':
-		if((n=fmtvecho(value->s,pp))>=0)
+		if((m=fmtvecho(value->s,pp))>=0)
 		{
 			if(pp->nextarg == nullarg)
 			{
-				pp->argsize = n;
+				pp->argsize = m;
 				return -1;
 			}
 			value->s = stkptr(sh.stk,stktell(sh.stk));
-			fe->size = n;
+			fe->size = m;
 		}
 		break;
 	case 'B':
@@ -1121,7 +1124,7 @@ static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
 		n = 0;
 		if(pp->nextarg != nullarg)
 		{
-			n = pp->nextarg - pp->argv0;
+			n = (int)(pp->nextarg - pp->argv0);
 			pp->nextarg = pp->argv0;
 			while(argn && *pp->nextarg)
 				argn--, pp->nextarg++;
@@ -1132,7 +1135,7 @@ static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
 	 * fmt!=0 ==> Late conversion on type mismatch on fp[x], i.e., %1$s %1$d
 	 * fp[1-1].fmt='s' ==> %1$d wants an int, go convert.
 	 */
-	n = pp->nextarg - pp->argv0;
+	n = (int)(pp->nextarg - pp->argv0);
 	pp->nextarg = pp->argv0 + argn;
 	fe->fmt = fmt;
 	r = extend(0,v,fe);
@@ -1146,11 +1149,11 @@ static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
  * Otherwise, puts null-terminated result on stack, but doesn't freeze it
  * returns length of output.
  */
-static int fmtvecho(const char *string, struct printf *pp)
+static ssize_t fmtvecho(const char *string, struct printf *pp)
 {
 	const char *cp = string, *cpmax;
 	int c;
-	int offset = stktell(sh.stk);
+	ssize_t offset = stktell(sh.stk), d;
 	int chlen;
 	if(mbwide())
 	{
@@ -1168,9 +1171,9 @@ static int fmtvecho(const char *string, struct printf *pp)
 			;
 	if(c==0)
 		return -1;
-	c = --cp - string;
-	if(c>0)
-		sfwrite(sh.stk,string,c);
+	d = --cp - string;
+	if(d>0)
+		sfwrite(sh.stk,string,d);
 	for(; c= *cp; cp++)
 	{
 		if (mbwide() && ((chlen = mbsize(cp)) > 1))
@@ -1227,8 +1230,8 @@ static int fmtvecho(const char *string, struct printf *pp)
 		sfputc(sh.stk,c);
 	}
 done:
-	c = stktell(sh.stk)-offset;
+	d = stktell(sh.stk)-offset;
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,offset);
-	return c;
+	return d;
 }

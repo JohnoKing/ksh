@@ -78,7 +78,7 @@ extern Asometh_t*		_asometh(int, void*);
 extern int			asoinit(const char*, Asometh_t*, Asodisc_t*);
 extern int			asolock(unsigned int volatile*, unsigned int, int);
 extern int			asoloop(uintmax_t);
-extern int			asorelax(long);
+extern int			asorelax(uint32_t);
 
 extern uint8_t			asocas8(uint8_t volatile*, int, int);
 extern uint8_t			asoget8(uint8_t volatile*);

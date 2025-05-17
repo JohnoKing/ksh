@@ -98,6 +98,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 	Sfio_t		*iop;
 	struct stat	statb;
 	int		i;
+	size_t		j;
 	int		rshflag;	/* set for restricted shell */
 	char		*command;
 #ifdef	_hdr_nc
@@ -154,8 +155,8 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 		if(!sh_isoption(SH_RC) && !fstat(0, &statb) && REMOTE(statb.st_mode))
 			sh_onoption(SH_RC);
 #endif
-		for(i=0; i<elementsof(sh.offoptions.v); i++)
-			sh.options.v[i] &= ~sh.offoptions.v[i];
+		for(j=0; j<elementsof(sh.offoptions.v); j++)
+			sh.options.v[j] &= ~sh.offoptions.v[j];
 		if(sh_isoption(SH_INTERACTIVE))
 		{
 #ifdef SIGXCPU
@@ -629,7 +630,7 @@ static void chkmail(char *files)
 	char		*cp,*sp,*qp;
 	char		save;
 	struct argnod	*arglist=0;
-	int		offset = stktell(sh.stk);
+	ssize_t		offset = stktell(sh.stk);
 	char	 	*savstak = stkptr(sh.stk,0);
 	struct stat	statb;
 	if(*(cp=files) == 0)
@@ -741,7 +742,7 @@ static void fixargs(char **argv, int mode)
 		return;
 	while((cp = *argv++) && offset < command_len)
 	{
-		if(offset + (size=strlen(cp)) >= command_len)
+		if(offset + (size=(int)strlen(cp)) >= command_len)
 			size = command_len - offset;
 		memcpy(buff+offset,cp,size);
 		offset += size;
@@ -760,7 +761,7 @@ static void fixargs(char **argv, int mode)
 		return;
 	while((cp = *argv++) && offset < CMDMAXLEN)
 	{
-		if(offset + (size=strlen(cp)) >= CMDMAXLEN)
+		if(offset + (size=(int)strlen(cp)) >= CMDMAXLEN)
 			size = CMDMAXLEN - offset;
 		memcpy(buff+offset,cp,size);
 		offset += size;
@@ -794,7 +795,7 @@ static void fixargs(char **argv, int mode)
 	}
 	while((cp = *argv++) && offset < buffsize)
 	{
-		if(offset + (size=strlen(cp)) >= buffsize)
+		if(offset + (size=(int)strlen(cp)) >= buffsize)
 			size = buffsize - offset;
 		memcpy(buff+offset,cp,size);
 		offset += size;

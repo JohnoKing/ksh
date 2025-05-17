@@ -221,7 +221,7 @@ labelexec(const regex_t* re, void* data, const char* xstr, size_t xlen, const ch
 static int
 addre(State_t* state, char* s)
 {
-	int		c;
+	ssize_t		c;
 	int		r;
 	char*		b;
 	Item_t*		x;
@@ -409,7 +409,7 @@ compile(State_t* state)
 }
 
 static int
-hit(State_t* state, const char* prefix, int sep, int line, const char* s, size_t len)
+hit(State_t* state, const char* prefix, int sep, uintmax_t line, const char* s, size_t len)
 {
 	regmatch_t*		pos;
 
@@ -431,7 +431,7 @@ hit(State_t* state, const char* prefix, int sep, int line, const char* s, size_t
 		if (state->prefix)
 			sfprintf(sfstdout, "%s%c", prefix, sep);
 		if (state->number && line)
-			sfprintf(sfstdout, "%d%c", line, sep);
+			sfprintf(sfstdout, "%ju%c", line, sep);
 		if (state->label)
 			sfprintf(sfstdout, "%s%c", state->hit->string, sep);
 		if (!pos)
@@ -711,7 +711,7 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
 		state.prefix = opt_info.num;
 		break;
 	case 'L':
-		state.list = -opt_info.num;
+		state.list = (int)(-opt_info.num);
 		break;
 	case 'N':
 		h = opt_info.arg;
@@ -739,7 +739,7 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
 		state.options |= REG_ICASE;
 		break;
 	case 'l':
-		state.list = opt_info.num;
+		state.list = (int)opt_info.num;
 		break;
 	case 'm':
 		state.label = 1;

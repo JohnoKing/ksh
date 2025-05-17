@@ -249,7 +249,7 @@ getids(Sfio_t* sp, const char* name, int flags)
 		{
 			if (!(pw = getpwnam(name)))
 			{
-				user = strtol(name, &s, 0);
+				user = (uid_t)strtol(name, &s, 0);
 				if (*s || !(pw = getpwuid(user)))
 				{
 					error(ERROR_exit(1), "%s: name not found", name);

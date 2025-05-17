@@ -110,9 +110,9 @@ main(void)
 	printf("\n");
 	printf("#define ALIGN_CHUNK		%d\n", sizeof(char*) >= 4 ? 8192 : 1024);
 	printf("#define ALIGN_INTEGRAL		uintptr_t\n");
-	printf("#define ALIGN_INTEGER(x)	((char*)(x)-(char*)0)\n");
+	printf("#define ALIGN_INTEGER(x)	((intptr_t)(x))\n");
 	printf("#define ALIGN_POINTER(x)	((char*)(x))\n");
-	if (bits2 == (align2 - 1))
+	if ((signed)bits2 == (align2 - 1))
 		printf("#define ALIGN_ROUND(x,y)	ALIGN_POINTER(ALIGN_INTEGER((x)+(y)-1)&~((y)-1))\n");
 	else
 		printf("#define ALIGN_ROUND(x,y)	ALIGN_POINTER(ALIGN_INTEGER(ALIGN_ALIGN(x)+(((y)+%d)/%d)-1)&~((((y)+%d)/%d)-1))\n", align0, align0, align0, align0);

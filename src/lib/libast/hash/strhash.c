@@ -30,12 +30,12 @@
  * return the hash of the null-terminated string s
  */
 
-unsigned int
+size_t
 strhash(const char* as)
 {
 	const unsigned char*	s = (const unsigned char*)as;
-	unsigned int		i = 0;
-	unsigned int		c;
+	size_t			i = 0;
+	size_t			c;
 
 	while (c = *s++) HASHPART(i, c);
 	return i;

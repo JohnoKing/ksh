@@ -24,10 +24,10 @@
 **	Written by Kiem-Phong Vo.
 */
 
-#define BATCH	(2*sizeof(int))	/* accumulate this many digits at a time */
-#define IPART		0	/* doing integer part */
-#define FPART		1	/* doing fractional part */
-#define EPART		2	/* doing exponent part */
+#define BATCH	((int)(2*sizeof(int)))	/* accumulate this many digits at a time */
+#define IPART		0		/* doing integer part */
+#define FPART		1		/* doing fractional part */
+#define EPART		2		/* doing exponent part */
 
 static Sfdouble_t sfpow10(int n)
 {

@@ -469,7 +469,7 @@ int sh_trap(const char *trap, int mode)
 	int	was_verbose = sh_isstate(SH_VERBOSE);
 	char	was_no_trapdontexec = !sh.st.trapdontexec;
 	char	save_chldexitsig = sh.chldexitsig;
-	int	staktop = stktell(sh.stk);
+	ssize_t staktop = stktell(sh.stk);
 	void	*savptr = stkfreeze(sh.stk,0);
 	struct	checkpt buff;
 	Fcin_t	savefc;

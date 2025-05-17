@@ -24,8 +24,8 @@
 **	Written by Kiem-Phong Vo.
 */
 
-int _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
-	    Sfulong_t	v)	/* the unsigned value to be written */
+ssize_t _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
+		Sfulong_t v)	/* the unsigned value to be written */
 {
 #define N_ARRAY		(2*sizeof(Sfulong_t))
 	uchar	*s, *ps;
@@ -68,5 +68,5 @@ int _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
 	}
 
 	SFOPEN(f,0);
-	return (int)n;
+	return n;
 }

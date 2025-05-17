@@ -71,7 +71,7 @@ regsubflags(regex_t* p, const char* s, char** e, int delim, const regflags_t* ma
 		else
 		{
 			for (m = map; *m; m++)
-				if (*m++ == c)
+				if ((signed)*m++ == c)
 				{
 					if (flags & *m)
 					{
@@ -283,7 +283,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		case 'E':
 			f = g;
 		set:
-			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
+			if ((op->len = (int)(t - sub->re_rhs) - op->off) && (n = (int)(++op - sub->re_ops)) >= nops)
 			{
 				if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 				{
@@ -293,7 +293,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 				op = sub->re_ops + n;
 			}
 			op->op = f;
-			op->off = t - sub->re_rhs;
+			op->off = (int)(t - sub->re_rhs);
 			continue;
 		case 'L':
 			g = f;
@@ -314,12 +314,12 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 			c = -1;
 			break;
 		}
-		if (c > p->re_nsub)
+		if (c > (ssize_t)p->re_nsub)
 		{
 			regfree(p);
 			return fatal(disc, REG_ESUBREG, s - 1);
 		}
-		if ((n = op - sub->re_ops) >= (nops - 2))
+		if ((n = (int)(op - sub->re_ops)) >= (nops - 2))
 		{
 			if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 			{
@@ -328,16 +328,16 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 			}
 			op = sub->re_ops + n;
 		}
-		if (op->len = (t - sub->re_rhs) - op->off)
+		if (op->len = (int)(t - sub->re_rhs) - op->off)
 			op++;
 		op->op = f;
 		op->off = c;
 		op->len = 0;
 		op++;
 		op->op = f;
-		op->off = t - sub->re_rhs;
+		op->off = (int)(t - sub->re_rhs);
 	}
-	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
+	if ((op->len = (int)(t - sub->re_rhs) - op->off) && (n = (int)(++op - sub->re_ops)) >= nops)
 	{
 		if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 		{

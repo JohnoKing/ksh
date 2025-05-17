@@ -42,7 +42,7 @@ static int	sh_unquote(char* string)
 	while((c= *sp) && c!='\'')
 		sp++;
 	if(c==0)
-		return sp-string;
+		return (int)(sp-string);
 	if((dp=sp) > string && sp[-1]=='$')
 	{
 		int n=stresc(sp+1);
@@ -56,7 +56,7 @@ static int	sh_unquote(char* string)
 			*dp++ = c;
 	}
 	*dp=0;
-	return dp-string;
+	return (int)(dp-string);
 }
 
 int	wordexp(const char *string, wordexp_t *wdarg, int flags)
@@ -64,7 +64,7 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
 	Sfio_t *iop;
 	char *cp=(char*)string;
 	int c,quoted=0,literal=0,ac=0;
-	int offset;
+	ssize_t offset;
 	char *savebase,**av;
 	if(offset=stktell(stkstd))
 		savebase = stkfreeze(stkstd,0);
@@ -160,7 +160,7 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
 	}
 	if(!av)
 		return WRDE_NOSPACE;
-	c = stktell(stkstd);
+	c = (int)stktell(stkstd);
 	if(!(cp = (char*)malloc(sizeof(char*)+c)))
 	{
 		c=WRDE_NOSPACE;

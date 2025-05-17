@@ -161,7 +161,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
 	char*			m;
 	char*			x;
 	int			flags;
-	int			details;
+	int64_t			details;
 	int			open_max;
 	int			unit;
 	Sfio_t*			sp;
@@ -194,7 +194,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
 			details = opt_info.num;
 			continue;
 		case 'u':
-			unit = opt_info.num;
+			unit = (int)opt_info.num;
 			continue;
 		case '?':
 			/* self-doc: write to standard output */

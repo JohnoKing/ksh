@@ -112,7 +112,7 @@ typedef struct edit
 	void	*e_vi;		/* vi specific data */
 	void	*e_emacs;	/* emacs specific data */
 	char	*e_stkptr;	/* saved stack pointer */
-	int	e_stkoff;	/* saved stack offset */
+	ssize_t e_stkoff;	/* saved stack offset */
 	char	**e_clist;	/* completion list after <ESC>= */
 	int	e_nlist;	/* number of elements on completion list */
 #if SHOPT_ESH || SHOPT_VSH

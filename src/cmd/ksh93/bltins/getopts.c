@@ -42,7 +42,7 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 	if(nv_search(s,sh.fun_tree,0))
 #endif /* SHOPT_NAMESPACE */
 	{
-		int savtop = stktell(stkp);
+		ssize_t savtop = stktell(stkp);
 		void *savptr = stkfreeze(stkp,0);
 		sfputc(stkp,'$');
 		sfputc(stkp,'(');

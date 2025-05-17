@@ -184,7 +184,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 		{
 			if (cp >= endbuff || (n = mb2wc(x, cp, endbuff-cp)) < 0)
 			{
-				if ((o = endbuff-cp) < sizeof(side))
+				if ((o = endbuff-cp) < (ssize_t)sizeof(side))
 				{
 					if (buff)
 					{
@@ -222,7 +222,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 					x = -1;
 				}
 				if (x == -1 && eline != nlines && !(wp->mode & WC_QUIET))
-					eline = invalid(file, nlines);
+					eline = invalid(file, (int)nlines);
 			}
 			else
 				cp += n ? n : 1;
@@ -279,7 +279,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 						nlines++;
 					if ((c = type[*cp]) && !lasttype)
 						nwords++;
-					lasttype = c;
+					lasttype = (int)c;
 					continue;
 				}
 				if (!lasttype && type[*cp])
@@ -352,7 +352,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 					nlines++;
 				if((c = type[*cp]) && !lasttype)
 					nwords++;
-				lasttype = c;
+				lasttype = (int)c;
 				endbuff = start;
 				continue;
 			}
@@ -453,7 +453,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 						skip = 0;
 						state = 0;
 						if(eline!=nlines && !(wp->mode & WC_QUIET))
-							eline = invalid(file, nlines);
+							eline = invalid(file, (int)nlines);
 						while(mbc(c) && ((c|WC_ERR) || (c&7)==0))
 							c=type[*cp++];
 						if(eol(c) && (cp > endbuff))
@@ -476,7 +476,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 				nwords++;
 			}
 		eob:
-			lineoff = cp-start;
+			lineoff = (int)(cp-start);
 			if((cp -= 2) >= buff)
 				c = type[*cp];
 			else

@@ -47,7 +47,7 @@ setenviron(const char* akey)
 	char**		p = envv;
 	char*		s;
 	char*		t;
-	int		n;
+	ssize_t		n;
 
 	ast.env_serial++;
 	if (intercepts.intercept_setenviron)

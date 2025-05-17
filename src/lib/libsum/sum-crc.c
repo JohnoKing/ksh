@@ -119,8 +119,9 @@ crc_open(const Method_t* method, const char* name)
 	const char*	s;
 	const char*	t;
 	const char*	v;
-	int		i;
+	size_t		i;
 	int		j;
+	ssize_t		k;
 	Crcnum_t	polynomial;
 	Crcnum_t	x;
 
@@ -150,20 +151,20 @@ crc_open(const Method_t* method, const char* name)
 		for (t = s, v = 0; *s && *s != '-'; s++)
 			if (*s == '=' && !v)
 				v = s;
-		i = (v ? v : s) - t;
-		if (isdigit(*t) || v && i >= 4 && strneq(t, "poly", 4) && (t = v + 1))
-			polynomial = strtoul(t, NULL, 0);
-		else if (strneq(t, "done", i))
-			sum->done = v ? strtoul(v + 1, NULL, 0) : ~sum->done;
-		else if (strneq(t, "init", i))
-			sum->init = v ? strtoul(v + 1, NULL, 0) : ~sum->init;
-		else if (strneq(t, "rotate", i))
+		k = (v ? v : s) - t;
+		if (isdigit(*t) || v && k >= 4 && strneq(t, "poly", 4) && (t = v + 1))
+			polynomial = (Crcnum_t)strtoul(t, NULL, 0);
+		else if (strneq(t, "done", k))
+			sum->done = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum->done;
+		else if (strneq(t, "init", k))
+			sum->init = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum->init;
+		else if (strneq(t, "rotate", k))
 			sum->rotate = 1;
-		else if (strneq(t, "size", i))
+		else if (strneq(t, "size", k))
 		{
 			sum->addsize = 1;
 			if (v)
-				sum->xorsize = strtoul(v + 1, NULL, 0);
+				sum->xorsize = (Crcnum_t)strtoul(v + 1, NULL, 0);
 		}
 		if (*s == '-')
 			s++;
@@ -179,7 +180,7 @@ crc_open(const Method_t* method, const char* name)
 		for (i = 0; i < elementsof(sum->tabdata); i++)
 		{
 			t = 0;
-			x = i;
+			x = (Crcnum_t)i;
 			for (j = 0; j < 8; j++)
 			{
 				if (x & 1)
@@ -193,7 +194,7 @@ crc_open(const Method_t* method, const char* name)
 	{
 		for (i = 0; i < elementsof(sum->tabdata); i++)
 		{
-			x = i;
+			x = (Crcnum_t)i;
 			for (j = 0; j < 8; j++)
 				x = (x>>1) ^ ((x & 1) ? polynomial : 0);
 			sum->tabdata[i] = x;

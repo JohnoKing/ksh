@@ -59,7 +59,7 @@ int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
 			offset = start;
 		}
 		sfseek(in, offset, SEEK_SET);
-		if((n=sfread(in, buff, n)) <=0)
+		if((n=(int)sfread(in, buff, n)) <=0)
 			break;
 		cp = buff+n;
 		n = *buff;

@@ -294,7 +294,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
 				/* FALLTHROUGH */
 			case 'F':
 			case 'X':
-				if(!opt_info.arg || (tdata.argnum = opt_info.num) <0)
+				if(!opt_info.arg || (tdata.argnum = (int)opt_info.num) <0)
 					tdata.argnum = (n=='X'?2*sizeof(Sfdouble_t):10);
 				else if (tdata.argnum==0)
 					tdata.argnum = NV_FLTSIZEZERO;
@@ -371,7 +371,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
 				troot = sh.fun_tree;
 				break;
 			case 'i':
-				if(!opt_info.arg || (tdata.argnum = opt_info.num) <2 || tdata.argnum >64)
+				if(!opt_info.arg || (tdata.argnum = (int)opt_info.num) <2 || tdata.argnum >64)
 					tdata.argnum = 10;
 				if(isfloat)
 				{
@@ -526,9 +526,9 @@ endargs:
 	{
 		Stk_t *stkp = sh.stk;
 #if SHOPT_NAMESPACE
-		int off = 0;
+		ssize_t off = 0;
 #endif /* SHOPT_NAMESPACE */
-		int offset = stktell(stkp);
+		ssize_t offset = stktell(stkp);
 		if(!tdata.prefix)
 			return sh_outtype(sfstdout);
 		sfputr(stkp,NV_CLASS,-1);
@@ -761,7 +761,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
 					r++;
 				if(tp->help)
 				{
-					int offset = stktell(sh.stk);
+					ssize_t offset = stktell(sh.stk);
 					if(!np)
 					{
 						sfputr(sh.stk,sh.prefix,'.');
@@ -1130,8 +1130,9 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 {
 	char *arg=0, *name;
 	int n, r=0, flag=0;
+	ssize_t offset;
 	Namval_t *np;
-	long dlete=0;
+	int dlete=0;
 	struct tdata tdata;
 	Shbltin_f addr;
 	Stk_t	*stkp;
@@ -1213,7 +1214,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 		return 0;
 	}
 	r = 0;
-	flag = stktell(stkp);
+	offset = stktell(stkp);
 	while(arg = *argv)
 	{
 		name = path_basename(arg);
@@ -1227,7 +1228,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 			{
 				if(!dlete && !liblist[n].dll)
 					continue;
-				if(dlete || (addr = (Shbltin_f)dlllook(liblist[n].dll,stkptr(stkp,flag))))
+				if(dlete || (addr = (Shbltin_f)dlllook(liblist[n].dll,stkptr(stkp,offset))))
 #else
 		if(dlete)
 			for(n=dlete; --n>=0;)
@@ -1260,7 +1261,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 			errormsg(SH_DICT,ERROR_exit(0),"%s: %s",*argv,errmsg);
 			r = 1;
 		}
-		stkseek(stkp,flag);
+		stkseek(stkp,offset);
 		argv++;
 	}
 	return r;

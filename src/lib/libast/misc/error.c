@@ -136,7 +136,7 @@ setopt(void* a, const void* p, int n, const char* v)
 					error_state.breakpoint = ERROR_PANIC;
 					break;
 				default:
-					error_state.breakpoint = strtol(v, NULL, 0);
+					error_state.breakpoint = (int)strtol(v, NULL, 0);
 					break;
 				}
 			else
@@ -157,7 +157,7 @@ setopt(void* a, const void* p, int n, const char* v)
 				error_state.count = 0;
 			break;
 		case OPT_FD:
-			error_info.fd = n ? strtol(v, NULL, 0) : -1;
+			error_info.fd = n ? (int)strtol(v, NULL, 0) : -1;
 			break;
 		case OPT_LIBRARY:
 			if (n)
@@ -167,7 +167,7 @@ setopt(void* a, const void* p, int n, const char* v)
 			break;
 		case OPT_MASK:
 			if (n)
-				error_info.mask = strtol(v, NULL, 0);
+				error_info.mask = (int)strtol(v, NULL, 0);
 			else
 				error_info.mask = 0;
 			break;
@@ -208,7 +208,7 @@ setopt(void* a, const void* p, int n, const char* v)
 			break;
 		case OPT_TRACE:
 			if (n)
-				error_info.trace = -strtol(v, NULL, 0);
+				error_info.trace = -((int)strtol(v, NULL, 0));
 			else
 				error_info.trace = 0;
 			break;
@@ -337,7 +337,7 @@ error(int level, ...)
 void
 errorv(const char* id, int level, va_list ap)
 {
-	int		n;
+	ssize_t		n;
 	int		fd;
 	int		flags;
 	char*		s;
@@ -409,7 +409,7 @@ errorv(const char* id, int level, va_list ap)
 	fd = (flags & ERROR_OUTPUT) ? va_arg(ap, int) : error_info.fd;
 	if (error_info.write)
 	{
-		long	off;
+		ssize_t	off;
 		char*	bas;
 
 		bas = stkptr(stkstd, 0);

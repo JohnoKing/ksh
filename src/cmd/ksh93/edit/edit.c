@@ -262,11 +262,11 @@ int ed_window(void)
 
 void ed_flush(Edit_t *ep)
 {
-	int n = ep->e_outptr-ep->e_outbase;
+	ssize_t n = ep->e_outptr-ep->e_outbase;
 	int fd = ERRIO;
 	if(n<=0)
 		return;
-	write(fd,ep->e_outbase,(unsigned)n);
+	write(fd,ep->e_outbase,(size_t)n);
 	ep->e_outptr = ep->e_outbase;
 }
 
@@ -475,7 +475,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
 						qlen++;
 					else if(!is_print(c))
 						ep->e_crlf = 0;
-					if((qwid = last - prev) > 1)
+					if((qwid = (int)(last - prev)) > 1)
 						qlen += qwid - mbwidth(c);
 					while(prev < last && pp < ppmax)
 						*pp++ = *prev++;
@@ -484,7 +484,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
 		}
 	}
 	if(pp-ep->e_prompt > qlen)
-		ep->e_plen = pp - ep->e_prompt - qlen;
+		ep->e_plen = (int)(pp - ep->e_prompt - qlen);
 	*pp = 0;
 	if(ep->e_multiline)
 	{
@@ -547,7 +547,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
 		n = strlen(pp);
 		if(n > LOOKAHEAD)
 			n = LOOKAHEAD;
-		ep->e_lookahead = n;
+		ep->e_lookahead = (int)n;
 		while(n-- > 0)
 			ep->e_lbuf[n] = *pp++;
 		ep->e_default = 0;
@@ -617,7 +617,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		 */
 		if(sh.winch && sh_editor_active() && sh_isstate(SH_INTERACTIVE))
 		{
-			int	n;
+			ssize_t	n;
 			if(!ep->e_prompt)
 			{
 				/* ed_emacsread or ed_viread was unable to put the tty in raw mode */
@@ -674,7 +674,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		/* an interrupt that should be ignored */
 		errno = 0;
 		if(!waitevent || (rv=(*waitevent)(fd,-1L,0))>=0)
-			rv = sfpkrd(fd,buff,size,delim,-1L,mode);
+			rv = (int)sfpkrd(fd,buff,size,delim,-1L,mode);
 	}
 	if(rv < 0)
 	{
@@ -702,7 +702,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 #endif /* _hdr_utime */
 		while(1)
 		{
-			rv = read(fd,buff,size);
+			rv = (int)read(fd,buff,size);
 			if(rv>=0 || errno!=EINTR)
 				break;
 			if(sh.trapnote&(SH_SIGSET|SH_SIGTRAP))
@@ -712,7 +712,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		}
 	}
 	else if(rv>=0 && mode>0)
-		rv = read(fd,buff,rv>0?rv:1);
+		rv = (int)read(fd,buff,rv>0?rv:1);
 done:
 	sh.waitevent = waitevent;
 	sh_offstate(SH_TTYWAIT);
@@ -731,7 +731,8 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 	int c;
 #if SHOPT_MULTIBYTE
 	char *endp, *p=string;
-	int size, offset = ep->e_lookahead + nbyte;
+	ssize_t size;
+	ssize_t offset = ep->e_lookahead + nbyte;
 	*(endp = &p[nbyte]) = 0;
 	endp = &p[nbyte];
 	do
@@ -762,7 +763,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 				if(type)
 					c = -c;
 			}
-			else if((endp-p) < mbmax())
+			else if((endp-p) < (ssize_t)mbmax())
 			{
 				if(errno == EILSEQ)
 					errno = 0;
@@ -852,7 +853,7 @@ int ed_getchar(Edit_t *ep,int mode)
 					{
 						if(!ep->e_lookahead)
 						{
-							if((c=sfpkrd(ep->e_fd,readin+n,1,'\r',(mode?400L:-1L),0))>0)
+							if((c=(int)sfpkrd(ep->e_fd,readin+n,1,'\r',(mode?400L:-1L),0))>0)
 								putstack(ep,readin+n,c,1);
 						}
 						if(!ep->e_lookahead)
@@ -1115,7 +1116,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
 	for(r=poff;c= *sp;sp++)
 	{
 		if(curp == sp)
-			r = dp - phys;
+			r = (int)(dp - phys);
 #if SHOPT_MULTIBYTE
 		d = mbwidth((wchar_t)c);
 		if(d==1 && is_cntrl(c))
@@ -1139,7 +1140,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
 		{
 			if(c=='\t')
 			{
-				c = dp-phys;
+				c = (int)(dp - phys);
 				c += ep->e_plen;
 				c = TABSIZE - c%TABSIZE;
 				while(--c>0)
@@ -1152,14 +1153,14 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
 				c = printchar(c);
 			}
 			if(curp == sp)
-				r = dp - phys;
+				r = (int)(dp - phys);
 		}
 		*dp++ = c;
 		if(dp>=dpmax)
 			break;
 	}
 	*dp = 0;
-	ep->e_peol = dp-phys;
+	ep->e_peol = (int)(dp - phys);
 	return r;
 }
 #endif /* SHOPT_ESH || SHOPT_VSH */
@@ -1186,7 +1187,7 @@ int	ed_internal(const char *src, genchar *dest)
 	while(*cp)
 		*dp++ = mbchar(cp);
 	*dp = 0;
-	return dp - (wchar_t*)dest;
+	return (int)(dp - (wchar_t*)dest);
 }
 #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
 
@@ -1227,7 +1228,7 @@ int	ed_external(const genchar *src, char *dest)
 		dp += size;
 	}
 	*dp = 0;
-	return dp-dest;
+	return (int)(dp-dest);
 }
 #endif /* SHOPT_MULTIBYTE */
 
@@ -1267,7 +1268,7 @@ int	ed_genlen(const genchar *str)
 	const genchar *sp = str;
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
 	while(*sp++);
-	return sp-str-1;
+	return (int)(sp-str-1);
 }
 #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
 
@@ -1310,7 +1311,7 @@ static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
 	{
 		strncopy(inbuff,cp,bufsize);
 		inbuff[bufsize-1]='\0';
-		insize = strlen(inbuff);
+		insize = (int)strlen(inbuff);
 	}
 	else
 		insize = 0;

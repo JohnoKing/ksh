@@ -93,7 +93,7 @@ static void refvar(Lex_t *lp, int type)
 	}
 	else
 	{
-		int n,offset = stktell(sh.stk);
+		ssize_t n,offset = stktell(sh.stk);
 		void *savptr;
 		char *begin;
 		off = offset + (fcseek(0)-(type+1)) - fcfirst();
@@ -123,7 +123,7 @@ static void refvar(Lex_t *lp, int type)
  * This routine gets called when reading across a buffer boundary
  * If lexd.nocopy is off, then current token is saved on the stack
  */
-static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
+static void lex_advance(Sfio_t *iop, const char *buff, ssize_t size, void *context)
 {
 	Lex_t		*lp = (Lex_t*)context;
 	/* write to history file and to stderr if necessary */
@@ -138,7 +138,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
 		return;
 	if(lp->lexd.dolparen && lp->lexd.docword && lp->lexd.docend)
 	{
-		int n = size - (lp->lexd.docend-(char*)buff);
+		ssize_t n = size - (lp->lexd.docend-(char*)buff);
 		sfwrite(sh.strbuf,lp->lexd.docend,n);
 		lp->lexd.docextra  += n;
 		if(sffileno(iop)>=0)
@@ -253,7 +253,7 @@ int sh_lex(Lex_t* lp)
 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
 	int		epatchar=0;
 	char		*varnamefirst = NULL;
-	int		varnamelength = 0;
+	ssize_t		varnamelength = 0, j;
 	SETLEN(1);
 	if(lp->lexd.paren)
 	{
@@ -628,10 +628,10 @@ int sh_lex(Lex_t* lp)
 					else
 						fcsopen((char*)state);
 					/* remove \new-line */
-					n = stktell(sh.stk)-c;
+					n = (int)stktell(sh.stk)-c;
 					stkseek(sh.stk,n);
 					lp->arg = ap;
-					if(n<=ARGVAL)
+					if(n<=(signed)ARGVAL)
 					{
 						mode = 0;
 						lp->lexd.first = 0;
@@ -1113,7 +1113,7 @@ int sh_lex(Lex_t* lp)
 							state = fcfirst();
 						else
 						{
-							n = state-fcseek(0);
+							n = (int)(state-fcseek(0));
 							fcseek(n);
 						}
 						lp->lexd.paren = 1;
@@ -1273,15 +1273,15 @@ breakloop:
 	}
 	if(!(state=lp->lexd.first))
 		state = fcfirst();
-	n = fcseek(0)-(char*)state;
+	j = fcseek(0)-(char*)state;
 	if(!lp->arg)
 		lp->arg = stkseek(sh.stk,ARGVAL);
-	if(n>0)
-		sfwrite(sh.stk,state,n);
+	if(j>0)
+		sfwrite(sh.stk,state,j);
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,stktell(sh.stk)-1);
 	state = stkptr(sh.stk,ARGVAL);
-	n = stktell(sh.stk)-ARGVAL;
+	n = (int)stktell(sh.stk)-ARGVAL;
 	lp->lexd.first=0;
 	if(n==1)
 	{
@@ -1564,7 +1564,8 @@ static int comsub(Lex_t *lp, int endtok)
 	struct ionod *inheredoc = lp->heredoc;
 	char save_arithexp = lp->lexd.dolparen_arithexp;
 	char *first,*cp=fcseek(0),word[5];
-	int off, messages=0, assignok=lp->assignok, csub;
+	int messages=0, assignok=lp->assignok, csub;
+	ssize_t off;
 	struct _shlex_pvt_lexstate_ save = lp->lex;
 	csub = lp->comsub;
 	sh_lexopen(lp,1);
@@ -1588,7 +1589,7 @@ static int comsub(Lex_t *lp, int endtok)
 		{
 			if(first==lp->lexd.first)
 			{
-				n = cp+1-(char*)fcseek(0);
+				n = (int)(cp+1-(char*)fcseek(0));
 				fcseek(n);
 			}
 			count++;
@@ -1716,7 +1717,8 @@ done:
 static void nested_here(Lex_t *lp)
 {
 	struct ionod	*iop;
-	int		n=0,offset;
+	ssize_t		n=0;
+	ssize_t		offset;
 	struct argnod	*arg = lp->arg;
 	char		*base;
 	if(offset=stktell(sh.stk))
@@ -1753,7 +1755,7 @@ static void nested_here(Lex_t *lp)
  * if <copy> is non,zero, then the characters are copied to the stack
  * <state> is the initial lexical state
  */
-void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+void sh_lexskip(Lex_t *lp,int close, int copy, int state)
 {
 	char	*cp;
 	lp->lexd.nest = close;
@@ -1767,11 +1769,12 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
 	lp->lexd.inlexskip = 0;
 	if(copy)
 	{
+		ssize_t len;
 		fcnotify(0,lp);
 		if(!(cp=lp->lexd.first))
 			cp = fcfirst();
-		if((copy = fcseek(0)-cp) > 0)
-			sfwrite(sh.stk,cp,copy);
+		if((len = fcseek(0)-cp) > 0)
+			sfwrite(sh.stk,cp,len);
 	}
 	else
 		lp->lexd.nocopy--;
@@ -1865,14 +1868,14 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 		if(n==S_EOF || !(c=fcget()))
 		{
 			if(LEN < 0)
-				c = fclast()-bufp;
+				c = (int)(fclast()-bufp);
 			else
-				c= (fcseek(0)-1)-bufp;
+				c= (int)((fcseek(0)-1)-bufp);
 			if(!lp->lexd.dolparen && c)
 			{
 				if(n==S_ESC)
 					c--;
-				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,c))>0)
+				if(!lp->lexd.dolparen && (c=(int)sfwrite(sp,bufp,c))>0)
 					iop->iosize += c;
 			}
 			if(LEN==0)
@@ -1916,8 +1919,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 				if(!lp->lexd.dolparen)
 				{
 					/* write out line */
-					n = fcseek(0)-bufp;
-					if((n=sfwrite(sp,bufp,n))>0)
+					if((n=(int)sfwrite(sp,bufp,fcseek(0)-bufp))>0)
 						iop->iosize += n;
 				}
 				/* skip over tabs */
@@ -1950,9 +1952,9 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				if(!(c=fcget()))
 				{
-					if(!lp->lexd.dolparen && (c=cp-bufp))
+					if(!lp->lexd.dolparen && (c=(int)(cp-bufp)))
 					{
-						if((c=sfwrite(sp,cp=bufp,c))>0)
+						if((c=(int)sfwrite(sp,cp=bufp,c))>0)
 							iop->iosize+=c;
 					}
 					nsave = n;
@@ -1974,9 +1976,9 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 					sh.inlineno++;
 				if(iop->iodelim[n]==0 && (c==NL||c==RPAREN))
 				{
-					if(!lp->lexd.dolparen && (n=cp-bufp))
+					if(!lp->lexd.dolparen && (n=(int)(cp-bufp)))
 					{
-						if((n=sfwrite(sp,bufp,n))>0)
+						if((n=(int)sfwrite(sp,bufp,n))>0)
 							iop->iosize += n;
 					}
 					sh.inlineno--;
@@ -1994,7 +1996,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 					 */
 					if(!lp->lexd.dolparen && nsave>0)
 					{
-						if((n=sfwrite(sp,iop->iodelim,nsave))>0)
+						if((n=(int)sfwrite(sp,iop->iodelim,nsave))>0)
 							iop->iosize += n;
 						bufp = fcfirst();
 					}
@@ -2025,9 +2027,9 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				/* new-line joining */
 				sh.inlineno++;
-				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
+				if(!lp->lexd.dolparen && (n=(int)(fcseek(0)-bufp)-n)>=0)
 				{
-					if(n && (n=sfwrite(sp,bufp,n))>0)
+					if(n && (n=(int)sfwrite(sp,bufp,n))>0)
 						iop->iosize += n;
 					bufp = fcseek(0)+1;
 				}
@@ -2065,7 +2067,7 @@ static char	*fmttoken(Lex_t *lp, int sym)
 	if(sym&SYMRES)
 	{
 		const Shtable_t *tp=shtab_reserved;
-		while(tp->sh_number && tp->sh_number!=sym)
+		while(tp->sh_number && (int)tp->sh_number!=sym)
 			tp++;
 		return (char*)tp->sh_name;
 	}
@@ -2157,9 +2159,9 @@ noreturn void sh_syntax(Lex_t *lp, int special)
 static unsigned char *stack_shift(unsigned char *sp, unsigned char *dp)
 {
 	unsigned char *ep;
-	int offset = stktell(sh.stk);
-	int left = offset - (sp - (unsigned char*)stkptr(sh.stk, 0));
-	int shift = (dp+1-sp);
+	ssize_t offset = stktell(sh.stk);
+	ssize_t left = offset - (sp - (unsigned char*)stkptr(sh.stk, 0));
+	ssize_t shift = (dp+1-sp);
 	offset += shift;
 	stkseek(sh.stk,offset);
 	sp = (unsigned char*)stkptr(sh.stk,offset);
@@ -2269,7 +2271,7 @@ static struct argnod *endword(int mode)
 					}
 					*--dp = 0;
 					msg = ERROR_translate(0,error_info.id,0,ep);
-					n = strlen(msg);
+					n = (int)strlen(msg);
 					dp = ep+n;
 					if(sp-dp <= 1)
 					{

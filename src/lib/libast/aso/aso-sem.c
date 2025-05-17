@@ -100,7 +100,7 @@ aso_init_semaphore(void* data, const char* details)
 	key = (!path || !*path || streq(path, "private")) ? IPC_PRIVATE : (strsum(path, 0) & 0x7fff);
 	for (;;)
 	{
-		if ((id = semget(key, size, IPC_CREAT|IPC_EXCL|perm)) >= 0)
+		if ((id = semget(key, (int)size, IPC_CREAT|IPC_EXCL|perm)) >= 0)
 		{
 			/*
 			 * initialize all semaphores to 0
@@ -121,7 +121,7 @@ aso_init_semaphore(void* data, const char* details)
 			size /= 2;
 		else if (errno != EEXIST)
 			return NULL;
-		else if ((id = semget(key, size, perm)) >= 0)
+		else if ((id = semget(key, (int)size, perm)) >= 0)
 		{
 			struct semid_ds	ds;
 			Semun_t		arg;
@@ -134,7 +134,7 @@ aso_init_semaphore(void* data, const char* details)
 			arg.ds = &ds;
 			for (k = 0; k < SPIN; ASOLOOP(k))
 			{
-				if (semctl(id, size-1, IPC_STAT, arg) < 0)
+				if (semctl(id, (int)size-1, IPC_STAT, arg) < 0)
 					return NULL;
 				if (ds.sem_otime)
 					break;

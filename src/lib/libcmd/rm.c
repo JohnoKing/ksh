@@ -68,7 +68,7 @@ static const char usage[] =
 
 #define RM_ENTRY	1
 
-#define beenhere(f)	(((f)->fts_number>>1)==(f)->fts_statp->st_nlink)
+#define beenhere(f)	(((f)->fts_number>>1)==((signed)((f)->fts_statp->st_nlink)))
 #define isempty(f)	(!((f)->fts_number&RM_ENTRY))
 #define nonempty(f)	((f)->fts_parent->fts_number|=RM_ENTRY)
 #define pathchunk(n)	roundof(n,1024)
@@ -83,7 +83,7 @@ typedef struct State_s			/* program state		*/
 	int		interactive;	/* prompt for approval		*/
 	int		recursive;	/* remove subtrees too		*/
 	int		terminal;	/* attached to terminal		*/
-	int		uid;		/* caller UID			*/
+	uid_t		uid;		/* caller UID			*/
 	int		unconditional;	/* enable dir rwx on preorder	*/
 	int		verbose;	/* display each file		*/
 #if _lib_fsync
@@ -291,9 +291,9 @@ rm(State_t* state, FTSENT* ent)
 						error(ERROR_SYSTEM|2, "%s: data clear error", ent->fts_path);
 						break;
 					}
-					if (c <= sizeof(state->buf))
+					if (c <= (ssize_t)sizeof(state->buf))
 						break;
-					c -= sizeof(state->buf);
+					c -= (ssize_t)sizeof(state->buf);
 				}
 				fsync(n);
 				close(n);

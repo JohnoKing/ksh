@@ -162,14 +162,11 @@ typedef struct State_s			/* program state		*/
 	int		missmode;	/* default missing dir mode	*/
 	int		op;		/* {CP,LN,MV}			*/
 	int		perm;		/* permissions to preserve	*/
-	int		postsiz;	/* state.path post index	*/
-	int		presiz;		/* state.path pre index		*/
 	int		preserve;	/* preserve { ids perms times }	*/
 	int		recursive;	/* subtrees too			*/
 	int		remove;		/* remove destination before op	*/
-	int		suflen;		/* strlen(state.suffix)		*/
 	int		sync;		/* fsync() each file after copy	*/
-	int		uid;		/* caller UID			*/
+	uid_t		uid;		/* caller UID			*/
 	int		update;		/* replace only if newer	*/
 	int		verbose;	/* list each file before op	*/
 	int		wflags;		/* open() for write flags	*/
@@ -178,7 +175,10 @@ typedef struct State_s			/* program state		*/
 	int		(*stat)(const char*, struct stat*);	/* stat	*/
 
 #define INITSTATE	pathsiz		/* (re)init state before this	*/
-	int		pathsiz;	/* state.path buffer size	*/
+	size_t		pathsiz;	/* state.path buffer size	*/
+	size_t		postsiz;	/* state.path post index	*/
+	ssize_t		presiz;		/* state.path pre index		*/
+	size_t		suflen;		/* strlen(state.suffix)		*/
 
 
 	char*		path;		/* to pathname buffer		*/
@@ -231,10 +231,11 @@ visit(State_t* state, FTSENT* ent)
 {
 	char*		base;
 	int		n;
-	int		len;
+	ssize_t		len;
 	int		rm = state->remove || ent->fts_info == FTS_SL;
 	int		m;
 	int		v;
+	ssize_t		length;
 	char*		s;
 	char*		e;
 	char*		protection;
@@ -485,12 +486,12 @@ visit(State_t* state, FTSENT* ent)
 				e = (char*)dot;
 				s = state->path;
 			}
-			n = strlen(s);
+			length = strlen(s);
 			if (fts = fts_open((char**)e, FTS_NOCHDIR|FTS_ONEPATH|FTS_PHYSICAL|FTS_NOPOSTORDER|FTS_NOSTAT|FTS_NOSEEDOTDIR, NULL))
 			{
 				while (sub = fts_read(fts))
 				{
-					if (strneq(s, sub->fts_name, n) && sub->fts_name[n] == '.' && strneq(sub->fts_name + n + 1, state->suffix, state->suflen) && (m = strtol(sub->fts_name + n + state->suflen + 1, &e, 10)) && streq(e, state->suffix) && m > v)
+					if (strneq(s, sub->fts_name, length) && sub->fts_name[length] == '.' && strneq(sub->fts_name + length + 1, state->suffix, state->suflen) && (m = (int)strtol(sub->fts_name + length + state->suflen + 1, &e, 10)) && streq(e, state->suffix) && m > v)
 						v = m;
 					if (sub->fts_level)
 						fts_set(NULL, sub, FTS_SKIP);
@@ -555,7 +556,7 @@ visit(State_t* state, FTSENT* ent)
 	case CP:
 		if (S_ISLNK(ent->fts_statp->st_mode))
 		{
-			if ((n = pathgetlink(ent->fts_path, state->text, sizeof(state->text) - 1)) < 0)
+			if ((n = (int)pathgetlink(ent->fts_path, state->text, sizeof(state->text) - 1)) < 0)
 			{
 				error(ERROR_SYSTEM|2, "%s: cannot read symbolic link text", ent->fts_path);
 				return 0;

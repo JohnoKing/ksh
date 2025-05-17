@@ -69,7 +69,7 @@ static const char usage[] =
 static void namebase(Sfio_t *outfile, char *pathname, char *suffix, char termch)
 {
 	char *first, *last;
-	int n=0;
+	size_t n=0;
 	/* go to end of path */
 	for(first=last=pathname; *last; last++);
 	/* back over trailing '/' */
@@ -91,7 +91,7 @@ static void namebase(Sfio_t *outfile, char *pathname, char *suffix, char termch)
 		if(*first=='/')
 			first++;
 		/* check for trailing suffix */
-		if(suffix && (n=strlen(suffix)) && n<(last-first))
+		if(suffix && (n=strlen(suffix)) && (ssize_t)n<(last-first))
 		{
 			if(memcmp(last-n,suffix,n)==0)
 				last -=n;

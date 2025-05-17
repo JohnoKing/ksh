@@ -24,9 +24,9 @@
 **	Written by Kiem-Phong Vo.
 */
 
-int _sfputm(Sfio_t*	f,	/* write a portable ulong to this stream */
-	    Sfulong_t	v,	/* the unsigned value to be written */
-	    Sfulong_t	m)	/* the max value of the range */
+ssize_t _sfputm(Sfio_t* f,	/* write a portable ulong to this stream */
+		Sfulong_t v,	/* the unsigned value to be written */
+		Sfulong_t m)	/* the max value of the range */
 {
 #define N_ARRAY		(2*sizeof(Sfulong_t))
 	uchar	*s, *ps;
@@ -71,5 +71,5 @@ int _sfputm(Sfio_t*	f,	/* write a portable ulong to this stream */
 	}
 
 	SFOPEN(f,0);
-	return (int)n;
+	return n;
 }

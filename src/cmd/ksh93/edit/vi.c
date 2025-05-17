@@ -715,7 +715,7 @@ static int cntlmode(Vi_t *vp)
 						}
 						else
 						{
-							cur_virt = p-virtual;
+							cur_virt = (int)(p-virtual);
 							append(vp,'#', APPEND);
 						}
 					}
@@ -1592,7 +1592,7 @@ find_b:
 		if(tcur_virt > last_virt )
 			return 0;
 		nextc = virtual[tcur_virt];
-		count = strchr(paren_chars,nextc)-paren_chars;
+		count = (int)(strchr(paren_chars,nextc)-paren_chars);
 		if(count < 3)
 		{
 			incr = 1;
@@ -1991,7 +1991,7 @@ static int curline_search(Vi_t *vp, const char *string)
 	for(dp=(char*)vp->u_space,dpmax=dp+strlen(dp)-len; dp<=dpmax; dp++)
 	{
 		if(strncmp(cp,dp,len)==0)
-			return dp - (char*)vp->u_space;
+			return (int)(dp - (char*)vp->u_space);
 	}
 #if SHOPT_MULTIBYTE
 	ed_internal((char*)vp->u_space,vp->u_space);

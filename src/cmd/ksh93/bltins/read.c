@@ -52,11 +52,11 @@ struct read_save
 {
 	char		**argv;
 	char		*prompt;
-	int		fd;
-	int		plen;
-	int		flags;
-	ssize_t		len;
 	Sflong_t	timeout;
+	size_t		plen;
+	ssize_t		len;
+	int		fd;
+	int		flags;
 };
 
 int	b_read(int argc,char *argv[], Shbltin_t *context)
@@ -65,7 +65,8 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	char *prompt;
 	const char *msg = e_file+4;
 	int r, flags=0, fd=0;
-	ssize_t	len=0;
+	ssize_t	len=0, l;
+	size_t q;
 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
 	int save_prompt, fixargs=context->invariant;
 	struct read_save *rp;
@@ -84,7 +85,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 		fd = rp->fd;
 		argv = rp->argv;
 		prompt = rp->prompt;
-		r = rp->plen;
+		q = rp->plen;
 		goto bypass;
 	}
 	while((r = optget(argv,sh_optread))) switch(r)
@@ -162,9 +163,9 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	}
 	/* look for prompt */
 	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (r&IOTTY))
-		r = strlen(prompt++);
+		q = strlen(prompt++);
 	else
-		r = 0;
+		q = 0;
 	if(argc==fixargs)
 	{
 		rp = sh_newof(NULL,struct read_save,1,0);
@@ -174,27 +175,27 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 		rp->timeout = timeout;
 		rp->argv = argv;
 		rp->prompt = prompt;
-		rp->plen = r;
+		rp->plen = q;
 		rp->len = len;
 	}
 bypass:
 	sh.prompt = default_prompt;
-	if(r && (sh.prompt=(char*)sfreserve(sfstderr,r,SFIO_LOCKR)))
+	if(q && (sh.prompt=(char*)sfreserve(sfstderr,q,SFIO_LOCKR)))
 	{
-		memcpy(sh.prompt,prompt,r);
-		sfwrite(sfstderr,sh.prompt,r-1);
+		memcpy(sh.prompt,prompt,q);
+		sfwrite(sfstderr,sh.prompt,q-1);
 	}
 	sh.timeout = 0;
 	save_prompt = sh.nextprompt;
 	sh.nextprompt = 0;
-	r=sh_readline(argv,fd,flags,len,timeout);
+	l=sh_readline(argv,fd,flags,len,timeout);
 	sh.nextprompt = save_prompt;
-	if(r==0 && (r=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
+	if(l==0 && (l=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
 	{
 		if(fd == sh.cpipe[0] && errno!=EINTR)
 			sh_pclose(sh.cpipe);
 	}
-	return r;
+	return (int)l;
 }
 
 /*
@@ -229,7 +230,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	volatile char		was_write = 0;
 	volatile char		was_share = 1;
 	volatile int		keytrap;
-	int			rel, wrd;
+	int			wrd;
+	ssize_t			rel;
 	long			array_index = 0;
 	void			*timeslot=0;
 	int			delim = '\n';
@@ -339,7 +341,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		{
 			Namval_t *mp = nv_open(name,sh.var_tree,oflags|NV_NOREF);
 			if((c=(*nfp->disc->readf)(mp,iop,delim,nfp))>=0)
-				return c;
+				return (int)c;
 		}
 	}
 	if(binary && !(flags&(N_FLAG|NN_FLAG)))
@@ -371,7 +373,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	{
 		char buf[256],*var=buf,*cur,*end,*up,*v;
 		/* reserved buffer */
-		if((c=size)>=sizeof(buf))
+		if((c=size)>=(ssize_t)sizeof(buf))
 		{
 			var = (char*)sh_malloc(c+1);
 			end = var + c;
@@ -495,9 +497,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 				if(var==buf)
 					var = sh_memdup(var,c+1);
 				nv_putval(np,var,NV_RAW);
-				nv_setsize(np,c);
+				nv_setsize(np,(uint32_t)c);
 				if(!nv_isattr(np,NV_MINIMAL|NV_EXPORT) && (mp = np->nvmeta))
-					nv_setsize(mp,c);
+					nv_setsize(mp,(uint32_t)c);
 			}
 		}
 		else

@@ -331,11 +331,11 @@ cat{
 	#define feof(f)		sfeof(f)
 	#define ferror(f)	sferror(f)
 	#define fileno(f)	sffileno(f)
-	#define fputc(c,f)	sfputc(f,c)
+	#define fputc(c,f)	((int)sfputc(f,c))
 	#define getc(f)		sfgetc(f)
 	#define getchar()	sfgetc(sfstdin)
-	#define putc(c,f)	sfputc(f,c)
-	#define putchar(c)	sfputc(sfstdout,c)
+	#define putc(c,f)	((int)sfputc(f,c))
+	#define putchar(c)	((int)sfputc(sfstdout,c))
 
 	#else
 
@@ -352,8 +352,8 @@ cat{
 	#define putc(c,f)	fputc(c,f)
 	#define putchar(c)	fputc(c,stdout)
 
-	extern int		_sffilbuf(FILE*, int);
-	extern int		_sfflsbuf(FILE*, int);
+	extern ssize_t		_sffilbuf(FILE*, ssize_t);
+	extern ssize_t		_sfflsbuf(FILE*, ssize_t);
 
 	#endif
 }end

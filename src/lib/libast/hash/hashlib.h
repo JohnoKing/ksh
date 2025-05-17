@@ -54,10 +54,10 @@ typedef struct				/* root local pointers		*/
 
 #define _HASH_LAST_PRIVATE_ \
 	const char*	name;		/* last lookup name		*/ \
-	unsigned int	hash;		/* last lookup hash		*/
+	unsigned long	hash;		/* last lookup hash		*/
 
 #define _HASH_ROOT_PRIVATE_ \
-	int		namesize;	/* fixed name size: 0 => string	*/ \
+	size_t		namesize;	/* fixed name size: 0 => string	*/ \
 	int		meanchain;	/* resize mean chain length	*/ \
 	Hash_local_t*	local;		/* root local pointers		*/ \
 	Hash_root_t*	next;		/* next in list	of all roots	*/ \
@@ -85,9 +85,9 @@ typedef struct				/* root local pointers		*/
 				if (r->namesize)\
 				{\
 					const char*	_hash_s2 = _hash_s1 + r->namesize;\
-					while (_hash_s1 < _hash_s2) HASHPART(h, *_hash_s1++);\
+					while (_hash_s1 < _hash_s2) HASHPART(h, (size_t)*_hash_s1++);\
 				}\
-				else while (*_hash_s1) HASHPART(h, *_hash_s1++);\
+				else while (*_hash_s1) HASHPART(h, (size_t)*_hash_s1++);\
 			}
 
 typedef struct				/* library private info		*/

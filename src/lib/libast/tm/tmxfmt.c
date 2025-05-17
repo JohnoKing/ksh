@@ -537,7 +537,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 			cp += sfsprintf(cp, ep - cp, fmt, tmxsec(now));
 			if (parts > 1)
 			{
-				n = sfsprintf(cp, ep - cp, ".%09I*u", sizeof(Tmxnsec_t), tmxnsec(now));
+				n = (int)sfsprintf(cp, ep - cp, ".%09I*u", sizeof(Tmxnsec_t), tmxnsec(now));
 				if (prec && n >= prec)
 					n = prec + 1;
 				cp += n;

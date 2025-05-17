@@ -81,18 +81,18 @@ int        sfstrclose(Sfio_t* f);
 .nf
 .ft 5
 int        sfgetc(Sfio_t* f);
-int        sfputc(Sfio_t* f, int c);
+ssize_t    sfputc(Sfio_t* f, int c);
 ssize_t    sfnputc(Sfio_t* f, int c, size_t n);
 int        sfungetc(Sfio_t* f, int c);
 
 Sfulong_t  sfgetm(Sfio_t* f, Sfulong_t max);
-int        sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max);
+ssize_t    sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max);
 Sfulong_t  sfgetu(Sfio_t* f);
-int        sfputu(Sfio_t* f, Sfulong_t v);
+ssize_t    sfputu(Sfio_t* f, Sfulong_t v);
 Sflong_t   sfgetl(Sfio_t* f);
-int        sfputl(Sfio_t* f, Sflong_t v);
+ssize_t    sfputl(Sfio_t* f, Sflong_t v);
 Sfdouble_t sfgetd(Sfio_t* f);
-int        sfputd(Sfio_t* f, Sfdouble_t v);
+ssize_t    sfputd(Sfio_t* f, Sfdouble_t v);
 
 char*      sfgetr(Sfio_t* f, int rsc, int type);
 ssize_t    sfputr(Sfio_t* f, const char* s, int rsc);
@@ -568,7 +568,7 @@ but intended for string buffers opened with
 .BR sfstropen() .
 .Ss "INPUT/OUTPUT OPERATIONS"
 .Ss "  int sfgetc(Sfio_t* f)"
-.Ss "  int sfputc(Sfio_t* f, int c)"
+.Ss "  ssize_t sfputc(Sfio_t* f, int c)"
 These functions read/write a byte from/to stream \f3f\fP.
 \f3sfgetc()\fP returns the byte read or \f3-1\fP on error.
 \f3sfputc()\fP returns \f3c\fP on success and \f3-1\fP on error.
@@ -585,7 +585,7 @@ buffered data will be discarded on any operation that implies
 buffer synchronization.
 \f3sfungetc()\fP returns \f3c\fP on success and \f3-1\fP on failure.
 .Ss "  Sfulong_t sfgetm(Sfio_t* f, Sfulong_t max)"
-.Ss "  int sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max)"
+.Ss "  ssize_t sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max)"
 These functions read and write \f3Sfulong_t\fP values
 encoded in a portable format given that the values are at most \f3max\fP.
 Portability across a write architecture and a read architecture
@@ -594,7 +594,7 @@ the written value is storable in an \f3Sfulong_t\fP on the read architecture.
 \f3sfgetm()\fP returns the value read or \f3-1\fP on error.
 \f3sfputm()\fP returns the number of bytes written or \f3-1\fP on error.
 .Ss "  Sfulong_t sfgetu(Sfio_t* f)"
-.Ss "  int sfputu(Sfio_t* f, Sfulong_t v)"
+.Ss "  ssize_t sfputu(Sfio_t* f, Sfulong_t v)"
 These functions read and write \f3Sfulong_t\fP values
 in a compact variable-length portable format.
 Portability across a write architecture and a read architecture
@@ -604,12 +604,12 @@ the written value is storable in an \f3Sfulong_t\fP on the read architecture.
 \f3sfputu()\fP returns the number of bytes written or \f3-1\fP on error.
 See also \f3sfulen()\fP.
 .Ss "  Sflong_t sfgetl(Sfio_t* f)"
-.Ss "  int sfputl(Sfio_t* f, Sflong_t v)"
+.Ss "  ssize_t sfputl(Sfio_t* f, Sflong_t v)"
 These functions are similar to \f3sfgetu()\fP and \f3sfputu()\fP
 but for reading and writing (signed) \f3Sflong_t\fP values.
 See also \f3sfllen()\fP.
 .Ss "  Sfdouble_t sfgetd(Sfio_t* f)"
-.Ss "  int sfputd(Sfio_t* f, Sfdouble_t v)"
+.Ss "  ssize_t sfputd(Sfio_t* f, Sfdouble_t v)"
 These functions read and write \f3Sfdouble_t\fP values.
 In this case, portability depends on the input and output architectures
 having the same floating point value representation.

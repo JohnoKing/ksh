@@ -33,7 +33,7 @@ typedef struct
 	Sfdisc_t	histdisc;	/* discipline for history */
 	Sfio_t		*histfp;	/* history file stream pointer */
 	char		*histname;	/* name of history file */
-	int32_t		histind;	/* current command number index */
+	int		histind;	/* current command number index */
 	int		histsize;	/* number of accessible history lines */
 #ifdef _HIST_PRIVATE
 	_HIST_PRIVATE
@@ -69,8 +69,8 @@ typedef struct
 extern const char	hist_fname[];
 
 extern int _Hist;
-#define hist_min(hp)	((_Hist=((int)((hp)->histind-(hp)->histsize)))>=0?_Hist:0)
-#define hist_max(hp)	((int)((hp)->histind))
+#define hist_min(hp)	((_Hist=((hp)->histind-(hp)->histsize))>=0?_Hist:0)
+#define hist_max(hp)	((hp)->histind)
 /* these are the history interface routines */
 extern int		sh_histinit(void);
 extern void 		hist_cancel(History_t*);

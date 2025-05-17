@@ -30,7 +30,7 @@
 typedef struct Local_s
 {
 	const char*	name;
-	int		size;
+	size_t		size;
 } Local_t;
 
 #undef	setlocale	/* this file deals with the system locale */
@@ -169,7 +169,7 @@ lcinfo(int category)
  */
 
 static int
-match(const char* s, const char* p, int minimum, int standard)
+match(const char* s, const char* p, size_t minimum, int standard)
 {
 	const char*	t;
 	const char*	x;
@@ -230,9 +230,9 @@ match(const char* s, const char* p, int minimum, int standard)
 				p++;
 			}
 			if ((!*t || *t == ',') && (!*p || *p == '|' || w))
-				return p - x;
-			if (minimum && z < (p - x) && (p - x) >= minimum)
-				z = p - x;
+				return (int)(p - x);
+			if (minimum && z < (p - x) && (p - x) >= (ssize_t)minimum)
+				z = (int)(p - x);
 		}
 		while (*p && *p != '|')
 			p++;
@@ -432,8 +432,9 @@ lcmake(const char* name)
 	Lc_attribute_list_t*	ai;
 	Lc_attribute_list_t*	al;
 	int			i;
-	int			n;
-	int			z;
+	size_t			j;
+	size_t			n;
+	size_t			z;
 	char			buf[PATH_MAX / 2];
 	char			tmp[PATH_MAX / 2];
 	Local_t			local[2];
@@ -580,10 +581,10 @@ lcmake(const char* name)
 					z = 0;
 					tpb = 0;
 					for (tp = lc_territories; tp->name; tp++)
-						if ((i = match(s, tp->name, 3, 0)) > z)
+						if ((i = match(s, tp->name, 3, 0)) > (int)z)
 						{
 							tpb = tp;
-							if ((z = i) == n)
+							if ((z = (size_t)i) == n)
 								break;
 						}
 					if (tpb)
@@ -658,8 +659,8 @@ lcmake(const char* name)
 					{
 						if (lp != &lc_languages[0])
 						{
-							for (i = 0; i < elementsof(tp->languages) && lp != tp->languages[i]; i++);
-							if (i >= elementsof(tp->languages))
+							for (j = 0; j < elementsof(tp->languages) && lp != tp->languages[j]; j++);
+							if (j >= elementsof(tp->languages))
 								tp = 0;
 						}
 						break;
@@ -670,8 +671,8 @@ lcmake(const char* name)
 				for (tp = lc_territories; tp->code; tp++)
 					if (match(s, tp->name, 3, 0))
 					{
-						for (i = 0; i < elementsof(tp->languages) && lp != tp->languages[i]; i++);
-						if (i < elementsof(tp->languages))
+						for (j = 0; j < elementsof(tp->languages) && lp != tp->languages[j]; j++);
+						if (j < elementsof(tp->languages))
 							break;
 					}
 			}
@@ -700,7 +701,7 @@ lcmake(const char* name)
 					}
 			if (!cp->code)
 			{
-				for (i = 0; i < elementsof(lp->attributes) && (ap = lp->attributes[i]); i++)
+				for (j = 0; j < elementsof(lp->attributes) && (ap = lp->attributes[j]); j++)
 					if (match(w, ap->name, 5, 0))
 					{
 						if (ai = newof(0, Lc_attribute_list_t, 1, 0))
@@ -711,7 +712,7 @@ lcmake(const char* name)
 						}
 						break;
 					}
-				if (i >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + s - w + 1)))
+				if (j >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + s - w + 1)))
 				{
 					ai = (Lc_attribute_list_t*)(ap + 1);
 					strcpy((char*)(((Lc_attribute_t*)ap)->name = (const char*)(ai + 1)), w);
@@ -752,15 +753,15 @@ lcmake(const char* name)
 	local[1].name = default_lc.code;
 	local[1].size = strlen(local[1].name);
 	i = -1;
-	for (c = 0; c < elementsof(local); ++c)
-		if (strneq(name, local[c].name, local[c].size))
+	for (j = 0; j < elementsof(local); ++j)
+		if (strneq(name, local[j].name, local[j].size))
 		{
-			switch (name[local[c].size])
+			switch (name[local[j].size])
 			{
 			case '.':
 			case '_':
 			case 0:
-				i = c;
+				i = (int)j;
 				z += local[!i].size + n;
 				break;
 			}
@@ -784,15 +785,15 @@ lcmake(const char* name)
 	if (streq(lc->charset->code, "utf8"))
 		lc->flags |= LC_utf8;
 	lc->attributes = al;
-	for (i = 0; i < elementsof(lc->info); i++)
-		lc->info[i].lc = lc;
+	for (j = 0; j < elementsof(lc->info); j++)
+		lc->info[j].lc = lc;
 #if _WINIX
 	n = SUBLANG_DEFAULT;
 	if (tp)
-		for (i = 0; i < elementsof(tp->languages); i++)
-			if (lp == tp->languages[i])
+		for (j = 0; j < elementsof(tp->languages); j++)
+			if (lp == tp->languages[j])
 			{
-				n = tp->indices[i];
+				n = tp->indices[j];
 				break;
 			}
 	lc->index = MAKELCID(MAKELANGID(lp->index, n), SORT_DEFAULT);
@@ -835,9 +836,9 @@ lcscan(Lc_t* lc)
 		ls->language = elementsof(ls->lc.territory->languages);
 		ls->attribute = elementsof(ls->lc.language->attributes);
 	}
-	if (++ls->attribute >= elementsof(ls->lc.language->attributes) || !(ls->list.attribute = ls->lc.language->attributes[ls->attribute]))
+	if (++ls->attribute >= (ssize_t)elementsof(ls->lc.language->attributes) || !(ls->list.attribute = ls->lc.language->attributes[ls->attribute]))
 	{
-		if (++ls->language >= elementsof(ls->lc.territory->languages) || !(ls->lc.language = ls->lc.territory->languages[ls->language]))
+		if (++ls->language >= (ssize_t)elementsof(ls->lc.territory->languages) || !(ls->lc.language = ls->lc.territory->languages[ls->language]))
 		{
 			if (!lc_territories[++ls->territory].code)
 			{

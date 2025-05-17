@@ -39,7 +39,7 @@ strmode(const char* s)
 		for (t = p->name; *t; t++)
 			if (*t == c)
 			{
-				c = t - p->name;
+				c = (int)(t - p->name);
 				mode |= (p->mask1 & (c << p->shift1)) | (p->mask2 & (c << p->shift2));
 				break;
 			}

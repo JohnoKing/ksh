@@ -272,7 +272,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 			file = t;
 		*file++ = 0;
 		attr = 0;
-		if ((mode = strtol(file, &e, 8)) && *e == ' ' && (e - file) == 4)
+		if ((mode = (int)strtol(file, &e, 8)) && *e == ' ' && (e - file) == 4)
 		{
 			mode = modei(mode);
 			if (t = strchr(++e, ' '))
@@ -326,7 +326,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 				}
 				else
 				{
-					if (uid < 0 || uid == st.st_uid)
+					if (uid < 0 || uid == (int)st.st_uid)
 						uid = -1;
 					else if (!state->permissions)
 					{
@@ -335,7 +335,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 						else
 							error(2, "%s: UID should be %s", file, fmtuid(uid));
 					}
-					if (gid < 0 || gid == st.st_gid)
+					if (gid < 0 || gid == (int)st.st_gid)
 						gid = -1;
 					else if (!state->permissions)
 					{
@@ -502,13 +502,13 @@ b_cksum(int argc, char** argv, Shbltin_t* context)
 			method = "sys5";
 			continue;
 		case 'S':
-			state.silent = opt_info.num;
+			state.silent = (int)opt_info.num;
 			continue;
 		case 't':
 			state.total = 1;
 			continue;
 		case 'w':
-			state.warn = opt_info.num;
+			state.warn = (int)opt_info.num;
 			continue;
 		case 'x':
 			method = opt_info.arg;

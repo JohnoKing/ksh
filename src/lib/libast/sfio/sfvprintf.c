@@ -84,6 +84,7 @@ int sfvprintf(Sfio_t*		f,		/* file to print to	*/
 	int		dot, width, precis, sign, decpt;
 	int		scale;
 	ssize_t		size;
+	ssize_t		q;
 	Sfdouble_t	dval;
 	void*		valp;
 	char		*tls[2], **ls;	/* for %..[separ]s		*/
@@ -114,7 +115,7 @@ int sfvprintf(Sfio_t*		f,		/* file to print to	*/
 #endif
 
 	/* local io system */
-	int		o, n_output;
+	ssize_t		o, n_output;
 #define SMputc(f,c)	{ if((o = SFFLSBUF(f,c)) >= 0 ) n_output += 1; \
 			  else		{ SFBUF(f); goto done; } \
 			}
@@ -189,8 +190,8 @@ loop_fmt :
 				}
 			} while(*(form += n) && *form != '%');
 
-			n = form-sp;
-			SFwrite(f,sp,n);
+			q = form-sp;
+			SFwrite(f,sp,q);
 			continue;
 		}
 		else	form += 1;
@@ -701,7 +702,7 @@ loop_fmt :
 					{	if((size >= 0 && n >= size) ||
 						   (size <  0 && *wsp == 0) )
 							break;
-						if((n_s = wcrtomb(buf, *wsp, &mbs)) <= 0)
+						if((n_s = (int)wcrtomb(buf, *wsp, &mbs)) <= 0)
 							break;
 						if(wc)
 						{	n_w = mbwidth(*wsp);
@@ -738,11 +739,11 @@ loop_fmt :
 						}
 						ssp = osp;
 					}
-					v = ssp - sp;
+					v = (int)(ssp - sp);
 				}
 				else
 #endif
-				{	if((v = size) < 0)
+				{	if((v = (int)size) < 0)
 						for(v = 0; v != precis && sp[v]; ++v);
 					if(precis >= 0 && v > precis)
 						v = precis;
@@ -801,7 +802,7 @@ loop_fmt :
 				if(flags & SFFMT_LONG)
 				{	SFMBCLR(&mbs);
 					for(wsp = (wchar_t*)sp; w > 0; ++wsp, --w)
-					{	if((n_s = wcrtomb(buf, *wsp, &mbs)) <= 0)
+					{	if((n_s = (int)wcrtomb(buf, *wsp, &mbs)) <= 0)
 							break;
 						sp = buf; SFwrite(f, sp, n_s);
 					}
@@ -860,7 +861,7 @@ loop_fmt :
 #if _has_multibyte
 				if(flags&SFFMT_LONG)
 				{	SFMBCLR(&mbs);
-					if((n_s = wcrtomb(buf, *wsp++, &mbs)) <= 0)
+					if((n_s = (int)wcrtomb(buf, *wsp++, &mbs)) <= 0)
 						break;
 					if(wc)
 					{
@@ -1083,7 +1084,7 @@ loop_fmt :
 				}
 			}
 
-			if(n_s < 0 && (flags&SFFMT_THOUSAND) && (n = endsp-sp) > 3)
+			if(n_s < 0 && (flags&SFFMT_THOUSAND) && (n = (int)(endsp-sp)) > 3)
 			{	if((n %= 3) == 0)
 					n = 3;
  				for(ep = buf+SLACK, endep = ep + n; ; )
@@ -1119,7 +1120,7 @@ loop_fmt :
 						else	n = base < 10 ? 2 : 3;
 						n += (flags&(SFFMT_MINUS|SFFMT_SIGN)) ?
 							1 : 0;
-						n = width - (n + (endsp-sp));
+						n = width - (n + (int)(endsp-sp));
 						while(n-- > 0)
 							*--sp = '0';
 					}
@@ -1325,7 +1326,7 @@ loop_fmt :
 		if(flags&SFFMT_PREFIX)
 			fmt = (flags&SFFMT_MINUS) ? '-' : (flags&SFFMT_SIGN) ? '+' : ' ';
 
-		n = (endsp-sp) + (endep-ep) + (precis <= 0 ? 0 : precis) +
+		n = (int)(endsp-sp) + (int)(endep-ep) + (precis <= 0 ? 0 : precis) +
 		    ((flags&SFFMT_PREFIX) ? 1 : 0);
 		if((v = width-n) <= 0)
 			v = 0;
@@ -1356,7 +1357,7 @@ loop_fmt :
 		}
 
 	do_output:
-		if((n = endsp-sp) > 0)
+		if((n = (int)(endsp-sp)) > 0)
 			SFwrite(f,sp,n);
 
 		if(flags&(SFFMT_FLOAT|SFFMT_LEFT))
@@ -1365,7 +1366,7 @@ loop_fmt :
 				SFnputc(f,'0',n);
 
 			/* SFFMT_FLOAT: the exponent of %eE */
-			if((n = endep - (sp = ep)) > 0)
+			if((n = (int)(endep - (sp = ep))) > 0)
 				SFwrite(f,sp,n);
 
 			/* SFFMT_LEFT: right padding */
@@ -1419,16 +1420,16 @@ done:
 
 	SFEND(f);
 
-	n = f->next - f->data;
+	q = f->next - f->data;
 	if((sp = (char*)f->data) == data)
 		f->endw = f->endr = f->endb = f->data = NULL;
 	f->next = f->data;
 
 	if((((flags = f->flags)&SFIO_SHARE) && !(flags&SFIO_PUBLIC) ) ||
-	   (n > 0 && (sp == data || (flags&SFIO_LINE) ) ) )
-		(void)SFWRITE(f,sp,n);
-	else	f->next += n;
+	   (q > 0 && (sp == data || (flags&SFIO_LINE) ) ) )
+		(void)SFWRITE(f,sp,q);
+	else	f->next += q;
 
 	SFOPEN(f,0);
-	return n_output;
+	return (int)n_output;
 }

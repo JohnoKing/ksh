@@ -164,7 +164,7 @@ extern char**		tmlocale(void);
 extern Tm_t*		tmmake(time_t*);
 extern char*		tmpoff(char*, size_t, const char*, int, int);
 extern time_t		tmscan(const char*, char**, const char*, char**, time_t*, long);
-extern int		tmsleep(time_t, time_t);
+extern int		tmsleep(time_t, uint32_t);
 extern time_t		tmtime(Tm_t*, int);
 extern Tm_zone_t*	tmtype(const char*, char**);
 extern int		tmweek(Tm_t*, int, int, int);

@@ -66,7 +66,7 @@ struct Namfun
 	const Namdisc_t	*disc;
 	char		nofree;
 	unsigned int	subshell;
-	uint32_t	dsize;
+	size_t		dsize;
 	Namfun_t	*next;
 	char		*last;
 	Namval_t	*type;

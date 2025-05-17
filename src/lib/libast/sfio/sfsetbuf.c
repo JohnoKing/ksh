@@ -68,13 +68,13 @@ static int sfsetlinemode(void)
 					++astsfio;
 				for(endw = astsfio; *endw && !ISSEPAR(*endw); ++endw)
 					;
-				if((endw-astsfio) > (sizeof(sf_line)-1) &&
+				if((endw-astsfio) > ((ssize_t)sizeof(sf_line)-1) &&
 				   strncmp(astsfio,sf_line,sizeof(sf_line)-1) == 0)
 					modes |= SFIO_LINE;
-				else if((endw-astsfio) > (sizeof(sf_maxr)-1) &&
+				else if((endw-astsfio) > ((ssize_t)sizeof(sf_maxr)-1) &&
 				   strncmp(astsfio,sf_maxr,sizeof(sf_maxr)-1) == 0)
 					_Sfmaxr = (ssize_t)strtonll(astsfio+sizeof(sf_maxr)-1,NULL,NULL,0);
-				else if((endw-astsfio) > (sizeof(sf_wcwidth)-1) &&
+				else if((endw-astsfio) > ((ssize_t)sizeof(sf_wcwidth)-1) &&
 				   strncmp(astsfio,sf_wcwidth,sizeof(sf_wcwidth)-1) == 0)
 					modes |= SFIO_WCWIDTH;
 			}

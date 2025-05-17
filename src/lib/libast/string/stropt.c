@@ -174,7 +174,7 @@ stropt(const char* as, const void* tab, int siz, int(*f)(void*, const void*, int
 				c = *s;
 				*s++ = 0;
 			}
-			n = p ? (*f)(a, p, n, v) : (*f)(a, p, v - u, u);
+			n = p ? (*f)(a, p, n, v) : (*f)(a, p, (int)(v - u), u);
 			if (n || !c)
 				break;
 		}

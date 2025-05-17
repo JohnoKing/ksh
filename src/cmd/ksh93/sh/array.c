@@ -442,7 +442,8 @@ static Namfun_t *array_clone(Namval_t *np, Namval_t *mp, int flags, Namfun_t *fp
 	Namarr_t		*ap = (Namarr_t*)fp;
 	Namval_t		*nq, *mq;
 	char			*name, *sub=0;
-	int			nelem, skipped=0;
+	int			skipped=0;
+	long			nelem;
 	Dt_t			*otable=ap->table;
 	struct index_array	*aq = (struct index_array*)ap, *ar;
 	if(flags&NV_MOVE)
@@ -1355,7 +1356,7 @@ int nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 
 static void array_fixed_setdata(Namval_t *np,Namarr_t* ap,struct fixed_array* fp)
 {
-	int n = ap->nelem;
+	long n = ap->nelem;
 	ap->nelem = 1;
 	fp->size = fp->ptr?sizeof(void*):nv_datasize(np,0);
 	ap->nelem = n;
@@ -1481,7 +1482,8 @@ skip:
  */
 char *nv_endsubscript(Namval_t *np, char *cp, int mode)
 {
-	int count=1, quoted=0, c;
+	int quoted=0, c;
+	ssize_t count=1;
 	char *sp = cp+1;
 	assert(*cp=='[');
 	/* first find matching ']' */

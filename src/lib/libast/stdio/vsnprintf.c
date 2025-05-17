@@ -23,14 +23,14 @@ int
 vsnprintf(char* s, int n, const char* form, va_list args)
 {
 	Sfio_t*	f;
-	ssize_t	rv;
+	int rv;
 
 	/* make a temp stream */
 	if(!(f = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND,
 			-1,SFIO_WRITE|SFIO_STRING)) )
 		return -1;
 
-	if((rv = sfvprintf(f,form,args)) >= 0 )
+	if((rv = (int)sfvprintf(f,form,args)) >= 0 )
 	{	if(s && n > 0)
 		{	if((rv+1) >= n)
 				n--;

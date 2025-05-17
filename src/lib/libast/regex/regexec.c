@@ -35,7 +35,7 @@ regexec_20120528(const regex_t* p, const char* s, size_t nmatch, regmatch_t* mat
 	if (flags & REG_STARTEND)
 	{
 		int		r;
-		int		m = match->rm_so;
+		regoff_t	m = match->rm_so;
 		regmatch_t*	e;
 
 		if (!(r = regnexec(p, s + m, match->rm_eo - m, nmatch, match, flags)) && m > 0)
@@ -71,8 +71,8 @@ regexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmatch,
 		if (!(r = regexec_20120528(p, s, nmatch, match, flags)))
 			for (i = 0; i < nmatch; i++)
 			{
-				oldmatch[i].rm_so = match[i].rm_so;
-				oldmatch[i].rm_eo = match[i].rm_eo;
+				oldmatch[i].rm_so = (int)match[i].rm_so;
+				oldmatch[i].rm_eo = (int)match[i].rm_eo;
 			}
 		free(match);
 		return r;

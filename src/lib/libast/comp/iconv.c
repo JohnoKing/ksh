@@ -77,7 +77,7 @@ typedef struct Conv_s
 } Conv_t;
 
 static Conv_t*			freelist[4];
-static int			freeindex;
+static size_t			freeindex;
 
 static const char		name_local[] = "local";
 static const char		name_native[] = "native";
@@ -187,7 +187,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
 				bp = cp;
 				break;
 			}
-			if (sub[1] > n && !isalpha(c))
+			if (sub[1] > (ssize_t)n && !isalpha(c))
 			{
 				bp = cp;
 				n = sub[1];
@@ -788,7 +788,7 @@ _ast_iconv_open(const char* t, const char* f)
 	Conv_t*	cc;
 	int	fc;
 	int	tc;
-	int	i;
+	size_t	i;
 
 	char	fr[64];
 	char	to[64];
@@ -916,7 +916,7 @@ _ast_iconv_close(_ast_iconv_t cd)
 {
 	Conv_t*	cc;
 	Conv_t*	oc;
-	int	i;
+	size_t	i;
 	int	r = 0;
 
 	if (cd == (_ast_iconv_t)(-1))
@@ -1205,7 +1205,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	fn = n;
 	do
 	{
-		if (n != SFIO_UNBOUND)
+		if (n != (size_t)SFIO_UNBOUND)
 			n = -((ssize_t)(n & (((size_t)(~0))>>1)));
 		if ((!(fb = (char*)sfreserve(ip, n, locked = SFIO_LOCKR)) || !(fo = sfvalue(ip))) &&
 		    (!(fb = (char*)sfreserve(ip, n, locked = 0)) || !(fo = sfvalue(ip))))
@@ -1263,11 +1263,11 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 		if (locked)
 			sfread(ip, fb, fs - fb);
 		else
-			for (i = fn; --i >= (fs - fb);)
+			for (i = fn; (ssize_t)(--i) >= (fs - fb);)
 				sfungetc(ip, fb[i]);
-		if (n != SFIO_UNBOUND)
+		if (n != (size_t)SFIO_UNBOUND)
 		{
-			if (n <= (fs - fb))
+			if ((ssize_t)n <= fs - fb)
 				break;
 			n -= fs - fb;
 		}

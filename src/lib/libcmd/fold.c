@@ -93,13 +93,13 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
 	{
 		if (!(cp  = sfgetr(in,'\n',0)))
 		{
-			if (!(cp = sfgetr(in,'\n',-1)) || (n = sfvalue(in)) <= 0)
+			if (!(cp = sfgetr(in,'\n',-1)) || (n = (int)sfvalue(in)) <= 0)
 				break;
 			x = cp[--n];
 			cp[n] = '\n';
 		}
 		/* special case -b since no column adjustment is needed */
-		if(cols['\b']==0 && (n=sfvalue(in))<=width)
+		if(cols['\b']==0 && (n=(int)sfvalue(in))<=width)
 		{
 			sfwrite(out,cp,n);
 			continue;
@@ -113,7 +113,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
 			while((cp-first) > (width-col))
 			{
 				if(last_space)
-					col = last_space - first;
+					col = (int)(last_space - first);
 				else
 					col = width-col;
 				sfwrite(out,first,col);
@@ -200,7 +200,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
 				cols['\t'] = T_SP;
 			continue;
 		case 'w':
-			if ((width = opt_info.num) <= 0)
+			if ((width = (int)opt_info.num) <= 0)
 				error(2, "%d: width must be positive", opt_info.num);
 			continue;
 		case ':':

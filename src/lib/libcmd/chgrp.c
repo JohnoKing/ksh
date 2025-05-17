@@ -152,8 +152,8 @@ getids(char* s, char** e, Key_t* key, int options)
 	if (n)
 	{
 		options |= OPT_CHOWN;
-		if ((n = t++ - s) >= sizeof(buf))
-			n = sizeof(buf) - 1;
+		if ((n = (int)(t++ - s)) >= (int)sizeof(buf))
+			n = (int)sizeof(buf) - 1;
 		*((s = (char*)memcpy(buf, s, n)) + n) = 0;
 	}
 	if (options & OPT_CHOWN)
@@ -176,8 +176,8 @@ getids(char* s, char** e, Key_t* key, int options)
 		for (s = t; (n = *t) && !isspace(n); t++);
 		if (n)
 		{
-			if ((n = t++ - s) >= sizeof(buf))
-				n = sizeof(buf) - 1;
+			if ((n = (int)(t++ - s)) >= (int)sizeof(buf))
+				n = (int)sizeof(buf) - 1;
 			*((s = (char*)memcpy(buf, s, n)) + n) = 0;
 		}
 	}
@@ -461,7 +461,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 							options |= OPT_GID;
 						}
 					}
-				} while (++i < elementsof(keys) && (uid < 0 || gid < 0));
+				} while (++i < (int)elementsof(keys) && (uid < 0 || gid < 0));
 			}
 			else
 			{
@@ -479,7 +479,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 				else
 					error(ERROR_warn(0), "%s: GID not mapped", ent->fts_path);
 			}
-			if (uid != ent->fts_statp->st_uid && uid >= 0 || gid != ent->fts_statp->st_gid && gid >= 0)
+			if (uid != (int)ent->fts_statp->st_uid && uid >= 0 || gid != (int)ent->fts_statp->st_gid && gid >= 0)
 			{
 				if (options & (OPT_SHOW|OPT_VERBOSE))
 				{

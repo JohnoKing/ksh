@@ -168,10 +168,10 @@ struct match
 	int		*match;
 	char		*nodes;
 	char		*names;
+	ssize_t		msize;
+	ssize_t		vsize;
+	ssize_t		vlen;
 	int		first;
-	int		vsize;
-	int		vlen;
-	int		msize;
 	int		nmatch;
 	int		index;
 	int		lastsub[2];
@@ -771,7 +771,7 @@ static char* get_lastarg(Namval_t *np, Namfun_t *fp)
 	char	*cp;
 	int	pid;
 	NOT_USED(fp);
-	if(sh_isstate(SH_INIT) && (cp=sh.lastarg) && *cp=='*' && (pid=strtol(cp+1,&cp,10)) && *cp=='*')
+	if(sh_isstate(SH_INIT) && (cp=sh.lastarg) && *cp=='*' && (pid=(pid_t)strtoll(cp+1,&cp,10)) && *cp=='*')
 		nv_putval(np,cp+1,0);
 	return sh.lastarg;
 }
@@ -829,11 +829,12 @@ static void match2d(struct match *mp)
  * store the most recent value for use in .sh.match
  * treat .sh.match as a two dimensional array
  */
-void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
+void sh_setmatch(const char *v, ssize_t vsize, int nmatch, int match[], int index)
 {
 	Init_t		*ip = sh.init_context;
 	struct match	*mp = &ip->SH_MATCH_init;
-	int		i,n,x, savesub=sh.subshell;
+	int		x, savesub=sh.subshell;
+	ssize_t		i,n;
 	Namarr_t	*ap = nv_arrayptr(SH_MATCHNOD);
 	Namval_t	*np;
 	if(sh.intrace)
@@ -1106,7 +1107,8 @@ static char *setdisc_any(Namval_t *np, const char *event, Namval_t *action, Namf
 {
 	Namval_t	*mp,fake;
 	char		*name;
-	int		getname=0, off=stktell(sh.stk);
+	int		getname=0;
+	ssize_t 	off=stktell(sh.stk);
 	NOT_USED(fp);
 	fake.nvname = nv_name(np);
 	if(!event)
@@ -1302,7 +1304,7 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
 				sh.shpath = sh_strdup(cp);
 			else if(cp = nv_getval(PWDNOD))
 			{
-				int offset = stktell(sh.stk);
+				ssize_t offset = stktell(sh.stk);
 				sfputr(sh.stk,cp,'/');
 				sfputr(sh.stk,argv[0],-1);
 				pathcanon(stkptr(sh.stk,offset),PATH_DOTDOT);
@@ -1639,7 +1641,8 @@ static Namval_t *create_stat(Namval_t *np,const char *name,int flag,Namfun_t *fp
 {
 	struct Stats		*sp = (struct Stats*)fp;
 	const char		*cp=name;
-	int			i=0,n;
+	int			i=0;
+	ssize_t			n;
 	Namval_t		*nq=0;
 	NOT_USED(flag);
 	if(!name)
@@ -1989,7 +1992,8 @@ struct Mapchar
 static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 {
 	struct Mapchar *mp = (struct Mapchar*)fp;
-	int c, offset = stktell(sh.stk), off = offset;
+	int c;
+	ssize_t offset = stktell(sh.stk), off = offset;
 	if(val)
 	{
 		if(mp->lctype!=lctype)

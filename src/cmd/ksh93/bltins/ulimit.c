@@ -70,13 +70,13 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 {
 	char *limit;
 	int mode=0, n;
-	unsigned long hit = 0;
+	unsigned long hit = 0, label;
 #if _lib_getrlimit
 	struct rlimit rlp;
 #endif /* _lib_getrlimit */
 	const Limit_t* tp;
 	char* conf;
-	int label, unit, nosupport, ret=0;
+	int unit, nosupport, ret=0;
 	rlim_t i=0;
 	char tmp[41];
 	Optdisc_t disc;

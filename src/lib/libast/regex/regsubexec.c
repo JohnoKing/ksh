@@ -31,7 +31,7 @@
 		{ \
 			size_t	o = (b)->re_cur - (b)->re_buf; \
 			size_t	a = ((b)->re_end - (b)->re_buf); \
-			if (a < n) \
+			if (a < (size_t)(n)) \
 				a = roundof(n, 128); \
 			a *= 2; \
 			if (!((b)->re_buf = alloc(p->env->disc, (b)->re_buf, a))) \
@@ -78,12 +78,12 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
 		case -1:
 			break;
 		case 0:
-			if (op->off >= nmatch)
+			if ((size_t)op->off >= nmatch)
 				return REG_ESUBREG;
-			if ((c = match[op->off].rm_so) < 0)
+			if ((c = (int)match[op->off].rm_so) < 0)
 				continue;
 			s = (char*)ss + c;
-			if ((c = match[op->off].rm_eo) < 0)
+			if ((c = (int)match[op->off].rm_eo) < 0)
 				continue;
 			e = (char*)ss + c;
 			NEED(p, b, e - s, return c);
@@ -205,7 +205,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmat
 	if (oldmatch)
 	{
 		regmatch_t*	match;
-		ssize_t		i;
+		size_t		i;
 		int		r;
 
 		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
@@ -218,8 +218,8 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmat
 		if (!(r = regsubexec_20120528(p, s, nmatch, match)))
 			for (i = 0; i < nmatch; i++)
 			{
-				oldmatch[i].rm_so = match[i].rm_so;
-				oldmatch[i].rm_eo = match[i].rm_eo;
+				oldmatch[i].rm_so = (int)match[i].rm_so;
+				oldmatch[i].rm_eo = (int)match[i].rm_eo;
 			}
 		free(match);
 		return r;

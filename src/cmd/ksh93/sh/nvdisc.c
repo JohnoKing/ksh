@@ -220,7 +220,7 @@ static void block_done(struct blocked *bp)
  */
 static void chktfree(Namval_t *np, struct vardisc *vp)
 {
-	int n;
+	size_t n;
 	for(n=0; n< sizeof(vp->disc)/sizeof(*vp->disc); n++)
 	{
 		if(vp->disc[n])
@@ -340,7 +340,7 @@ static void	assign(Namval_t *np,const char* val,int flags,Namfun_t *handle)
 	{
 		Dt_t *root = sh_subfuntree(1);
 		Namval_t *pp=0;
-		int n;
+		size_t n;
 		Namarr_t *ap;
 		block(bp,type);
 		nv_disc(np,handle,NV_POP);
@@ -677,7 +677,7 @@ static const Namdisc_t Nv_bdisc	= {   0, putdisc, 0, 0, setdisc };
 Namfun_t *nv_clone_disc(Namfun_t *fp, int flags)
 {
 	Namfun_t	*nfp;
-	int		size;
+	size_t		size;
 	if(!fp->disc && !fp->next && (fp->nofree&1))
 		return fp;
 	if(!(size=fp->dsize) && (!fp->disc || !(size=fp->disc->dsize)))
@@ -821,7 +821,7 @@ Namfun_t *nv_hasdisc(Namval_t *np, const Namdisc_t *dp)
 
 static void *newnode(const char *name)
 {
-	int s;
+	size_t s;
 	Namval_t *np = sh_newof(0,Namval_t,1,s=strlen(name)+1);
 	np->nvname = (char*)np+sizeof(Namval_t);
 	memcpy(np->nvname,name,s);
@@ -1036,7 +1036,8 @@ Namval_t *nv_search(const char *name, Dt_t *root, int mode)
  */
 Namval_t *nv_bfsearch(const char *name, Dt_t *root, Namval_t **var, char **last)
 {
-	int		c,offset = stktell(sh.stk);
+	int		c;
+	ssize_t		offset = stktell(sh.stk);
 	char		*sp, *cp=0;
 	Namval_t	*np, *nq;
 	char		*dname=0;
@@ -1126,7 +1127,7 @@ Namval_t *sh_addbuiltin(const char *path, Shbltin_f bltin, void *extra)
 	const char	*name;
 	char		*cp;
 	Namval_t	*np, *nq=0;
-	int		offset=stktell(sh.stk);
+	ssize_t		offset=stktell(sh.stk);
 	if(extra==(void*)1)
 		name = path;
 	else if((name = path_basename(path))==path && bltin!=b_typeset && (nq=nv_bfsearch(name,sh.bltin_tree,NULL,&cp)))
@@ -1436,7 +1437,7 @@ Namval_t *sh_fsearch(const char *fname, int add)
 {
 	if(*fname!='.')
 	{
-		int	offset = stktell(sh.stk);
+		ssize_t	offset = stktell(sh.stk);
 		sfputr(sh.stk,nv_name(sh.namespace),'.');
 		sfputr(sh.stk,fname,0);
 		fname = stkptr(sh.stk,offset);

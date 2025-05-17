@@ -292,13 +292,13 @@ static struct				/* program state		*/
 	int		force;		/* all targets out of date	*/
 	int		ignore;		/* ignore command errors	*/
 	int		indent;		/* debug indent			*/
-	int		installrootlen;	/* strlen of %{INSTALLROOT}	*/
-	int		packagerootlen;	/* strlen of %{PACKAGEROOT}	*/
 	int		keepgoing;	/* do siblings on error		*/
 	int		never;		/* never execute		*/
 	int		probed;		/* probe already done		*/
 	int		verified;	/* don't bother with verify()	*/
 	int		jobs, maxjobs;	/* for parallel sh execution	*/
+	size_t		installrootlen;	/* strlen of %{INSTALLROOT}	*/
+	size_t		packagerootlen;	/* strlen of %{PACKAGEROOT}	*/
 
 	Stream_t	streams[4];	/* input file stream stack	*/
 	Stream_t	*sp;		/* input stream stack pointer	*/
@@ -496,8 +496,8 @@ static char *appendn(Buf_t *buf, char *str, size_t n)
 
 	if ((n + 1) >= (size_t)(buf->end - buf->nxt))
 	{
-		i = buf->nxt - buf->buf;
-		m = (((buf->end - buf->buf) + n + CHUNK + 1) / CHUNK) * CHUNK;
+		i = (size_t)(buf->nxt - buf->buf);
+		m = (((size_t)(buf->end - buf->buf) + n + CHUNK + 1) / CHUNK) * CHUNK;
 		if (!(buf->buf = realloc(buf->buf, m)))
 			out_of_memory();
 		buf->end = buf->buf + m;
@@ -976,7 +976,7 @@ static void substitute(Buf_t *buf, char *s)
 				q = cond(t - 1);
 				if (v)
 				{
-					if (((q - t) != 1 || *t != '*') && strncmp(v, t, q - t))
+					if (((q - t) != 1 || *t != '*') && strncmp(v, t, (size_t)(q - t)))
 						v = 0;
 				}
 				else if (q == t)
@@ -1021,7 +1021,7 @@ static void substitute(Buf_t *buf, char *s)
 							q++;
 						n++;
 						c = *q, *q = 0;  /* terminate for duplicate() */
-						if (!(argv = realloc(argv, (n+1)*sizeof(char*))) || !(argv[n-1] = duplicate(a)))
+						if (!(argv = realloc(argv, (size_t)(n+1)*sizeof(char*))) || !(argv[n-1] = duplicate(a)))
 							out_of_memory();
 						*q = c;
 					}
@@ -1270,7 +1270,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
 					append(buf, "/");
 				}
 				append(buf, file);
-				o = getsize(buf);
+				o = (size_t)getsize(buf);
 				s = use(buf);
 				if (s = status(buf, o, s, st))
 				{
@@ -1808,7 +1808,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
 		pop();
 	}
 	for (h = 0, s = cc; *s; s++)
-		h = h * 0x63c63cd9L + *s + 0x9c39c33dL;
+		h = h * 0x63c63cd9L + (unsigned long)*s + 0x9c39c33dL;
 	/* use the hash as the file name */
 	append(buf, state.installroot);
 	append(buf, "/lib/probe/C/mam/");
@@ -1848,7 +1848,7 @@ static void attributes(Rule_t *r, char *s)
 		int	flag = 0;
 		for (; isspace(*s); s++);
 		for (t = s; *s && !isspace(*s); s++);
-		if (!(n = s - t))
+		if (!(n = (size_t)(s - t)))
 			break;
 		switch (*t)
 		{
@@ -2809,7 +2809,7 @@ int main(int argc, char **argv)
 		case 'j':
 			append(state.opt, " -j");
 			append(state.opt, opt_info.arg);
-			state.maxjobs = opt_info.num;
+			state.maxjobs = (int)opt_info.num;
 			continue;
 		case 'k':
 			append(state.opt, " -k");
@@ -2842,7 +2842,7 @@ int main(int argc, char **argv)
 		case 'D':
 			append(state.opt, " -D");
 			append(state.opt, opt_info.arg);
-			state.debug = -opt_info.num;
+			state.debug = -((int)opt_info.num);
 			if (state.debug > 0)
 				state.debug = 0;
 			continue;
@@ -2882,7 +2882,7 @@ int main(int argc, char **argv)
 				break;
 			}
 			for (t = s += 2; *t && *t != '='; t++);
-			if (!strncmp(s, "debug-symbols", t - s) && append(state.opt, " -G") || !strncmp(s, "strip-symbols", t - s) && append(state.opt, " -S"))
+			if (!strncmp(s, "debug-symbols", (size_t)(t - s)) && append(state.opt, " -G") || !strncmp(s, "strip-symbols", (size_t)(t - s)) && append(state.opt, " -S"))
 			{
 				if (*t)
 				{

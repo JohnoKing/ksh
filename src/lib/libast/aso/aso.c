@@ -165,7 +165,7 @@ Asometh_t*
 _asometh(int type, void* data)
 {
 	size_t		n;
-	int		i;
+	size_t		i;
 	char*		e;
 	Asometh_t*	meth;
 	char*		name;
@@ -191,7 +191,7 @@ _asometh(int type, void* data)
 	}
 	if (!(name = (char*)data))
 		return state.meth;
-	n = (e = strchr(name, ',')) ? (e - name) : strlen(name);
+	n = (e = strchr(name, ',')) ? (size_t)(e - name) : strlen(name);
 	for (i = 0; i < elementsof(method); i++)
 		if (strncmp(name, method[i]->name, n) == 0)
 		{

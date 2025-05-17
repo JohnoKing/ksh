@@ -36,7 +36,7 @@
 
 #define argbegin	argnxt.cp
 static	const char	*sufstr;
-static	int		suflen;
+static	size_t		suflen;
 static	int		scantree(Dt_t*,const char*, struct argnod**);
 
 
@@ -131,7 +131,7 @@ int path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 	}
 	if(gp->gl_list)
 		*arghead = (struct argnod*)gp->gl_list;
-	return gp->gl_pathc+extra;
+	return (int)(gp->gl_pathc+extra);
 }
 
 /*
@@ -279,12 +279,12 @@ again:
 				incr = 1;
 				if(isdigit(*pat) || *pat=='+' || *pat=='-')
 				{
-					first = strtol(pat,&endc,0);
+					first = (int)strtol(pat,&endc,0);
 					if(endc==(cp-1))
 					{
-						last = strtol(cp+1,&endc,0);
+						last = (int)strtol(cp+1,&endc,0);
 						if(*endc=='.' && endc[1]=='.')
-							incr = strtol(endc+2,&endc,0);
+							incr = (int)strtol(endc+2,&endc,0);
 						else if(last<first)
 							incr = -1;
 						if(incr)
@@ -330,7 +330,7 @@ again:
 					cp += 2;
 					if(*cp=='.')
 					{
-						incr = strtol(cp+2,&endc,0);
+						incr = (int)strtol(cp+2,&endc,0);
 						cp = endc;
 					}
 					else if(first>last)

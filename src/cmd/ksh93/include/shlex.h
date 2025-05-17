@@ -70,21 +70,21 @@ typedef struct  _shlex_
 {
 	struct argnod	*arg;		/* current word */
 	struct ionod	*heredoc;	/* pending here document list */
+	ssize_t		varnamelength;	/* length of variable name in assignment */
 	int		token;		/* current token number */
 	int		lastline;	/* last line number */
 	int		lasttok;	/* previous token number */
 	int		digits;		/* numerical value with word token */
+	int		inlineno;	/* saved value of sh.inlineno */
+	int		firstline;	/* saved value of sh.st.firstline */
+	int		assignlevel;	/* nesting level for assignment */
 	char		aliasok;	/* on when alias is legal */
 	char		assignok;	/* on when name=value is legal */
-	int		varnamelength;	/* length of variable name in assignment */
 	char		inexec;		/* on when processing exec */
 	char		intypeset;	/* 1 when processing typeset, 2 when processing enum */
 	char		comp_assign;	/* in compound assignment */
 	char		comsub;		/* parsing command substitution */
 	char		noreserv;	/* reserved words not legal */
-	int		inlineno;	/* saved value of sh.inlineno */
-	int		firstline;	/* saved value of sh.st.firstline */
-	int		assignlevel;	/* nesting level for assignment */
 	/* The following two struct members are considered private to lex.c */
 	struct _shlex_pvt_lexdata_  lexd;
 	struct _shlex_pvt_lexstate_  lex;

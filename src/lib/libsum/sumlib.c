@@ -268,7 +268,7 @@ match(const char* s, const char* p)
 Sum_t*
 sumopen(const char* name)
 {
-	int	n;
+	size_t	n;
 
 	if (!name || !name[0] || name[0] == '-' && !name[1])
 		name = "default";
@@ -356,10 +356,10 @@ sumclose(Sum_t* p)
 int
 sumusage(Sfio_t* sp)
 {
-	int	i;
-	int	n;
+	size_t	i;
+	int	n = 0;
 
-	for (i = n = 0; i < elementsof(methods); i++)
+	for (i = 0; i < elementsof(methods); i++)
 	{
 		n += sfprintf(sp, "[+%s?%s]", methods[i].match, methods[i].description);
 		if (methods[i].options)

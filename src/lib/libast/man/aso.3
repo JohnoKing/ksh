@@ -102,7 +102,7 @@ Asometh_t*	asometh(int, void*);
 int		asoinit(const char*, Asometh_t*, Asodisc_t*);
 int		asolock(unsigned int volatile*, unsigned int, int);
 int		asoloop(uintmax_t);
-int		asorelax(long);
+int		asorelax(uint32_t);
 .Ce
 .SH DESCRIPTION
 \fIASO\fP provides functions to perform atomic scalar operations.
@@ -138,7 +138,7 @@ If the current content of \f3dest\fP is equal to \f3tstval\fP then it will be se
 If multiple threads/processes are performing the same operations only one will succeed with a
 return value of \f3tstval\fP.
 The return value is the old value in \f3*dest\fP.
-.Ss "  void asorelax(long nsec)"
+.Ss "  void asorelax(uint32_t nsec)"
 This function causes the calling process or thread to briefly pause
 for \f3nsec\fP nanoseconds.
 It is useful to implement tight loops that occasionally yield control.

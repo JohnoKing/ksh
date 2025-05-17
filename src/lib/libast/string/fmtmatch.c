@@ -44,8 +44,7 @@ fmtmatch(const char* as)
 	char*	buf;
 	char*	stack[32];
 
-	c = 3 * (strlen(s) + 1);
-	buf = fmtbuf(c);
+	buf = fmtbuf(3 * (strlen(s) + 1));
 	t = b = buf + 3;
 	p = stack;
 	if (a = *s == '^')
@@ -177,7 +176,7 @@ fmtmatch(const char* as)
 				for (z = s; *z != '}'; z++)
 					if (!*z)
 						return NULL;
-				n = z - s;
+				n = (int)(z - s);
 				if (*++z == '?')
 					n++;
 				x = *p + n;
