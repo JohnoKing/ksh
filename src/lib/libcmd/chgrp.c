@@ -141,7 +141,6 @@ getids(char* s, char** e, Key_t* key, int options)
 {
 	char*	t;
 	ssize_t	n;
-	ssize_t	m;
 	char*	z;
 	char	buf[64];
 

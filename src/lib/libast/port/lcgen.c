@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -130,6 +130,8 @@ static struct State_s
 
 #define elementsof(x)	(sizeof(x)/sizeof(x[0]))
 #define newof(p,t,n,x)	((t*)calloc(1,sizeof(t)*(n)+(x)))
+
+#define NOT_USED(x)	do (void)(x); while(0)
 
 static Link_t*
 enter(Table_t* tab, Link_t* v)
@@ -259,6 +261,7 @@ main(int argc, char** argv)
 	char*			arg[5];
 	char			buf[1024];
 
+	NOT_USED(argc);
 	command = *argv++;
 	line = 0;
 	if (!(hdr = *argv++) || !(lib = *argv++) || *argv)

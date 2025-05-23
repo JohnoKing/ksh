@@ -43,7 +43,7 @@
 
 static int		canexecute(char*,int);
 static void		funload(int,const char*);
-static void noreturn	exscript(char*, char*[]);
+static noreturn void 	exscript(char*, char*[]);
 static int		checkdotpaths(Pathcomp_t*,Pathcomp_t*,Pathcomp_t*,ssize_t);
 static void		checkdup(Pathcomp_t*);
 static Pathcomp_t	*defpathinit(void);

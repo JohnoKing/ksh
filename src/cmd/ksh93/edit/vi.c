@@ -1269,8 +1269,8 @@ static void getline(Vi_t* vp,int mode)
 				ed_ringbell();
 				break;
 			}
-			/* FALLTHROUGH */
 		}
+		/* FALLTHROUGH */
 		default:
 		fallback:
 			if( mode == REPLACE )

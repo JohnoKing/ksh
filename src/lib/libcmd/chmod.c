@@ -24,6 +24,16 @@
  * chmod
  */
 
+#define lchmod		______lchmod
+
+#include <cmd.h>
+#include <ls.h>
+#include <fts.h>
+
+#include "FEATURE/symlink"
+
+#undef	lchmod
+
 static const char usage[] =
 "[-?\n@(#)$Id: chmod (ksh 93u+m) 2022-08-30 $\n]"
 "[--catalog?" ERROR_CATALOG "]"
@@ -122,17 +132,6 @@ static const char usage[] =
 "[+SEE ALSO?\bchgrp\b(1), \bchown\b(1), \blchmod\b(1), \btw\b(1), \bgetconf\b(1), "
 	"\bls\b(1), \bumask\b(2)]"
 ;
-
-
-#define lchmod		______lchmod
-
-#include <cmd.h>
-#include <ls.h>
-#include <fts.h>
-
-#include "FEATURE/symlink"
-
-#undef	lchmod
 
 extern int	lchmod(const char*, mode_t);
 

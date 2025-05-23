@@ -23,6 +23,12 @@
  * date -- set/display date
  */
 
+#include <cmd.h>
+#include <ls.h>
+#include <proc.h>
+#include <tmx.h>
+#include <times.h>
+
 static const char usage[] =
 "[-?\n@(#)$Id: date (AT&T Research) 2011-01-27 $\n]"
 "[--catalog?" ERROR_CATALOG "]"
@@ -191,12 +197,6 @@ static const char usage[] =
 "[+SEE ALSO?\bcrontab\b(1), \bls\b(1), \btouch\b(1), \bfmtelapsed\b(3),"
 "	\bstrftime\b(3), \bstrptime\b(3), \btm\b(3)]"
 ;
-
-#include <cmd.h>
-#include <ls.h>
-#include <proc.h>
-#include <tmx.h>
-#include <times.h>
 
 typedef struct Fmt
 {
