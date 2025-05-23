@@ -33,7 +33,7 @@
 int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
 {
 	char *cp, *cpold;
-	int n, nleft=0;
+	ssize_t n, nleft=0;
 	char buff[BUFSIZE];
 	off_t offset;
 	if(sfseek(in,0,SEEK_CUR) < 0)
@@ -60,7 +60,7 @@ int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
 			offset = start;
 		}
 		sfseek(in, offset, SEEK_SET);
-		if((n=(int)sfread(in, buff, n)) <=0)
+		if((n=sfread(in, buff, n)) <=0)
 			break;
 		cp = buff+n;
 		n = *buff;

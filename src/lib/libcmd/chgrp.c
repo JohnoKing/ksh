@@ -140,8 +140,8 @@ static void
 getids(char* s, char** e, Key_t* key, int options)
 {
 	char*	t;
-	int	n;
-	int	m;
+	ssize_t	n;
+	ssize_t	m;
 	char*	z;
 	char	buf[64];
 
@@ -152,49 +152,49 @@ getids(char* s, char** e, Key_t* key, int options)
 	if (n)
 	{
 		options |= OPT_CHOWN;
-		if ((n = (int)(t++ - s)) >= (int)sizeof(buf))
-			n = (int)sizeof(buf) - 1;
+		if ((n = t++ - s) >= (ssize_t)sizeof(buf))
+			n = (ssize_t)sizeof(buf) - 1;
 		*((s = (char*)memcpy(buf, s, n)) + n) = 0;
 	}
 	if (options & OPT_CHOWN)
 	{
 		if (*s)
 		{
-			n = (int)strtol(s, &z, 0);
+			int i, j = (int)strtol(s, &z, 0);
 			if (*z || !(options & OPT_NUMERIC))
 			{
-				if ((m = struid(s)) >= 0)
-					n = m;
+				if ((i = struid(s)) >= 0)
+					j = i;
 				else if (*z)
 				{
 					error(ERROR_exit(1), "%s: unknown user", s);
 					UNREACHABLE();
 				}
 			}
-			key->uid = n;
+			key->uid = j;
 		}
 		for (s = t; (n = *t) && !isspace(n); t++);
 		if (n)
 		{
-			if ((n = (int)(t++ - s)) >= (int)sizeof(buf))
-				n = (int)sizeof(buf) - 1;
+			if ((n = t++ - s) >= (ssize_t)sizeof(buf))
+				n = (ssize_t)sizeof(buf) - 1;
 			*((s = (char*)memcpy(buf, s, n)) + n) = 0;
 		}
 	}
 	if (*s)
 	{
-		n = (int)strtol(s, &z, 0);
+		int i, j = (int)strtol(s, &z, 0);
 		if (*z || !(options & OPT_NUMERIC))
 		{
-			if ((m = strgid(s)) >= 0)
-				n = m;
+			if ((i = strgid(s)) >= 0)
+				j = i;
 			else if (*z)
 			{
 				error(ERROR_exit(1), "%s: unknown group", s);
 				UNREACHABLE();
 			}
 		}
-		key->gid = n;
+		key->gid = j;
 	}
 	if (e)
 		*e = t;
@@ -213,7 +213,6 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 	Map_t*		m;
 	FTS*		fts;
 	FTSENT*		ent;
-	int		i;
 	Dt_t*		map = 0;
 	int		logical = 1;
 	int		flags;
@@ -441,6 +440,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 				break;
 			if (map)
 			{
+				size_t i;
 				options &= ~(OPT_UID|OPT_GID);
 				uid = gid = -1;
 				keys[0].uid = keys[1].uid = ent->fts_statp->st_uid;
@@ -461,7 +461,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 							options |= OPT_GID;
 						}
 					}
-				} while (++i < (int)elementsof(keys) && (uid < 0 || gid < 0));
+				} while (++i < elementsof(keys) && (uid < 0 || gid < 0));
 			}
 			else
 			{

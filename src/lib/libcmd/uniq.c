@@ -79,21 +79,22 @@ static const char usage[] =
 
 typedef int (*Compare_f)(const char*, const char*, size_t);
 
-static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, int mode, int* all, Compare_f compare)
+static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssize_t width, int mode, int* all, Compare_f compare)
 {
-	int n, f, outsize=0, mb = mbwide();
+	ssize_t n, f, outsize=0;
+	int mb = mbwide();
 	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
 	char *orecp=NULL, *sbufp=0, *outbuff;
-	int reclen,oreclen= -1,count=0,cwidth=0,sep,next;
+	ssize_t reclen,oreclen= -1,count=0,cwidth=0,sep,next;
 	if(mode&C_FLAG)
 		cwidth = CWIDTH+1;
 	while(1)
 	{
 		if(bufp = sfgetr(fdin,'\n',0))
-			n = (int)sfvalue(fdin);
+			n = sfvalue(fdin);
 		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
 		{
-			n = (int)sfvalue(fdin);
+			n = sfvalue(fdin);
 			bufp = memcpy(fmtbuf(n + 1), bufp, n);
 			bufp[n++] = '\n';
 		}
@@ -119,7 +120,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 				else
 					cp += chars;
 			}
-			if ((reclen = (int)(n - (cp - bufp))) <= 0)
+			if ((reclen = n - (cp - bufp)) <= 0)
 			{
 				reclen = 1;
 				cp = bufp + n - 1;
@@ -135,7 +136,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 						reclen++;
 						mbchar(mp);
 					}
-					reclen = (int)(mp - cp);
+					reclen = mp - cp;
 				}
 				else
 					reclen = width;
@@ -218,7 +219,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 		else
 			sep = all && *all > 0;
 		/* save current record */
-		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = (int)sfvalue(fdout)) < 0)
+		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = sfvalue(fdout)) < 0)
 			return 1;
 		outp = outbuff;
 		if(outsize < n+cwidth+sep)
@@ -244,7 +245,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 {
 	int mode=0;
 	char *cp;
-	int fields=0, chars=0, width=-1;
+	ssize_t fields=0, chars=0, width=-1;
 	Sfio_t *fpin, *fpout;
 	int* all = 0;
 	int sep;
@@ -285,15 +286,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 			continue;
 		case 'f':
 			if(*opt_info.option=='-')
-				fields = (int)opt_info.num;
+				fields = (ssize_t)opt_info.num;
 			else
-				chars = (int)opt_info.num;
+				chars = (ssize_t)opt_info.num;
 			continue;
 		case 's':
-			chars = (int)opt_info.num;
+			chars = (ssize_t)opt_info.num;
 			continue;
 		case 'w':
-			width = (int)opt_info.num;
+			width = (ssize_t)opt_info.num;
 			continue;
 		case ':':
 			error(2, "%s", opt_info.arg);

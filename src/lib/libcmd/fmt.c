@@ -138,7 +138,7 @@ split(Fmt_t* fp, char* buf, int splice)
 	char*	qp;
 	int	c = 1;
 	int	q = 0;
-	int	n;
+	ssize_t	n;
 	ssize_t	prefix;
 
 	for (ep = buf; *ep == ' '; ep++);
@@ -182,7 +182,7 @@ split(Fmt_t* fp, char* buf, int splice)
 			if (c == '\\' && *ep)
 				ep++;
 		}
-		n = (int)(ep-cp);
+		n = ep-cp;
 		if (n && isoption(fp, 'o'))
 		{
 			for (qp = cp; qp < ep; qp++)
@@ -203,7 +203,7 @@ split(Fmt_t* fp, char* buf, int splice)
 			fp->outp = &fp->outbuf[fp->prefix];
 			while (*cp == ' ')
 				cp++;
-			n = (int)(ep-cp);
+			n = ep-cp;
 		}
 		memcpy(fp->outp, cp, n);
 		fp->outp += n;

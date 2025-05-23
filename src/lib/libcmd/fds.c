@@ -47,13 +47,6 @@ static const char usage[] =
 #undef	S_IFSOCK
 #endif
 
-#ifndef minor
-#define minor(x)	(int)((x)&0xff)
-#endif
-#ifndef major
-#define major(x)	(int)(((unsigned int)(x)>>8)&0xff)
-#endif
-
 #ifdef S_IFSOCK
 
 typedef struct NV_s

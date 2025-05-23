@@ -556,12 +556,13 @@ visit(State_t* state, FTSENT* ent)
 	case CP:
 		if (S_ISLNK(ent->fts_statp->st_mode))
 		{
-			if ((n = (int)pathgetlink(ent->fts_path, state->text, sizeof(state->text) - 1)) < 0)
+			ssize_t l;
+			if ((l = pathgetlink(ent->fts_path, state->text, sizeof(state->text) - 1)) < 0)
 			{
 				error(ERROR_SYSTEM|2, "%s: cannot read symbolic link text", ent->fts_path);
 				return 0;
 			}
-			state->text[n] = 0;
+			state->text[l] = 0;
 			if (pathsetlink(state->text, state->path))
 			{
 				error(ERROR_SYSTEM|2, "%s: cannot copy symbolic link to %s", ent->fts_path, state->path);
