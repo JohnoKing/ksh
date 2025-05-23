@@ -374,7 +374,7 @@ runcmd(char** argv, int minion, int session)
  */
 
 static int
-process(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+process(Sfio_t* mp, Sfio_t* lp, useconds_t delay, int timeout)
 {
 	int		i;
 	int		n;
@@ -781,11 +781,12 @@ struct Cond_s
 };
 
 static int
-dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+dialogue(Sfio_t* mp, Sfio_t* lp, useconds_t delay, int timeout)
 {
 	int		op;
 	int		line;
 	int		n;
+	useconds_t	ud;
 	char*		s;
 	char*		m;
 	char*		e;
@@ -832,7 +833,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
 			if (master->prompt && !masterline(mp, lp, master->prompt, 0, timeout, master))
 				goto done;
 			if (delay)
-				usleep((unsigned long)delay * 1000);
+				usleep(delay * 1000);
 			if (op == 'w')
 				error(-1, "w \"%s\\r\"", s);
 			else
@@ -845,10 +846,10 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
 				goto done;
 			}
 			if (delay)
-				usleep((unsigned long)delay * 1000);
+				usleep(delay * 1000);
 			break;
 		case 'd':
-			delay = (int)strtol(s, &e, 0);
+			delay = (useconds_t)strtol(s, &e, 0);
 			if (*e)
 				error(2, "%s: invalid delay -- milliseconds expected", s);
 			break;
@@ -922,11 +923,11 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
 			match(s, m, 1);
 			break;
 		case 's':
-			n = (int)strtol(s, &e, 0);
+			ud = (useconds_t)strtol(s, &e, 0);
 			if (*e)
 				error(2, "%s: invalid delay -- milliseconds expected", s);
-			if (n)
-				usleep((unsigned long)n * 1000);
+			if (ud)
+				usleep(ud * 1000);
 			break;
 		case 't':
 			timeout = (int)strtol(s, &e, 0);
@@ -1021,13 +1022,13 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 	Sfio_t*		lp;
 	char		buf[64];
 
-	int		delay = 0;
+	useconds_t	delay = 0;
 	char*		log = 0;
 	char*		messages = 0;
 	char*		stty = 0;
 	int		session = 1;
 	int		timeout = 1000;
-	int		(*fun)(Sfio_t*,Sfio_t*,int,int) = process;
+	int		(*fun)(Sfio_t*,Sfio_t*,useconds_t,int) = process;
 
 	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	for (;;)
@@ -1057,7 +1058,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 			stty = opt_info.arg;
 			continue;
 		case 'w':
-			delay = (int)opt_info.num;
+			delay = (useconds_t)opt_info.num;
 			continue;
 		case ':':
 			break;

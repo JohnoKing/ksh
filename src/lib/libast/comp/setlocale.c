@@ -544,7 +544,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
 		return ast.mb.sync = 0;
  invalid:
 	errno = EILSEQ;
-	ast.mb.sync = (int)((const char*)sp - str);
+	ast.mb.sync = (uint32_t)((const char*)sp - str);
 	return -1;
 }
 
