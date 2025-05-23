@@ -22,5 +22,5 @@
 int
 vfprintf(Sfio_t* f, const char* fmt, va_list args)
 {
-	return sfvprintf(f, fmt, args);
+	return (int)sfvprintf(f, fmt, args);
 }

@@ -83,7 +83,7 @@ static const struct printmap  Pmap[] =
 
 static int		echolist(Sfio_t*, int, char**);
 static int		extend(Sfio_t*,void*, Sffmt_t*);
-static int		reload(int argn, char fmt, void* v, Sffmt_t* fe);
+static ssize_t		reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe);
 static char		*genformat(char*);
 static ssize_t		fmtvecho(const char*, struct printf*);
 static ssize_t		fmtbase64(Sfio_t*, char*, int);
@@ -737,7 +737,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	int		format = fe->fmt;
 	int		n;
 	ssize_t		m;
-	int		fold = fe->base;
+	int		fold = (int)fe->base;
 	union types_t*	value = (union types_t*)v;
 	struct printf*	pp = (struct printf*)fe;
 	char*		argp = *pp->nextarg;
@@ -1113,18 +1113,18 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  * In that case, argv[0] and argv[4] are consumed and nextarg push
  * to &argv[5] argv[1..3] is ignored.
  */
-static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
+static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
 {
 	struct printf*	pp = (struct printf*)fe;
-	int		r;
-	int		n;
+	ssize_t		r;
+	ssize_t		n;
 	if(fmt == 0)
 	{
 		/* Set nextarg */
 		n = 0;
 		if(pp->nextarg != nullarg)
 		{
-			n = (int)(pp->nextarg - pp->argv0);
+			n = pp->nextarg - pp->argv0;
 			pp->nextarg = pp->argv0;
 			while(argn && *pp->nextarg)
 				argn--, pp->nextarg++;
@@ -1135,10 +1135,10 @@ static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
 	 * fmt!=0 ==> Late conversion on type mismatch on fp[x], i.e., %1$s %1$d
 	 * fp[1-1].fmt='s' ==> %1$d wants an int, go convert.
 	 */
-	n = (int)(pp->nextarg - pp->argv0);
+	n = pp->nextarg - pp->argv0;
 	pp->nextarg = pp->argv0 + argn;
 	fe->fmt = fmt;
-	r = extend(0,v,fe);
+	r = (ssize_t)extend(0,v,fe);
 	pp->nextarg = pp->argv0 + n;
 	return r;
 }

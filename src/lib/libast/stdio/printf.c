@@ -26,7 +26,7 @@ printf(const char* fmt, ...)
 	int	v;
 
 	va_start(args, fmt);
-	v = sfvprintf(sfstdout, fmt, args);
+	v = (int)sfvprintf(sfstdout, fmt, args);
 	va_end(args);
 	return v;
 }

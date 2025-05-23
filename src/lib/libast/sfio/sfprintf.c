@@ -23,10 +23,10 @@
 **	Written by Kiem-Phong Vo.
 */
 
-int sfprintf(Sfio_t* f, const char* form, ...)
+ssize_t sfprintf(Sfio_t* f, const char* form, ...)
 {
 	va_list	args;
-	int	rv;
+	ssize_t	rv;
 	va_start(args,form);
 	rv = sfvprintf(f,form,args);
 	va_end(args);

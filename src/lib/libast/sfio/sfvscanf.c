@@ -53,11 +53,11 @@ static void _sfbuf(Sfio_t* f, int* peek)
 typedef struct _scan_s
 {	int	error;	/* get set by _sfdscan if no value specified	*/
 	int	inp;	/* last input character read			*/
-	int	width;	/* field width					*/
+	ssize_t	width;	/* field width					*/
 	Sfio_t	*f;	/* stream being scanned				*/
 	uchar	*d, *endd, *data;	/* local buffering system	*/
 	int	peek;	/* != 0 if unseekable/share stream		*/
-	int	n_input;/* number of input bytes processed		*/
+	ssize_t	n_input;/* number of input bytes processed		*/
 } Scan_t;
 
 /* ds != 0 for scanning double values */
@@ -272,9 +272,9 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 	     const char*	form,		/* scanning format */
 	     va_list		args)
 {
-	int		inp, shift, base, width;
-	ssize_t		size;
-	int		fmt, flags, dot, n_assign, v, n, n_input;
+	int		inp, shift;
+	ssize_t		size, base, width, n, n_input;
+	int		fmt, flags, dot, n_assign, v;
 	char		*sp;
 
 	Accept_t	acc;
@@ -286,7 +286,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 	Fmtpos_t*	fp;
 	char		*oform;
 	va_list		oargs;
-	int		argp, argn;
+	ssize_t		argp, argn;
 
 	int		decimal = 0, thousand = 0;
 

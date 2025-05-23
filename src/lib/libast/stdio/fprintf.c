@@ -27,7 +27,7 @@ fprintf(Sfio_t* f, const char* fmt, ...)
 
 	va_start(args, fmt);
 
-	v = sfvprintf(f, fmt, args);
+	v = (int)sfvprintf(f, fmt, args);
 	va_end(args);
 	return v;
 }

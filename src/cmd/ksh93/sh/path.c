@@ -1047,7 +1047,8 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 	char		**xp=0, *xval, *libenv = (libpath?libpath->lib:0);
 	Namval_t*	np;
 	char		*s, *v;
-	int		r, n, pidsize=0;
+	int		r, n;
+	ssize_t		pidsize=0;
 	pid_t		pid= -1;
 	if(!sh_isstate(SH_EXEC) && nv_search(opath,sh.bltin_tree,0))
 	{

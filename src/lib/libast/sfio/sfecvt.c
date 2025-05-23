@@ -19,11 +19,11 @@
 #include	"sfhdr.h"
 
 char* sfecvt(double	dval,		/* value to convert */
-	     int	n_digit,	/* number of digits wanted */
+	     ssize_t	n_digit,	/* number of digits wanted */
 	     int*	decpt,		/* to return decimal point */
 	     int*	sign)		/* to return sign */
 {
-	int		len;
+	ssize_t		len;
 	static char	buf[SFIO_MAXDIGITS];
 
 	return _sfcvt(&dval,buf,sizeof(buf),n_digit,decpt,sign,&len,SFFMT_EFORMAT);

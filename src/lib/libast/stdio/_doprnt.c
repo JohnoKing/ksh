@@ -22,5 +22,5 @@
 int
 _doprnt(const char* fmt, va_list args, Sfio_t* f)
 {
-	return sfvprintf(f, fmt, args);
+	return (int)sfvprintf(f, fmt, args);
 }

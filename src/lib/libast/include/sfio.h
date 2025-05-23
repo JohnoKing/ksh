@@ -60,7 +60,7 @@ struct _sfdisc_s
 typedef struct _sffmt_s	Sffmt_t;
 typedef int		(*Sffmtext_f)(Sfio_t*, void*, Sffmt_t*);
 typedef int		(*Sffmtevent_f)(Sfio_t*, int, void*, Sffmt_t*);
-typedef int		(*Sffmtreload_f)(int, char, void*, Sffmt_t*);
+typedef ssize_t		(*Sffmtreload_f)(ssize_t, char, void*, Sffmt_t*);
 struct _sffmt_s
 {	long		version;/* version of this structure		*/
 	Sffmtext_f	extf;	/* function to process arguments	*/
@@ -73,9 +73,9 @@ struct _sffmt_s
 	int		fmt;	/* format character			*/
 	ssize_t		size;	/* object size				*/
 	int		flags;	/* formatting flags			*/
-	int		width;	/* width of field			*/
-	int		precis;	/* precision required			*/
-	int		base;	/* conversion base			*/
+	ssize_t		width;	/* width of field			*/
+	ssize_t		precis;	/* precision required			*/
+	ssize_t		base;	/* conversion base			*/
 
 	char*		t_str;	/* type string 				*/
 	ssize_t		n_str;	/* length of t_str 			*/
@@ -214,13 +214,13 @@ extern ssize_t		sfputr(Sfio_t*, const char*, int);
 extern char*		sfgetr(Sfio_t*, int, int);
 extern ssize_t		sfnputc(Sfio_t*, int, size_t);
 extern int		sfungetc(Sfio_t*, int);
-extern int		sfprintf(Sfio_t*, const char*, ...);
+extern ssize_t		sfprintf(Sfio_t*, const char*, ...);
 extern char*		sfprints(const char*, ...);
 extern ssize_t		sfaprints(char**, const char*, ...);
 extern ssize_t		sfsprintf(char*, size_t, const char*, ...);
 extern ssize_t		sfvsprintf(char*, size_t, const char*, va_list);
 extern ssize_t		sfvasprints(char**, const char*, va_list);
-extern int		sfvprintf(Sfio_t*, const char*, va_list);
+extern ssize_t		sfvprintf(Sfio_t*, const char*, va_list);
 extern int		sfscanf(Sfio_t*, const char*, ...);
 extern int		sfsscanf(const char*, const char*, ...);
 extern int		sfvsscanf(const char*, const char*, va_list);

@@ -79,11 +79,11 @@ static int neg0d(double f)
 char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 	     char*	buf,		/* conversion goes here		*/
 	     size_t	size,		/* size of buf			*/
-	     int	n_digit,	/* number of digits wanted	*/
+	     ssize_t	n_digit,	/* number of digits wanted	*/
 	     int*	decpt,		/* to return decimal point	*/
 	     int*	sign,		/* to return sign		*/
-	     int*	len,		/* return string length		*/
-	     int	format)		/* conversion format		*/
+	     ssize_t*	len,		/* return string length		*/
+	     ssize_t	format)		/* conversion format		*/
 {
 	char			*sp;
 	long			n, v;
@@ -139,8 +139,8 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 		{	Sfdouble_t	g;
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
-			if(n_digit <= 0 || (unsigned)n_digit >= (size - 9))
-				n_digit = (int)size - 9;
+			if(n_digit <= 0 || (size_t)n_digit >= (size - 9))
+				n_digit = size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexpl(f, &x);
@@ -287,8 +287,8 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 		{	double		g;
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
-			if(n_digit <= 0 || (unsigned)n_digit >= (size - 9))
-				n_digit = (int)size - 9;
+			if(n_digit <= 0 || (size_t)n_digit >= (size - 9))
+				n_digit = size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexp(f, &x);
@@ -427,7 +427,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
  done:
 	*--ep = '\0';
 	if(len)
-		*len = (int)(ep-b);
+		*len = (ep-b);
 	return b;
  around:
 	if (((m >> x) & 0xf) >= 8)

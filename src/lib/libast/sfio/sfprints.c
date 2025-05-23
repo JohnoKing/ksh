@@ -27,7 +27,7 @@
 
 char* sfvprints(const char* form, va_list args)
 {
-	int		rv;
+	ssize_t		rv;
 	Sfnotify_f	notify = _Sfnotify;
 	static Sfio_t*	f;
 

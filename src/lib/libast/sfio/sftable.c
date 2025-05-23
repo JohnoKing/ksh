@@ -26,7 +26,7 @@
 **	Written by Kiem-Phong Vo.
 */
 
-static char* sffmtint(const char* str, int* v)
+static char* sffmtint(const char* str, ssize_t* v)
 {
 	for(*v = 0; isdigit(*str); ++str)
 		*v = *v * 10 + (*str - '0');
@@ -37,16 +37,18 @@ static char* sffmtint(const char* str, int* v)
 /* type>0: scanf, type==0: printf, type==-1: internal */
 static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,int type)
 {
-	int		base, fmt, flags, dot, width, precis;
+	int		fmt, flags, dot;
+	ssize_t		base, width, precis, v, n, argp;
 	ssize_t		n_str, size = 0;
 	char		*t_str, *sp;
-	int		v, n, skip, dollar, decimal, thousand;
+	int		skip, dollar, decimal, thousand;
 	Sffmt_t		savft;
 	Fmtpos_t*	fp;	/* position array of arguments	*/
-	int		argp, maxp, need[FP_INDEX];
-	int		nargs;	/* the argv[] index of the last seen sequential % format (% or *) */
-	int		xargs;	/* highest (max) argv[] index see in an indexed format (%x$ *x$)  */
-	int		nextarg = 0;
+	ssize_t		maxp;
+	ssize_t		need[FP_INDEX];
+	ssize_t		nargs;	/* the argv[] index of the last seen sequential % format (% or *) */
+	ssize_t		xargs;	/* highest (max) argv[] index see in an indexed format (%x$ *x$)  */
+	ssize_t		nextarg = 0;
 	SFMBDCL(fmbs)
 
 	if(type < 0)

@@ -40,7 +40,7 @@
 	char*		pb; \
 	char*		pp; \
 	char*		pe; \
-	int		off; \
+	ssize_t		off; \
 	size_t		prelen; \
 	size_t		suflen; \
 	char**		lib; \
