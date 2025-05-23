@@ -45,7 +45,7 @@ typedef struct
 {
 	int hist_command;
 	int hist_line;
-	int hist_char;
+	ssize_t hist_char;
 } Histloc_t;
 
 #if SHOPT_SCRIPTONLY
@@ -81,7 +81,7 @@ extern void 		hist_eof(History_t*);
 extern Histloc_t	hist_find(History_t*,char*,int, int, int);
 extern void 		hist_flush(History_t*);
 extern void 		hist_list(History_t*,Sfio_t*, off_t, int, char*);
-extern int		hist_match(History_t*,off_t, char*, int*);
+extern int		hist_match(History_t*,off_t, char*, ssize_t*);
 extern off_t		hist_tell(History_t*,int);
 extern off_t		hist_seek(History_t*,int);
 extern int		hist_iswordbndry(char);

@@ -1828,7 +1828,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
 		path_nextcomp(pp,name,pp);
 		sp = stkptr(sh.stk,PATH_OFFSET);
 		if(sp && lstat(sp,&statb)>=0 && S_ISLNK(statb.st_mode))
-			nv_setsize(np,(uint32_t)statb.st_size+1);
+			nv_setsize(np,statb.st_size+1);
 		else
 			nv_setsize(np,0);
 	}

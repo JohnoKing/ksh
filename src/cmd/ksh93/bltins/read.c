@@ -497,9 +497,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 				if(var==buf)
 					var = sh_memdup(var,c+1);
 				nv_putval(np,var,NV_RAW);
-				nv_setsize(np,(uint32_t)c);
+				nv_setsize(np,(size_t)c);
 				if(!nv_isattr(np,NV_MINIMAL|NV_EXPORT) && (mp = np->nvmeta))
-					nv_setsize(mp,(uint32_t)c);
+					nv_setsize(mp,(size_t)c);
 			}
 		}
 		else

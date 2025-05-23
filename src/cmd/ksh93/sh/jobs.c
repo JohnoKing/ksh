@@ -1015,9 +1015,9 @@ static struct process *job_byname(char *name)
 {
 	struct process *pw = job.pwlist;
 	struct process *pz = 0;
-	int *flag = 0;
+	ssize_t *flag = 0;
 	char *cp = name;
-	int offset;
+	ssize_t offset;
 	if(!sh.hist_ptr)
 		return NULL;
 	if(*cp=='?')

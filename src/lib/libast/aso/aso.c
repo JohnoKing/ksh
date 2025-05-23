@@ -597,10 +597,10 @@ asocas8(uint8_t volatile* p, int o, int n)
 		U16_8_t		u;
 		U16_8_t		v;
 		U16_8_t*	a;
-		int		s;
-		int		i;
+		ssize_t		s;
+		ssize_t		i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
+		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U16_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -624,10 +624,10 @@ asocas8(uint8_t volatile* p, int o, int n)
 		U32_8_t		u;
 		U32_8_t		v;
 		U32_8_t*	a;
-		int		s;
-		int		i;
+		ssize_t		s;
+		ssize_t		i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
+		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U32_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -651,10 +651,10 @@ asocas8(uint8_t volatile* p, int o, int n)
 		U64_8_t		u;
 		U64_8_t		v;
 		U64_8_t*	a;
-		int		s;
-		int		i;
+		ssize_t		s;
+		ssize_t		i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
+		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U64_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -696,10 +696,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 		U32_16_t	u;
 		U32_16_t	v;
 		U32_16_t*	a;
-		int		s;
-		int		i;
+		ssize_t		s;
+		ssize_t		i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
+		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
 		a = (U32_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -723,10 +723,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 		U64_16_t	u;
 		U64_16_t	v;
 		U64_16_t*	a;
-		int		s;
-		int		i;
+		ssize_t		s;
+		ssize_t		i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
+		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
 		a = (U64_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -768,10 +768,10 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
 		U64_32_t	u;
 		U64_32_t	v;
 		U64_32_t*	a;
-		int		s;
-		int		i;
+		ssize_t		s;
+		ssize_t		i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 4;
+		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1)) / 4;
 		a = (U64_32_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{

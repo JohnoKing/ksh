@@ -44,13 +44,13 @@ int		nv_clone(Namval_t *\fIsrc\fP, Namval_t *\fIdest\fP, int \fIflags\fP);
 .nf
 .ft 5
 int		nv_isnull(Namval_t *\fInp\fP);
-int		nv_setsize(Namval_t *\fInp\fP, int \fIsize\fP);
-int		nv_size(Namval_t *\fInp\fP);
+size_t		nv_setsize(Namval_t *\fInp\fP, ssize_t \fIsize\fP);
+size_t		nv_size(Namval_t *\fInp\fP);
 unsigned	nv_isattr(Namval_t *\fInp\fP, unsigned \fIflags\fP);
 Namfun_t	*nv_isvtree(Namval_t *\fInp\fP);
 unsigned	nv_onattr(Namval_t *\fInp\fP, unsigned \fIflags\fP);
 unsigned	nv_offattr(Namval_t *\fInp\fP, unsigned \fIflags\fP);
-void		nv_newattr(Namval_t *\fInp\fP, unsigned \fIflags\fP, int \fIsize\fP);
+void		nv_newattr(Namval_t *\fInp\fP, unsigned \fIflags\fP, ssize_t \fIsize\fP);
 .ft R
 .fi
 

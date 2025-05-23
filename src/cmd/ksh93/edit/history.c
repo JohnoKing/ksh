@@ -562,8 +562,8 @@ void hist_eof(History_t *hp)
 	char *cp,*first,*endbuff;
 	int incmd = 0;
 	off_t count = hp->histcnt;
-	int oldind=0,n;
-	ssize_t skip=0;
+	int oldind=0;
+	ssize_t skip=0,n;
 	off_t last = sfseek(hp->histfp,0,SEEK_END);
 	if(last < count)
 	{
@@ -577,7 +577,7 @@ again:
 	sfseek(hp->histfp,count,SEEK_SET);
 	while(cp=(char*)sfreserve(hp->histfp,SFIO_UNBOUND,0))
 	{
-		n = (int)sfvalue(hp->histfp);
+		n = sfvalue(hp->histfp);
 		*(endbuff = cp+n) = 0;
 		first = cp += skip;
 		while(1)
@@ -872,7 +872,7 @@ Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
 {
 	int index2;
 	off_t offset;
-	int *coffset=0;
+	ssize_t *coffset=0;
 	Histloc_t location;
 	location.hist_command = -1;
 	location.hist_char = 0;
@@ -925,7 +925,7 @@ Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
  * If coffset==0 then line must begin with string
  * returns the line number of the match if successful, otherwise -1
  */
-int hist_match(History_t *hp,off_t offset,char *string,int *coffset)
+int hist_match(History_t *hp,off_t offset,char *string,ssize_t *coffset)
 {
 	unsigned char *first, *cp;
 	int c=1,line=0;
@@ -941,7 +941,7 @@ int hist_match(History_t *hp,off_t offset,char *string,int *coffset)
 		if(strncmp((char*)cp,string,n)==0)
 		{
 			if(coffset)
-				*coffset = (int)(cp-first);
+				*coffset = cp-first;
 			return line;
 		}
 		if(!coffset)

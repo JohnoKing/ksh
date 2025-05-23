@@ -901,7 +901,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 		size += (n=(ssize_t)strlen(name=np->nvname)-m+1);
 	}
 	offset = roundof(offset,sizeof(char*));
-	nv_setsize(mp,(uint32_t)offset);
+	nv_setsize(mp,offset);
 	k = roundof(sizeof(Namtype_t),sizeof(Sfdouble_t)) - sizeof(Namtype_t);
 	pp = sh_newof(NULL, Namtype_t, 1, nnodes*NV_MINSZ + offset + size + (nnodes+nd)*sizeof(char*) + iref*sizeof(struct Namref)+k);
 	pp->fun.dsize = sizeof(Namtype_t)+nnodes*NV_MINSZ +offset+k;
@@ -1160,7 +1160,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 	pp->nref = nref;
 	if(k>1)
 	{
-		nv_setsize(mp,(uint32_t)offset);
+		nv_setsize(mp,offset);
 		mp->nvalue = pp->data;
 		nv_onattr(mp,NV_NOFREE|NV_BINARY|NV_RAW);
 	}
