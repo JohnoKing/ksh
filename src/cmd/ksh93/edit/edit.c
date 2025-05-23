@@ -1047,7 +1047,7 @@ int ed_setcursor(Edit_t *ep,genchar *physical,int old,int new,int first)
 					int m = ep->e_winsz+1-plen;
 					ed_putchar(ep,'\n');
 					n = plen;
-					if(m < genlen(physical))
+					if(m < (int)genlen(physical))
 					{
 						while(physical[m] && n-->0)
 							ed_putchar(ep,physical[m++]);

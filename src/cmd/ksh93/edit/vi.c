@@ -70,7 +70,7 @@
     static genchar	_c;
 #   define gencpy(a,b)	strcopy((char*)(a),(char*)(b))
 #   define genncpy(a,b,n) strncopy((char*)(a),(char*)(b),n)
-#   define genlen(str)	strlen(str)
+#   define genlen(str)	((int)strlen(str))
 #   define isalph(v)	((_c=virtual[v])=='_'||isalnum(_c))
 #   undef  isblank
 #   define isblank(v)	isspace(virtual[v])

@@ -604,8 +604,8 @@ int ed_macro(Edit_t *ep, int i)
 		ep->e_macro[2] = 0;
 	if (isalnum(i)&&(np=nv_search(ep->e_macro,sh.alias_tree,0))&&(out=nv_getval(np)))
 	{
-#if SHOPT_MULTIBYTE
 		/* copy to buff in internal representation */
+#if SHOPT_MULTIBYTE
 		int c = 0;
 		if( strlen(out) > LOOKAHEAD )
 		{
@@ -615,13 +615,16 @@ int ed_macro(Edit_t *ep, int i)
 		i = ed_internal(out,buff);
 		if(c)
 			out[LOOKAHEAD] = c;
-#else
-		strncpy((char*)buff,out,LOOKAHEAD);
-		buff[LOOKAHEAD] = 0;
-		i = strlen((char*)buff);
-#endif /* SHOPT_MULTIBYTE */
 		while(i-- > 0)
 			ed_ungetchar(ep,buff[i]);
+#else
+		size_t len;
+		strncpy((char*)buff,out,LOOKAHEAD);
+		buff[LOOKAHEAD] = 0;
+		len = strlen((char*)buff);
+		while(len-- > 0)
+			ed_ungetchar(ep,buff[len]);
+#endif /* SHOPT_MULTIBYTE */
 		return 1;
 	}
 	return 0;
