@@ -165,14 +165,14 @@ struct match
 	const char	*v;
 	char		*val;
 	char		*rval[2];
-	int		*match;
+	ssize_t		*match;
 	char		*nodes;
 	char		*names;
 	ssize_t		msize;
 	ssize_t		vsize;
 	ssize_t		vlen;
-	int		first;
-	int		nmatch;
+	ssize_t		first;
+	ssize_t		nmatch;
 	int		index;
 	int		lastsub[2];
 };
@@ -798,7 +798,7 @@ static void put_lastarg(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 static void match2d(struct match *mp)
 {
 	Namval_t	*np;
-	int		i;
+	ssize_t		i;
 	Namarr_t	*ap;
 	nv_disc(SH_MATCHNOD, &mp->hdr, NV_POP);
 	if(mp->nodes)
@@ -829,12 +829,12 @@ static void match2d(struct match *mp)
  * store the most recent value for use in .sh.match
  * treat .sh.match as a two dimensional array
  */
-void sh_setmatch(const char *v, ssize_t vsize, int nmatch, int match[], int index)
+void sh_setmatch(const char *v, ssize_t vsize, ssize_t nmatch, ssize_t match[], int index)
 {
 	Init_t		*ip = sh.init_context;
 	struct match	*mp = &ip->SH_MATCH_init;
-	int		x, savesub=sh.subshell;
-	ssize_t		i,n;
+	int		savesub=sh.subshell;
+	ssize_t		i,n,x;
 	Namarr_t	*ap = nv_arrayptr(SH_MATCHNOD);
 	Namval_t	*np;
 	if(sh.intrace)
@@ -946,7 +946,8 @@ void sh_setmatch(const char *v, ssize_t vsize, int nmatch, int match[], int inde
 static char* get_match(Namval_t *np, Namfun_t *fp)
 {
 	struct match	*mp = (struct match*)fp;
-	int		sub,sub2=0,n,i =!mp->index;
+	int		sub,sub2=0,i=!mp->index;
+	ssize_t		n;
 	char		*val;
 	sub = nv_aindex(SH_MATCHNOD);
 	if(sub<0)

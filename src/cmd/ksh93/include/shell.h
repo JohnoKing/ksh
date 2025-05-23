@@ -370,7 +370,7 @@ struct Shell_s
 	Shinit_f	userinit;
 	Shbltin_f	bltinfun;
 	Shbltin_t	bltindata;
-	int		offsets[10];
+	ssize_t		offsets[10];
 	Sfio_t		**sftable;
 	unsigned char	*fdstatus;
 	char		*pwd;
