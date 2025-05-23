@@ -43,7 +43,7 @@ static Dtdisc_t	_Refdisc =
 
 static void	pushnam(Namval_t*,void*);
 static char	*staknam(Namval_t*, char*);
-static void	rightjust(char*, int, int);
+static void	rightjust(char*, ssize_t, int);
 static char	*lastdot(char*, int);
 
 /*
@@ -108,7 +108,7 @@ static char *getbuf(size_t len)
 /*
  * output variable name in format for re-input
  */
-void nv_outname(Sfio_t *out, char *name, int len)
+void nv_outname(Sfio_t *out, char *name, ssize_t len)
 {
 	const char *cp=name, *sp;
 	int c;
@@ -445,7 +445,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 							if(!ap->fun && !(ap->nelem&ARRAY_TREE) && !np->nvfun->next && !nv_type(np))
 							{
 								unsigned short nvflag = np->nvflag;
-								uint32_t nvsize = np->nvsize;
+								size_t nvsize = np->nvsize;
 								nv_unset(np,NV_EXPORT);
 								np->nvflag = nvflag;
 								np->nvsize = nvsize;
@@ -1586,7 +1586,7 @@ skip:
 	return np;
 }
 
-static int ja_size(char*, int, int);
+static ssize_t ja_size(char*, ssize_t, int);
 static void ja_restore(void);
 static char *savep;
 static char savechars[8+1];
@@ -1603,7 +1603,7 @@ static char savechars[8+1];
 void nv_putval(Namval_t *np, const char *sp, int flags)
 {
 	void		**vpp;	/* pointer to value pointer */
-	unsigned int	size = 0;
+	size_t		size = 0;
 	int		was_local = nv_local;
 #if SHOPT_FIXEDARRAY
 	Namarr_t	*ap;
@@ -1892,11 +1892,11 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 		else
 		{
 			char *cp = NULL;	/* pointer to new string */
-			unsigned int dot;	/* attribute or type length; defaults to string length */
+			size_t dot;		/* attribute or type length; defaults to string length */
 			size_t append = 0;	/* offset for appending */
 			if(sp==*vpp && !(flags&NV_APPEND))
 				return;
-			dot = (unsigned int)strlen(sp);
+			dot = strlen(sp);
 			if(nv_isattr(np,NV_BINARY))
 			{
 				size_t oldsize = (flags&NV_APPEND)?nv_size(np):0;
@@ -1914,7 +1914,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 				if(nv_isattr(np,NV_ZFILL))
 					size = nv_size(np);
 				if(size==0)
-					size = (unsigned int)(oldsize + (3*dot/4));
+					size = oldsize + (3*dot/4);
 				cp = (char*)sh_malloc(size+1);
 				*cp = 0;
 				nv_offattr(np,NV_NOFREE);
@@ -1923,7 +1923,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 				*vpp = cp;
 				if(size <= oldsize)
 					return;
-				dot = (unsigned int)base64decode(sp,dot, NULL, cp+oldsize, size-oldsize,NULL);
+				dot = base64decode(sp,dot, NULL, cp+oldsize, size-oldsize,NULL);
 				dot += oldsize;
 				if(!nv_isattr(np,NV_ZFILL) || nv_size(np)==0)
 					nv_setsize(np,dot);
@@ -2024,10 +2024,10 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
  *   If the leftmost digit in <str> is not a digit, <fill>
  *   will default to a blank.
  */
-static void rightjust(char *str, int size, int fill)
+static void rightjust(char *str, ssize_t size, int fill)
 {
 	char *cp,*sp;
-	int n = (int)strlen(str);
+	ssize_t n = (ssize_t)strlen(str);
 
 	/* ignore trailing blanks */
 	for(cp=str+n;n && *--cp == ' ';n--);
@@ -2065,10 +2065,10 @@ static void rightjust(char *str, int size, int fill)
  * <type> is non-zero for right-justified fields.
  */
 
-static int ja_size(char *str,int size,int type)
+static ssize_t ja_size(char *str,ssize_t size,int type)
 {
 	char *cp = str, *oldcp = str;
-	int c = 0, n = size, oldn = size;
+	ssize_t c = 0, n = size, oldn = size;
 	while(*cp)
 	{
 		int outsize;
@@ -2078,8 +2078,8 @@ static int ja_size(char *str,int size,int type)
 		if((outsize = mbwidth(w)) <0)
 			outsize = 0;
 		size -= outsize;
-		c = (int)(cp-oldcp);
-		n += (int)(c-outsize);
+		c = cp-oldcp;
+		n += c-outsize;
 		oldcp = cp;
 		if(size<=0 && type==0)
 			break;
@@ -2647,7 +2647,7 @@ char *nv_getval(Namval_t *np)
 	if(nv_isattr(np,NV_INTEGER))
 	{
 		Sflong_t  ll;
-		int base;
+		size_t base;
 		if(!vp)
 			return "0";
 		if(nv_isattr(np,NV_DOUBLE)==NV_DOUBLE)
@@ -2708,7 +2708,7 @@ done:
 	{
 		char *cp;
 		char *ep;
-		int size= nv_size(np), insize=(4*size)/3+size/45+8;
+		ssize_t size = (ssize_t)nv_size(np), insize=(4*size)/3+size/45+8;
 		base64encode(vp, size, NULL, cp=getbuf(insize), insize, (void**)&ep);
 		*ep = 0;
 		return cp;
@@ -2792,7 +2792,7 @@ Sfdouble_t nv_getnum(Namval_t *np)
  *   value to conform to <newatts>.  The <size> of left and right
  *   justified fields may be given.
  */
-void nv_newattr (Namval_t *np, unsigned newatts, int size)
+void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
 {
 	char *sp;
 	char *cp = 0;
@@ -2800,7 +2800,8 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
 	size_t len;
 	Namval_t *mp = 0;
 	Namarr_t *ap = 0;
-	int oldsize,oldatts,trans;
+	int oldatts,trans;
+	size_t oldsize;
 	Namfun_t *fp= (newatts&NV_NODISC)?np->nvfun:0;
 	char *prefix = sh.prefix;
 	newatts &= ~NV_NODISC;
@@ -2834,7 +2835,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
 			return;
 	}
 	oldsize = nv_size(np);
-	if((size==oldsize|| (n&NV_INTEGER)) && !trans && ((n^newatts)&~NV_NOCHANGE)==0)
+	if((size==(ssize_t)oldsize|| (n&NV_INTEGER)) && !trans && ((n^newatts)&~NV_NOCHANGE)==0)
 	{
 		if(size>0)
 			np->nvsize = size;
@@ -3554,10 +3555,10 @@ int nv_isnull BYPASS_MACRO (Namval_t *np)
 	return nv_isnull(np);
 }
 
-int nv_setsize BYPASS_MACRO (Namval_t *np, int size)
+size_t nv_setsize BYPASS_MACRO (Namval_t *np, ssize_t size)
 {
-	int oldsize = nv_size(np);
+	size_t oldsize = nv_size(np);
 	if(size>=0)
-		np->nvsize = size;
+		np->nvsize = (size_t)size;
 	return oldsize;
 }

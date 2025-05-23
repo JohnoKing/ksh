@@ -1541,7 +1541,7 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
 			sfputc(file, '\n');
 			sh_deparse(file, (Shnode_t*)(rp->ptree), 2 | nv_isattr(np,NV_FPOSIX), 0);
 		}
-		return nv_size(np) + 1;
+		return 1;
 	}
 	if(nv_arrayptr(np))
 	{

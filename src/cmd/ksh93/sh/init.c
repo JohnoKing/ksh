@@ -601,7 +601,7 @@ static void put_seconds(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 
 static char* get_seconds(Namval_t *np, Namfun_t *fp)
 {
-	int places = nv_size(np);
+	ssize_t places = nv_size(np);
 	struct tms tp;
 	double d;
 	double *dp = np->nvalue;

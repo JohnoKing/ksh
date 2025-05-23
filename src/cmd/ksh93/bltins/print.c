@@ -651,7 +651,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 			return (*fp->disc->writef)(np, iop, 0, fp);
 		else
 		{
-			int n = nv_size(np);
+			ssize_t n = (ssize_t)nv_size(np);
 			if(nv_isarray(np))
 			{
 				nv_onattr(np,NV_RAW);

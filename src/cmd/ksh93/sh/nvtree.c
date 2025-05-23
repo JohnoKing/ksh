@@ -790,7 +790,7 @@ static void outval(char *name, const char *vname, struct Walk *wp)
 /*
  * format initialization list given a list of assignments <argp>
  */
-static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
+static char **genvalue(char **argv, const char *prefix, ssize_t n, struct Walk *wp)
 {
 	char *cp,*nextcp,*arg;
 	Sfio_t *outfile = wp->out;
@@ -850,7 +850,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 							sp = tp->nvname;
 						sfputr(outfile,sp,' ');
 					}
-					nv_outname(outfile,cp,(int)(nextcp-cp));
+					nv_outname(outfile,cp,nextcp-cp);
 					sfputc(outfile,'=');
 					*nextcp = '.';
 				}
@@ -859,7 +859,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 					outval(cp,arg,wp);
 					continue;
 				}
-				argv = genvalue(argv,cp,(int)(n+m+r),wp);
+				argv = genvalue(argv,cp,n+m+r,wp);
 				if(wp->indent>=0)
 					sfputc(outfile,'\n');
 				if(*argv)
@@ -885,7 +885,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 					continue;
 				}
 				wp->nofollow=1;
-				argv = genvalue(argv,cp,(int)(cp-arg) ,wp);
+				argv = genvalue(argv,cp,cp-arg,wp);
 				sfputc(outfile,wp->indent<0?';':'\n');
 			}
 			else if(outfile && *cp=='[' && cp[-1]!='.')
@@ -900,7 +900,7 @@ static char **genvalue(char **argv, const char *prefix, int n, struct Walk *wp)
 				sfputr(outfile,cp,'=');
 				if(*cp=='.')
 					cp++;
-				argv = genvalue(++argv,cp,(int)(cp-arg),wp);
+				argv = genvalue(++argv,cp,cp-arg,wp);
 				sfputc(outfile,wp->indent>0?'\n':';');
 			}
 			else

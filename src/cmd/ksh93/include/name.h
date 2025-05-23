@@ -161,7 +161,7 @@ extern void		nv_setlist(struct argnod*, int, Namval_t*);
 #   define nv_setoptimize(argaddr)	/* no-op */
 #   define nv_getoptimize()		NULL
 #endif /* SHOPT_OPTIMIZE */
-extern void		nv_outname(Sfio_t*,char*, int);
+extern void		nv_outname(Sfio_t*,char*, ssize_t);
 extern void 		nv_unref(Namval_t*);
 extern int		nv_hasget(Namval_t*);
 extern void		clone_all_disc(Namval_t*, Namval_t*, int);

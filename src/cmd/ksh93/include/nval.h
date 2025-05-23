@@ -107,19 +107,8 @@ struct Namval
 {
 	Dtlink_t	nvlink;		/* space for cdt links */
 	char		*nvname;	/* pointer to name of the node */
-#if _ast_sizeof_pointer == 8
-#   if _ast_intswap > 0
 	unsigned short	nvflag; 	/* attributes */
-	unsigned short	pad1;
-#   else
-	unsigned short	pad1;
-	unsigned short	nvflag; 	/* attributes */
-#   endif
-	uint32_t  	nvsize;		/* size or base */
-#else
-	unsigned short	nvflag; 	/* attributes */
-	unsigned short 	nvsize;		/* size or base */
-#endif
+	size_t  	nvsize;		/* size or base */
 	Namfun_t	*nvfun;		/* pointer to trap functions */
 	void		*nvalue;	/* pointer to any kind of value */
 	void		*nvmeta;	/* pointer to any of various kinds of type-dependent data */
@@ -266,7 +255,7 @@ extern int		nv_isnull(Namval_t*);
 extern Namfun_t		*nv_isvtree(Namval_t*);
 extern Namval_t		*nv_lastdict(void);
 extern Namval_t		*nv_mkinttype(char*, size_t, int, const char*, Namdisc_t*);
-extern void 		nv_newattr(Namval_t*,unsigned,int);
+extern void 		nv_newattr(Namval_t*,unsigned,ssize_t);
 extern void 		nv_newtype(Namval_t*);
 extern Namval_t		*nv_open(const char*,Dt_t*,int);
 extern void 		nv_putval(Namval_t*,const char*,int);
@@ -279,7 +268,7 @@ extern void		nv_setref(Namval_t*, Dt_t*,int);
 extern int		nv_settype(Namval_t*, Namval_t*, int);
 extern void 		nv_setvec(Namval_t*,int,int,char*[]);
 extern void		nv_setvtree(Namval_t*);
-extern int 		nv_setsize(Namval_t*,int);
+extern size_t 		nv_setsize(Namval_t*,ssize_t);
 extern Namfun_t		*nv_disc(Namval_t*,Namfun_t*,int);
 extern void 		nv_unset(Namval_t*,int);
 extern Namval_t		*nv_search(const char *, Dt_t*, int);

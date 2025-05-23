@@ -323,11 +323,12 @@ static int fixnode(Namtype_t *dp, Namtype_t *pp, int i, struct Namref *nrp,int f
 			Namval_t *nr = nv_namptr( pp->childfun.ttype->nodes,i);
 			if(nr->nvalue != nq->nvalue)
 			{
-				if(i=nv_size(nq))
+				size_t sz;
+				if(sz=nv_size(nq))
 				{
 					void *vp = nq->nvalue;
-					nq->nvalue = sh_malloc(i);
-					memcpy(nq->nvalue,vp,i);
+					nq->nvalue = sh_malloc(sz);
+					memcpy(nq->nvalue,vp,sz);
 				}
 				else
 					nq->nvalue = sh_strdup(nq->nvalue);
@@ -996,7 +997,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 			{
 				Namval_t *nr = nv_namptr(qp->nodes,k);
 				nq = nv_namptr(pp->nodes,k);
-				if(fixnode(pp,dp,k,nrp,0))
+				if(fixnode(pp,dp,(int)k,nrp,0))
 				{
 					nrp++;
 					nq = ((struct Namref*)nq->nvalue)->np;
@@ -1358,7 +1359,7 @@ int nv_settype(Namval_t* np, Namval_t *tp, int flags)
 	return 0;
 }
 
-static void write_indent(Sfio_t *out,char *str,int n,int indent)
+static void write_indent(Sfio_t *out,char *str,ssize_t n,int indent)
 {
 	int	c, first=1;
 	char	*cp = str;
@@ -1427,7 +1428,7 @@ int	sh_outtype(Sfio_t *out)
 		sh.last_table = 0;
 		cp = nv_getval(L_ARGNOD);
 		if(indent)
-			write_indent(out,cp,(int)strlen(cp)-1,indent);
+			write_indent(out,cp,(ssize_t)strlen(cp)-1,indent);
 		else
 			sfprintf(out,"%.*s",strlen(cp)-1,cp);
 		nv_unset(L_ARGNOD,NV_RDONLY);
