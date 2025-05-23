@@ -73,7 +73,7 @@ static int		alias_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
 static void		setupalias(Lex_t*,const char*, Namval_t*);
 static int		comsub(Lex_t*,int);
 static void		nested_here(Lex_t*);
-static int		here_copy(Lex_t*, struct ionod*);
+static ssize_t		here_copy(Lex_t*, struct ionod*);
 static int 		stack_grow(void);
 static const Sfdisc_t alias_disc = { NULL, NULL, NULL, alias_exceptf, NULL };
 
@@ -249,7 +249,8 @@ int sh_lex(Lex_t *lp)
 int sh_lex(Lex_t* lp)
 {
 	const char	*state;
-	int		n, c, mode=ST_BEGIN, wordflags=0;
+	ssize_t		n;
+	int		c, mode=ST_BEGIN, wordflags=0;
 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
 	int		epatchar=0;
 	char		*varnamefirst = NULL;
@@ -628,7 +629,7 @@ int sh_lex(Lex_t* lp)
 					else
 						fcsopen((char*)state);
 					/* remove \new-line */
-					n = (int)stktell(sh.stk)-c;
+					n = stktell(sh.stk)-c;
 					stkseek(sh.stk,n);
 					lp->arg = ap;
 					if(n<=(signed)ARGVAL)
@@ -841,7 +842,7 @@ int sh_lex(Lex_t* lp)
 				fcseek(-LEN);
 				n = lp->digits;
 				wordflags |= comsub(lp,c);
-				lp->digits = n;
+				lp->digits = (int)n;
 				continue;
 			case S_RBRA:
 				if((n=endchar(lp)) == '$')
@@ -875,7 +876,7 @@ int sh_lex(Lex_t* lp)
 					if(n>0)
 						fcseek(-LEN);
 				}
-				if(isaletter(n) || n==LBRACT)
+				if(isaletter((wchar_t)n) || n==LBRACT)
 					continue;
 				if(mode==ST_NAME)
 				{
@@ -986,7 +987,7 @@ int sh_lex(Lex_t* lp)
 						{
 							if(c!='%')
 							{
-								lp->token = n;
+								lp->token = (int)n;
 								sh_syntax(lp,0);
 							}
 							else if(lp->lexd.warn)
@@ -1113,7 +1114,7 @@ int sh_lex(Lex_t* lp)
 							state = fcfirst();
 						else
 						{
-							n = (int)(state-fcseek(0));
+							n = state-fcseek(0);
 							fcseek(n);
 						}
 						lp->lexd.paren = 1;
@@ -1281,7 +1282,7 @@ breakloop:
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,stktell(sh.stk)-1);
 	state = stkptr(sh.stk,ARGVAL);
-	n = (int)stktell(sh.stk)-ARGVAL;
+	n = stktell(sh.stk)-ARGVAL;
 	lp->lexd.first=0;
 	if(n==1)
 	{
@@ -1290,13 +1291,13 @@ breakloop:
 		if(!lp->lex.intest && (c=='<' || c=='>') && isadigit(n))
 		{
 			c = sh_lex(lp);
-			lp->digits = (n-'0');
+			lp->digits = ((int)n-'0');
 			return c;
 		}
 		if(n==LBRACT)
 			c = 0;
 		else if(n==RBRACE && lp->comsub)
-			return lp->token=n;
+			return lp->token=(int)n;
 		else if(n=='~')
 			c = ARG_MAC;
 		else
@@ -1558,7 +1559,8 @@ breakloop:
  */
 static int comsub(Lex_t *lp, int endtok)
 {
-	int n,c;
+	ssize_t n;
+	int c;
 	unsigned short count=1;
 	int line=sh.inlineno;
 	struct ionod *inheredoc = lp->heredoc;
@@ -1589,7 +1591,7 @@ static int comsub(Lex_t *lp, int endtok)
 		{
 			if(first==lp->lexd.first)
 			{
-				n = (int)(cp+1-(char*)fcseek(0));
+				n = cp+1-(char*)fcseek(0);
 				fcseek(n);
 			}
 			count++;
@@ -1809,13 +1811,13 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int state)
  * noted with the IOQUOTE flag
  * returns 1 for complete here-doc, 0 for EOF
  */
-static int here_copy(Lex_t *lp,struct ionod *iop)
+static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 {
 	const char	*state;
-	int		c,n;
+	ssize_t		c,n, nsave;
 	char		*bufp,*cp;
 	Sfio_t		*sp=sh.heredocs;
-	int		stripcol=0,stripflg, nsave, special=0;
+	int		stripcol=0,stripflg, special=0;
 	if(iop->iolst)
 		here_copy(lp,iop->iolst);
 	iop->iooffset = sfseek(sp,0,SEEK_END);
@@ -1868,14 +1870,14 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 		if(n==S_EOF || !(c=fcget()))
 		{
 			if(LEN < 0)
-				c = (int)(fclast()-bufp);
+				c = fclast()-bufp;
 			else
-				c= (int)((fcseek(0)-1)-bufp);
+				c= (fcseek(0)-1)-bufp;
 			if(!lp->lexd.dolparen && c)
 			{
 				if(n==S_ESC)
 					c--;
-				if(!lp->lexd.dolparen && (c=(int)sfwrite(sp,bufp,c))>0)
+				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,c))>0)
 					iop->iosize += c;
 			}
 			if(LEN==0)
@@ -1919,7 +1921,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 				if(!lp->lexd.dolparen)
 				{
 					/* write out line */
-					if((n=(int)sfwrite(sp,bufp,fcseek(0)-bufp))>0)
+					if((n=sfwrite(sp,bufp,fcseek(0)-bufp))>0)
 						iop->iosize += n;
 				}
 				/* skip over tabs */
@@ -1952,9 +1954,9 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				if(!(c=fcget()))
 				{
-					if(!lp->lexd.dolparen && (c=(int)(cp-bufp)))
+					if(!lp->lexd.dolparen && (c=cp-bufp))
 					{
-						if((c=(int)sfwrite(sp,cp=bufp,c))>0)
+						if((c=sfwrite(sp,cp=bufp,c))>0)
 							iop->iosize+=c;
 					}
 					nsave = n;
@@ -1976,9 +1978,9 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 					sh.inlineno++;
 				if(iop->iodelim[n]==0 && (c==NL||c==RPAREN))
 				{
-					if(!lp->lexd.dolparen && (n=(int)(cp-bufp)))
+					if(!lp->lexd.dolparen && (n=cp-bufp))
 					{
-						if((n=(int)sfwrite(sp,bufp,n))>0)
+						if((n=sfwrite(sp,bufp,n))>0)
 							iop->iosize += n;
 					}
 					sh.inlineno--;
@@ -1996,7 +1998,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 					 */
 					if(!lp->lexd.dolparen && nsave>0)
 					{
-						if((n=(int)sfwrite(sp,iop->iodelim,nsave))>0)
+						if((n=sfwrite(sp,iop->iodelim,nsave))>0)
 							iop->iosize += n;
 						bufp = fcfirst();
 					}
@@ -2027,9 +2029,9 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				/* new-line joining */
 				sh.inlineno++;
-				if(!lp->lexd.dolparen && (n=(int)(fcseek(0)-bufp)-n)>=0)
+				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
 				{
-					if(n && (n=(int)sfwrite(sp,bufp,n))>0)
+					if(n && (n=sfwrite(sp,bufp,n))>0)
 						iop->iosize += n;
 					bufp = fcseek(0)+1;
 				}
@@ -2184,7 +2186,8 @@ static struct argnod *endword(int mode)
 	const char *const state = sh_lexstates[ST_NESTED];
 	unsigned char *sp, *dp, *ep=0, *xp=0;	/* must be unsigned: pointed-to values used as index to 256-byte state table */
 	int inquote=0, inlit=0;			/* set within quoted strings */
-	int n, bracket=0;
+	int bracket=0;
+	ssize_t n;
 	sfputc(sh.stk,0);
 	sp =  (unsigned char*)stkptr(sh.stk,ARGVAL);
 	if(mbwide())
@@ -2271,7 +2274,7 @@ static struct argnod *endword(int mode)
 					}
 					*--dp = 0;
 					msg = ERROR_translate(0,error_info.id,0,ep);
-					n = (int)strlen(msg);
+					n = strlen(msg);
 					dp = ep+n;
 					if(sp-dp <= 1)
 					{

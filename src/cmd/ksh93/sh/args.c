@@ -121,7 +121,8 @@ int sh_argopts(int argc,char *argv[])
 	Lex_t		*lp = (Lex_t*)(sh.lex_context);
 #endif
 	Shopt_t		newflags;
-	int		defaultflag=0, setflag=0, action=0, trace=(int)sh_isoption(SH_XTRACE);
+	int		defaultflag=0, setflag=0, action=0;
+	int64_t		trace=sh_isoption(SH_XTRACE);
 	int		invalidate_ifs = 0;
 	Namval_t	*np = NULL;
 	const char	*cp;
@@ -768,7 +769,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	else
 		sh.outpipe = pv;
 	sh_onstate(SH_PROCSUB);
-	sh_exec((Shnode_t*)argp->argchn.ap,(int)sh_isstate(SH_ERREXIT));
+	sh_exec((Shnode_t*)argp->argchn.ap,sh_isstate(SH_ERREXIT));
 	/* restore the previous state */
 	sh.subshell = savesubshell;
 	job.jobcontrol = savejobcontrol;
