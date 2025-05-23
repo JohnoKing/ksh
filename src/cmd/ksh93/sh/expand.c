@@ -62,12 +62,13 @@ static char *nextdir(glob_t *gp, char *dir)
 	return NULL;
 }
 
-int path_expand(const char *pattern, struct argnod **arghead, int musttrim)
+ssize_t path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 {
 	glob_t gdata;
 	struct argnod *ap;
 	glob_t *gp= &gdata;
-	int flags,extra=0;
+	int flags;
+	ssize_t extra=0;
 	sh_stats(STAT_GLOBS);
 	memset(gp,0,sizeof(gdata));
 	flags = GLOB_GROUP|GLOB_AUGMENTED|GLOB_NOCHECK|GLOB_NOSORT|GLOB_STACK|GLOB_LIST|GLOB_DISC;
@@ -131,7 +132,7 @@ int path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 	}
 	if(gp->gl_list)
 		*arghead = (struct argnod*)gp->gl_list;
-	return (int)(gp->gl_pathc+extra);
+	return gp->gl_pathc+extra;
 }
 
 /*
@@ -167,7 +168,7 @@ static int scantree(Dt_t *tree, const char *pattern, struct argnod **arghead)
  * generate the list of files found by adding an suffix to end of name
  * The number of matches is returned
  */
-int path_complete(const char *name,const char *suffix, struct argnod **arghead)
+ssize_t path_complete(const char *name,const char *suffix, struct argnod **arghead)
 {
 	sufstr = suffix;
 	suflen = strlen(suffix);
@@ -235,14 +236,14 @@ static int must_disallow_bracepat(char *cp, int withbackslash)
 	return change ? (c && incompat && !shellpat) : -1;
 }
 
-int path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
+ssize_t path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
 /*@
 	assume todo!=0;
 	return count satisfying count>=1;
 @*/
 {
 	char *cp;
-	int brace;
+	ssize_t brace;
 	int nobracepat = 0;
 	struct argnod *ap;
 	struct argnod *top = 0;
@@ -250,7 +251,7 @@ int path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
 	char *pat = NULL, *rescan;
 	char *format;
 	char comma, range=0;
-	int first = 0, last = 0, incr = 0, count = 0;
+	ssize_t first = 0, last = 0, incr = 0, count = 0;
 	char tmp[32], end[1];
 	todo->argchn.ap = 0;
 again:
@@ -279,12 +280,12 @@ again:
 				incr = 1;
 				if(isdigit(*pat) || *pat=='+' || *pat=='-')
 				{
-					first = (int)strtol(pat,&endc,0);
+					first = strtol(pat,&endc,0);
 					if(endc==(cp-1))
 					{
-						last = (int)strtol(cp+1,&endc,0);
+						last = strtol(cp+1,&endc,0);
 						if(*endc=='.' && endc[1]=='.')
-							incr = (int)strtol(endc+2,&endc,0);
+							incr = strtol(endc+2,&endc,0);
 						else if(last<first)
 							incr = -1;
 						if(incr)
@@ -330,7 +331,7 @@ again:
 					cp += 2;
 					if(*cp=='.')
 					{
-						incr = (int)strtol(cp+2,&endc,0);
+						incr = strtol(cp+2,&endc,0);
 						cp = endc;
 					}
 					else if(first>last)

@@ -278,7 +278,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 			if(*arg->argval==0 && arg->argchn.ap && !(arg->argflag&~(ARG_APPEND|ARG_QUOTED|ARG_MESSAGE|ARG_ARRAY)))
 			{
 				int flag = (NV_VARNAME|NV_ARRAY|NV_ASSIGN);
-				int sub=0;
+				ssize_t sub=0;
 				struct fornod *fp=(struct fornod*)arg->argchn.ap;
 				Shnode_t *tp=fp->fortre;
 				flag |= (flags&(NV_NOSCOPE|NV_STATIC|NV_FARRAY));
@@ -531,7 +531,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 			skip:
 				if(sub>0)
 				{
-					sfprintf(sh.stk,"%s[%d]",prefix?nv_name(np):cp,sub);
+					sfprintf(sh.stk,"%s[%zd]",prefix?nv_name(np):cp,sub);
 					sh.prefix = stkfreeze(sh.stk,1);
 					nv_putsub(np,NULL,ARRAY_ADD|ARRAY_FILL|sub);
 				}
@@ -917,7 +917,8 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 			if(isref)
 			{
 #if SHOPT_FIXEDARRAY
-				int n=0,dim;
+				ssize_t n=0;
+				int dim;
 #endif /* SHOPT_FIXEDARRAY */
 #if NVCACHE
 				nvcache.ok = 0;
@@ -2071,7 +2072,7 @@ static ssize_t ja_size(char *str,ssize_t size,int type)
 	ssize_t c = 0, n = size, oldn = size;
 	while(*cp)
 	{
-		int outsize;
+		ssize_t outsize;
 		wchar_t w;
 		oldn = n;
 		w = mbchar(cp);
@@ -2913,7 +2914,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
 				while(c = mbchar(cq))
 					if ((w = mbwidth(c)) > 0)
 						n += w;
-				size = (int)n;
+				size = n;
 			}
 		}
 		else if(!trans)

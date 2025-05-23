@@ -1047,8 +1047,8 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 	char		**xp=0, *xval, *libenv = (libpath?libpath->lib:0);
 	Namval_t*	np;
 	char		*s, *v;
-	int		r, n;
-	ssize_t		pidsize=0;
+	int		r;
+	ssize_t		n, pidsize=0;
 	pid_t		pid= -1;
 	if(!sh_isstate(SH_EXEC) && nv_search(opath,sh.bltin_tree,0))
 	{
@@ -1117,7 +1117,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 	/* end of: ^^^ save original pathname */
 	if(libenv && (v = strchr(libenv,'=')))
 	{
-		n = (int)(v - libenv);
+		n = (v - libenv);
 		*v = 0;
 		np = nv_open(libenv,sh.var_tree,0);
 		*v = '=';

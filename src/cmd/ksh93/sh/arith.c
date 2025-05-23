@@ -109,7 +109,8 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 	while(nv_isref(np))
 	{
 #if SHOPT_FIXEDARRAY
-		int n,dim;
+		int dim;
+		size_t n;
 		dim = nv_refdimen(np);
 		n = nv_refindex(np);
 #endif /* SHOPT_FIXEDARRAY */

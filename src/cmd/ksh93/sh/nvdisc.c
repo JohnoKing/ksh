@@ -833,7 +833,7 @@ static void *newnode(const char *name)
  */
 static void *num_clone(Namval_t *np, void *val)
 {
-	int size;
+	ssize_t size;
 	void *nval;
 	if(!val)
 		return NULL;
@@ -897,7 +897,7 @@ int nv_clone(Namval_t *np, Namval_t *mp, int flags)
 	Namfun_t	*fp, *fpnext;
 	const char	*val = mp->nvalue;
 	unsigned short	flag = mp->nvflag;
-	unsigned short	size = mp->nvsize;
+	size_t		size = mp->nvsize;
 	for(fp=mp->nvfun; fp; fp=fpnext)
 	{
 		fpnext = fp->next;

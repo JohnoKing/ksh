@@ -723,8 +723,8 @@ static void fixargs(char **argv, int mode)
 {
 #   if PSTAT
 	char *cp;
-	int offset=0,size;
-	static int command_len;
+	ssize_t offset=0,size;
+	static ssize_t command_len;
 	char *buff;
 	union pstun un;
 	if(mode==0)
@@ -742,7 +742,7 @@ static void fixargs(char **argv, int mode)
 		return;
 	while((cp = *argv++) && offset < command_len)
 	{
-		if(offset + (size=(int)strlen(cp)) >= command_len)
+		if(offset + (size=strlen(cp)) >= command_len)
 			size = command_len - offset;
 		memcpy(buff+offset,cp,size);
 		offset += size;
@@ -755,13 +755,13 @@ static void fixargs(char **argv, int mode)
 #   elif _lib_setproctitle
 #	define CMDMAXLEN 255
 	char *cp;
-	int offset=0,size;
+	ssize_t offset=0,size;
 	char buff[CMDMAXLEN + 1];
 	if(mode==0)
 		return;
 	while((cp = *argv++) && offset < CMDMAXLEN)
 	{
-		if(offset + (size=(int)strlen(cp)) >= CMDMAXLEN)
+		if(offset + (size=strlen(cp)) >= CMDMAXLEN)
 			size = CMDMAXLEN - offset;
 		memcpy(buff+offset,cp,size);
 		offset += size;
@@ -773,12 +773,12 @@ static void fixargs(char **argv, int mode)
 #   else
 	/* Generic version, works on at least Linux and macOS */
 	char *cp;
-	int offset=0,size;
-	static int buffsize;
+	ssize_t offset=0,size;
+	static ssize_t buffsize;
 	static char *buff;
 	if(mode==0)
 	{
-		int i;
+		ssize_t i;
 		buff = argv[0];
 		for(i=0; argv[i]; i++)
 			buffsize += strlen(argv[i]) + 1;
@@ -795,7 +795,7 @@ static void fixargs(char **argv, int mode)
 	}
 	while((cp = *argv++) && offset < buffsize)
 	{
-		if(offset + (size=(int)strlen(cp)) >= buffsize)
+		if(offset + (size=strlen(cp)) >= buffsize)
 			size = buffsize - offset;
 		memcpy(buff+offset,cp,size);
 		offset += size;

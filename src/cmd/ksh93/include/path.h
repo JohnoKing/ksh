@@ -76,7 +76,7 @@ extern Namval_t		*path_gettrackedalias(const char*);
 extern Pathcomp_t 	*path_absolute(const char*, Pathcomp_t*, int);
 extern char 		*path_basename(const char*);
 extern char 		*path_fullname(const char*);
-extern int 		path_expand(const char*, struct argnod**, int);
+extern ssize_t 		path_expand(const char*, struct argnod**, int);
 extern noreturn void 	path_exec(const char*,char*[],struct argnod*);
 extern pid_t		path_spawn(const char*,char*[],char*[],Pathcomp_t*,int);
 extern int		path_open(const char*,Pathcomp_t*);
@@ -85,9 +85,9 @@ extern char 		*path_pwd(void);
 extern Pathcomp_t	*path_nextcomp(Pathcomp_t*,const char*,Pathcomp_t*);
 extern int		path_search(const char*,Pathcomp_t**,int);
 extern char		*path_relative(const char*);
-extern int		path_complete(const char*, const char*,struct argnod**);
+extern ssize_t		path_complete(const char*, const char*,struct argnod**);
 #if SHOPT_BRACEPAT
-    extern int 		path_generate(struct argnod*,struct argnod**, int);
+    extern ssize_t 		path_generate(struct argnod*,struct argnod**, int);
 #endif /* SHOPT_BRACEPAT */
 
 #if SHOPT_DYNAMIC

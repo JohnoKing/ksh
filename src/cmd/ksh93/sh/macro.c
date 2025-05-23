@@ -188,9 +188,10 @@ char *sh_mactrim(char *str, int mode)
 	{
 		/* expand only if unique */
 		struct argnod *arglist=0;
-		if((mode=path_expand(str,&arglist,0))==1)
+		ssize_t path_mode;
+		if((path_mode=path_expand(str,&arglist,0))==1)
 			str = arglist->argval;
-		else if(mode>1)
+		else if(path_mode>1)
 		{
 			errormsg(SH_DICT,ERROR_exit(1),e_ambiguous,str);
 			UNREACHABLE();
@@ -2657,7 +2658,7 @@ static void mac_copy(Mac_t *mp,const char *str, ssize_t size)
 static void endfield(Mac_t *mp,int split)
 {
 	struct argnod	*argp;
-	int		count=0;
+	ssize_t		count=0;
 	Stk_t		*stkp = sh.stk;
 	if(stktell(stkp) > (ssize_t)ARGVAL || split)
 	{

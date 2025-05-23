@@ -66,8 +66,8 @@ struct vars				/* vars stacked per invocation */
 	const char	*errstr;	/* error string			*/
 	struct lval	errmsg;	 	/* error message text		*/
 	ssize_t		offset;		/* offset for pushchr macro	*/
-	int		staksize;	/* current stack size needed	*/
-	int		stakmaxsize;	/* maximum stack size needed	*/
+	ssize_t		staksize;	/* current stack size needed	*/
+	ssize_t		stakmaxsize;	/* maximum stack size needed	*/
 	int		emode;
 	unsigned char	paren;	 	/* parenthesis level		*/
 	char		infun;	/* incremented by comma inside function	*/
