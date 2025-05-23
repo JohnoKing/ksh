@@ -79,8 +79,9 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 {
 	struct argnod *argp = arglist;
 	char *cp;
-	int n,eline;
-	int width=0;
+	int eline;
+	size_t width=0;
+	ssize_t n;
 	unsigned long r=0;
 	static char atbuff[20];
 	int  justify=0;
@@ -116,7 +117,7 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 				if(isdigit(n))
 					width = 10*width + n-'0';
 				else if(n=='L' || n=='R' || n =='Z')
-					justify=n;
+					justify=(int)n;
 				else
 					*attribute++ = n;
 			}
@@ -130,7 +131,7 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 		if((cp=strchr(argp->argval,'='))||(cp=strchr(argp->argval,'?')))
 			n = cp-argp->argval;
 		else
-			n = strlen(argp->argval);
+			n = (ssize_t)strlen(argp->argval);
 		eline = sh.inlineno-(lexp->token==NL);
 		r=kiaentity(lexp,argp->argval,n,type,line,eline,parent,justify,width,atbuff);
 		sfprintf(kia.tmp,"p;%..64d;v;%..64d;%d;%d;s;\n",kia.current,r,line,eline);
@@ -2034,7 +2035,7 @@ static Shnode_t *test_primary(Lex_t *lexp)
  * return an entity checksum
  * The entity is created if it doesn't exist
  */
-unsigned long kiaentity(Lex_t *lexp,const char *name,int len,int type,int first,int last,unsigned long parent, int pkind, int width, const char *attr)
+unsigned long kiaentity(Lex_t *lexp,const char *name,ssize_t len,int type,int first,int last,unsigned long parent, int pkind, size_t width, const char *attr)
 {
 	Namval_t *np;
 	ssize_t offset = stktell(sh.stk);
@@ -2060,9 +2061,9 @@ unsigned long kiaentity(Lex_t *lexp,const char *name,int len,int type,int first,
 		if(!pkind)
 			pkind = '0';
 		if(len>0)
-			sfprintf(kia.file,"%..64d;%c;%.*s;%d;%d;%..64d;%..64d;%c;%d;%s\n",np->hash,type,len,name,first,last,parent,kia.fscript,pkind,width,attr);
+			sfprintf(kia.file,"%..64d;%c;%.*s;%d;%d;%..64d;%..64d;%c;%zu;%s\n",np->hash,type,len,name,first,last,parent,kia.fscript,pkind,width,attr);
 		else
-			sfprintf(kia.file,"%..64d;%c;%s;%d;%d;%..64d;%..64d;%c;%d;%s\n",np->hash,type,name,first,last,parent,kia.fscript,pkind,width,attr);
+			sfprintf(kia.file,"%..64d;%c;%s;%d;%d;%..64d;%..64d;%c;%zu;%s\n",np->hash,type,name,first,last,parent,kia.fscript,pkind,width,attr);
 	}
 	return np->hash;
 }
@@ -2079,7 +2080,7 @@ static void kia_add(Namval_t *np, void *data)
 int kiaclose(Lex_t *lexp)
 {
 	off_t off1,off2;
-	int n;
+	ssize_t n;
 	if(kia.file)
 	{
 		unsigned long r = kiaentity(lexp,kia.scriptname,-1,'p',-1,sh.inlineno-1,0,'s',0,"");
@@ -2096,7 +2097,7 @@ int kiaclose(Lex_t *lexp)
 			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%zu\nRELATIONSHIP;%jd;%zu\nDIRECTORY;",(Sflong_t)kia.begin,(size_t)(off1-kia.begin),(Sflong_t)off1,(size_t)(off2-off1));
 		if(off2 >= INT_MAX)
 			off2 = -(n+12);
-		sfprintf(kia.file,"%010.10jd;%010d\n",(Sflong_t)off2+10, n+12);
+		sfprintf(kia.file,"%010.10jd;%010zd\n",(Sflong_t)off2+10, n+12);
 	}
 	return sfclose(kia.file);
 }
