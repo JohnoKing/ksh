@@ -593,7 +593,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 		}
 		goto done;
 	}
-	if ((n = sfpoll(&mp, 1, timeout)) <= 0 || !((int)sfvalue(mp) & SFIO_READ))
+	if ((n = sfpoll(&mp, 1, timeout)) <= 0 || !(sfvalue(mp) & SFIO_READ))
 	{
 		if (n < 0)
 		{

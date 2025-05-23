@@ -65,7 +65,7 @@
 #define _HIST_PRIVATE \
 	off_t	histcnt;	/* offset into history file */\
 	off_t	histmarker;	/* offset of last command marker */ \
-	int	histflush;	/* set if flushed outside of hflush() */\
+	ssize_t	histflush;	/* set if flushed outside of hflush() */\
 	int	histmask;	/* power of two mask for histcnt */ \
 	char	histbuff[HIST_BSIZE+1];	/* history file buffer */ \
 	int	histwfail; \
@@ -694,7 +694,7 @@ void hist_flush(History_t *hp)
 	{
 		if(buff=(char*)sfreserve(hp->histfp,0,SFIO_LOCKR))
 		{
-			hp->histflush = (int)sfvalue(hp->histfp)+1;
+			hp->histflush = sfvalue(hp->histfp)+1;
 			sfwrite(hp->histfp,buff,0);
 		}
 		else

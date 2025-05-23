@@ -783,8 +783,8 @@ static void set(char *argv[], struct termios *sp)
 			}
 			break;
 		    case SPEED:
-			cfsetospeed(sp, tp->mask);
-			cfsetispeed(sp, tp->mask);
+			cfsetospeed(sp, (speed_t)tp->mask);
+			cfsetispeed(sp, (speed_t)tp->mask);
 			break;
 		    case SIZE:
 			sp->c_cflag &= ~CSIZE;

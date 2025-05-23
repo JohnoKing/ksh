@@ -12,6 +12,7 @@ lib	tcgetpgrp unistd.h fail{
 }end
 mac	_POSIX_VDISABLE termios.h
 mem	termios.c_line termios.h
+typ	speed_t   termios.h
 
 cat{
 
