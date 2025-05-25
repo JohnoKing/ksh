@@ -107,11 +107,12 @@ struct Namval
 {
 	Dtlink_t	nvlink;		/* space for cdt links */
 	char		*nvname;	/* pointer to name of the node */
-	unsigned short	nvflag; 	/* attributes */
+	uint16_t	nvflag; 	/* attributes */
 	size_t  	nvsize;		/* size or base */
 	Namfun_t	*nvfun;		/* pointer to trap functions */
 	void		*nvalue;	/* pointer to any kind of value */
 	void		*nvmeta;	/* pointer to any of various kinds of type-dependent data */
+	Sfdouble_t	*pad;
 };
 
 #define NV_CLASS	".sh.type"
