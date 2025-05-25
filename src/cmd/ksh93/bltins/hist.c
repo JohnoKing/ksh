@@ -327,7 +327,7 @@ static void hist_subst(const char *command,int fd,char *replace)
 	if((size = lseek(fd,0,SEEK_END)) < 0)
 		return;
 	lseek(fd,0,SEEK_SET);
-	c = size;
+	c = (ssize_t)size;
 	string = stkalloc(sh.stk,c+1);
 	if(read(fd,string,c)!=c)
 		return;

@@ -124,7 +124,7 @@ aso_init_fcntl(void* data, const char* details)
 	}
 	else
 	{
-		if ((size = lseek(fd, 0, SEEK_END)) <= sizeof(references))
+		if ((size = (size_t)lseek(fd, 0, SEEK_END)) <= sizeof(references))
 			goto bad;
 		size -= sizeof(references);
 		lock.l_type = F_WRLCK;

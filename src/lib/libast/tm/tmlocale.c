@@ -571,7 +571,7 @@ load(Lc_info_t* li)
 		tm_info.deformat = tm_info.format[TM_DEFAULT];
 	if (mcfind(NULL, NULL, LC_TIME, 0, path, sizeof(path)) && (sp = sfopen(NULL, path, "r")))
 	{
-		n = sfsize(sp);
+		n = (ssize_t)sfsize(sp);
 		tp = 0;
 		if (u = (unsigned char*)sfreserve(sp, 3, 1))
 		{

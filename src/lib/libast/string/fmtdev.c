@@ -35,7 +35,7 @@ char*
 fmtdev(struct stat* st)
 {
 	char*		buf;
-	unsigned long	mm;
+	dev_t		mm;
 	unsigned int	ma;
 	unsigned int	mi;
 	int		z;

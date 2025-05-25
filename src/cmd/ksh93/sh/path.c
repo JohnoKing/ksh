@@ -1530,7 +1530,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			close(fd);
 			return 0;
 		}
-		l = statb.st_size;
+		l = (size_t)statb.st_size;
 		stkseek(sh.stk,offset+pp->len+l+2);
 		sp = stkptr(sh.stk,offset+pp->len);
 		*sp++ = '/';
@@ -1828,7 +1828,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
 		path_nextcomp(pp,name,pp);
 		sp = stkptr(sh.stk,PATH_OFFSET);
 		if(sp && lstat(sp,&statb)>=0 && S_ISLNK(statb.st_mode))
-			nv_setsize(np,statb.st_size+1);
+			nv_setsize(np,(size_t)statb.st_size+1);
 		else
 			nv_setsize(np,0);
 	}

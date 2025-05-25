@@ -850,7 +850,7 @@ findread(Find_t* fp)
 				n = (*fp->verifyf)(fp, fp->decode.path, n, fp->disc);
 			else if (stat(fp->decode.path, &st))
 				n = -1;
-			else if ((unsigned long)st.st_mtime > fp->stamp)
+			else if (st.st_mtime > fp->stamp)
 				n = 1;
 			else
 				n = 0;

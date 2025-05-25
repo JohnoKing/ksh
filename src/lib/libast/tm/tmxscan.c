@@ -478,8 +478,8 @@ tmxscan(const char* s, char** e, const char* format, char** f, Time_t t, long fl
 		if (!initialized)
 		{
 			Sfio_t*	sp;
-			int		n;
-			off_t			m;
+			size_t		n;
+			off_t		m;
 
 			initialized = 1;
 			if ((v = getenv("DATEMSK")) && *v && (sp = sfopen(NULL, v, "r")))
@@ -490,7 +490,7 @@ tmxscan(const char* s, char** e, const char* format, char** f, Time_t t, long fl
 				{
 					sfseek(sp, 0L, SEEK_SET);
 					v = (char*)(p + n);
-					if (sfread(sp, v, m) != m)
+					if (sfread(sp, v, (size_t)m) != m)
 					{
 						free(p);
 						p = 0;

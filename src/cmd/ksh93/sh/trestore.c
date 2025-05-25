@@ -51,7 +51,7 @@ Shnode_t *sh_trestore(Sfio_t *in)
  */
 static Shnode_t *r_tree(void)
 {
-	long l = sfgetl(infile);
+	Sflong_t l = sfgetl(infile);
 	int type;
 	Shnode_t *t=0;
 	if(l<0)
@@ -172,17 +172,17 @@ static Shnode_t *r_tree(void)
 static struct argnod *r_arg(void)
 {
 	struct argnod	*ap=0, *apold, *aptop=0;
-	long		l;
+	Sfulong_t	l;
 	Stk_t		*stkp=sh.stk;
 	while((l=sfgetu(infile))>0)
 	{
-		ap = stkseek(stkp,(unsigned)l+ARGVAL);
+		ap = stkseek(stkp,(ssize_t)l+ARGVAL);
 		if(!aptop)
 			aptop = ap;
 		else
 			apold->argnxt.ap = ap;
 		if(--l > 0)
-			sfread(infile,ap->argval,(size_t)l);
+			sfread(infile,ap->argval,(ssize_t)l);
 		ap->argval[l] = 0;
 		ap->argchn.cp = 0;
 		ap->argflag = sfgetc(infile);
@@ -206,7 +206,7 @@ static struct argnod *r_arg(void)
 
 static struct ionod *r_redirect(void)
 {
-	long l;
+	Sflong_t l;
 	struct ionod *iop=0, *iopold, *ioptop=0;
 	while((l=sfgetl(infile))>=0)
 	{
@@ -222,7 +222,7 @@ static struct ionod *r_redirect(void)
 			iop->ioname = r_string();	/* file name, descriptor, etc. */
 		if(iop->iodelim = r_string())
 		{
-			iop->iosize = sfgetl(infile);
+			iop->iosize = (ssize_t)sfgetl(infile);
 			if(sh.heredocs)
 				iop->iooffset = sfseek(sh.heredocs,0,SEEK_END);
 			else
@@ -278,11 +278,11 @@ static void r_comarg(struct comnod *com)
 static struct dolnod *r_comlist(void)
 {
 	struct dolnod *dol=0;
-	long l;
+	Sflong_t l;
 	char **argv;
 	if((l=sfgetl(infile))>0)
 	{
-		dol = stkalloc(sh.stk,sizeof(struct dolnod) + sizeof(char*)*(l+ARG_SPARE));
+		dol = stkalloc(sh.stk,sizeof(struct dolnod) + sizeof(char*)*((ssize_t)l+ARG_SPARE));
 		dol->dolnum = (int)l;
 		dol->dolbot = ARG_SPARE;
 		argv = dol->dolval+ARG_SPARE;
@@ -293,7 +293,7 @@ static struct dolnod *r_comlist(void)
 
 static struct regnod *r_switch(void)
 {
-	long l;
+	Sflong_t l;
 	struct regnod *reg=0,*regold,*regtop=0;
 	while((l=sfgetl(infile))>=0)
 	{
@@ -315,12 +315,12 @@ static struct regnod *r_switch(void)
 static char *r_string(void)
 {
 	Sfio_t *in = infile;
-	unsigned long l = sfgetu(in);
+	size_t l = (size_t)sfgetu(in);
 	char *ptr;
 	if(l == 0)
 		return NULL;
-	ptr = stkalloc(sh.stk,(unsigned)l);
-	if(--l > 0 && (size_t)sfread(in,ptr,(size_t)l) != (size_t)l)
+	ptr = stkalloc(sh.stk,l);
+	if(--l > 0 && (size_t)sfread(in,ptr,l) != l)
 		return NULL;
 	ptr[l] = 0;
 	return ptr;

@@ -53,7 +53,7 @@ fmtclock(Sfulong_t t)
 	else if ((t /= 1000) < 1000)
 		u = 'm';
 	else
-		return fmtelapsed(t / 10, 100);
+		return fmtelapsed((unsigned long)t / 10, 100);
 	buf = fmtbuf(z = 7);
 	sfsprintf(buf, z, "%I*u%cs", sizeof(t), t, u);
 	return buf;

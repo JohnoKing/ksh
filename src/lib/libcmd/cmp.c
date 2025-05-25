@@ -179,7 +179,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 				return ret;
 			}
 			if (count > 0 && c1 > count)
-				c1 = count;
+				c1 = (ssize_t)count;
 			e1 = p1 + c1;
 			n1 = c1;
 		}

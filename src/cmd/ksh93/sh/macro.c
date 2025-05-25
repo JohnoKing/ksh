@@ -2378,7 +2378,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
 	{
 		ssize_t soff = stktell(stkp);
 		sfseek(sp,0,SEEK_SET);
-		stkseek(stkp,soff+foff+64);
+		stkseek(stkp,(ssize_t)(soff+foff+64));
 		stkseek(stkp,soff);
 	}
 	while((str=(char*)sfreserve(sp,SFIO_UNBOUND,0)) && (c=bufsize=sfvalue(sp))>0)

@@ -221,7 +221,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 	char*		usage;
 	char*		t;
 	Sfio_t*		sp;
-	unsigned long	before;
+	time_t		before;
 	Dtdisc_t	mapdisc;
 	Key_t		keys[3];
 	Key_t		key;
@@ -435,7 +435,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 			chownf = chown;
 			op = "chown";
 		commit:
-			if ((unsigned long)ent->fts_statp->st_ctime >= before)
+			if (ent->fts_statp->st_ctime >= before)
 				break;
 			if (map)
 			{

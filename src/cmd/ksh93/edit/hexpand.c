@@ -246,7 +246,7 @@ int hist_expand(const char *ln, char **xp)
 			n = stktell(sh.stk); /* terminate string and dup */
 			sfputc(sh.stk,'\0');
 			cc = sh_strdup(stkptr(sh.stk,0));
-			stkseek(sh.stk,n); /* remove null byte again */
+			stkseek(sh.stk,(ssize_t)n); /* remove null byte again */
 			ref = sfopen(ref, cc, "s"); /* open as file */
 			n = 0; /* skip history file referencing */
 			break;
@@ -563,7 +563,7 @@ getsel:
 				while((c = sfgetc(tmp)) > 0)
 				{	/* remember position of / or . */
 					if((c == '/' && *cp == 'h') || (c == '.' && *cp == 'r'))
-						sfloc = sftell(tmp2);
+						sfloc = (ssize_t)sftell(tmp2);
 					sfputc(tmp2, c);
 				}
 				if(sfloc > 0)
@@ -579,7 +579,7 @@ getsel:
 				while((c = sfgetc(tmp)) > 0)
 				{	/* remember position of / or . */
 					if((c == '/' && *cp == 't') || (c == '.' && *cp == 'e'))
-						sfloc = sftell(tmp);
+						sfloc = (ssize_t)sftell(tmp);
 				}
 				/* rewind to last / or . */
 				sfseek(tmp, sfloc, SEEK_SET);
@@ -597,7 +597,7 @@ getsel:
 					if(!sb.str[0] && wm)
 					{
 						char *sbuf = sfsetbuf(wm, (void*)1, 0);
-						ssize_t sfloc = sftell(wm);
+						ssize_t sfloc = (ssize_t)sftell(wm);
 						sb.str[0] = sh_malloc(sfloc + 1);
 						sb.str[0][sfloc] = '\0';
 						memcpy(sb.str[0], sbuf, sfloc);

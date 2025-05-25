@@ -179,7 +179,7 @@ tailpos(Sfio_t* fp, Sfoff_t number, int delim)
 		if ((offset = last - SFIO_BUFSIZE) < first)
 			offset = first;
 		sfseek(fp, offset, SEEK_SET);
-		n = last - offset;
+		n = (size_t)(last - offset);
 		if (!(s = sfreserve(fp, n, SFIO_LOCKR)))
 			return -1;
 		t = s + n;
@@ -222,7 +222,7 @@ pipetail(Sfio_t* infile, Sfio_t* outfile, Sfoff_t number, int delim)
 	Sfio_t*		tmp[2];
 
 	if (delim < 0 && (ssize_t)a > number)
-		a = number;
+		a = (size_t)number;
 	out = tmp[0] = sftmp(a);
 	tmp[1] = sftmp(a);
 	offset[0] = offset[1] = 0;
@@ -685,7 +685,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 					n = 1;
 					if (timeout)
 						fp->expire = NOW + timeout;
-					z = fp->fifo ? SFIO_UNBOUND : st.st_size - fp->cur;
+					z = fp->fifo ? SFIO_UNBOUND : (ssize_t)(st.st_size - fp->cur);
 					i = 0;
 					if ((s = sfreserve(fp->sp, z, SFIO_LOCKR)) || (z = sfvalue(fp->sp)) && (s = sfreserve(fp->sp, z, SFIO_LOCKR)) && (i = 1))
 					{

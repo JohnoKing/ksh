@@ -671,7 +671,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 		nv_outnode(np,iop,(alt?-1:0),0);
 		if(sfputc(iop,')') < 0)
 			exitval = 1;
-		return sftell(iop);
+		return (ssize_t)sftell(iop);
 	}
 	else
 	{
@@ -1077,7 +1077,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		}
 		else
 		{
-			value->s = fmtelapsed(value->ll, 1);
+			value->s = fmtelapsed((unsigned long)value->ll, 1);
 			fe->fmt = 's';
 			fe->size = -1;
 		}

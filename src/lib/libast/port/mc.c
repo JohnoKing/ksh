@@ -268,8 +268,8 @@ mcopen(Sfio_t* ip)
 		 * get the component dimensions
 		 */
 
-		mc->nstrs = sfgetu(ip);
-		mc->nmsgs = sfgetu(ip);
+		mc->nstrs = (size_t)sfgetu(ip);
+		mc->nmsgs = (size_t)sfgetu(ip);
 		mc->num = (int)sfgetu(ip);
 		if (sfeof(ip))
 			goto bad;
@@ -298,7 +298,7 @@ mcopen(Sfio_t* ip)
 	{
 		if (i > mc->num)
 			goto bad;
-		n = sfgetu(ip);
+		n = (size_t)sfgetu(ip);
 		mc->set[i].num = (int)n;
 		mc->set[i].msg = mp;
 		mp += n + 1;
@@ -310,7 +310,7 @@ mcopen(Sfio_t* ip)
 
 	for (i = 1; i <= mc->num; i++)
 		for (j = 1; j <= mc->set[i].num; j++)
-			if (n = sfgetu(ip))
+			if (n = (size_t)sfgetu(ip))
 			{
 				mc->set[i].msg[j] = sp;
 				sp += n;

@@ -190,8 +190,8 @@ typedef struct
 	char		data[1];
 } Stk_frame_t;
 
-#define stknew(s,p)	((p)->offset=stktell(s),(p)->base=stkfreeze(s,0))
-#define stkold(s,p)	stkset(s,(p)->base,(p)->offset)
+#define stknew(s,p)	((p)->offset=(off_t)stktell(s),(p)->base=stkfreeze(s,0))
+#define stkold(s,p)	stkset(s,(p)->base,(size_t)(p)->offset)
 
 #define stkframe(s)	(*((Stk_frame_t**)stktop(s)-1))
 #define stkdata(s,t)	((t*)stkframe(s)->data)
