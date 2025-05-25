@@ -1178,7 +1178,7 @@ retry1:
 	idbuff[0] = 0;
 	idbuff[1] = 0;
 	c = fcmbget(&LEN);
-	switch(isascii(c)?sh_lexstates[ST_DOL][c]:S_ALP)
+	switch(isascii((int)c)?sh_lexstates[ST_DOL][c]:S_ALP)
 	{
 	    case S_RBRA:
 		if(type<M_SIZE)
@@ -1670,7 +1670,7 @@ retry1:
 	if(type && c==':')
 	{
 		c = fcmbget(&LEN);
-		if(isascii(c) &&sh_lexstates[ST_BRACE][c]==S_MOD1 && c!='*' && c!= ':')
+		if(isascii((int)c) &&sh_lexstates[ST_BRACE][c]==S_MOD1 && c!='*' && c!= ':')
 			nulflg=1;
 		else if(c!='%' && c!='#')
 		{

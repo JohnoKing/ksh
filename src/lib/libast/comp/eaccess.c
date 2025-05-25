@@ -42,7 +42,7 @@ eaccess(const char* path, int flags)
 #if _lib_euidaccess
 	return euidaccess(path, flags);
 #else
-	int		mode;
+	mode_t		mode;
 	struct stat	st;
 
 	static int	init;

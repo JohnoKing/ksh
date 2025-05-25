@@ -211,7 +211,7 @@ static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,in
 		case 'I' : /* object length */
 			size = -1; flags = (flags & ~SFFMT_TYPES) | SFFMT_IFLAG;
 			if(isdigit(*form) )
-			{	for(size = 0, n = *form; isdigit(n); n = *++form)
+			{	for(size = 0, n = *form; isdigit((int)n); n = *++form)
 					size = size*10 + (n - '0');
 			}
 			else if(*form == '*')

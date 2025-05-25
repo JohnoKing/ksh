@@ -779,7 +779,7 @@ static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
 		else
 			tw->wh.whtre = t;
 	}
-	while((offset=fcpeek(0)) && isspace(offset))
+	while((offset=fcpeek(0)) && isspace((int)offset))
 		fcseek(1);
 	sfputr(sh.stk,fcseek(0),-1);
 	argp = stkfreeze(sh.stk,1);

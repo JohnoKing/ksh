@@ -242,7 +242,7 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
 			break;
 
 		default:
-			if(!isdigit(c))
+			if(!isdigit((int)c))
 			{
 				error(ERROR_exit(1),"bad list for c/f option");
 				UNREACHABLE();

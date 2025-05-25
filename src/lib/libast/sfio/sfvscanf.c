@@ -548,7 +548,7 @@ loop_fmt:
 			else if (fmt == 'z')
 				flags = (flags&~SFFMT_TYPES) | SFFMT_ZFLAG;
 			else if(isdigit(*form))
-				for(size = 0, n = *form; isdigit(n); n = *++form)
+				for(size = 0, n = *form; isdigit((int)n); n = *++form)
 					size = size*10 + (n - '0');
 			goto loop_flags;
 

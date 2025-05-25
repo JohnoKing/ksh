@@ -1709,10 +1709,10 @@ bra(Cenv_t* env)
 		for (i = 0; i <= UCHAR_MAX; i++)
 			if (settst(e->re.charclass, i))
 			{
-				if (isupper(i))
-					c = tolower(i);
-				else if (islower(i))
-					c = toupper(i);
+				if (isupper((int)i))
+					c = tolower((int)i);
+				else if (islower((int)i))
+					c = toupper((int)i);
 				else
 					continue;
 				setadd(e->re.charclass, c);

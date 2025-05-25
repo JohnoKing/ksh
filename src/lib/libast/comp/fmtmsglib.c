@@ -155,7 +155,7 @@ _mm_severity(void)
 							{
 							case 0:
 								*(s - 1) = 0;
-								p->value = strtol(s, NULL, 0);
+								p->value = (unsigned int)strtoul(s, NULL, 0);
 								break;
 							case 1:
 								p->display = s;
@@ -182,7 +182,7 @@ _mm_severity(void)
 }
 
 static char*
-display(const MM_table_t* tab, int value, int mask)
+display(const MM_table_t* tab, unsigned int value, int mask)
 {
 	while (tab->name)
 	{
@@ -200,7 +200,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 	char*		s;
 	char*		t;
 	MM_table_t*	p;
-	int			n;
+	ssize_t			n;
 	int			m;
 	int			r;
 	int			fd;
@@ -244,13 +244,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s:", n, n, s);
 			s = ++t;
-			if ((n = strlen(t)) > MM_LABEL_2_MAX)
+			if ((n = (ssize_t)strlen(t)) > MM_LABEL_2_MAX)
 				n = MM_LABEL_2_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}
 		else
 		{
-			if ((n = strlen(t)) > MM_LABEL_1_MAX)
+			if ((n = (ssize_t)strlen(t)) > MM_LABEL_1_MAX)
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}
@@ -321,7 +321,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 			sfputc(sp, '\n');
 		}
 		n = sfstrtell(sp);
-		if (!(s = sfstruse(sp)) || write(fd, s, n) != n)
+		if (!(s = sfstruse(sp)) || write(fd, s, (size_t)n) != n)
 			r |= c;
 	}
 	sfstrclose(sp);

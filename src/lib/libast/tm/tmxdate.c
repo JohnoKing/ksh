@@ -215,7 +215,7 @@ tmxdate(const char* s, char** e, Time_t now)
 	zone = TM_LOCALZONE;
 	skip[0] = 0;
 	for (n = 1; n <= UCHAR_MAX; n++)
-		skip[n] = isspace(n) || strchr("_,;@=|!^()[]{}", (int)n);
+		skip[n] = isspace((int)n) || strchr("_,;@=|!^()[]{}", (int)n);
 
 	/*
 	 * get <weekday year month day hour minutes seconds ?[ds]t [ap]m>
@@ -531,10 +531,10 @@ tmxdate(const char* s, char** e, Time_t now)
 			{
 				if (n == '*')
 					n = *++s;
-				else if (!isdigit(n))
+				else if (!isdigit((int)n))
 					break;
 				else
-					while ((n = *++s) == ',' || n == '-' || n == '/' || isdigit(n));
+					while ((n = *++s) == ',' || n == '-' || n == '/' || isdigit((int)n));
 				if (n != ' ' && n != '_' && n != ';')
 				{
 					if (!n)
