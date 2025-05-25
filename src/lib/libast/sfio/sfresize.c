@@ -45,12 +45,12 @@ int sfresize(Sfio_t* f, Sfoff_t size)
 					f->extent = s;
 				}
 			}
-			memclear((char*)(f->data+size), (size_t)f->extent-size);
+			memclear((char*)(f->data+size), (size_t)(f->extent-size));
 		}
 		else
 		{	if(SFSK(f, size, SEEK_SET, f->disc) != size)
 				return -1;
-			memclear((char*)(f->data+f->extent), (size_t)size-f->extent);
+			memclear((char*)(f->data+f->extent), (size_t)(size-f->extent));
 		}
 	}
 	else

@@ -2518,7 +2518,6 @@ composite(const char* s, int initialize)
 				if (s[0] != 'L' || s[1] != 'C' || s[2] != '_')
 					break;
 				w = s;
-				i = -1;
 			}
 		}
 		for (s = w; *s && *s != '='; s++);
@@ -2526,7 +2525,7 @@ composite(const char* s, int initialize)
 		{
 			for (i = 0; i < k; i++)
 				single(stk[i], NULL, 0);
-			return -1;
+			return (size_t)-1;
 		}
 		w = ++s;
 		for (;;)
@@ -2553,7 +2552,7 @@ composite(const char* s, int initialize)
 				{
 					for (i = 0; i < k; i++)
 						single(stk[i], NULL, 0);
-					return -1;
+					return (size_t)-1;
 				}
 				stk[k++] = cat[i];
 			}
@@ -2580,7 +2579,7 @@ composite(const char* s, int initialize)
 			{
 				for (i = 1; i < n; i++)
 					single((int)i, NULL, 0);
-				return -1;
+				return (size_t)-1;
 			}
 		}
 		else if (!lc_categories[n].prev && !(ast.locale.set & AST_LC_internal))
@@ -2761,7 +2760,7 @@ _ast_setlocale(int category, const char* locale)
 			lc_categories[category].prev = p;
 		return (char*)locales[category]->name;
 	}
-	else if (composite(locale, 0) < 0)
+	else if (composite(locale, 0) == (size_t)-1)
 		return NULL;
 	else if (lc_all != p)
 	{

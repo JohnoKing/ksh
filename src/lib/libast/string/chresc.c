@@ -65,7 +65,7 @@ utf32towc(uint32_t utf32)
 	inbuf = tmp_in;
 	outbuf = tmp_out;
 	outbytesleft = sizeof(tmp_out);
-	if (iconv(ast.locale.uc2wc, &inbuf, &inbytesleft, &outbuf, &outbytesleft) < 0 || inbytesleft)
+	if (iconv(ast.locale.uc2wc, &inbuf, &inbytesleft, &outbuf, &outbytesleft) == (size_t)-1 || inbytesleft)
 		return -1;
 	if (!mbwide())
 		return *(unsigned char*)tmp_out;
