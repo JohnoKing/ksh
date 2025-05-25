@@ -284,7 +284,7 @@ Mnt_t*
 mntread(void* handle)
 {
 	Handle_t*	mp = (Handle_t*)handle;
-	int		i;
+	size_t		i;
 	int		n;
 	unsigned long	flags;
 
