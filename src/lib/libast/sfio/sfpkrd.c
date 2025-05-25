@@ -78,7 +78,7 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 			pbuf.ctlbuf.maxlen = -1;
 			pbuf.ctlbuf.len = 0;
 			pbuf.ctlbuf.buf = NULL;
-			pbuf.databuf.maxlen = n;
+			pbuf.databuf.maxlen = (int)n;
 			pbuf.databuf.buf = buf;
 			pbuf.databuf.len = 0;
 

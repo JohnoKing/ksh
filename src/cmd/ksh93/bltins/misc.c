@@ -554,7 +554,7 @@ static void	print_cpu_times(void)
 {
 	struct timeval utime, stime;
 	Sfdouble_t dtime;
-	int clk_tck = sh.lim.clk_tck;
+	clock_t clk_tck = sh.lim.clk_tck;
 	struct tms cpu_times;
 	times(&cpu_times);
 	/* Print the time (user & system) consumed by the shell. */

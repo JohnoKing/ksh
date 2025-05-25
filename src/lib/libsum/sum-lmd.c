@@ -65,7 +65,7 @@ static int
 lmd_done(Sum_t* p)
 {
 	Lmd_t*	lmd = (Lmd_t*)p;
-	int	i;
+	unsigned int	i;
 
 	(*lmd->finalf)(lmd->data, &lmd->context);
 	for (i = 0; i < lmd->datasize; i++)
@@ -78,7 +78,7 @@ lmd_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
 	Lmd_t*		lmd = (Lmd_t*)p;
 	unsigned char*	d;
-	int		i;
+	unsigned int	i;
 
 	d = (flags & SUM_TOTAL) ? lmd->total : lmd->data;
 	for (i = 0; i < lmd->datasize; i++)

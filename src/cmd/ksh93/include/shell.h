@@ -232,8 +232,8 @@ struct sh_scoped
 
 struct limits
 {
+	clock_t		clk_tck;	/* number of ticks per second */
 	int		open_max;	/* maximum number of file descriptors */
-	int		clk_tck;	/* number of ticks per second */
 	int		child_max;	/* maximum number of children */
 };
 
