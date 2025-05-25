@@ -1243,11 +1243,11 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
 	sh.groupid = getgid();
 	sh.egroupid = getegid();
 	sh.lim.child_max = (int)astconf_long(CONF_CHILD_MAX);
-	sh.lim.clk_tck = (int)astconf_long(CONF_CLK_TCK);
+	sh.lim.clk_tck = (clock_t)astconf_long(CONF_CLK_TCK);
 	if(sh.lim.child_max <= 0)
 		sh.lim.child_max = CHILD_MAX;
 	if(sh.lim.clk_tck <= 0)
-		sh.lim.clk_tck = CLK_TCK;
+		sh.lim.clk_tck = (clock_t)CLK_TCK;
 	sh.ed_context = ed_open();
 	error_info.id = path_basename(argv[0]);
 	umask(sh.mask = umask(0));

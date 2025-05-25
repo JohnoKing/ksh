@@ -32,14 +32,14 @@ fmtclock(Sfulong_t t)
 	char*		buf;
 	int		z;
 
-	static unsigned long	clk_tck;
+	static clock_t	clk_tck;
 
 	if (!clk_tck)
 	{
 #ifdef CLOCKS_PER_SEC
-		clk_tck = CLOCKS_PER_SEC;
+		clk_tck = (clock_t)CLOCKS_PER_SEC;
 #else
-		if (!(clk_tck = astconf_ulong(CONF_CLK_TCK)))
+		if (!(clk_tck = (clock_t)astconf_ulong(CONF_CLK_TCK)))
 			clk_tck = 60;
 #endif /* CLOCKS_PER_SEC */
 	}

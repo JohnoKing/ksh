@@ -486,7 +486,7 @@ tmxscan(const char* s, char** e, const char* format, char** f, Time_t t, long fl
 			{
 				for (n = 1; sfgetr(sp, '\n', 0); n++);
 				m = sfseek(sp, 0L, SEEK_CUR);
-				if (p = newof(0, char*, n, m))
+				if (p = newof(0, char*, n, (size_t)m))
 				{
 					sfseek(sp, 0L, SEEK_SET);
 					v = (char*)(p + n);
