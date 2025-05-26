@@ -276,17 +276,20 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 						f->flags |= SFIO_LINE|SFIO_WCWIDTH;
 #if _sys_stat
 					else	/* special case /dev/null */
-					{	int	dev, ino;
-						static int null_checked, null_dev, null_ino;
-						dev = (int)st.st_dev;
-						ino = (int)st.st_ino;
+					{	dev_t		dev;
+						ino_t		ino;
+						static int	null_checked;
+						static dev_t	null_dev;
+						static ino_t	null_ino;
+						dev = st.st_dev;
+						ino = st.st_ino;
 						if(!null_checked)
 						{	if(stat(DEVNULL,&st) < 0)
 								null_checked = -1;
 							else
 							{	null_checked = 1;
-								null_dev = (int)st.st_dev;
-								null_ino = (int)st.st_ino;
+								null_dev = st.st_dev;
+								null_ino = st.st_ino;
 							}
 						}
 						if(null_checked >= 0 && dev == null_dev && ino == null_ino)
