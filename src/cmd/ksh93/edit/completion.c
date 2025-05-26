@@ -374,6 +374,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		char	*cp=begin, *left=0, *saveout=(char*)e_dot;
 		int	nocase=0, narg, cmd_completion=0;
 		int	size='x';
+		ssize_t	sz;
 		while(cp>outbuff && ((size=cp[-1])==' ' || size=='\t'))
 			cp--;
 		if(!var && !strchr(ap->argval,'/') && (((cp==outbuff&&sh.nextprompt==1) || (strchr(";&|(",size)) && (cp==outbuff+1||size=='('||cp[-2]!='>') && *begin!='~' )))
@@ -434,7 +435,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			goto done;
 		}
 		/* see if there is enough room */
-		size = (int)(*eol - (out-begin));
+		sz = *eol - (out-begin);
 		if(mode=='\\')
 		{
 			int c;
@@ -451,20 +452,20 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			if(dir)
 				*dir = c;
 			/* just expand until name is unique */
-			size += (int)strlen(*com);
+			sz += (ssize_t)strlen(*com);
 		}
 		else
 		{
-			size += narg;
+			sz += narg;
 			{
 				char **savcom = com;
 				while (*com)
-					size += (int)strlen(cp=fmtx(*com++));
+					sz += (ssize_t)strlen(cp=fmtx(*com++));
 				com = savcom;
 			}
 		}
 		/* see if room for expansion */
-		if(outbuff+size >= &outbuff[MAXLINE])
+		if(outbuff+sz >= &outbuff[MAXLINE])
 		{
 			com[0] = ap->argval;
 			com[1] = 0;
