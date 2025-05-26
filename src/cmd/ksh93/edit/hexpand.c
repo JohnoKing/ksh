@@ -597,7 +597,7 @@ getsel:
 					if(!sb.str[0] && wm)
 					{
 						char *sbuf = sfsetbuf(wm, (void*)1, 0);
-						ssize_t sfloc = (ssize_t)sftell(wm);
+						size_t sfloc = (size_t)sftell(wm);
 						sb.str[0] = sh_malloc(sfloc + 1);
 						sb.str[0][sfloc] = '\0';
 						memcpy(sb.str[0], sbuf, sfloc);
@@ -728,7 +728,7 @@ done:
 
 	/* restore shell stack */
 	if(off)
-		stkset(sh.stk,sp,off);
+		stkset(sh.stk,sp,(size_t)off);
 	else
 		stkseek(sh.stk,0);
 

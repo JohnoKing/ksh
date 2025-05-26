@@ -83,7 +83,8 @@ fmtint(intmax_t ll, int unsign)
 {
 	char		*buff;
 	uintmax_t	n,m;
-	int		j=0,k=3*sizeof(ll);
+	int		j=0;
+	ssize_t		k=3*sizeof(ll);
 	if(unsign || ll>=0)
 		n = ll;
 	else
@@ -93,12 +94,13 @@ fmtint(intmax_t ll, int unsign)
 	}
 	if(n<10)
 	{
-		buff = fmtbuf(k=3);
+		k = 3;
+		buff = fmtbuf((size_t)k);
 		buff[--k] = 0;
 		buff[--k] = '0' + n;
 		goto skip;
 	}
-	buff = fmtbuf(k);
+	buff = fmtbuf((size_t)k);
 	buff[--k] = 0;
 	do
 	{

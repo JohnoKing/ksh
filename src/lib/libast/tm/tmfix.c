@@ -62,10 +62,10 @@ tmfix(Tm_t* tm)
 	 * adjust from shortest to longest units
 	 */
 
-	if ((n = tm->tm_nsec) < 0)
+	if ((n = (int)tm->tm_nsec) < 0)
 	{
 		tm->tm_sec -= (TMX_RESOLUTION - n) / TMX_RESOLUTION;
-		tm->tm_nsec = TMX_RESOLUTION - (-n) % TMX_RESOLUTION;
+		tm->tm_nsec = (unsigned)(TMX_RESOLUTION - (-n) % TMX_RESOLUTION);
 	}
 	else if (n >= TMX_RESOLUTION)
 	{

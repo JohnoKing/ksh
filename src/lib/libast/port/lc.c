@@ -276,7 +276,7 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
 		{
 			for (t = lp->code; s < e && (*s = *t++); s++);
 			*s++ = 0;
-			return s - buf;
+			return (size_t)(s - buf);
 		}
 		if (flags & LC_verbose)
 		{
@@ -366,7 +366,7 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
 			}
 	}
 	*s++ = 0;
-	return s - buf;
+	return (size_t)(s - buf);
 }
 
 /*
@@ -713,7 +713,7 @@ lcmake(const char* name)
 						}
 						break;
 					}
-				if (j >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + s - w + 1)))
+				if (j >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + (size_t)(s - w + 1))))
 				{
 					ai = (Lc_attribute_list_t*)(ap + 1);
 					strcpy((char*)(((Lc_attribute_t*)ap)->name = (const char*)(ai + 1)), w);

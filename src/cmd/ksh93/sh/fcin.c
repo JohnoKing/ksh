@@ -96,7 +96,7 @@ int fcfill(void)
 	}
 	if((n = ptr-_Fcin.fcbuff) && _Fcin.fcfun)
 		(*_Fcin.fcfun)(f,(const char*)_Fcin.fcbuff,n,_Fcin.context);
-	sfread(f, (char*)_Fcin.fcbuff, n);
+	sfread(f, (char*)_Fcin.fcbuff, (size_t)n);
 	_Fcin.fcoff +=n;
 	_Fcin._fcfile = 0;
 	if(!last)

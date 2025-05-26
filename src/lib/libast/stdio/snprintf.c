@@ -21,7 +21,7 @@
 #include "stdhdr.h"
 
 int
-snprintf(char* s, int n, const char* fmt, ...)
+snprintf(char* s, size_t n, const char* fmt, ...)
 {
 	va_list	args;
 	int	v;

@@ -62,7 +62,7 @@ recfmt(const void* buf, size_t size, off_t total)
 	t = s + size;
 	while ((k = (unsigned int)(t - s)) >= 4 && !s[2] && !s[3])
 	{
-		if ((i = (s[0]<<8)|s[1]) > k)
+		if ((i = (unsigned)((s[0]<<8)|s[1])) > k)
 			break;
 		s += i;
 	}
@@ -108,7 +108,7 @@ recfmt(const void* buf, size_t size, off_t total)
 	}
 	n = 0;
 	m = 0;
-	f = ~0;
+	f = ~0UL;
 	for (i = x; i > 1; i--)
 	{
 		if ((total <= 0 || !(total % i)) && q->rep[i] > q->rep[n])

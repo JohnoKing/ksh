@@ -58,7 +58,7 @@
 static struct State_s
 {
 	regmatch_t*	match;
-	int		nmatch;
+	ssize_t		nmatch;
 } matchstate;
 
 /*

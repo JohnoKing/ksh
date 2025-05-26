@@ -597,7 +597,7 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
 }
 
 static int
-grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 {
 	int	c;
 	char*	s;
@@ -941,8 +941,8 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
 int
 b_grep(int argc, char** argv, Shbltin_t* context)
 {
-	char*	s;
-	int	options;
+	char*		s;
+	regflags_t	options;
 
 	NoP(argc);
 	options = 0;

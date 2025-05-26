@@ -91,12 +91,12 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 		{
 #if _hdr_wchar && _hdr_wctype
 			c = mbchar(s);
-			if (!spaced && !escaped && (iswspace(c) || iswcntrl(c)))
+			if (!spaced && !escaped && (iswspace((wint_t)c) || iswcntrl((wint_t)c)))
 				spaced = 1;
 			s -= m;
 #endif
 			while (m--)
-				*b++ = *s++;
+				*b++ = (signed)*s++;
 		}
 		else
 		{
@@ -177,7 +177,7 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 						escaped = 1;
 						*b++ = '\'';
 						*b++ = c;
-						*b++ = *s++;
+						*b++ = (signed)*s++;
 						if (shell)
 						{
 							spaced = 1;

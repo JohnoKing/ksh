@@ -26,11 +26,11 @@
 #include <ast.h>
 
 char*
-fmtelapsed(unsigned long u, int n)
+fmtelapsed(unsigned long u, unsigned long n)
 {
 	unsigned long	t;
 	char*		buf;
-	int		z;
+	size_t		z;
 
 	if (u == 0UL)
 		return "0";

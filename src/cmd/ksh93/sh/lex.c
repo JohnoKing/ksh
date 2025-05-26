@@ -130,16 +130,16 @@ static void lex_advance(Sfio_t *iop, const char *buff, ssize_t size, void *conte
 	if(iop && !sfstacked(iop))
 	{
 		if(sh_isstate(SH_HISTORY) && sh.hist_ptr)
-			sfwrite(sh.hist_ptr->histfp, buff, size);
+			sfwrite(sh.hist_ptr->histfp, buff, (size_t)size);
 		if(sh_isstate(SH_VERBOSE))
-			sfwrite(sfstderr, buff, size);
+			sfwrite(sfstderr, buff, (size_t)size);
 	}
 	if(lp->lexd.nocopy)
 		return;
 	if(lp->lexd.dolparen && lp->lexd.docword && lp->lexd.docend)
 	{
 		ssize_t n = size - (lp->lexd.docend-(char*)buff);
-		sfwrite(sh.strbuf,lp->lexd.docend,n);
+		sfwrite(sh.strbuf,lp->lexd.docend,(size_t)n);
 		lp->lexd.docextra  += n;
 		if(sffileno(iop)>=0)
 			lp->lexd.docend = sfsetbuf(iop,iop,0);
@@ -158,7 +158,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, ssize_t size, void *conte
 	}
 	if(size>0 && (lp->arg||lp->lexd.inlexskip))
 	{
-		sfwrite(sh.stk,buff,size);
+		sfwrite(sh.stk,buff,(size_t)size);
 		lp->lexd.first = 0;
 	}
 }
@@ -1278,11 +1278,11 @@ breakloop:
 	if(!lp->arg)
 		lp->arg = stkseek(sh.stk,ARGVAL);
 	if(n>0)
-		sfwrite(sh.stk,state,n);
+		sfwrite(sh.stk,state,(size_t)n);
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,stktell(sh.stk)-1);
 	state = stkptr(sh.stk,ARGVAL);
-	n = stktell(sh.stk)-ARGVAL;
+	n = stktell(sh.stk)-(ssize_t)ARGVAL;
 	lp->lexd.first=0;
 	if(n==1)
 	{
@@ -1395,7 +1395,7 @@ breakloop:
 			lp->token = ETESTSYM;
 			return lp->token;
 		}
-		c = sh_lookup(state,shtab_testops);
+		c = (int)sh_lookup(state,shtab_testops);
 		switch(c)
 		{
 		case TEST_SEQ:
@@ -1477,7 +1477,7 @@ breakloop:
 	if(!lp->lex.skipword)
 	{
 		if(n>1 && lp->lex.reservok==1 && mode==ST_NAME &&
-			(c=sh_lookup(state,shtab_reserved)))
+			(c=(int)sh_lookup(state,shtab_reserved)))
 		{
 			if(lp->lex.incase)
 			{
@@ -1719,15 +1719,15 @@ done:
 static void nested_here(Lex_t *lp)
 {
 	struct ionod	*iop;
-	ssize_t		n=0;
+	size_t		n=0;
 	ssize_t		offset;
 	struct argnod	*arg = lp->arg;
 	char		*base;
 	if(offset=stktell(sh.stk))
 		base = stkfreeze(sh.stk,0);
 	if(lp->lexd.docend)
-		n = fcseek(0)-lp->lexd.docend;
-	iop = sh_newof(0,struct ionod,1,lp->lexd.docextra+n+ARGVAL);
+		n = (size_t)(fcseek(0)-lp->lexd.docend);
+	iop = sh_newof(0,struct ionod,1,(size_t)lp->lexd.docextra+n+ARGVAL);
 	iop->iolst = lp->heredoc;
 	stkseek(sh.stk,ARGVAL);
 	if(lp->lexd.docextra)
@@ -1747,7 +1747,7 @@ static void nested_here(Lex_t *lp)
 	lp->arg = arg;
 	lp->lexd.docword = 0;
 	if(offset)
-		stkset(sh.stk,base,offset);
+		stkset(sh.stk,base,(size_t)offset);
 	else
 		stkseek(sh.stk,0);
 }
@@ -1776,7 +1776,7 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int state)
 		if(!(cp=lp->lexd.first))
 			cp = fcfirst();
 		if((len = fcseek(0)-cp) > 0)
-			sfwrite(sh.stk,cp,len);
+			sfwrite(sh.stk,cp,(size_t)len);
 	}
 	else
 		lp->lexd.nocopy--;
@@ -1877,7 +1877,7 @@ static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				if(n==S_ESC)
 					c--;
-				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,c))>0)
+				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,(size_t)c))>0)
 					iop->iosize += c;
 			}
 			if(LEN==0)
@@ -1921,7 +1921,7 @@ static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 				if(!lp->lexd.dolparen)
 				{
 					/* write out line */
-					if((n=sfwrite(sp,bufp,fcseek(0)-bufp))>0)
+					if((n=sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
 						iop->iosize += n;
 				}
 				/* skip over tabs */
@@ -1956,7 +1956,7 @@ static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					if(!lp->lexd.dolparen && (c=cp-bufp))
 					{
-						if((c=sfwrite(sp,cp=bufp,c))>0)
+						if((c=sfwrite(sp,cp=bufp,(size_t)c))>0)
 							iop->iosize+=c;
 					}
 					nsave = n;
@@ -1980,7 +1980,7 @@ static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					if(!lp->lexd.dolparen && (n=cp-bufp))
 					{
-						if((n=sfwrite(sp,bufp,n))>0)
+						if((n=sfwrite(sp,bufp,(size_t)n))>0)
 							iop->iosize += n;
 					}
 					sh.inlineno--;
@@ -1998,7 +1998,7 @@ static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 					 */
 					if(!lp->lexd.dolparen && nsave>0)
 					{
-						if((n=sfwrite(sp,iop->iodelim,nsave))>0)
+						if((n=sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
 							iop->iosize += n;
 						bufp = fcfirst();
 					}
@@ -2031,7 +2031,7 @@ static ssize_t here_copy(Lex_t *lp,struct ionod *iop)
 				sh.inlineno++;
 				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
 				{
-					if(n && (n=sfwrite(sp,bufp,n))>0)
+					if(n && (n=sfwrite(sp,bufp,(size_t)n))>0)
 						iop->iosize += n;
 					bufp = fcseek(0)+1;
 				}
@@ -2274,7 +2274,7 @@ static struct argnod *endword(int mode)
 					}
 					*--dp = 0;
 					msg = ERROR_translate(0,error_info.id,0,ep);
-					n = strlen(msg);
+					n = (ssize_t)strlen(msg);
 					dp = ep+n;
 					if(sp-dp <= 1)
 					{
@@ -2282,7 +2282,7 @@ static struct argnod *endword(int mode)
 						dp = sp-1;
 						ep = dp-n;
 					}
-					memmove(ep,msg,n);
+					memmove(ep,msg,(size_t)n);
 					*dp++ = '"';
 				}
 				ep = 0;
@@ -2462,7 +2462,7 @@ static int alias_exceptf(Sfio_t *iop,int type,void *data, Sfdisc_t *handle)
 	{
 		/* if last character is a blank, then next word can be an alias */
 		int c = fcpeek(-1);
-		if(isblank(c))
+		if(isblank((wint_t)c))
 			lp->aliasok = 1;
 		*ap->buf = ap->nextc;
 		ap->nextc = 0;
@@ -2515,6 +2515,6 @@ static void setupalias(Lex_t *lp, const char *string,Namval_t *np)
 static int stack_grow(void)
 {
 	lex_max += STACK_ARRAY;
-	lex_match = sh_realloc(lex_match,sizeof(int)*lex_max);
+	lex_match = sh_realloc(lex_match,sizeof(int)*(size_t)lex_max);
 	return 1;
 }

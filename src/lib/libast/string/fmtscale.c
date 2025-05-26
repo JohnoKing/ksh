@@ -33,7 +33,7 @@ fmtscale(Sfulong_t n, int k)
 {
 	Sfulong_t		m;
 	int			r;
-	int			z;
+	size_t			z;
 	const char*		u;
 	char			suf[3];
 	char*			s;

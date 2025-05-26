@@ -75,16 +75,16 @@ strgid(const char* name)
 	else if (ip = (Id_t*)dtmatch(dict, name))
 		return ip->id;
 	if (gr = getgrnam(name))
-		id = gr->gr_gid;
+		id = (int)gr->gr_gid;
 	else if (pw = getpwnam(name))
-		id = pw->pw_gid;
+		id = (int)pw->pw_gid;
 	else
 	{
 		id = (int)strtol(name, &e, 0);
 #if _WINIX
 		if (!*e)
 		{
-			if (!getgrgid(id))
+			if (!getgrgid((gid_t)id))
 				id = -1;
 		}
 		else if (!streq(name, "sys"))
@@ -96,7 +96,7 @@ strgid(const char* name)
 		else
 			id = -1;
 #else
-		if (*e || !getgrgid(id))
+		if (*e || !getgrgid((gid_t)id))
 			id = -1;
 #endif
 	}

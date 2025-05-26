@@ -253,10 +253,10 @@ void sh_siginit(void)
 		tp++;
 	}
 	sh.sigmax = n++;
-	sh.st.trapcom = (char**)sh_calloc(n,sizeof(char*));
-	sh.sigflag = (unsigned char*)sh_calloc(n,1);
-	sh.sigmsg = (char**)sh_calloc(n,sizeof(char*));
-	for(tp=shtab_signals; sig=tp->sh_number; tp++)
+	sh.st.trapcom = (char**)sh_calloc((size_t)n,sizeof(char*));
+	sh.sigflag = (unsigned char*)sh_calloc((size_t)n,1);
+	sh.sigmsg = (char**)sh_calloc((size_t)n,sizeof(char*));
+	for(tp=shtab_signals; sig=(int)tp->sh_number; tp++)
 	{
 		n = (sig>>SH_SIGBITS);
 		if((sig &= ((1<<SH_SIGBITS)-1)) > (sh.sigmax+1))
@@ -514,7 +514,7 @@ int sh_trap(const char *trap, int mode)
 		sh.intrap_exit_n = 0;
 	else
 		sh.exitval = savxit;
-	stkset(sh.stk,savptr,staktop);
+	stkset(sh.stk,savptr,(size_t)staktop);
 	fcrestore(&savefc);
 	if(was_history)
 		sh_onstate(SH_HISTORY);

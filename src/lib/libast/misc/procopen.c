@@ -551,7 +551,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 		{
 			if (!fork())
 			{
-				sfsprintf(path, sizeof(path), "%d", getppid());
+				sfsprintf(path, sizeof(path), "%d", (int)getppid());
 				execlp("trace", "trace", "-p", path, NULL);
 				_exit(EXIT_NOTFOUND);
 			}

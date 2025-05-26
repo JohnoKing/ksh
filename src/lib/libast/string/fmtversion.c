@@ -36,14 +36,14 @@ fmtversion(unsigned long v)
 	buf = cur = fmtbuf(n = 18);
 	end = cur + n;
 	if (v >= 19700101L && v <= 29991231L)
-		sfsprintf(cur, end - cur, "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
+		sfsprintf(cur, (size_t)(end - cur), "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
 	else
 	{
 		if (n = (v >> 24) & 0xff)
-			cur += sfsprintf(cur, end - cur, "%d.", n);
+			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
 		if (n = (v >> 16) & 0xff)
-			cur += sfsprintf(cur, end - cur, "%d.", n);
-		sfsprintf(cur, end - cur, "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
+			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
+		sfsprintf(cur, (size_t)(end - cur), "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
 	}
 	return buf;
 }

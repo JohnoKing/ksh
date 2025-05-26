@@ -336,7 +336,7 @@ extern char*		conformance(const char*, size_t);
 extern char*		getcodeset(void);
 extern char*		fmtbuf(size_t);
 extern char*		fmtclock(Sfulong_t);
-extern char*		fmtelapsed(unsigned long, int);
+extern char*		fmtelapsed(unsigned long, unsigned long);
 extern char*		fmtesc(const char*);
 extern char*		fmtesq(const char*, const char*);
 extern char*		fmtident(const char*);

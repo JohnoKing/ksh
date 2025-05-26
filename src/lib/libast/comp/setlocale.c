@@ -315,7 +315,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
 				{
 					for (q = s + 2; q < r; q++)
 						if (t < e)
-							*t++ = debug_order[*((unsigned char*)q)];
+							*t++ = (signed)debug_order[*((unsigned char*)q)];
 					while (w++ < DX)
 						if (t < e)
 							*t++ = 1;
@@ -330,9 +330,9 @@ debug_strxfrm(char* t, const char* s, size_t n)
 			if (t)
 			{
 				if (t < e)
-					*t++ = debug_order[((unsigned char*)s)[0]];
+					*t++ = (signed)debug_order[((unsigned char*)s)[0]];
 				if (t < e)
-					*t++ = debug_order[((unsigned char*)s)[1]];
+					*t++ = (signed)debug_order[((unsigned char*)s)[1]];
 				if (t < e)
 					*t++ = 1;
 				if (t < e)
@@ -347,11 +347,11 @@ debug_strxfrm(char* t, const char* s, size_t n)
 			if (t)
 			{
 				if (t < e)
-					*t++ = debug_order[((unsigned char*)s)[0]];
+					*t++ = (signed)debug_order[((unsigned char*)s)[0]];
 				if (t < e)
-					*t++ = debug_order[((unsigned char*)s)[1]];
+					*t++ = (signed)debug_order[((unsigned char*)s)[1]];
 				if (t < e)
-					*t++ = debug_order[((unsigned char*)s)[2]];
+					*t++ = (signed)debug_order[((unsigned char*)s)[2]];
 				if (t < e)
 					*t++ = 1;
 			}
@@ -362,7 +362,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
 		if (t)
 		{
 			if (t < e)
-				*t++ = debug_order[((unsigned char*)s)[0]];
+				*t++ = (signed)debug_order[((unsigned char*)s)[0]];
 			if (t < e)
 				*t++ = 1;
 			if (t < e)
@@ -377,7 +377,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
 		return z;
 	if (t < e)
 		*t = 0;
-	return t - o;
+	return (size_t)(t - o);
 }
 
 static int
@@ -470,7 +470,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
 static int
 utf8_wctomb(char* u, wchar_t w)
 {
-	return (int)utf32toutf8(u, w);
+	return (int)utf32toutf8(u, (uint32_t)w);
 }
 
 static const uint32_t		utf8mask[] =
@@ -534,7 +534,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
 					goto invalid;
 				w = (w<<6) | (c&0x3f);
 			}
-			if (!(utf8mask[m] & w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
+			if (!(utf8mask[m] & (uint32_t)w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
 				goto invalid;
 			*wp = w;
 		}
@@ -2537,7 +2537,7 @@ composite(const char* s, int initialize)
 			}
 			else if (*s++ == ';')
 			{
-				if ((m = s - w - 1) >= sizeof(buf))
+				if ((m = (size_t)(s - w - 1)) >= sizeof(buf))
 					m = sizeof(buf) - 1;
 				memcpy(buf, w, m);
 				buf[m] = 0;
@@ -2567,7 +2567,7 @@ composite(const char* s, int initialize)
 			p = lcmake(w);
 		else
 		{
-			if ((j = s - w - 1) >= sizeof(buf))
+			if ((j = (size_t)(s - w - 1)) >= sizeof(buf))
 				j = sizeof(buf) - 1;
 			memcpy(buf, w, j);
 			buf[j] = 0;
@@ -2606,7 +2606,7 @@ _ast_setlocale(int category, const char* locale)
 	int			i;
 	int			j;
 	int			k;
-	int			f;
+	unsigned int		f;
 	Lc_t*			p;
 	int			cat[AST_LC_COUNT];
 

@@ -29,12 +29,12 @@ char*
 fmtip4(uint32_t addr, int bits)
 {
 	char*	buf;
-	int	z;
+	size_t	z;
 	ssize_t	i;
 
 	buf = fmtbuf(z = 20);
 	i = sfsprintf(buf, z, "%d.%d.%d.%d", (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, (addr)&0xff);
 	if (bits >= 0 && bits <= 32)
-		sfsprintf(buf + i, z - i, "/%d", bits);
+		sfsprintf(buf + i, z - (size_t)i, "/%d", bits);
 	return buf;
 }

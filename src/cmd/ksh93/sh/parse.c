@@ -820,8 +820,9 @@ static Shnode_t *funct(Lex_t *lexp)
 #if SHOPT_KIA
 	unsigned long current = kia.current;
 #endif /* SHOPT_KIA */
-	ssize_t nargs=0;
-	int size=0,jmpval;
+	size_t nargs=0;
+	size_t size=0;
+	int jmpval;
 	struct  checkpt buff;
 	int save_optget = opt_get;
 	void	*in_mktype = sh.mktype;
@@ -869,7 +870,7 @@ static Shnode_t *funct(Lex_t *lexp)
 			}
 			if(c)
 				sh_syntax(lexp,2);
-			nargs = argv-argv0;
+			nargs = (size_t)(argv-argv0);
 			size += sizeof(struct dolnod)+(nargs+ARG_SPARE)*sizeof(char*);
 			if(sh.shcomp && strncmp(".sh.math.",t->funct.functnam,9)==0)
 			{
@@ -1465,7 +1466,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 				if(assignment==1)
 				{
 					stkseek(sh.stk,ARGVAL);
-					sfwrite(sh.stk,argp->argval,lexp->varnamelength);
+					sfwrite(sh.stk,argp->argval,(size_t)lexp->varnamelength);
 					ap = stkfreeze(sh.stk,1);
 					ap->argflag = ARG_RAW;
 					ap->argchn.ap = 0;
@@ -1777,7 +1778,7 @@ static struct ionod	*inout(Lex_t *lexp,struct ionod *lastio,int flag)
 		if(lexp->arg->argflag&ARG_RAW)
 			iof |= IORAW;
 	}
-	iop->iofile=iof;
+	iop->iofile=(unsigned)iof;
 	if(flag>0)
 		/* allow alias substitutions and parameter assignments */
 		lexp->aliasok = lexp->assignok = 1;

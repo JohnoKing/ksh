@@ -374,7 +374,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 			kptr = &kstack[count];	/* move old contents here */
 			if (killing)		/* prepend to killbuf */
 			{
-				c = genlen(kstack) + CHARSIZE; /* include '\0' */
+				c = genlen(kstack) + (int)CHARSIZE; /* include '\0' */
 				while(c--)	/* copy stuff */
 					kptr[c] = kstack[c];
 			}
@@ -614,7 +614,7 @@ process:
 	tty_cooked(ERRIO);
 	if(ed->e_nlist)
 		ed->e_nlist = 0;
-	stkset(sh.stk,ed->e_stkptr,ed->e_stkoff);
+	stkset(sh.stk,ed->e_stkptr,(size_t)ed->e_stkoff);
 	if(c == '\n')
 	{
 		out[eol++] = '\n';
@@ -1602,7 +1602,7 @@ static int blankline(Emacs_t *ep, genchar *out, int uptocursor)
 	for(x=0; uptocursor ? (x < cur) : (x <= eol); x++)
 	{
 #if SHOPT_MULTIBYTE
-		if(!iswspace((wchar_t)out[x]))
+		if(!iswspace((wint_t)out[x]))
 #else
 		if(!isspace(out[x]))
 #endif /* SHOPT_MULTIBYTE */

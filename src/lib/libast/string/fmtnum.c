@@ -33,14 +33,14 @@ fmtnum(unsigned long n, int m)
 	int		i;
 	unsigned long	r;
 	char*		buf;
-	int		z;
+	size_t		z;
 
 	char		suf[2];
 
 	if (m > 1)
 	{
 		r = n;
-		n /= m;
+		n /= (unsigned long)m;
 		r -= n;
 	}
 	else

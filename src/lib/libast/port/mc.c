@@ -281,11 +281,11 @@ mcopen(Sfio_t* ip)
 	 * allocate the remaining space
 	 */
 
-	if (!(mc->set = vmnewof(vm, 0, Mcset_t, mc->num + 1, 0)))
+	if (!(mc->set = vmnewof(vm, 0, Mcset_t, (size_t)mc->num + 1, 0)))
 		goto bad;
 	if (!ip)
 		return mc;
-	if (!(mp = vmnewof(vm, 0, char*, mc->nmsgs + mc->num + 1, 0)))
+	if (!(mp = vmnewof(vm, 0, char*, mc->nmsgs + (size_t)mc->num + 1, 0)))
 		goto bad;
 	if (!(rp = sp = vmalloc(vm, mc->nstrs + 1)))
 		goto bad;
@@ -404,7 +404,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 
 				mp = mc->set[set].msg + num;
 				while (num && !mp[--num]);
-				mc->nmsgs -= mc->set[set].num - num;
+				mc->nmsgs -= (size_t)(mc->set[set].num - num);
 				if (!(mc->set[set].num = num) && mc->num == set)
 				{
 					/*
@@ -428,7 +428,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 		if (set > mc->gen)
 		{
 			i = MC_SET_MAX;
-			if (!(sp = vmnewof(mc->vm, 0, Mcset_t, i + 1, 0)))
+			if (!(sp = vmnewof(mc->vm, 0, Mcset_t, (size_t)i + 1, 0)))
 				return -1;
 			mc->gen = i;
 			for (i = 1; i <= mc->num; i++)
@@ -454,7 +454,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 					i = 2 * num;
 				if (i > MC_NUM_MAX)
 					i = MC_NUM_MAX;
-				if (!(mp = vmnewof(mc->vm, 0, char*, i + 1, 0)))
+				if (!(mp = vmnewof(mc->vm, 0, char*, (size_t)i + 1, 0)))
 					return -1;
 				mc->gen = i;
 				sp->msg = mp;
@@ -466,13 +466,13 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 				i = 2 * mc->gen;
 				if (i > MC_NUM_MAX)
 					i = MC_NUM_MAX;
-				if (!(mp = vmnewof(mc->vm, sp->msg, char*, i + 1, 0)))
+				if (!(mp = vmnewof(mc->vm, sp->msg, char*, (size_t)i + 1, 0)))
 					return -1;
 				sp->gen = i;
 				sp->msg = mp;
 			}
 		}
-		mc->nmsgs += num - sp->num;
+		mc->nmsgs += (size_t)(num - sp->num);
 		sp->num = num;
 	}
 

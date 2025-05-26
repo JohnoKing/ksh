@@ -30,7 +30,7 @@ fmtclock(Sfulong_t t)
 {
 	int		u;
 	char*		buf;
-	int		z;
+	size_t		z;
 
 	static clock_t	clk_tck;
 
@@ -47,7 +47,7 @@ fmtclock(Sfulong_t t)
 		return "0";
 	if (t == ((Sfulong_t)~0))
 		return "%";
-	t = (t * 1000000) / clk_tck;
+	t = (t * 1000000) / (Sfulong_t)clk_tck;
 	if (t < 1000)
 		u = 'u';
 	else if ((t /= 1000) < 1000)

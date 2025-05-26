@@ -59,7 +59,7 @@ reclen(Recfmt_t f, const void* b, size_t n)
 			z += h;
 		else if (z < h)
 			z = h;
-		return z;
+		return (ssize_t)z;
 	case REC_method:
 		return -1;
 	}

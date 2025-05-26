@@ -29,7 +29,7 @@ char*
 fmttime(const char* format, time_t clock)
 {
 	char*	buf;
-	int	z;
+	size_t	z;
 
 	buf = fmtbuf(z = 80);
 	tmfmt(buf, z, format, &clock);

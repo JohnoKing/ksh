@@ -21,7 +21,7 @@
 #include "stdhdr.h"
 
 int
-vsnprintf(char* s, int n, const char* form, va_list args)
+vsnprintf(char* s, size_t n, const char* form, va_list args)
 {
 	Sfio_t*	f;
 	int rv;
@@ -33,10 +33,10 @@ vsnprintf(char* s, int n, const char* form, va_list args)
 
 	if((rv = (int)sfvprintf(f,form,args)) >= 0 )
 	{	if(s && n > 0)
-		{	if((rv+1) >= n)
+		{	if((rv+1) >= (int)n)
 				n--;
 			else
-				n = rv;
+				n = (size_t)rv;
 			memcpy(s, f->data, n);
 			s[n] = 0;
 		}

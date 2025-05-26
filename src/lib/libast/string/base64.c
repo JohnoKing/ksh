@@ -92,12 +92,12 @@ base64encode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 					*fn = fp;
 				if (tn)
 					*tn = tp;
-				n = tp - (unsigned char*)tb + 1;
+				n = (size_t)(tp - (unsigned char*)tb + 1);
 				tp = tmp;
 				te = tp + sizeof(tmp) - B64_EC + 1;
 			}
-			b = *fp++ << 16;
-			b |= *fp++ << 8;
+			b = (unsigned long)(*fp++ << 16);
+			b |= (unsigned long)(*fp++ << 8);
 			b |= *fp++;
 			*tp++ = m[b >> 18];
 			*tp++ = m[(b >> 12) & 077];
@@ -106,7 +106,7 @@ base64encode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 		} while (tp < tc);
 		if (n)
 		{
-			n += tp - tmp + (fp < fe);
+			n += (size_t)(tp - tmp + (fp < fe));
 			tp = tmp;
 		}
 		else
@@ -121,33 +121,33 @@ base64encode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 				*fn = fp;
 			if (tn)
 				*tn = tp;
-			n = tp - (unsigned char*)tb + 1;
+			n = (size_t)(tp - (unsigned char*)tb + 1);
 			tp = tmp;
 			te = tp + sizeof(tmp) - B64_EC + 1;
 		}
-		b = *fp++ << 16;
+		b = (unsigned long)(*fp++ << 16);
 		if (fz == 2)
-			b |= *fp++ << 8;
+			b |= (unsigned long)(*fp++ << 8);
 		*tp++ = m[b >> 18];
 		*tp++ = m[(b >> 12) & 077];
 		*tp++ = (fz == 2) ? m[(b >> 6) & 077] : PAD;
 		*tp++ = PAD;
 	}
 	if (n)
-		n += (tp - tmp) - 1;
+		n += (size_t)(tp - tmp) - 1;
 	else
 	{
 		if (tp > (unsigned char*)tb && *(tp - 1) == '\n')
 			tp--;
 		if (tp < te)
 			*tp = 0;
-		n = tp - (unsigned char*)tb;
+		n = (size_t)(tp - (unsigned char*)tb);
 		if (tn)
 			*tn = tp;
 		if (fn)
 			*fn = fp;
 	}
-	return n;
+	return (ssize_t)n;
 }
 
 /*
@@ -201,7 +201,7 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 		{
 			if ((c = m[*fp++]) < 64)
 			{
-				v = (v << 6) | c;
+				v = (v << 6) | (unsigned long)c;
 				if (++state == 4)
 				{
 					if (tp >= tx)

@@ -66,7 +66,7 @@ struct frame
 	char	*prev;		/* address of previous frame */
 	char	*end;		/* address of end this frame */
 	char	**aliases;	/* address aliases */
-	int	nalias;		/* number of aliases */
+	ssize_t	nalias;		/* number of aliases */
 };
 
 struct stk
@@ -302,7 +302,7 @@ void *stkset(Sfio_t *stream, void *address, size_t offset)
 	char *cp, *loc = (char*)address;
 	struct frame *fp;
 	int frames = 0;
-	int n;
+	ssize_t n;
 	if(!init)
 		stkinit(offset+1);
 	while(1)
@@ -401,7 +401,7 @@ void	*stkfreeze(Sfio_t *stream, size_t extra)
 		*top = 0;
 		top += extra;
 	}
-	stream->_next = stream->_data += roundof(top-old,STK_ALIGN);
+	stream->_next = stream->_data += roundof((size_t)(top-old),STK_ALIGN);
 	return (char*)old;
 }
 
@@ -428,7 +428,7 @@ char	*stkcopy(Sfio_t *stream, const char* str)
 		memcpy(tp, stream->_data, off);
 	}
 	while(*cp++);
-	n = roundof(cp-(unsigned char*)str,STK_ALIGN);
+	n = roundof((size_t)(cp-(unsigned char*)str),STK_ALIGN);
 	if(!init)
 		stkinit(n);
 	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
@@ -462,9 +462,9 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	struct frame *fp= (struct frame*)sp->stkbase;
 	char *cp, *dp=0;
 	size_t m = (size_t)stktell(stream);
-	size_t endoff;
+	ssize_t endoff;
 	char *end=0, *oldbase=0;
-	int nn=0,add=1;
+	ssize_t nn=0,add=1;
 	n += (m + sizeof(struct frame)+1);
 	if(sp->stkflags&STK_SMALL)
 		n = roundof(n,STK_FSIZE/16);
@@ -480,7 +480,7 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 		oldbase = dp;
 	}
 	endoff = end - dp;
-	cp = newof(dp, char, n, nn*sizeof(char*));
+	cp = newof(dp, char, n, (size_t)nn*sizeof(char*));
 	if(!cp && (!sp->stkoverflow || !(cp = (*sp->stkoverflow)(n))))
 		return NULL;
 	if(dp==cp)
@@ -498,17 +498,17 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	sp->stkbase = cp;
 	sp->stkend = fp->end = cp+n;
 	cp = (char*)(fp+1);
-	cp = sp->stkbase + roundof((cp-sp->stkbase),STK_ALIGN);
+	cp = sp->stkbase + roundof((size_t)(cp-sp->stkbase),STK_ALIGN);
 	if(fp->nalias=nn)
 	{
 		fp->aliases = (char**)fp->end;
 		if(end && nn>add)
-			memmove(fp->aliases,end,(nn-add)*sizeof(char*));
+			memmove(fp->aliases,end,(size_t)(nn-add)*sizeof(char*));
 		if(add)
 			fp->aliases[nn-1] = oldbase + roundof(sizeof(struct frame),STK_ALIGN);
 	}
 	if(m && !dp)
 		memcpy(cp,(char*)stream->_data,m);
-	sfsetbuf(stream,cp,sp->stkend-cp);
+	sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
 	return (char*)(stream->_next = stream->_data+m);
 }

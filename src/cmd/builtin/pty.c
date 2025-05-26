@@ -537,7 +537,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 	char		promptbuf[64];
 
 	if (prompt)
-		promptlen = sfsprintf(promptbuf, sizeof(promptbuf), prompt, ++bp->line);
+		promptlen = (size_t)sfsprintf(promptbuf, sizeof(promptbuf), prompt, ++bp->line);
  again:
 	if (prompt)
 	{
@@ -588,7 +588,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 		else
 		{
 			bp->cur = bp->nxt;
-			if (bp->nxt = memchr(bp->nxt + 1, '\n', bp->end - bp->nxt - 1))
+			if (bp->nxt = memchr(bp->nxt + 1, '\n', (size_t)(bp->end - bp->nxt - 1)))
 				bp->nxt++;
 		}
 		goto done;
@@ -704,7 +704,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 	{
 		r -= bp->cursor; /* FIXME: r may now be before bp->buf */
 		if (r < bp->bufunderflow)
-			error(ERROR_PANIC, "pty.c:%d: internal error: r is %d bytes before bp->bufunderflow", __LINE__, bp->bufunderflow - r);
+			error(ERROR_PANIC, "pty.c:%d: internal error: r is %zd bytes before bp->bufunderflow", __LINE__, bp->bufunderflow - r);
 		bp->cursor = 0;
 	}
 	for (t = 0, n = 0; *s; s++)

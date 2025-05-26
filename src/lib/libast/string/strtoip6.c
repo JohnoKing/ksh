@@ -133,7 +133,7 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 						a = 0;
 						continue;
 					default:
-						a = (a * 10) + c;
+						a = (a * 10) + (unsigned)c;
 						continue;
 					}
 					break;
@@ -159,7 +159,7 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 				}
 				break;
 			default:
-				a = (a << 4) | c;
+				a = (a << 4) | (unsigned)c;
 				continue;
 			}
 			break;
@@ -184,7 +184,7 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 			{
 				a = 0;
 				while ((c = lex[*((unsigned char*)s++)]) < 10)
-					a = a * 10 + c;
+					a = a * 10 + (unsigned)c;
 			}
 			else
 				a = 0xff;

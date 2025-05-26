@@ -137,7 +137,7 @@ node(Cenv_t* env, int type, ssize_t lo, ssize_t hi, size_t extra)
 {
 	Rex_t*	e;
 
-	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%zd,%zd,%u)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
+	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%zd,%zd,%zu)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
 	if (e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra))
 	{
 		memset(e, 0, sizeof(Rex_t) + extra);

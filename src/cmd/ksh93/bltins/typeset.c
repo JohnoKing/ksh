@@ -69,7 +69,7 @@ struct tdata
 	int     	scanmask;
 	Dt_t 		*scanroot;
 	char    	**argnam;
-	int		indent;
+	size_t		indent;
 	int		noref;
 };
 
@@ -239,7 +239,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
 	}
 	else if(argv[0][0] != 't')		/* not <t>ypeset */
 	{
-		char **new_argv = stkalloc(sh.stk, (argc + 2) * sizeof(char*));
+		char **new_argv = stkalloc(sh.stk, ((size_t)argc + 2) * sizeof(char*));
 		error_info.id = new_argv[0] = SYSTYPESET->nvname;
 		if(argv[0][0] == 'a')		/* <a>utoload == typeset -fu */
 			new_argv[1] = "-fu";
@@ -967,7 +967,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
 					if(flag&NV_RDONLY && !tp->argnum && !(flag&(NV_INTEGER|NV_BINARY)) && !(flag&(NV_LJUST|NV_RJUST|NV_ZFILL)))
 						/* New requested attribute(s) are readonly, have a provided or defaulted size of 0, and are
 						   not a string justification nor numeric. Justified or binary strings can have a size of 0. */
-						nv_newattr(np, newflag&~NV_ASSIGN, np->nvsize);
+						nv_newattr(np, newflag&~NV_ASSIGN, (ssize_t)np->nvsize);
 					else
 						nv_newattr(np, newflag&~NV_ASSIGN, tp->argnum);
 				}
@@ -1095,7 +1095,7 @@ int sh_addlib(void* dll, char* name, Pathcomp_t* pp)
 	if (nlib >= maxlib)
 	{
 		maxlib += GROWLIB;
-		liblist = sh_newof(liblist, Libcomp_t, maxlib+1, 0);
+		liblist = sh_newof(liblist, Libcomp_t, (size_t)maxlib+1, 0);
 	}
 	liblist[nlib].dll = dll;
 	liblist[nlib].attr = (sp->nosfio?BLT_NOSFIO:0);
@@ -1463,7 +1463,8 @@ static int unall(int argc, char **argv, Dt_t *troot)
 static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
 {
 	char	*cp;
-	int	indent=tp->indent, outname=0, isfun;
+	size_t	indent=tp->indent;
+	int	outname=0, isfun;
 	char	tempexport=0;
 	sh_sigcheck();
 	if(flag)
@@ -1629,7 +1630,7 @@ static void print_scan(Sfio_t *file, int flag, Dt_t *root, int option,struct tda
 	if(flag==NV_LTOU || flag==NV_UTOL)
 		tp->scanmask |= NV_UTOL|NV_LTOU;
 	namec = nv_scan(root, nullscan, tp, tp->scanmask, flag&~NV_IARRAY);
-	argv = tp->argnam  = stkalloc(sh.stk,(namec+1)*sizeof(char*));
+	argv = tp->argnam  = stkalloc(sh.stk,((size_t)namec+1)*sizeof(char*));
 	namec = nv_scan(root, pushname, tp, tp->scanmask, flag&~NV_IARRAY);
 	if(mbcoll())
 		strsort(argv,namec,strcoll);

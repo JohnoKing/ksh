@@ -79,7 +79,7 @@ struct _glob_
 	/* AST additions */
 
 	char*		(*gl_nextdir)(glob_t*, char*);
-	unsigned long	gl_status;
+	int		gl_status;
 	unsigned long	gl_version;
 	unsigned short	gl_extra;
 

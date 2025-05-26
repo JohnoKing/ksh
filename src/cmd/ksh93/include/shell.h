@@ -277,7 +277,7 @@ struct Shell_s
 	void		*ed_context;
 	int		sigmax;
 	Shwait_f	waitevent;
-	int		subshell;	/* set for virtual subshell */
+	unsigned int	subshell;	/* set for virtual subshell */
 	int		realsubshell;	/* ${.sh.subshell}, actual subshell level (including virtual and forked) */
 	char		nv_restore;	/* set while restoring variables upon terminating a virtual subshell */
 	int32_t		shlvl;		/* $SHLVL, non-subshell child shell level */
@@ -352,10 +352,10 @@ struct Shell_s
 	int16_t		fn_depth;	/* scoped ksh-style function call depth */
 	int16_t		dot_depth;	/* dot-script and POSIX function call depth */
 	char		invoc_local;	/* set when inside of an invocation-local scope */
-	int		xargmin;
-	int		xargmax;
+	ssize_t		xargmin;
+	ssize_t		xargmax;
 	int		xargexit;
-	int		save_env_n;	/* number of saved pointers to environment variables with invalid names */
+	size_t		save_env_n;	/* number of saved pointers to environment variables with invalid names */
 	char		**save_env;	/* saved pointers to environment variables with invalid names */
 	mode_t		mask;
 	void		*init_context;
@@ -481,9 +481,9 @@ extern Shwait_f		sh_waitnotify(Shwait_f);
 extern Shscope_t	*sh_getscope(int,int);
 extern Shscope_t	*sh_setscope(Shscope_t*);
 extern void		sh_sigcheck(void);
-extern uint64_t		sh_isoption(int);
-extern uint64_t		sh_onoption(int);
-extern uint64_t		sh_offoption(int);
+extern uint64_t		sh_isoption(uint64_t);
+extern uint64_t		sh_onoption(uint64_t);
+extern uint64_t		sh_offoption(uint64_t);
 extern int		sh_exec(const Shnode_t*,int);
 
 /*

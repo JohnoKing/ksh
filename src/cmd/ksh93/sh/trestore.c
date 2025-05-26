@@ -176,13 +176,13 @@ static struct argnod *r_arg(void)
 	Stk_t		*stkp=sh.stk;
 	while((l=sfgetu(infile))>0)
 	{
-		ap = stkseek(stkp,(ssize_t)l+ARGVAL);
+		ap = stkseek(stkp,(ssize_t)l+(ssize_t)ARGVAL);
 		if(!aptop)
 			aptop = ap;
 		else
 			apold->argnxt.ap = ap;
 		if(--l > 0)
-			sfread(infile,ap->argval,(ssize_t)l);
+			sfread(infile,ap->argval,(size_t)l);
 		ap->argval[l] = 0;
 		ap->argchn.cp = 0;
 		ap->argflag = sfgetc(infile);
@@ -215,7 +215,7 @@ static struct ionod *r_redirect(void)
 			ioptop = iop;
 		else
 			iopold->ionxt = iop;
-		iop->iofile = (int)l;
+		iop->iofile = (unsigned int)l;
 		if((l & IOPROCSUB) && !(l & IOLSEEK))
 			iop->ioname = (char*)r_tree();	/* process substitution as file name to redirection */
 		else
@@ -282,7 +282,7 @@ static struct dolnod *r_comlist(void)
 	char **argv;
 	if((l=sfgetl(infile))>0)
 	{
-		dol = stkalloc(sh.stk,sizeof(struct dolnod) + sizeof(char*)*((ssize_t)l+ARG_SPARE));
+		dol = stkalloc(sh.stk,sizeof(struct dolnod) + sizeof(char*)*((size_t)l+ARG_SPARE));
 		dol->dolnum = (int)l;
 		dol->dolbot = ARG_SPARE;
 		argv = dol->dolval+ARG_SPARE;

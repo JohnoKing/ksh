@@ -31,7 +31,7 @@ char*
 fmtsignal(int sig)
 {
 	char*	buf;
-	int	z;
+	size_t	z;
 
 	if (sig >= 0)
 	{

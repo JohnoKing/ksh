@@ -29,7 +29,7 @@ fmttmx(const char* fmt, Time_t t)
 {
 	char*	b;
 	char*	e;
-	int	z;
+	size_t	z;
 
 	z = 0;
 	do

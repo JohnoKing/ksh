@@ -113,12 +113,12 @@ dumptable(Hash_table_t* tab, int flags)
 	sfprintf(sfstderr, "\n");
 	sfprintf(sfstderr, "        address:     0x%08lx\n", (unsigned long)tab);
 	sfprintf(sfstderr, "        flags:       ");
-	if (tab->frozen) sfprintf(sfstderr, "frozen=%d ", tab->frozen);
+	if (tab->frozen) sfprintf(sfstderr, "frozen=%u ", (unsigned int)tab->frozen);
 	dumpflags(tab->flags);
 	sfprintf(sfstderr, "\n");
-	sfprintf(sfstderr, "        size:        %d\n", tab->size);
+	sfprintf(sfstderr, "        size:        %zd\n", tab->size);
 	sfprintf(sfstderr, "        buckets:     %d\n", tab->buckets);
-	sfprintf(sfstderr, "        bucketsize:  %d\n", tab->bucketsize * sizeof(char*));
+	sfprintf(sfstderr, "        bucketsize:  %zu\n", (size_t)tab->bucketsize * sizeof(char*));
 	sfprintf(sfstderr, "\n");
 	if ((flags | tab->flags) & HASH_BUCKET) dumpbucket(tab, flags);
 }
@@ -136,7 +136,7 @@ dumproot(Hash_root_t* root, int flags)
 	sfprintf(sfstderr, "        address:     0x%08lx\n", (unsigned long)root);
 	sfprintf(sfstderr, "        flags:       ");
 	dumpflags(root->flags);
-	if (root->namesize) sfprintf(sfstderr, "namesize=%d ", root->namesize);
+	if (root->namesize) sfprintf(sfstderr, "namesize=%zu ", root->namesize);
 	if (root->local->alloc) sfprintf(sfstderr, "alloc=0x%08lx ", (unsigned long)root->local->alloc);
 	if (root->local->compare) sfprintf(sfstderr, "compare=0x%08lx ", (unsigned long)root->local->compare);
 	if (root->local->free) sfprintf(sfstderr, "free=0x%08lx ", (unsigned long)root->local->free);

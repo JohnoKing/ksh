@@ -62,7 +62,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
 	{
 		n = 0;
 		while ((c = *s++) >= '0' && c <= '9')
-			n = n * 10 + (c - '0');
+			n = n * 10 + ((unsigned)c - '0');
 		if ((c == 'x' || c == 'X') && !part)
 		{
 			addr = n;
@@ -76,7 +76,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
 					c -= 'F' - 10;
 				else
 					break;
-				addr = addr * 16 + c;
+				addr = addr * 16 + (unsigned)c;
 			}
 			part = 4;
 			break;
@@ -101,7 +101,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
 			{
 				n = 0;
 				while ((c = *s++) >= '0' && c <= '9')
-					n = n * 10 + (c - '0');
+					n = n * 10 + ((unsigned)c - '0');
 				z = (z << 8) | n;
 				part++;
 				if (c != '.')

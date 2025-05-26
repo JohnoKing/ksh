@@ -158,7 +158,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 		}
 		else
 		{
-			for(n=sh.xargmin; xv < av; xv++)
+			for(n=(size_t)sh.xargmin; xv < av; xv++)
 				argv[n++] = *xv;
 			for(xv=avlast; cp=  *xv; xv++)
 				argv[n++] = cp;
@@ -1133,7 +1133,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		xp = envp + 1;
 		while (s = *xp++)
 		{
-			if (strneq(s, v, n) && s[n] == '=')
+			if (strneq(s, v, (size_t)n) && s[n] == '=')
 			{
 				xval = *--xp;
 				*xp = v;
@@ -1531,7 +1531,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			return 0;
 		}
 		l = (size_t)statb.st_size;
-		stkseek(sh.stk,offset+pp->len+l+2);
+		stkseek(sh.stk,offset+pp->len+(ssize_t)l+2);
 		sp = stkptr(sh.stk,offset+pp->len);
 		*sp++ = '/';
 		n=read(fd,cp=sp,l);
@@ -1571,7 +1571,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			}
 			else if(m)
 			{
-				pp->lib = (char*)sh_malloc(cp-sp+pp->len+2);
+				pp->lib = (char*)sh_malloc((size_t)(cp-sp)+pp->len+2);
 				memcpy(pp->lib,sp,(size_t)m);
 				memcpy(&pp->lib[m],stkptr(sh.stk,offset),pp->len);
 				pp->lib[k=(size_t)m+pp->len] = '/';
@@ -1641,7 +1641,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
 	{
 		if(!savptr)
 			abort();
-		stkset(sh.stk,savptr,offset);
+		stkset(sh.stk,savptr,(size_t)offset);
 	}
 	else
 		stkseek(sh.stk,0);

@@ -57,7 +57,7 @@ static  const char optksh[] =
 	"H"
 #endif
 	;
-static const int flagval[]  =
+static const uint64_t flagval[]  =
 {
 	SH_DICTIONARY, SH_INTERACTIVE, SH_RESTRICTED, SH_CFLAG,
 	SH_ALLEXPORT, SH_NOTIFY, SH_ERREXIT, SH_NOGLOB, SH_TRACKALL,
@@ -115,14 +115,15 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
  */
 int sh_argopts(int argc,char *argv[])
 {
-	int		n,o;
+	int		n;
 	Arg_t		*ap = (Arg_t*)(sh.arg_context);
 #if SHOPT_KIA
 	Lex_t		*lp = (Lex_t*)(sh.lex_context);
 #endif
 	Shopt_t		newflags;
 	int		defaultflag=0, setflag=0, action=0;
-	int64_t		trace=sh_isoption(SH_XTRACE);
+	uint64_t	o,trace=sh_isoption(SH_XTRACE);
+	int		opts;
 	int		invalidate_ifs = 0;
 	Namval_t	*np = NULL;
 	const char	*cp;
@@ -158,18 +159,19 @@ int sh_argopts(int argc,char *argv[])
 					  ((opt_info.arg&&(!*opt_info.arg||*opt_info.arg=='-'))?(PRINT_TABLE|PRINT_NO_HEADER):0);
 				continue;
 			}
-			o = sh_lookopt(opt_info.arg,&f);
-			if(o<=0 || (setflag && (o&SH_COMMANDLINE)))
+			opts = sh_lookopt(opt_info.arg,&f);
+			if(opts<=0 || (setflag && (opts&SH_COMMANDLINE)))
 			{
-				errormsg(SH_DICT,2, "%s: %s option", opt_info.arg, o<0 ? "ambiguous" : "unknown");
+				errormsg(SH_DICT,2, "%s: %s option", opt_info.arg, opts<0 ? "ambiguous" : "unknown");
 				error_info.errors++;
 			}
-			o &= 0xff;
-			if(sh_isoption(SH_RESTRICTED) && !f && o==SH_RESTRICTED)
+			opts &= 0xff;
+			if(sh_isoption(SH_RESTRICTED) && !f && opts==SH_RESTRICTED)
 			{
 				errormsg(SH_DICT,ERROR_exit(1), e_restricted, opt_info.arg);
 				UNREACHABLE();
 			}
+			o = (uint64_t)opts;
 			break;
 		    case -6:	/* --default */
 			{
@@ -406,7 +408,7 @@ char *sh_argdolminus(void* context)
 	char *flagp=ap->flagadr;
 	while(cp< &optksh[NUM_OPTS])
 	{
-		int n = flagval[cp-optksh];
+		uint64_t n = flagval[cp-optksh];
 		if(sh_isoption(n))
 			*flagp++ = *cp;
 		cp++;
@@ -478,12 +480,12 @@ struct dolnod *sh_argcreate(char *argv[])
 {
 	struct dolnod *dp;
 	char **pp=argv, *sp;
-	ssize_t	n;
+	size_t	n;
 	size_t	size=0;
 	/* count args and number of bytes of arglist */
 	while(sp= *pp++)
 		size += strlen(sp);
-	n = (pp - argv)-1;
+	n = (size_t)(pp - argv)-1;
 	dp=new_of(struct dolnod,n*sizeof(char*)+size+n);
 	dp->dolrefcnt=1;	/* use count */
 	dp->dolnum = (int)n;
@@ -550,7 +552,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 	const Shtable_t *tp;
 	const char *name;
 	int on;
-	int value;
+	uint64_t value;
 	if(!(mode&PRINT_NO_HEADER))
 		sfputr(sfstdout,sh_translate(e_heading),'\n');
 	if(mode&PRINT_TABLE)
@@ -561,7 +563,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 		int	i;
 
 		c = 0;
-		for(tp=shtab_options; value=tp->sh_number; tp++)
+		for(tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
 		{
 			if(mask && !is_option(mask,value&0xff))
 				continue;
@@ -576,7 +578,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 			w = 2*c;
 		r = w / c;
 		i = 0;
-		for(tp=shtab_options; value=tp->sh_number; tp++)
+		for(tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
 		{
 			if(mask && !is_option(mask,value&0xff))
 				continue;
@@ -605,7 +607,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 #endif
 	if(!(mode&(PRINT_ALL|PRINT_VERBOSE))) /* only print set options */
 		sfwrite(sfstdout,"set --default",13);
-	for(tp=shtab_options; value=tp->sh_number; tp++)
+	for(tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
 	{
 		if(mask && !is_option(mask,value&0xff))
 			continue;
@@ -727,7 +729,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	int fd, pv[3];
 	int savestates = sh_getstate();
 	char savejobcontrol = job.jobcontrol;
-	unsigned int savesubshell = sh.subshell;
+	int savesubshell = sh.subshell;
 	ap = stkseek(sh.stk,ARGVAL);
 	ap->argflag |= ARG_MAKE;
 	ap->argflag &= ~ARG_RAW;

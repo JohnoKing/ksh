@@ -38,7 +38,7 @@ fmtdev(struct stat* st)
 	dev_t		mm;
 	unsigned int	ma;
 	unsigned int	mi;
-	int		z;
+	size_t		z;
 
 	mm = (S_ISBLK(st->st_mode) || S_ISCHR(st->st_mode)) ? idevice(st) : st->st_dev;
 	ma = major(mm);

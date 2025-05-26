@@ -69,14 +69,14 @@ struid(const char* name)
 	else if (ip = (Id_t*)dtmatch(dict, name))
 		return ip->id;
 	if (pw = getpwnam(name))
-		id = pw->pw_uid;
+		id = (int)pw->pw_uid;
 	else
 	{
 		id = (int)strtol(name, &e, 0);
 #if _WINIX
 		if (!*e)
 		{
-			if (!getpwuid(id))
+			if (!getpwuid((uid_t)id))
 				id = -1;
 		}
 		else if (streq(name, "root") && (pw = getpwnam("Administrator")))
@@ -84,7 +84,7 @@ struid(const char* name)
 		else
 			id = -1;
 #else
-		if (*e || !getpwuid(id))
+		if (*e || !getpwuid((uid_t)id))
 			id = -1;
 #endif
 	}

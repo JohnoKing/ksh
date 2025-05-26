@@ -60,7 +60,7 @@ typedef int (*GL_stat_f)(const char*, struct stat*);
 	globlist_t*	gl_rescan; \
 	globlist_t*	gl_match; \
 	Stk_t*		gl_stak; \
-	int		re_flags; \
+	regflags_t	re_flags; \
 	int		re_first; \
 	regex_t*	gl_ignore; \
 	regex_t*	gl_ignorei; \
@@ -295,7 +295,7 @@ addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char*
  */
 
 static void
-glob_dir(glob_t* gp, globlist_t* ap, int re_flags)
+glob_dir(glob_t* gp, globlist_t* ap, regflags_t re_flags)
 {
 	char*		rescan;
 	char*		prefix;
@@ -604,10 +604,10 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	char**		argv;
 	char**		av;
 	size_t		skip;
-	unsigned long	f;
+	int		f;
 	int		n;
 	int		x;
-	int		re_flags;
+	regflags_t	re_flags;
 
 	const char*	nocheck = pattern;
 	ssize_t		optlen = 0;
@@ -748,7 +748,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 					f &= ~GLOB_STARSTAR;
 				continue;
 			case ')':
-				flags = (gp->gl_flags = (int)f) & GLOB_FLAGMASK;
+				flags = (gp->gl_flags = f) & GLOB_FLAGMASK;
 				if (f & GLOB_ICASE)
 					gp->re_flags |= REG_ICASE;
 				else
@@ -767,11 +767,11 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	ap->gl_next = 0;
 	ap->gl_flags = 0;
 	ap->gl_begin = ap->gl_path + gp->gl_extra;
-	pat = strcopy(ap->gl_begin, pattern + optlen);
+	pat = strcopy(ap->gl_begin, pattern + (size_t)optlen);
 	if (suflen)
 		pat = strcopy(pat, gp->gl_suffix);
 	if (optlen)
-		strlcpy(gp->gl_pat = gp->gl_opt = pat + 1, pattern, optlen);
+		strlcpy(gp->gl_pat = gp->gl_opt = pat + 1, pattern, (size_t)optlen);
 	else
 		gp->gl_pat = 0;
 	suflen = 0;

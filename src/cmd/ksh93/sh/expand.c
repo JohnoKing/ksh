@@ -37,7 +37,7 @@
 #define argbegin	argnxt.cp
 static	const char	*sufstr;
 static	size_t		suflen;
-static	int		scantree(Dt_t*,const char*, struct argnod**);
+static	size_t		scantree(Dt_t*,const char*, struct argnod**);
 
 
 /*
@@ -62,13 +62,13 @@ static char *nextdir(glob_t *gp, char *dir)
 	return NULL;
 }
 
-ssize_t path_expand(const char *pattern, struct argnod **arghead, int musttrim)
+size_t path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 {
 	glob_t gdata;
 	struct argnod *ap;
 	glob_t *gp= &gdata;
 	int flags;
-	ssize_t extra=0;
+	size_t extra=0;
 	sh_stats(STAT_GLOBS);
 	memset(gp,0,sizeof(gdata));
 	flags = GLOB_GROUP|GLOB_AUGMENTED|GLOB_NOCHECK|GLOB_NOSORT|GLOB_STACK|GLOB_LIST|GLOB_DISC;
@@ -138,11 +138,11 @@ ssize_t path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 /*
  * scan tree and add each name that matches the given pattern
  */
-static int scantree(Dt_t *tree, const char *pattern, struct argnod **arghead)
+static size_t scantree(Dt_t *tree, const char *pattern, struct argnod **arghead)
 {
 	Namval_t *np;
 	struct argnod *ap;
-	int nmatch=0;
+	size_t nmatch=0;
 	char *cp;
 	for(np=(Namval_t*)dtfirst(tree); np; np=(Namval_t*)dtnext(tree,np))
 	{
@@ -168,7 +168,7 @@ static int scantree(Dt_t *tree, const char *pattern, struct argnod **arghead)
  * generate the list of files found by adding an suffix to end of name
  * The number of matches is returned
  */
-ssize_t path_complete(const char *name,const char *suffix, struct argnod **arghead)
+size_t path_complete(const char *name,const char *suffix, struct argnod **arghead)
 {
 	sufstr = suffix;
 	suflen = strlen(suffix);
@@ -371,7 +371,7 @@ again:
 			{
 				apin = ap->argchn.ap;
 				if(!sh_isoption(SH_NOGLOB) || sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE))
-					brace = path_expand(ap->argval,arghead,musttrim);
+					brace = (ssize_t)path_expand(ap->argval,arghead,musttrim);
 				else
 				{
 					ap->argchn.ap = *arghead;

@@ -498,7 +498,7 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 				else
 					sfputr(out,tp->sh_name+2,' ');
 		                if ((val&(NV_LJUST|NV_RJUST|NV_ZFILL)) && !(val&NV_INTEGER) && val!=NV_HOST)
-					sfprintf(out,"%d ",nv_size(np));
+					sfprintf(out,"%zu ",nv_size(np));
 				if(val==(NV_REF|NV_TAGGED))
 					attr &= ~(NV_REF|NV_TAGGED);
 			}
@@ -512,7 +512,7 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 						cp = "base";
 					if(!prefix)
 						sfputr(out,cp,' ');
-					sfprintf(out,"%d ",nv_size(np));
+					sfprintf(out,"%zu ",nv_size(np));
 				}
 				break;
 			}

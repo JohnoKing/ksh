@@ -51,7 +51,7 @@ fmtgid(int gid)
 	Id_t*		ip;
 	char*		name;
 	struct group*	gr;
-	int		z;
+	size_t		z;
 
 	static Dt_t*		dict;
 	static Dtdisc_t		disc;
@@ -64,7 +64,7 @@ fmtgid(int gid)
 	}
 	else if (ip = (Id_t*)dtmatch(dict, &gid))
 		return ip->name;
-	if (gr = getgrgid(gid))
+	if (gr = getgrgid((gid_t)gid))
 	{
 		name = gr->gr_name;
 #if _WINIX
