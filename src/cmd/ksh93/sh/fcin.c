@@ -73,7 +73,7 @@ ssize_t	fcfopen(Sfio_t* f)
  */
 int fcfill(void)
 {
-	int n;
+	ssize_t n;
 	Sfio_t	*f;
 	unsigned char	*last=_Fcin.fclast, *ptr=_Fcin.fcptr;
 	if(!(f=fcfile()))
@@ -94,7 +94,7 @@ int fcfill(void)
 		if(ptr > last)
 			_Fcin.fcptr = ptr = last;
 	}
-	if((n = (int)(ptr-_Fcin.fcbuff)) && _Fcin.fcfun)
+	if((n = ptr-_Fcin.fcbuff) && _Fcin.fcfun)
 		(*_Fcin.fcfun)(f,(const char*)_Fcin.fcbuff,n,_Fcin.context);
 	sfread(f, (char*)_Fcin.fcbuff, n);
 	_Fcin.fcoff +=n;
