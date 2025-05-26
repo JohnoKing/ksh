@@ -78,6 +78,12 @@ static char *nxtarg(struct test*,int);
 static int expr(struct test*,int);
 static int e3(struct test*);
 
+/* check for -a or -o in POSIX mode */
+static inline int posix_andor(char *arg)
+{
+	return sh_isoption(SH_POSIX) && (sh_lookup(arg,shtab_testops) & TEST_ANDOR);
+}
+
 static int test_strmatch(const char *str, const char *pat)
 {
 	ssize_t match[2*(MATCH_MAX+1)],c;
@@ -104,15 +110,15 @@ static int test_strmatch(const char *str, const char *pat)
 	return n;
 }
 
-static void check_toomanyops(char *argv[])
+static void check_toomanyops(int argc, char *argv[])
 {
 	unsigned n;
-	if(c_eq(argv[0],'(') || !argv[1] || !argv[2] || !argv[3])
+	if(argc<4 || c_eq(argv[0],'('))
 		return;
 	/* superfluous args after simple binary expression */
 	if((n = sh_lookup(argv[2],shtab_testops)) && !(n & TEST_ANDOR))
 	{
-		if(argv[4] && !(sh_lookup(argv[4],shtab_testops) & TEST_ANDOR))
+		if(argc>4 && !(sh_lookup(argv[4],shtab_testops) & TEST_ANDOR))
 		{
 			errormsg(SH_DICT,ERROR_exit(2),e_toomanyops);
 			UNREACHABLE();
@@ -132,7 +138,6 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 	struct test tdata;
 	char *cp = argv[0];
 	int not;
-	int exitval;
 
 	NOT_USED(context);
 	tdata.av = argv;
@@ -145,14 +150,10 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 			errormsg(SH_DICT,ERROR_exit(2),e_missing,"']'");
 			UNREACHABLE();
 		}
-		argv[argc] = NULL;
 	}
+	/* POSIX requires the test builtin to return 1 if expression is missing */
 	if(argc <= 1)
-	{
-		/* POSIX requires the test builtin to return 1 if expression is missing */
-		exitval = 1;
-		goto done;
-	}
+		return 1;
 	cp = argv[1];
 	if(c_eq(cp,'(') && argc<=6 && c_eq(argv[argc-1],')'))
 	{
@@ -166,13 +167,24 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 	}
 	not = c_eq(cp,'!');
 	/* kludge to fix https://github.com/ksh93/ksh/issues/739 */
-	check_toomanyops(argv + not);
+	check_toomanyops(argc - not, argv + not);
 	/* POSIX portion for test */
 	switch(argc)
 	{
 		case 5:
 			if(!not)
 				break;
+			if(posix_andor(argv[3]))
+			{	/*
+				 * In POSIX mode, enforce a violation of basic logic that sadly made it to every other shell:
+				 * "test ! foo -o bar" must return 1, i.e., is same as "test ! \( -n foo -o -n bar \)"
+				 * "test ! foo -a ''"  must return 0, i.e., is same as "test ! \( -n foo -a -n '' \)"
+				 * This only applies if argc==5; for example, "test ! -n foo -o -n bar" correctly returns 0.
+				 */
+				tdata.av++;		/* skip the '!' */
+				tdata.ac = argc - 1;
+				return expr(&tdata,0);	/* invert the exit status result by NOT inverting the logical result */
+			}
 			argv++;
 			/* FALLTHROUGH */
 		case 4:
@@ -185,32 +197,19 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 				if(argc==5)
 					break;
 				if(not && cp[0]=='-' && cp[2]==0)
-				{
-					exitval = (test_unop(cp[1],argv[3])!=0);
-					goto done;
-				}
+					return test_unop(cp[1],argv[3]) != 0;
 				else if(argv[1][0]=='-' && argv[1][2]==0)
-				{
-					exitval = (!test_unop(argv[1][1],cp));
-					goto done;
-				}
+					return !test_unop(argv[1][1],cp);
 				else if(not && c_eq(argv[2],'!'))
-				{
-					exitval = (*argv[3]==0);
-					goto done;
-				}
+					return *argv[3] == 0;
 				errormsg(SH_DICT,ERROR_exit(2),e_badop,cp);
 				UNREACHABLE();
 			}
-			exitval = (test_binop(op,argv[1],argv[3])^(argc!=5));
-			goto done;
+			return test_binop(op,argv[1],argv[3]) ^ (argc != 5);
 		}
 		case 3:
 			if(not)
-			{
-				exitval = (*argv[2]!=0);
-				goto done;
-			}
+				return *argv[2] != 0;
 			if(cp[0] != '-' || cp[2] || cp[1]=='?')
 			{	/*
 				 * The following ugly hack supports 'test --man --' and '[ --man -- ]' and related
@@ -239,16 +238,12 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 				}
 				break;
 			}
-			exitval = (!test_unop(cp[1],argv[2]));
-			goto done;
+			return !test_unop(cp[1],argv[2]);
 		case 2:
-			exitval = (*cp==0);
-			goto done;
+			return *cp == 0;
 	}
 	tdata.ac = argc;
-	exitval = (!expr(&tdata,0));
-done:
-	return exitval;
+	return !expr(&tdata,0);
 }
 
 /*
@@ -320,20 +315,15 @@ static int e3(struct test *tp)
 	int op;
 	char *binop;
 	arg=nxtarg(tp,0);
-	if(sh_isoption(SH_POSIX) && tp->ap + 1 < tp->ac && ((op=sh_lookup(tp->av[tp->ap],shtab_testops)) & TEST_ANDOR))
-	{	/*
-		 * In POSIX mode, makes sure standard binary -a/-o takes precedence
-		 * over nonstandard unary -a/-o if the lefthand expression is "!" or "("
-		 */
-		tp->ap++;
-		if(op==TEST_AND)
-			return *arg && expr(tp,2);
-		else /* TEST_OR */
-			return *arg || expr(tp,3);
-	}
-	if(arg && c_eq(arg, '!') && tp->ap < tp->ac)
+	/*
+	 * In POSIX mode, do not process ! or ( as operators if followed directly by -a or -o;
+	 * this disables the nonstandard unary -a and -o operators in these cases. Examples:
+	 * "test ! -a /dev/null" returns 0 (is equivalent to "test -n ! -a -n /dev/null")
+	 * "test \( -o \)" is not an error and returns 0 (is equivalent to "test \( -n -o \)")
+	 */
+	if(c_eq(arg, '!') && tp->ap < tp->ac && !posix_andor(tp->av[tp->ap]))
 		return !e3(tp);
-	if(c_eq(arg, '('))
+	if(c_eq(arg, '(') && !posix_andor(tp->av[tp->ap]))
 	{
 		op = expr(tp,1);
 		cp = nxtarg(tp,0);
