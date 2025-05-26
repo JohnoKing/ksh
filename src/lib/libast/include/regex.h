@@ -153,7 +153,7 @@ typedef struct regsub_s
 	regflags_t	re_flags;	/* regsubcomp() flags		*/
 	char*		re_buf;		/* regsubexec() output buffer	*/
 	size_t		re_len;		/* re_buf length		*/
-	int		re_min;		/* regsubcomp() min matches	*/
+	ssize_t		re_min;		/* regsubcomp() min matches	*/
 #ifdef _REG_SUB_PRIVATE_
 	_REG_SUB_PRIVATE_
 #endif

@@ -133,11 +133,11 @@ typedef struct Cenv_s
 #endif
 
 static Rex_t*
-node(Cenv_t* env, int type, int lo, int hi, size_t extra)
+node(Cenv_t* env, int type, ssize_t lo, ssize_t hi, size_t extra)
 {
 	Rex_t*	e;
 
-	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%d,%d,%u)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
+	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%zd,%zd,%u)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
 	if (e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra))
 	{
 		memset(e, 0, sizeof(Rex_t) + extra);
@@ -1789,7 +1789,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
 	{
 	case T_BANG:
 		eat(env);
-		if (!(f = node(env, REX_NEG, (int)m, (int)n, 0)))
+		if (!(f = node(env, REX_NEG, (ssize_t)m, (ssize_t)n, 0)))
 		{
 			drop(env->disc, e);
 			return NULL;
@@ -1857,7 +1857,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
 			mark(e, minimal);
 		return e;
 	}
-	if (!(f = node(env, REX_REP, (int)m, (int)n, 0)))
+	if (!(f = node(env, REX_REP, (ssize_t)m, (ssize_t)n, 0)))
 	{
 		drop(env->disc, e);
 		return NULL;
@@ -2544,7 +2544,7 @@ grp(Cenv_t* env, int parno)
 				env->error = REG_ECOUNT;
 			goto nope;
 		}
-		f->re.group.size = (int)env->stats.m;
+		f->re.group.size = env->stats.m;
 		memset(&env->stats, 0, sizeof(env->stats));
 	}
 	switch (x)
@@ -2569,10 +2569,10 @@ seq(Cenv_t* env)
 	Rex_t*		e;
 	Rex_t*		f;
 	Token_t		tok;
-	int		c;
-	int		i;
+	ssize_t		c;
+	ssize_t		i;
 	int		n = 1;
-	int		x = 0;
+	ssize_t		x = 0;
 	int		parno;
 	int		type;
 	regflags_t	flags;
@@ -2598,10 +2598,10 @@ seq(Cenv_t* env)
 			{
 				c = (c == C_ESC) ? env->token.lex : mbchar(p);
 				if (env->flags & REG_ICASE)
-					c = towupper(c);
+					c = towupper((wint_t)c);
 				if ((size_t)(&buf[sizeof(buf)] - s) < MB_CUR_MAX)
 					break;
-				if ((n = mbconv((char*)s, c)) < 0)
+				if ((n = mbconv((char*)s, (wchar_t)c)) < 0)
 					*s++ = c;
 				else if (n)
 					s += n;
@@ -2632,10 +2632,10 @@ seq(Cenv_t* env)
 					e = 0;
 				else
 				{
-					i = (int)(s - buf);
+					i = s - buf;
 					if (!(e = node(env, REX_STRING, 0, 0, i)))
 						return NULL;
-					memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, i);
+					memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, (size_t)i);
 					e->re.string.size = i;
 				}
 				if (x >= 0)
@@ -2663,10 +2663,10 @@ seq(Cenv_t* env)
 					f = cat(env, e, f);
 				return f;
 			default:
-				c = (int)(s - buf);
-				if (!(e = node(env, REX_STRING, 0, 0, c)))
+				c = s - buf;
+				if (!(e = node(env, REX_STRING, 0, 0, (size_t)c)))
 					return NULL;
-				memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, c);
+				memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, (size_t)c);
 				e->re.string.size = c;
 				return cat(env, e, seq(env));
 			}
@@ -2788,7 +2788,7 @@ seq(Cenv_t* env)
 			case T_SPACE:
 			case T_SPACE_NOT:
 				eat(env);
-				if (e = ccl(env, c))
+				if (e = ccl(env, (int)c))
 					e = rep(env, e, 0, 0);
 				break;
 			case T_LT:

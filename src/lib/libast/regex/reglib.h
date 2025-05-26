@@ -356,7 +356,7 @@ typedef struct Group_s
 {
 	int		number;		/* group number			*/
 	int		last;		/* last contained group number	*/
-	int		size;		/* lookbehind size		*/
+	ssize_t		size;		/* lookbehind size		*/
 	int		back;		/* backreferenced		*/
 	regflags_t	flags;		/* group flags			*/
 	union

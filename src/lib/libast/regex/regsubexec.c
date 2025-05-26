@@ -147,7 +147,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
 	int		c;
 	regsub_t*	b;
 	const char*	e;
-	int		m;
+	ssize_t		m;
 
 	if (!p->env->sub || (p->env->flags & REG_NOSUB) || !nmatch)
 		return fatal(p->env->disc, REG_BADPAT, NULL);

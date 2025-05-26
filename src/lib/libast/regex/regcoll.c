@@ -42,8 +42,8 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 	char*			b;
 	char*			x;
 	const char*		t;
-	int			i;
-	int			r;
+	ssize_t			i;
+	ssize_t			r;
 	int			term;
 	wchar_t			w;
 	char			xfm[256];
@@ -53,7 +53,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 		goto nope;
 	t = s;
 	w = mbchar(s);
-	if ((r = (int)(s - t)) > 1)
+	if ((r = s - t) > 1)
 	{
 		if (*s++ != term || *s++ != ']')
 			goto oops;
@@ -85,7 +85,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 		if (b < x)
 			*b++ = c;
 	}
-	r = (int)(s - t - 2);
+	r = s - t - 2;
 	w = 0;
 	if (b >= x)
 		goto done;
@@ -99,7 +99,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
  done:
 	if (r <= (ssize_t)size && (char*)t != buf)
 	{
-		memcpy(buf, t, r);
+		memcpy(buf, t, (size_t)r);
 		if (r < (ssize_t)size)
 			buf[r] = 0;
 	}
@@ -107,7 +107,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 		*wc = w;
 	if (e)
 		*e = (char*)s;
-	return r;
+	return (int)r;
  oops:
  	s--;
  nope:
