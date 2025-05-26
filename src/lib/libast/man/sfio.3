@@ -112,14 +112,14 @@ int        sfsscanf(const char* s, const char* format, ...);
 int        sfvsscanf(const char* s, const char* format, va_list args);
 int        sfvscanf(Sfio_t* f, const char* format, va_list args);
 
-int        sfprintf(Sfio_t* f, const char* format, ...);
+ssize_t    sfprintf(Sfio_t* f, const char* format, ...);
 char*      sfprints(const char* format, ...);
 char*      sfvprints(const char* format, va_list args);
 ssize_t    sfaprints(char** sp, const char* format, ...);
 ssize_t    sfvaprints(char** sp, const char* format, va_list args);
 ssize_t    sfsprintf(char* s, size_t n, const char* format, ...);
 ssize_t    sfvsprintf(char* s, size_t n, const char* format, va_list args);
-int        sfvprintf(Sfio_t* f, const char* format, va_list args);
+ssize_t    sfvprintf(Sfio_t* f, const char* format, va_list args);
 
 Sffmt_t;
 
@@ -845,9 +845,9 @@ which contains the following elements:
     int          fmt;    /* pattern being processed    */
     ssize_t      size;   /* object size                */
     int          flags;  /* formatting control flags   */
-    int          width;  /* width of field             */
-    int          precis; /* precision required         */
-    int          base;   /* conversion base            */
+    ssize_t      width;  /* width of field             */
+    ssize_t      precis; /* precision required         */
+    ssize_t      base;   /* conversion base            */
 
     char*        t_str;  /* extfdata string            */
     ssize_t      n_str;  /* length of t_str            */
@@ -1041,14 +1041,14 @@ This is useful for applications to find out
 when the format of the structure \f3Sffmt_t\fP changes.
 Note that the version number corresponds to the Sfio version number
 which is defined in the macro value \f3SFIO_VERSION\fP.
-.Ss "  int sfprintf(Sfio_t* f, const char* format, ...);"
+.Ss "  ssize_t sfprintf(Sfio_t* f, const char* format, ...);"
 .Ss "  char* sfprints(const char* format, ...);"
 .Ss "  char* sfvprints(const char* format, va_list args);"
 .Ss "  ssize_t sfaprints(char** sp, const char* format, ...);"
 .Ss "  ssize_t sfvaprints(char** sp, const char* format, va_list args);"
 .Ss "  ssize_t sfsprintf(char* s, size_t n, const char* format, ...)"
 .Ss "  ssize_t sfvsprintf(char* s, size_t n, const char* format, va_list args);"
-.Ss "  int sfvprintf(Sfio_t* f, const char* format, va_list args);"
+.Ss "  ssize_t sfvprintf(Sfio_t* f, const char* format, va_list args);"
 These functions format output data.
 \f3sfprintf()\fP and \f3sfvprintf()\fP write to output stream \f3f\fP.
 \f3sfsprintf()\fP and \f3sfvsprintf()\fP write to buffer \f3s\fP
