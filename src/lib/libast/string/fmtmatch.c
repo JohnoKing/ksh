@@ -40,7 +40,7 @@ fmtmatch(const char* as)
 	char*	z;
 	int	a;
 	int	e;
-	int	n;
+	ssize_t	n;
 	char*	buf;
 	char*	stack[32];
 

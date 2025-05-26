@@ -206,7 +206,7 @@ errorcheck(glob_t* gp, const char* path)
  */
 
 static void
-trim(char* sp, char* p1, int* n1, char* p2, int* n2)
+trim(char* sp, char* p1, ssize_t* n1, char* p2, ssize_t* n2)
 {
 	char*	dp = sp;
 	int	c;
@@ -222,12 +222,12 @@ trim(char* sp, char* p1, int* n1, char* p2, int* n2)
 		if (sp == p1)
 		{
 			p1 = 0;
-			*n1 = (int)(sp - dp - 1);
+			*n1 = sp - dp - 1;
 		}
 		if (sp == p2)
 		{
 			p2 = 0;
-			*n2 = (int)(sp - dp - 1);
+			*n2 = sp - dp - 1;
 		}
 	} while (*dp++ = c);
 }
@@ -310,8 +310,8 @@ glob_dir(glob_t* gp, globlist_t* ap, int re_flags)
 	regex_t		rec;
 	regex_t		rei;
 	int		notdir;
-	int		t1;
-	int		t2;
+	ssize_t		t1;
+	ssize_t		t2;
 	int		bracket;
 
 	int		anymeta = ap->gl_flags & MATCH_META;

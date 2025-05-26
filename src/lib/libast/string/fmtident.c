@@ -34,7 +34,7 @@ fmtident(const char* a)
 	char*	s = (char*)a;
 	char*	t;
 	char*	buf;
-	int	i;
+	size_t	i;
 
 	i = 0;
 	for (;;)
@@ -64,7 +64,7 @@ fmtident(const char* a)
 				break;
 		while (t > s && isspace(t[-1]))
 			t--;
-		i = (int)(t - s);
+		i = (size_t)(t - s);
 		buf = fmtbuf(i + 1);
 		memcpy(buf, s, i);
 		s = buf;
