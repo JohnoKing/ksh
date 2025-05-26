@@ -321,8 +321,8 @@ cat(Cenv_t* env, Rex_t* e, Rex_t* f)
 	}
 	else if (e->type == REX_DOT && f->type == REX_DOT)
 	{
-		unsigned int	m = e->lo + f->lo;
-		unsigned int	n = e->hi + f->hi;
+		ssize_t		m = e->lo + f->lo;
+		ssize_t		n = e->hi + f->hi;
 
 		if (m <= RE_DUP_MAX)
 		{
@@ -1835,8 +1835,8 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
 	case REX_CLASS:
 	case REX_COLL_CLASS:
 	case REX_ONECHAR:
-		e->lo = (int)m;
-		e->hi = (int)n;
+		e->lo = m;
+		e->hi = n;
 		if (minimal >= 0)
 			mark(e, minimal);
 		return e;
@@ -1990,7 +1990,7 @@ trie(Cenv_t* env, Rex_t* e, Rex_t* f)
 static Rex_t*		alt(Cenv_t*, int, int);
 
 static int
-chr(Cenv_t* env, int* escaped)
+chr(Cenv_t* env, ssize_t* escaped)
 {
 	unsigned char*	p;
 	int		c;
@@ -2012,7 +2012,7 @@ chr(Cenv_t* env, int* escaped)
 		}
 		p = env->cursor;
 		c = chresc((char*)env->cursor - 1, (char**)&env->cursor);
-		*escaped = (int)(env->cursor - p);
+		*escaped = env->cursor - p;
 	}
 	return c;
 }
@@ -2031,9 +2031,9 @@ grp(Cenv_t* env, int parno)
 	int		i;
 	int		n;
 	int		x;
-	int		esc;
 	int		typ;
 	int		beg;
+	ssize_t		esc;
 	unsigned char*	p;
 
 	g = env->flags;

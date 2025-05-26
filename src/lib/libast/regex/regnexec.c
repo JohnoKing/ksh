@@ -139,7 +139,7 @@ typedef struct
 #define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(i)*(v)->siz):(t*)vecseek(&(v),i))
 
 static Vector_t*
-vecopen(int inc, int siz)
+vecopen(ssize_t inc, size_t siz)
 {
 	Vector_t*	v;
 	Stk_t*		sp;
@@ -794,9 +794,9 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
 {
 	int		c;
 	int		d;
-	int		m;
 	int		r;
 	ssize_t		i;
+	ssize_t		m;
 	ssize_t		n;
 	unsigned char*	p;
 	unsigned char*	t;

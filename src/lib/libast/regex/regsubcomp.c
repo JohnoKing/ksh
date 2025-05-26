@@ -115,7 +115,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 	int		sre;
 	int		f;
 	int		g;
-	int		n;
+	ssize_t		n;
 	int		nops;
 	const char*	o;
 	regdisc_t*	disc;
@@ -179,8 +179,9 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		}
 		if (*s)
 		{
-			if (n = regsubflags(p, s, &e, d, map, &minmatch, &flags))
-				return n;
+			int ret;
+			if (ret = regsubflags(p, s, &e, d, map, &minmatch, &flags))
+				return ret;
 			s = (const char*)e;
 		}
 		p->re_npat = s - o;
@@ -283,7 +284,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		case 'E':
 			f = g;
 		set:
-			if ((op->len = (int)(t - sub->re_rhs) - op->off) && (n = (int)(++op - sub->re_ops)) >= nops)
+			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
 			{
 				if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 				{
@@ -293,7 +294,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 				op = sub->re_ops + n;
 			}
 			op->op = f;
-			op->off = (int)(t - sub->re_rhs);
+			op->off = t - sub->re_rhs;
 			continue;
 		case 'L':
 			g = f;
@@ -319,7 +320,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 			regfree(p);
 			return fatal(disc, REG_ESUBREG, s - 1);
 		}
-		if ((n = (int)(op - sub->re_ops)) >= (nops - 2))
+		if ((n = op - sub->re_ops) >= (nops - 2))
 		{
 			if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 			{
@@ -328,16 +329,16 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 			}
 			op = sub->re_ops + n;
 		}
-		if (op->len = (int)(t - sub->re_rhs) - op->off)
+		if (op->len = (t - sub->re_rhs) - op->off)
 			op++;
 		op->op = f;
 		op->off = c;
 		op->len = 0;
 		op++;
 		op->op = f;
-		op->off = (int)(t - sub->re_rhs);
+		op->off = t - sub->re_rhs;
 	}
-	if ((op->len = (int)(t - sub->re_rhs) - op->off) && (n = (int)(++op - sub->re_ops)) >= nops)
+	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
 	{
 		if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 		{
