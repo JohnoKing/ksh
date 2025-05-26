@@ -1032,7 +1032,7 @@ static char *walk_tree(Namval_t *np, Namval_t *xp, int flags)
 	if(flags&1)
 		outfile = 0;
 	else if(!(outfile=out))
-		outfile = out =  sfnew(NULL,NULL,-1,-1,SFIO_WRITE|SFIO_STRING);
+		outfile = out =  sfnew(NULL,NULL,(size_t)-1,-1,SFIO_WRITE|SFIO_STRING);
 	else if(flags&NV_TABLE)
 		off = sftell(outfile);
 	else

@@ -49,7 +49,7 @@
  *	data
  */
 
-#define STK_ALIGN	ALIGN_BOUND
+#define STK_ALIGN	((size_t)ALIGN_BOUND)
 #define STK_FSIZE	(1024*sizeof(char*))
 #define STK_HDRSIZE	(sizeof(Sfio_t)+sizeof(Sfdisc_t))
 
@@ -156,13 +156,13 @@ static int stkexcept(Sfio_t *stream, int type, void* val, Sfdisc_t* dp)
 	    case SFIO_WRITE:
 	    case SFIO_SEEK:
 		{
-			long size = sfvalue(stream);
+			size_t size = (size_t)sfvalue(stream);
 			if(init)
 			{
 				Sfio_t *old = 0;
 				if(stream!=stkstd)
 					old = stkinstall(stream,NULL);
-				if(!stkgrow(stkstd,size-(stkstd->_endb-stkstd->_data)))
+				if(!stkgrow(stkstd,size-(size_t)(stkstd->_endb-stkstd->_data)))
 					return -1;
 				if(old)
 					stkinstall(old,NULL);
@@ -322,8 +322,8 @@ void *stkset(Sfio_t *stream, void *address, size_t offset)
 		if(loc>=cp && loc<=sp->stkend)
 		{
 			if(frames)
-				sfsetbuf(stream,cp,sp->stkend-cp);
-			stream->_data = (unsigned char*)(cp + roundof(loc-cp,STK_ALIGN));
+				sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
+			stream->_data = (unsigned char*)(cp + roundof((size_t)(loc-cp),STK_ALIGN));
 			stream->_next = (unsigned char*)loc+offset;
 			goto found;
 		}
@@ -343,7 +343,7 @@ void *stkset(Sfio_t *stream, void *address, size_t offset)
 	/* set stack back to the beginning */
 	cp = (char*)(fp+1);
 	if(frames)
-		sfsetbuf(stream,cp,sp->stkend-cp);
+		sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
 	else
 		stream->_data = stream->_next = (unsigned char*)cp;
 found:
@@ -372,8 +372,8 @@ void *stkalloc(Sfio_t *stream, size_t n)
 void *_stkseek(Sfio_t *stream, ssize_t n)
 {
 	if(!init)
-		stkinit(n);
-	if(stkleft(stream) <= n && !stkgrow(stream,n))
+		stkinit((size_t)n);
+	if(stkleft(stream) <= n && !stkgrow(stream,(size_t)n))
 		return NULL;
 	stream->_next = stream->_data+n;
 	return stream->_data;

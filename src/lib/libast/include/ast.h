@@ -167,6 +167,11 @@ typedef struct
 } Pathcheck_t;
 
 /*
+ * regex flags type (included here for the strgrpmatch() family)
+ */
+typedef uint32_t regflags_t;
+
+/*
  * strgrpmatch() flags
  */
 
@@ -175,7 +180,6 @@ typedef struct
 #define STR_RIGHT	0x04		/* implicit right anchor	*/
 #define STR_ICASE	0x08		/* ignore case			*/
 #define STR_GROUP	0x10		/* (|&) inside [@|&](...) only	*/
-#define STR_INT		0x20		/* int* match array		*/
 
 /*
  * fmtquote() flags
@@ -264,7 +268,7 @@ typedef struct
 #define oldof(p,t,n,x)	((p)?(t*)realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)malloc(sizeof(t)*(n)+(x)))
 #define pointerof(x)	((void*)((uintptr_t)(x)))
 #define roundof(x,y)	(((x)+(y)-1)&~((y)-1))
-#define ssizeof(x)	((int)sizeof(x))
+#define ssizeof(x)	((ssize_t)sizeof(x))
 
 #define streq(a,b)	(!strcmp(a,b))
 #define strneq(a,b,n)	(!strncmp(a,b,n))
@@ -390,8 +394,8 @@ extern int		strexp(char*, int);
 extern long		streval(const char*, char**, long(*)(const char*, char**));
 extern long		strexpr(const char*, char**, long(*)(const char*, char**, void*), void*);
 extern int		strgid(const char*);
-extern int		strgrpmatch(const char*, const char*, ssize_t*, int, int);
-extern int		strngrpmatch(const char*, size_t, const char*, ssize_t*, int, int);
+extern int		strgrpmatch(const char*, const char*, ssize_t*, ssize_t, regflags_t);
+extern int		strngrpmatch(const char*, size_t, const char*, ssize_t*, ssize_t, regflags_t);
 extern size_t		strhash(const char*);
 extern void*		strlook(const void*, size_t, const char*);
 extern int		strmatch(const char*, const char*);
@@ -414,7 +418,7 @@ extern int		strperm(const char*, char**, int);
 extern void*		strpsearch(const void*, size_t, size_t, const char*, char**);
 extern void*		strsearch(const void*, size_t, size_t, Strcmp_f, const char*, void*);
 extern void		strsort(char**, int, int(*)(const char*, const char*));
-extern char*		strsubmatch(const char*, const char*, int);
+extern char*		strsubmatch(const char*, const char*, regflags_t);
 extern unsigned long	strsum(const char*, unsigned long);
 extern char*		strtape(const char*, char**);
 extern int		strtoip4(const char*, char**, uint32_t*, unsigned char*);

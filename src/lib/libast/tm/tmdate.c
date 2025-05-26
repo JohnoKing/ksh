@@ -33,5 +33,5 @@
 time_t
 tmdate(const char* s, char** e, time_t* clock)
 {
-	return tmxsec(tmxdate(s, e, tmxclock(clock)));
+	return (time_t)tmxsec(tmxdate(s, e, tmxclock(clock)));
 }

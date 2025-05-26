@@ -72,7 +72,7 @@ static struct State_s
  */
 
 int
-strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, int n, int flags)
+strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, ssize_t n, regflags_t flags)
 {
 	regex_t*	re;
 	ssize_t*	end;
@@ -92,16 +92,7 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, int n, int fl
 	if (!*p)
 	{
 		if (sub && n > 0)
-		{
-			if (flags & STR_INT)
-			{
-				int*	subi = (int*)sub;
-
-				subi[0] = subi[1] = 0;
-			}
-			else
-				sub[0] = sub[1] = 0;
-		}
+			sub[0] = sub[1] = 0;
 		return *b == 0;
 	}
 
@@ -131,34 +122,20 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, int n, int fl
 		return 0;
 	if (n > matchstate.nmatch)
 	{
-		if (!(matchstate.match = newof(matchstate.match, regmatch_t, n, 0)))
+		if (!(matchstate.match = newof(matchstate.match, regmatch_t, (size_t)n, 0)))
 			return 0;
 		matchstate.nmatch = n;
 	}
-	if (regnexec(re, b, z, n, matchstate.match, reflags & ~(REG_MINIMAL|REG_SHELL_GROUP|REG_LEFT|REG_RIGHT|REG_ICASE)))
+	if (regnexec(re, b, z, (size_t)n, matchstate.match, reflags & ~(REG_MINIMAL|REG_SHELL_GROUP|REG_LEFT|REG_RIGHT|REG_ICASE)))
 		return 0;
 	if (!sub || n <= 0)
 		return 1;
 	i = (int)re->re_nsub;
-	if (flags & STR_INT)
+	end = sub + n * 2;
+	for (n = 0; sub < end && n <= i; n++)
 	{
-		int*	subi = (int*)sub;
-		int*	endi = subi + n * 2;
-
-		for (n = 0; subi < endi && n <= i; n++)
-		{
-			*subi++ = (int)matchstate.match[n].rm_so;
-			*subi++ = (int)matchstate.match[n].rm_eo;
-		}
-	}
-	else
-	{
-		end = sub + n * 2;
-		for (n = 0; sub < end && n <= i; n++)
-		{
-			*sub++ = matchstate.match[n].rm_so;
-			*sub++ = matchstate.match[n].rm_eo;
-		}
+		*sub++ = matchstate.match[n].rm_so;
+		*sub++ = matchstate.match[n].rm_eo;
 	}
 	return i + 1;
 }
@@ -183,7 +160,7 @@ strmatch(const char* s, const char* p)
  */
 
 char*
-strsubmatch(const char* s, const char* p, int flags)
+strsubmatch(const char* s, const char* p, regflags_t flags)
 {
 	ssize_t	match[2];
 
@@ -191,7 +168,7 @@ strsubmatch(const char* s, const char* p, int flags)
 }
 
 int
-strgrpmatch(const char* b, const char* p, ssize_t* sub, int n, int flags)
+strgrpmatch(const char* b, const char* p, ssize_t* sub, ssize_t n, regflags_t flags)
 {
 	return strngrpmatch(b, b ? strlen(b) : 0, p, sub, n, flags);
 }

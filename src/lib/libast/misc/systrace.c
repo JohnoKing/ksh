@@ -55,7 +55,7 @@ systrace(const char* id)
 	av[6] = 0;
 	ov[0] = PROC_FD_DUP(open("/dev/null", O_WRONLY), 2, PROC_FD_PARENT|PROC_FD_CHILD);
 	ov[1] = 0;
-	sfsprintf(out, &buf[sizeof(buf)] - out, ".%d", getpid());
+	sfsprintf(out, (size_t)(&buf[sizeof(buf)] - out), ".%d", getpid());
 	for (n = 0; n < elementsof(trace); n++)
 		if (!procfree(procopen(trace[n], av + 1, NULL, ov, PROC_ARGMOD|PROC_GID|PROC_UID|(n == (elementsof(trace) - 1) ? PROC_CLEANUP : 0))))
 		{

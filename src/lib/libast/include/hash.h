@@ -168,7 +168,7 @@ struct Hash_root			/* root hash table information	*/
 struct Hash_table			/* hash table information	*/
 {
 	Hash_root_t*	root;		/* root hash table information	*/
-	int		size;		/* table size			*/
+	ssize_t		size;		/* table size			*/
 	int		buckets;	/* active bucket count		*/
 	char*		name;		/* table name			*/
 	Hash_table_t*	scope;		/* scope covered table		*/
@@ -186,7 +186,7 @@ extern Hash_bucket_t*	hashlast(Hash_table_t*);
 extern char*		hashlook(Hash_table_t*, const char*, long, const char*);
 extern Hash_bucket_t*	hashnext(Hash_position_t*);
 extern Hash_position_t*	hashscan(Hash_table_t*, int);
-extern void		hashsize(Hash_table_t*, int);
+extern void		hashsize(Hash_table_t*, ssize_t);
 extern Hash_table_t*	hashview(Hash_table_t*, Hash_table_t*);
 extern int		hashwalk(Hash_table_t*, int, int (*)(const char*, char*, void*), void*);
 

@@ -90,7 +90,7 @@ typedef int        (*Math_3i_f)(Sfdouble_t,Sfdouble_t,Sfdouble_t);
 /*
  * convert ASCII char to math expression token
  */
-#define getop(c)	(((c) >= ((ssize_t)(sizeof(strval_states))))? \
+#define getop(c)	(((c) >= (ssizeof(strval_states)))? \
 				((c)=='|'?A_OR:((c)=='^'?A_XOR:((c)=='~'?A_TILDE:A_REG))):\
 				strval_states[(c)])
 

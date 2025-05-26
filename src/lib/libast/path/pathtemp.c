@@ -137,10 +137,10 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	char*		s;
 	char*		x;
 	uint32_t	key;
-	int		m;
 	int		n;
-	int		l;
-	int		r;
+	ssize_t		m;
+	ssize_t		l;
+	ssize_t		r;
 	int		z;
 	int		attempt;
 	Tv_t		tv;
@@ -226,7 +226,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 					s++;
 					n++;
 				}
-				if (!(tmp.vec = newof(0, char*, n, strlen(x) + 1)))
+				if (!(tmp.vec = newof(0, char*, (size_t)n, strlen(x) + 1)))
 					return NULL;
 				tmp.dir = tmp.vec;
 				x = strcpy((char*)(tmp.dir + n), x);
@@ -269,11 +269,12 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	z = 0;
 	if (!pfx && !(pfx = tmp.pfx))
 		pfx = "ast";
-	m = (int)strlen(pfx);
+	m = (ssize_t)strlen(pfx);
 	if (buf && dir && (buf == (char*)dir && (buf + strlen(buf) + 1) == (char*)pfx || buf == (char*)pfx && !*dir) && !strcmp((char*)pfx + m + 1, "XXXXX"))
 	{
 		d = (char*)dir;
-		len = m += (int)strlen(d) + 8;
+		m += (ssize_t)strlen(d) + 8;
+		len = (size_t)m;
 		l = 3;
 		r = 3;
 	}
@@ -316,12 +317,12 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 		*s++ = n;
 	}
 	*s = 0;
-	len -= (s - b);
+	len -= (size_t)(s - b);
 	for (attempt = 0; attempt < ATTEMPT; attempt++)
 	{
 		if (!tmp.rng || !tmp.seed && (attempt || tmp.pid != getpid()))
 		{
-			int	r;
+			uint32_t r;
 
 			/*
 			 * get a quasi-random coefficient

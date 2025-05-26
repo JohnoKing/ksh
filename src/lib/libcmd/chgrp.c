@@ -151,8 +151,8 @@ getids(char* s, char** e, Key_t* key, int options)
 	if (n)
 	{
 		options |= OPT_CHOWN;
-		if ((n = t++ - s) >= (ssize_t)sizeof(buf))
-			n = (ssize_t)sizeof(buf) - 1;
+		if ((n = t++ - s) >= ssizeof(buf))
+			n = ssizeof(buf) - 1;
 		*((s = (char*)memcpy(buf, s, n)) + n) = 0;
 	}
 	if (options & OPT_CHOWN)
@@ -175,8 +175,8 @@ getids(char* s, char** e, Key_t* key, int options)
 		for (s = t; (n = *t) && !isspace((int)n); t++);
 		if (n)
 		{
-			if ((n = t++ - s) >= (ssize_t)sizeof(buf))
-				n = (ssize_t)sizeof(buf) - 1;
+			if ((n = t++ - s) >= ssizeof(buf))
+				n = ssizeof(buf) - 1;
 			*((s = (char*)memcpy(buf, s, n)) + n) = 0;
 		}
 	}

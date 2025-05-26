@@ -61,7 +61,7 @@ prog(const char* command, char* path, size_t size)
 	{
 		if ((size_t)n < size)
 			path[n] = 0;
-		return n;
+		return (size_t)n;
 	}
 #endif
 #if _lib_getexecname

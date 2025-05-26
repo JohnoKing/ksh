@@ -269,8 +269,8 @@ typedef struct _sfpool_s	Sfpool_t;
 struct _sfpool_s
 {	Sfpool_t*	next;
 	int		mode;		/* type of pool			*/
-	int		s_sf;		/* size of pool array		*/
-	int		n_sf;		/* number currently in pool	*/
+	ssize_t		s_sf;		/* size of pool array		*/
+	ssize_t		n_sf;		/* number currently in pool	*/
 	Sfio_t**	sf;		/* array of streams		*/
 	Sfio_t*		array[3];	/* start with 3			*/
 };
@@ -288,8 +288,8 @@ typedef struct _sfproc_s	Sfproc_t;
 struct _sfproc_s
 {	int		pid;	/* process ID			*/
 	uchar*		rdata;	/* read data being cached	*/
-	int		ndata;	/* size of cached data		*/
-	int		size;	/* buffer size			*/
+	ssize_t		ndata;	/* size of cached data		*/
+	ssize_t		size;	/* buffer size			*/
 	int		file;	/* saved file descriptor	*/
 	int		sigp;	/* sigpipe protection needed	*/
 };

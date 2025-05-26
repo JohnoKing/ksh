@@ -127,7 +127,7 @@ header(void)
 #define DR0	'>'
 #define DR1	0xbb		/* 8-bit mini >> on xterm	*/
 
-#define DB	((ssize_t)sizeof(wchar_t)*8-1)
+#define DB	(ssizeof(wchar_t)*8-1)
 #define DC	7		/* wchar_t embedded char bits	*/
 #define DX	(DB/DC)		/* wchar_t max embedded chars	*/
 #define DZ	(DB-DX*DC+1)	/* wchar_t embedded size bits	*/

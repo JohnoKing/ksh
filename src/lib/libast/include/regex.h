@@ -129,7 +129,6 @@ struct regex_s; typedef struct regex_s regex_t;
 struct regdisc_s; typedef struct regdisc_s regdisc_t;
 
 typedef int (*regclass_t)(int);
-typedef uint32_t regflags_t;
 typedef int (*regerror_t)(const regex_t*, regdisc_t*, int, ...);
 typedef void* (*regcomp_t)(const regex_t*, const char*, size_t, regdisc_t*);
 typedef int (*regexec_t)(const regex_t*, void*, const char*, size_t, const char*, size_t, char**, regdisc_t*);

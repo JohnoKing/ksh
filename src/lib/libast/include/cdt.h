@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -110,7 +110,7 @@ struct _dtmethod_s
 /* structure to hold methods that manipulate an object */
 struct _dtdisc_s
 {	int		key;	/* where the key resides 	*/
-	int		size;	/* key size and type		*/
+	ssize_t		size;	/* key size and type		*/
 	int		link;	/* offset to Dtlink_t field	*/
 	Dtmake_f	makef;	/* object constructor		*/
 	Dtfree_f	freef;	/* object destructor		*/

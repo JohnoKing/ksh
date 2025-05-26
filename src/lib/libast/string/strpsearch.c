@@ -66,7 +66,7 @@ strpsearch(const void* tab, size_t num, size_t siz, const char* name, char** nex
 	c = MAP(m, *((unsigned char*)name));
 	while (lo <= hi)
 	{
-		mid = lo + (sequential ? 0 : (((hi - lo) / siz) / 2) * siz);
+		mid = lo + (sequential ? 0 : (((hi - lo) / (ssize_t)siz) / 2) * (ssize_t)siz);
 		if (!(v = c - MAP(m, *(s = *((unsigned char**)mid)))) || *s == '[' && !(v = c - MAP(m, *++s)) && (v = 1))
 		{
 			t = (unsigned char*)name;

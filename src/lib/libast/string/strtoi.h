@@ -551,9 +551,9 @@ S2I_function(const char* a, char** e, int base)
 				}
 				else
 #if S2I_unsigned
-				if (shift >= ((ssize_t)sizeof(S2I_type) * CHAR_BIT))
+				if (shift >= (ssizeof(S2I_type) * CHAR_BIT))
 #else
-				if (shift >= ((ssize_t)sizeof(S2I_type) * CHAR_BIT - 1))
+				if (shift >= (ssizeof(S2I_type) * CHAR_BIT - 1))
 #endif
 				{
 					v = 0;

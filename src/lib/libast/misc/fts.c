@@ -81,7 +81,7 @@ typedef int (*Stat_f)(const char*, struct stat*);
 	FTSENT*		right;			/* right child		*/ \
 	FTSENT*		pwd;			/* pwd parent		*/ \
 	FTSENT*		stack;			/* getlist() stack	*/ \
-	long		nlink;			/* FTS_D link count	*/ \
+	unsigned long	nlink;			/* FTS_D link count	*/ \
 	unsigned char	must;			/* must stat		*/ \
 	unsigned char	type;			/* DT_* type		*/ \
 	unsigned char	symlink;		/* originally a symlink	*/ \
@@ -624,7 +624,7 @@ toplist(FTS* fts, char* const* pathnames)
 				fts->flags |= FTS_SEEDOTDIR;
 			for (s = path + strlen(path); s > path && *(s - 1) == '/'; s--);
 			*s = 0;
-			f->fts_namelen = s - path;
+			f->fts_namelen = (size_t)(s - path);
 		}
 		if (!*path)
 		{
@@ -937,7 +937,7 @@ fts_read(FTS* fts)
 				fts->link = f->fts_link;
 				f->fts_link = 0;
 				f->fts_path = PATH(fts, fts->path, f->fts_level);
-				f->fts_pathlen = (fts->base - f->fts_path) + fts->baselen;
+				f->fts_pathlen = (size_t)(fts->base - f->fts_path) + fts->baselen;
 				f->fts_accpath = ACCESS(fts, f);
 				fts->state = FTS_preorder_return;
 				goto note;
@@ -1081,7 +1081,7 @@ fts_read(FTS* fts)
 					 */
 
 					f->fts_path = PATH(fts, fts->path, 1);
-					f->fts_pathlen = fts->endbase - f->fts_path + f->fts_namelen;
+					f->fts_pathlen = (size_t)(fts->endbase - f->fts_path) + f->fts_namelen;
 					f->fts_accpath = ACCESS(fts, f);
 					fts->previous = fts->current;
 					fts->current = f;
@@ -1128,7 +1128,7 @@ fts_read(FTS* fts)
 				fts->link = f->fts_link;
 				f->fts_link = fts->top;
 				f->fts_path = PATH(fts, fts->path, f->fts_level);
-				f->fts_pathlen = (fts->base - f->fts_path) + f->fts_namelen;
+				f->fts_pathlen = (size_t)(fts->base - f->fts_path) + f->fts_namelen;
 				f->fts_accpath = ACCESS(fts, f);
 				fts->state = FTS_children_return;
 				goto note;
@@ -1195,7 +1195,7 @@ fts_read(FTS* fts)
 						fts->curdir = fts->cd ? 0 : t;
 						f->fts_info = FTS_DP;
 						f->fts_path = PATH(fts, fts->path, f->fts_level);
-						f->fts_pathlen = (fts->base - f->fts_path) + f->fts_namelen;
+						f->fts_pathlen = (size_t)(fts->base - f->fts_path) + f->fts_namelen;
 						f->fts_accpath = ACCESS(fts, f);
 
 						/*

@@ -190,7 +190,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
 			if (sub[1] > (ssize_t)n && !isalpha(c))
 			{
 				bp = cp;
-				n = sub[1];
+				n = (size_t)sub[1];
 			}
 		}
 		if (cp->ccode < 0)
@@ -213,7 +213,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
 			}
 			else
 				m = "1";
-			b += sfsprintf(b, e - b, cp->canon, m);
+			b += sfsprintf(b, (size_t)(e - b), cp->canon, m);
 		}
 		else if (cp->ccode == CC_NATIVE)
 		{
@@ -233,7 +233,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
 					m = (const char*)"ISO-8859-1";
 					break;
 				}
-			b += sfsprintf(b, e - b, "%s", m);
+			b += sfsprintf(b, (size_t)(e - b), "%s", m);
 		}
 		*b = 0;
 #if DEBUG_TRACE
@@ -322,9 +322,9 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			w = c;
 		*t++ = w;
 	}
-	*fn -= (char*)f - (*fb);
+	*fn -= (size_t)((char*)f - (*fb));
 	*fb = (char*)f;
-	*tn -= (n = (char*)t - (*tb));
+	*tn -= (n = (size_t)((char*)t - (*tb)));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -358,7 +358,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		else if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
+		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
 		{
 			e = EINVAL;
 			break;
@@ -397,9 +397,9 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		}
 		f += c;
 	}
-	*fn -= (n = (char*)f - (*fb));
+	*fn -= (n = (size_t)((char*)f - (*fb)));
 	*fb = (char*)f;
-	*tn -= (char*)t - (*tb);
+	*tn -= (size_t)((char*)t - (*tb));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -510,9 +510,9 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		else
 			*t++ = c;
 	}
-	*fn -= (char*)f - (*fb);
+	*fn -= (size_t)((char*)f - (*fb));
 	*fb = (char*)f;
-	*tn -= (n = (char*)t - (*tb));
+	*tn -= (n = (size_t)((char*)t - (*tb)));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -549,7 +549,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		else if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
+		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
 		{
 			e = EINVAL;
 			break;
@@ -585,9 +585,9 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	}
 	if (s)
 		*t++ = '-';
-	*fn -= (n = (char*)f - (*fb));
+	*fn -= (n = (size_t)((char*)f - (*fb)));
 	*fb = (char*)f;
-	*tn -= (char*)t - (*tb);
+	*tn -= (size_t)((char*)t - (*tb));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -631,9 +631,9 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			*t++ = w & 0xFF;
 		}
 	}
-	*fn -= (char*)f - (*fb);
+	*fn -= (size_t)((char*)f - (*fb));
 	*fb = (char*)f;
-	*tn -= (n = (char*)t - (*tb));
+	*tn -= (n = (size_t)((char*)t - (*tb)));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -667,7 +667,7 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
+		if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
 		{
 			e = EINVAL;
 			break;
@@ -678,9 +678,9 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		*t++ = w & 0xFF;
 		f += c;
 	}
-	*fn -= (n = (char*)f - (*fb));
+	*fn -= (n = (size_t)((char*)f - (*fb)));
 	*fb = (char*)f;
-	*tn -= (char*)t - (*tb);
+	*tn -= (size_t)((char*)t - (*tb));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -724,9 +724,9 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			*t++ = w & 0xFF;
 		}
 	}
-	*fn -= (char*)f - (*fb);
+	*fn -= (size_t)((char*)f - (*fb));
 	*fb = (char*)f;
-	*tn -= (n = (char*)t - (*tb));
+	*tn -= (n = (size_t)((char*)t - (*tb)));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -760,7 +760,7 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		else if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
+		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
 		{
 			e = EINVAL;
 			break;
@@ -771,9 +771,9 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		*t++ = (w >> 8) & 0xFF;
 		f += c;
 	}
-	*fn -= (n = (char*)f - (*fb));
+	*fn -= (n = (size_t)((char*)f - (*fb)));
 	*fb = (char*)f;
-	*tn -= (char*)t - (*tb);
+	*tn -= (size_t)((char*)t - (*tb));
 	*tb = (char*)t;
 	RETURN(e, n, fn);
 }
@@ -998,24 +998,24 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 				if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
 				{
 					errno = ENOMEM;
-					return -1;
+					return (size_t)-1;
 				}
 				b = cc->buf;
 				i = cc->size;
 				tfb = *fb;
 				tfn = *fn;
 				if ((*cc->from.fun)(cc->cvt, &tfb, &tfn, &b, &i) == (size_t)(-1))
-					return -1;
-				tfn = b - cc->buf;
+					return (size_t)-1;
+				tfn = (size_t)(b - cc->buf);
 				tfb = cc->buf;
 				n = (*cc->to.fun)(cc->cvt, &tfb, &tfn, tb, tn);
-				i = tfb - cc->buf;
+				i = (size_t)(tfb - cc->buf);
 				*fb += i;
 				*fn -= i;
 				return n;
 			}
 			if ((*cc->from.fun)(cc->cvt, fb, fn, tb, tn) == (size_t)(-1))
-				return -1;
+				return (size_t)-1;
 			n -= *tn;
 			if (m = cc->to.map)
 			{
@@ -1032,7 +1032,7 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
 			{
 				errno = ENOMEM;
-				return -1;
+				return (size_t)-1;
 			}
 			if ((n = *fn) > cc->size)
 				n = cc->size;
@@ -1081,7 +1081,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
 	char*		ts;
 	size_t*		e;
 	size_t		tn;
-	size_t		r;
+	ssize_t		r;
 	int		ok;
 	Iconv_disc_t	compat;
 
@@ -1102,7 +1102,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
 	ok = 1;
 	while (ok && *fn > 0)
 	{
-		if (!(tb = (char*)sfreserve(op, -(tn + 1), SFIO_WRITE|SFIO_LOCKR)) || !(tn = sfvalue(op)))
+		if (!(tb = (char*)sfreserve(op, -((ssize_t)tn + 1), SFIO_WRITE|SFIO_LOCKR)) || !(tn = (size_t)sfvalue(op)))
 		{
 			if (!r)
 				r = -1;
@@ -1156,7 +1156,7 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
 #if DEBUG_TRACE
 error(DEBUG_TRACE, "AHA#%d iconv_write %d", __LINE__, ts - tb);
 #endif
-		sfwrite(op, tb, ts - tb);
+		sfwrite(op, tb, (size_t)(ts - tb));
 		r += ts - tb;
 	}
 	if (e)
@@ -1185,6 +1185,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	ssize_t		r = 0;
 	int		ok = 1;
 	int		locked;
+	ssize_t		m;
 	Iconv_disc_t	compat;
 
 	/*
@@ -1203,12 +1204,13 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	fe = OK;
 	ft = 0;
 	fn = n;
+	m = (ssize_t)n;
 	do
 	{
-		if (n != (size_t)SFIO_UNBOUND)
-			n = -((ssize_t)(n & (((size_t)(~0))>>1)));
-		if ((!(fb = (char*)sfreserve(ip, n, locked = SFIO_LOCKR)) || !(fo = sfvalue(ip))) &&
-		    (!(fb = (char*)sfreserve(ip, n, locked = 0)) || !(fo = sfvalue(ip))))
+		if (m != SFIO_UNBOUND)
+			m = -(m & (((~0))>>1));
+		if ((!(fb = (char*)sfreserve(ip, m, locked = SFIO_LOCKR)) || !(fo = (size_t)sfvalue(ip))) &&
+		    (!(fb = (char*)sfreserve(ip, m, locked = 0)) || !(fo = (size_t)sfvalue(ip))))
 			break;
 		fs = fb;
 		fn = fo;
@@ -1219,7 +1221,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 			break;
 		}
 		ts = tb;
-		tn = sfvalue(op);
+		tn = (size_t)sfvalue(op);
 		while (fn > 0 && _ast_iconv(cd, &fs, &fn, &ts, &tn) == (size_t)(-1))
 		{
 			switch (errno)
@@ -1257,21 +1259,21 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 			}
 			break;
 		}
-		sfwrite(op, tb, ts - tb);
+		sfwrite(op, tb, (size_t)(ts - tb));
 		r += ts - tb;
 		ts = tb;
 		if (locked)
-			sfread(ip, fb, fs - fb);
+			sfread(ip, fb, (size_t)(fs - fb));
 		else
 			for (i = fn; (ssize_t)(--i) >= (fs - fb);)
 				sfungetc(ip, fb[i]);
-		if (n != (size_t)SFIO_UNBOUND)
+		if (m != SFIO_UNBOUND)
 		{
-			if ((ssize_t)n <= fs - fb)
+			if (m <= fs - fb)
 				break;
-			n -= fs - fb;
+			m -= fs - fb;
 		}
-		ft += (fs - fb);
+		ft += (size_t)(fs - fb);
 		if (fn == fo)
 			fn++;
 	} while (ok);
@@ -1282,7 +1284,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 		sfwrite(op, tb, 0);
 		if (ts > tb)
 		{
-			sfwrite(op, tb, ts - tb);
+			sfwrite(op, tb, (size_t)(ts - tb));
 			r += ts - tb;
 		}
 	}

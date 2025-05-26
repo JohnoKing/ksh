@@ -90,7 +90,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 	if (b >= x)
 		goto done;
 	*b = 0;
-	for (i = 0; i < r && i < (ssize_t)sizeof(tmp) - 1; i++)
+	for (i = 0; i < r && i < ssizeof(tmp) - 1; i++)
 		tmp[i] = '0';
 	tmp[i] = 0;
 	if (mbxfrm(xfm, buf, sizeof(xfm)) >= mbxfrm(xfm, tmp, sizeof(xfm)))

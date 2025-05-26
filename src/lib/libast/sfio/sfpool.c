@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -76,7 +76,7 @@ static Sfpool_t* newpool(int mode)
 /* move a stream to head */
 static int _sfphead(Sfpool_t*	p,	/* the pool			*/
 		    Sfio_t*	f,	/* the stream			*/
-		    int		n)	/* current position in pool	*/
+		    ssize_t	n)	/* current position in pool	*/
 {
 	Sfio_t*		head;
 	ssize_t		k, w, v;
@@ -141,7 +141,7 @@ done:
 /* delete a stream from its pool */
 static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
 		      Sfio_t*	f,	/* the stream		*/
-		      int	n)	/* position in pool	*/
+		      ssize_t	n)	/* position in pool	*/
 {
 
 	p->n_sf -= 1;
@@ -187,7 +187,7 @@ static int _sfpmove(Sfio_t*	f,
 		    int	type)	/* <0 : deleting, 0: move-to-front, >0: inserting */
 {
 	Sfpool_t*	p;
-	int		n;
+	ssize_t		n;
 
 	if(type > 0)
 		return _sfsetpool(f);

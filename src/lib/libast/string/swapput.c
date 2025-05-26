@@ -31,7 +31,7 @@
  */
 
 void*
-swapput(int op, void* b, int n, intmax_t v)
+swapput(int op, void* b, size_t n, intmax_t v)
 {
 	char*	p = (char*)b + n;
 

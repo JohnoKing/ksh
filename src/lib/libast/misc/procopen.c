@@ -224,7 +224,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 			}
 			break;
 		case PROC_sys_umask:
-			umask((int)arg1);
+			umask((mode_t)arg1);
 			break;
 		default:
 			return -1;
@@ -692,7 +692,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 			if (!(flags & PROC_ARGMOD))
 			{
 				while (*p++);
-				if (!(v = newof(0, char*, p - argv + 2, 0)))
+				if (!(v = newof(0, char*, (size_t)(p - argv + 2), 0)))
 					goto cleanup;
 				p = v + 2;
 				if (*argv)

@@ -132,7 +132,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 				}
 			}
 		} while (n <= 0);
-		sfsetbuf(s, buf, n);
+		sfsetbuf(s, buf, (size_t)n);
 		d->quote = q;
 		return 1;
 	default:

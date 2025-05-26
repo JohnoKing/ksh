@@ -152,7 +152,7 @@ setopt(void* a, const void* p, int n, const char* v)
 			break;
 		case OPT_COUNT:
 			if (n)
-				error_state.count = strtol(v, NULL, 0);
+				error_state.count = strtoul(v, NULL, 0);
 			else
 				error_state.count = 0;
 			break;
@@ -459,7 +459,7 @@ errorv(const char* id, int level, va_list ap)
 		}
 		if (error_info.time)
 		{
-			if ((d = times(&us)) < error_info.time || error_info.time == 1)
+			if ((d = (unsigned long)times(&us)) < error_info.time || error_info.time == 1)
 				error_info.time = d;
 			sfprintf(stkstd, " %05lu.%05lu.%05lu ", d - error_info.time, (unsigned long)us.tms_utime, (unsigned long)us.tms_stime);
 		}
@@ -539,7 +539,7 @@ errorv(const char* id, int level, va_list ap)
 		{
 			n = stktell(stkstd);
 			s = stkptr(stkstd, 0);
-			if (t = memchr(s, '\f', n))
+			if (t = memchr(s, '\f', (size_t)n))
 			{
 				n -= ++t - s;
 				s = t;
@@ -551,18 +551,18 @@ errorv(const char* id, int level, va_list ap)
 			sfsync(sfstderr);
 			if (fd == sffileno(sfstderr) && error_info.write == write)
 			{
-				sfwrite(sfstderr, s, n);
+				sfwrite(sfstderr, s, (size_t)n);
 				sfsync(sfstderr);
 			}
 			else
-				(*error_info.write)(fd, s, n);
+				(*error_info.write)(fd, s, (size_t)n);
 		}
 		else
 		{
 			s = 0;
 			level &= ERROR_LEVEL;
 		}
-		stkset(stkstd, bas, off);
+		stkset(stkstd, bas, (size_t)off);
 	}
 	else
 		s = 0;

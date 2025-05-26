@@ -102,13 +102,13 @@ typedef struct
 	Finddisc_t*	disc;		\
 	Vmalloc_t*	vm;		\
 	char**		dirs;		\
-	int*		lens;		\
+	ssize_t*	lens;		\
 	Sfio_t*		fp;		\
 	Findverify_f	verifyf;	\
 	int		generate;	\
 	int		method;		\
 	int		secure;		\
-	int		types;		\
+	unsigned long	types;		\
 	int		verify;		\
 	Code_t		code;
 

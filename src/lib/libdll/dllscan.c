@@ -144,7 +144,7 @@ dllinfo(void)
 					memcpy(info.sibbuf, d, dn);
 					info.sibling[0] = info.sibbuf;
 				}
-				if (v && vn < (ssize_t)sizeof(info.envbuf))
+				if (v && vn < ssizeof(info.envbuf))
 				{
 					if(vn <= 0)
 						abort();

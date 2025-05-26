@@ -100,7 +100,7 @@ Sfio_t* sfnew(Sfio_t*	oldf,	/* old stream to be reused */
 	f->mode |= SFIO_INIT;
 	if(size != (size_t)SFIO_UNBOUND)
 	{	f->size = size;
-		f->data = size <= 0 ? NULL : (uchar*)buf;
+		f->data = size == (size_t)-1 ? NULL : (uchar*)buf;
 	}
 	f->endb = f->endr = f->endw = f->next = f->data;
 

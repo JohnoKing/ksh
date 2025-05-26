@@ -53,13 +53,13 @@ optesc(Sfio_t* sp, const char* s, int esc)
 			if (isalpha(c) && *s == '(' && isdigit(*(s + 1)) && *(s + 2) == ')')
 			{
 				sfputc(sp, '\b');
-				sfwrite(sp, m, s - m);
+				sfwrite(sp, m, (size_t)(s - m));
 				sfputc(sp, '\b');
 				sfwrite(sp, s, 3);
 				s += 3;
 			}
 			else
-				sfwrite(sp, m, s - m);
+				sfwrite(sp, m, (size_t)(s - m));
 		}
 		else if (c == '-' && *s == '-' || c == '<')
 		{
@@ -73,11 +73,11 @@ optesc(Sfio_t* sp, const char* s, int esc)
 			if (c == '<' && *s == '>' || isspace(*s) || *s == 0 || *s == '=' || *s == ':' || *s == ';' || *s == '.' || *s == ',')
 			{
 				sfputc(sp, '\b');
-				sfwrite(sp, m, s - m);
+				sfwrite(sp, m, (size_t)(s - m));
 				sfputc(sp, '\b');
 			}
 			else
-				sfwrite(sp, m, s - m);
+				sfwrite(sp, m, (size_t)(s - m));
 		}
 		else
 		{

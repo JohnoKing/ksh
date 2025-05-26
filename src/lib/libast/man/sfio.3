@@ -515,7 +515,7 @@ and the given command \f3cmd\fP. When the interpreter is \f3/bin/sh\fP or
 if there are no shell meta-characters in \f3cmd\fP.
 .Ss "  Sfio_t* sfstropen(void)"
 Shorthand that opens a new string buffer for reading and writing;
-same as \f3sfnew(NULL,NULL,-1,-1,SFIO_READ|SFIO_WRITE|SFIO_STRING)\fP.
+same as \f3sfnew(NULL,NULL,(size_t)-1,-1,SFIO_READ|SFIO_WRITE|SFIO_STRING)\fP.
 See also
 .BR sfstruse() .
 .Ss "  Sfio_t* sftmp(size_t size)"

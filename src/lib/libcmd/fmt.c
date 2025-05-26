@@ -590,7 +590,7 @@ b_fmt(int argc, char** argv, Shbltin_t* context)
 			setoption(&fmt, n);
 			continue;
 		case 'w':
-			if (opt_info.num < TABSZ || opt_info.num >= (ssize_t)sizeof(outbuf))
+			if (opt_info.num < TABSZ || opt_info.num >= ssizeof(outbuf))
 				error(2, "width out of range");
 			fmt.endbuf = &outbuf[opt_info.num];
 			continue;

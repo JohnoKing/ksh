@@ -1080,7 +1080,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		char buff[PATH_MAX+1];
 		char save[PATH_MAX+1];
 		ssize_t rlen;
-		ssize_t slen;
+		size_t slen;
 		stkseek(sh.stk,PATH_OFFSET);
 		sfputr(sh.stk,opath,0);
 		path = stkptr(sh.stk,PATH_OFFSET);
@@ -1468,7 +1468,7 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 		const char *cp = name;
 		while(*cp && *cp!=':')
 			sfputc(sh.stk,*cp++);
-		len = (size_t)stktell(sh.stk)-offset;
+		len = (size_t)(stktell(sh.stk)-offset);
 		sfputc(sh.stk,0);
 		stkseek(sh.stk,offset);
 		name = (const char*)stkptr(sh.stk,offset);

@@ -44,7 +44,7 @@
 
 #if !SHOPT_SCRIPTONLY
 
-#define HIST_MAX	((ssize_t)sizeof(int)*HIST_BSIZE)
+#define HIST_MAX	(ssizeof(int)*HIST_BSIZE)
 #define HIST_BIG	(0100000-1024)	/* 1K less than maximum short */
 #define HIST_LINE	32		/* typical length for history line */
 #define HIST_MARKSZ	6
@@ -359,7 +359,7 @@ retry:
 				fcntl(fd,F_SETFD,FD_CLOEXEC);
 				tty = ttyname(2);
 				hp->tty = sh_strdup(tty?tty:"notty");
-				hp->auditfp = sfnew(NULL,NULL,-1,fd,SFIO_WRITE);
+				hp->auditfp = sfnew(NULL,NULL,(size_t)-1,fd,SFIO_WRITE);
 			}
 		}
 	}

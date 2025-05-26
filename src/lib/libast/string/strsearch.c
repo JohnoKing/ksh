@@ -42,7 +42,7 @@ strsearch(const void* tab, size_t num, size_t siz, Strcmp_f comparf, const char*
 
 	while (lo <= hi)
 	{
-		mid = lo + (((hi - lo) / siz) / 2) * siz;
+		mid = lo + (((hi - lo) / (ssize_t)siz) / 2) * (ssize_t)siz;
 		if (!(v = context ? (*(Strcmp_context_f)comparf)(name, *((char**)mid), context) : (*comparf)(name, *((char**)mid))))
 			return mid;
 		else if (v > 0)

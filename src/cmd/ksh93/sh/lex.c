@@ -254,7 +254,7 @@ int sh_lex(Lex_t* lp)
 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
 	int		epatchar=0;
 	char		*varnamefirst = NULL;
-	ssize_t		varnamelength = 0, j;
+	ssize_t		varnamelength = 0;
 	SETLEN(1);
 	if(lp->lexd.paren)
 	{
@@ -1274,11 +1274,11 @@ breakloop:
 	}
 	if(!(state=lp->lexd.first))
 		state = fcfirst();
-	j = fcseek(0)-(char*)state;
+	n = fcseek(0)-(char*)state;
 	if(!lp->arg)
 		lp->arg = stkseek(sh.stk,ARGVAL);
-	if(j>0)
-		sfwrite(sh.stk,state,j);
+	if(n>0)
+		sfwrite(sh.stk,state,n);
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,stktell(sh.stk)-1);
 	state = stkptr(sh.stk,ARGVAL);

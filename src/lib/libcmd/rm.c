@@ -291,9 +291,9 @@ rm(State_t* state, FTSENT* ent)
 						error(ERROR_SYSTEM|2, "%s: data clear error", ent->fts_path);
 						break;
 					}
-					if (c <= (ssize_t)sizeof(state->buf))
+					if (c <= ssizeof(state->buf))
 						break;
-					c -= (ssize_t)sizeof(state->buf);
+					c -= ssizeof(state->buf);
 				}
 				fsync(n);
 				close(n);

@@ -184,7 +184,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 		{
 			if (cp >= endbuff || (n = mb2wc(x, cp, endbuff-cp)) < 0)
 			{
-				if ((o = endbuff-cp) < (ssize_t)sizeof(side))
+				if ((o = endbuff-cp) < ssizeof(side))
 				{
 					if (buff)
 					{

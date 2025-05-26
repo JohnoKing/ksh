@@ -70,7 +70,7 @@ setenviron(const char* akey)
 			n = INCREMENT;
 		if (!p || (last - p + 1) < n)
 		{
-			if (!(p = newof(p, char*, n, 0)))
+			if (!(p = newof(p, char*, (size_t)n, 0)))
 				return NULL;
 			last = p + n - 1;
 		}
@@ -93,7 +93,7 @@ setenviron(const char* akey)
 	else if (next == last)
 	{
 		n = last - v + INCREMENT + 1;
-		if (!(p = newof(p, char*, n, 0)))
+		if (!(p = newof(p, char*, (size_t)n, 0)))
 			return NULL;
 		last = p + n - 1;
 		next = last - INCREMENT;

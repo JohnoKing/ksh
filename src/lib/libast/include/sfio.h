@@ -363,7 +363,7 @@ __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
 #ifndef _SFSTR_H /* GSF's string manipulation stuff */
 #define _SFSTR_H		1
 
-#define sfstropen()		sfnew(0, 0, -1, -1, SFIO_READ|SFIO_WRITE|SFIO_STRING)
+#define sfstropen()		sfnew(0, 0, (size_t)-1, -1, SFIO_READ|SFIO_WRITE|SFIO_STRING)
 #define sfstrclose(f)		sfclose(f)
 
 #define sfstrseek(f,p,m) \

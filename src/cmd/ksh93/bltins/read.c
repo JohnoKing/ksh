@@ -373,7 +373,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	{
 		char buf[256],*var=buf,*cur,*end,*up,*v;
 		/* reserved buffer */
-		if((c=size)>=(ssize_t)sizeof(buf))
+		if((c=size)>=ssizeof(buf))
 		{
 			var = (char*)sh_malloc(c+1);
 			end = var + c;

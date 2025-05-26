@@ -817,7 +817,7 @@ static int escape(Emacs_t* ep,genchar *out,int count)
 				beep();
 				break;
 			}
-			if ((eol - cur) >= (ssize_t)sizeof(name))
+			if ((eol - cur) >= ssizeof(name))
 			{
 				beep();
 				return -1;

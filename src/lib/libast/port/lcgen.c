@@ -389,7 +389,7 @@ main(int argc, char** argv)
 		switch (type)
 		{
 		case CHARSET:
-			if (!(cp = newof(0, Charset_t, 1, s - b + 1)))
+			if (!(cp = newof(0, Charset_t, 1, (size_t)(s - b + 1))))
 			{
 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
 				return 1;
@@ -405,7 +405,7 @@ main(int argc, char** argv)
 			}
 			break;
 		case TERRITORY:
-			if (!(tp = newof(0, Territory_t, 1, s - b + 1)))
+			if (!(tp = newof(0, Territory_t, 1, (size_t)(s - b + 1))))
 			{
 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
 				return 1;
@@ -459,7 +459,7 @@ main(int argc, char** argv)
 			}
 			break;
 		case LANGUAGE:
-			if (!(lp = newof(0, Language_t, 1, s - b + 1)))
+			if (!(lp = newof(0, Language_t, 1, (size_t)(s - b + 1))))
 			{
 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
 				return 1;
@@ -528,7 +528,7 @@ main(int argc, char** argv)
 			}
 			break;
 		case MAP:
-			if (!(mp = newof(0, Map_t, 1, s - b + 1)))
+			if (!(mp = newof(0, Map_t, 1, (size_t)(s - b + 1))))
 			{
 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
 				return 1;

@@ -48,9 +48,9 @@ strnvcmp(const char* a, const char* b, size_t n)
 		{
 			na = nb = 0;
 			while (a < ae && isdigit(*a))
-				na = na * 10 + *a++ - '0';
+				na = na * 10 + (unsigned)*a++ - '0';
 			while (b < be && isdigit(*b))
-				nb = nb * 10 + *b++ - '0';
+				nb = nb * 10 + (unsigned)*b++ - '0';
 			if (na < nb)
 				return -1;
 			if (na > nb)

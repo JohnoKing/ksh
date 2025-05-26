@@ -97,7 +97,7 @@ hashalloc(Hash_table_t* ref, ...)
 			tab->root->local->alloc = va_arg(ap, Hash_alloc_f);
 			break;
 		case HASH_bucketsize:
-			n = (va_arg(ap, int) + sizeof(char*) - 1) / sizeof(char*);
+			n = (va_arg(ap, int) + (int)sizeof(char*) - 1) / (int)sizeof(char*);
 			if (n > UCHAR_MAX) goto out;
 			if (n > tab->bucketsize) tab->bucketsize = n;
 			break;
@@ -125,7 +125,7 @@ hashalloc(Hash_table_t* ref, ...)
 			break;
 		case HASH_namesize:
 			if (ref) goto out;
-			tab->root->namesize = va_arg(ap, int);
+			tab->root->namesize = (size_t)va_arg(ap, int);
 			break;
 		case HASH_region:
 			goto out;
@@ -176,11 +176,11 @@ hashalloc(Hash_table_t* ref, ...)
 			{
 				if (region)
 				{
-					if (!(tab->table = (Hash_bucket_t**)(*region)(handle, NULL, sizeof(Hash_bucket_t*) * tab->size, 0)))
+					if (!(tab->table = (Hash_bucket_t**)(*region)(handle, NULL, sizeof(Hash_bucket_t*) * (size_t)tab->size, 0)))
 						goto out;
-					memset(tab->table, 0, sizeof(Hash_bucket_t*) * tab->size);
+					memset(tab->table, 0, sizeof(Hash_bucket_t*) * (size_t)tab->size);
 				}
-				else if (!(tab->table = newof(0, Hash_bucket_t*, tab->size, 0))) goto out;
+				else if (!(tab->table = newof(0, Hash_bucket_t*, (size_t)tab->size, 0))) goto out;
 			}
 			if (!ref)
 			{

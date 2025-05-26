@@ -295,7 +295,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 		else if (!(n = HASH_SIZEOF(flags)))
 		{
 			if (!(flags & HASH_FIXED)) n = m;
-			else if ((n = (int)integralof(value)) < m) n = m;
+			else if ((n = (size_t)integralof(value)) < m) n = m;
 		}
 		else if (n < m) n = m;
 		if (!prev && (tab->flags & HASH_ALLOCATE))

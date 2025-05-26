@@ -2642,7 +2642,7 @@ Sfio_t	*sh_fd2sfio(int fd)
 			flags |= SFIO_READ;
 		if(status&IOWRITE)
 			flags |= SFIO_WRITE;
-		sp = sfnew(NULL, NULL, -1, fd,flags);
+		sp = sfnew(NULL, NULL, (size_t)-1, fd,flags);
 		sh.sftable[fd] = sp;
 	}
 	return sp;

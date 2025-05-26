@@ -129,9 +129,9 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 	 * check if the pattern is in the cache
 	 */
 
-	for (i = 0; i < (ssize_t)sizeof(key) && pattern[i]; i++)
+	for (i = 0; i < ssizeof(key) && pattern[i]; i++)
 		((char*)&key)[i] = pattern[i];
-	for (; i < (ssize_t)sizeof(key); i++)
+	for (; i < ssizeof(key); i++)
 		((char*)&key)[i] = 0;
 	empty = unused = -1;
 	old = 0;
@@ -175,7 +175,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 			}
 		}
 		strcpy(cp->pattern, pattern);
-		while (++i < (ssize_t)sizeof(Key_t))
+		while (++i < ssizeof(Key_t))
 			cp->pattern[i] = 0;
 		pattern = (const char*)cp->pattern;
 		if (j = regcomp(&cp->re, pattern, reflags))

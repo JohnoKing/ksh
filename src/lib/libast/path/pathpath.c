@@ -84,7 +84,7 @@ pathpath_20100601(const char* p, const char* a, int mode, char* path, size_t siz
 				if(!getcwd(buf, sizeof(buf)))
 					return NULL;
 				s = buf + strlen(buf);
-				sfsprintf(s, sizeof(buf) - (s - buf), "/%s", p);
+				sfsprintf(s, sizeof(buf) - (size_t)(s - buf), "/%s", p);
 				if (path != buf)
 					strcpy(path, buf);
 			}

@@ -816,7 +816,7 @@ save(const char* ap, size_t az, const char* bp, size_t bz, const char* cp, size_
 	*b = 0;
 	if (!(p = (Save_t*)dtmatch(dict, buf)))
 	{
-		if (!(p = newof(0, Save_t, 1, b - buf)))
+		if (!(p = newof(0, Save_t, 1, (size_t)(b - buf))))
 			return (char*)ap;
 		strcpy(p->text, buf);
 		dtinsert(dict, p);
@@ -840,7 +840,7 @@ expand(char* s, char* e, char** p, Sfio_t* ip, char* id)
 	n = sfstrtell(ip);
 	c = 1;
 	while ((!e || s < e) && (c = *s++) && c != '\f');
-	sfwrite(ip, b, s - b - 1);
+	sfwrite(ip, b, (size_t)(s - b - 1));
 	sfputc(ip, 0);
 	b = sfstrbase(ip) + n;
 	n = sfstrtell(ip);
@@ -1043,9 +1043,9 @@ init(char* s, Optpass_t* p)
 									if (*u == '-' || *u == ']')
 									{
 										if (!l)
-											p->id = save(s, t - s, 0, 0, 0, 0);
+											p->id = save(s, (size_t)(t - s), 0, 0, 0, 0);
 										else if ((a = (int)strlen(p->id)) <= (n = t - s) || strncmp(p->id + a - n, s, (size_t)n) || *(p->id + a - n - 1) != ':')
-											p->id = save(p->id, strlen(p->id), "::", 2, s, t - s);
+											p->id = save(p->id, strlen(p->id), "::", 2, s, (size_t)(t - s));
 									}
 								}
 							}
@@ -1067,7 +1067,7 @@ init(char* s, Optpass_t* p)
 	else if (p->id == error_info.id)
 		p->id = save(p->id, strlen(p->id), 0, 0, 0, 0);
 	if (s = p->catalog)
-		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ssize_t)strlen(p->id) || !strneq(s, p->id, t - s))) ? save(s, t - s, 0, 0, 0, 0) : NULL;
+		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ssize_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
 	if (!p->catalog)
 	{
 		if (opt_info.disc && opt_info.disc->catalog && (!p->id || !streq(opt_info.disc->catalog, p->id)))
@@ -1630,7 +1630,7 @@ args(Sfio_t* sp, char* p, size_t n, int flags, int style, Sfio_t* ip, int versio
 			}
 			if (!t)
 				break;
-			i = ++t - p;
+			i = (size_t)(++t - p);
 			if (i)
 			{
 				/* Print options for usage line */
@@ -2056,7 +2056,7 @@ textout(Sfio_t* sp, char* s, char* conform, ssize_t conformlen, int style, int l
 									{
 										for (j = 0; j < elementsof(attrs); j++)
 										{
-											if (strneq(t, attrs[j].name, m))
+											if (strneq(t, attrs[j].name, (size_t)m))
 											{
 												a |= attrs[j].flag;
 												break;
@@ -2944,7 +2944,7 @@ opthelp(const char* oopts, const char* what)
 							if (*p == '\n')
 								break;
 						}
-				xl = p - x;
+				xl = (size_t)(p - x);
 				if (!*p)
 					break;
 				continue;
@@ -3220,7 +3220,7 @@ opthelp(const char* oopts, const char* what)
 							{
 								for (j = 0; j < elementsof(attrs); j++)
 								{
-									if (strneq(t, attrs[j].name, m))
+									if (strneq(t, attrs[j].name, (size_t)m))
 									{
 										a |= attrs[j].flag;
 										break;
@@ -3307,7 +3307,7 @@ opthelp(const char* oopts, const char* what)
 						{
 							sfputr(sp_body, ".FN", ' ');
 							if (re > rb)
-								sfwrite(sp_body, rb, re - rb);
+								sfwrite(sp_body, rb, (size_t)(re - rb));
 							else
 								sfputr(sp, "void", -1);
 							if (w)
@@ -3317,7 +3317,7 @@ opthelp(const char* oopts, const char* what)
 						{
 							sfputr(sp_body, ".OP", ' ');
 							if (sl)
-								sfwrite(sp_body, s, sl);
+								sfwrite(sp_body, s, (size_t)sl);
 							else
 								sfputc(sp_body, f ? f : '-');
 							sfputc(sp_body, ' ');
@@ -3379,7 +3379,7 @@ opthelp(const char* oopts, const char* what)
 								}
 							}
 							else
-								sfwrite(sp_body, s, sl);
+								sfwrite(sp_body, s, (size_t)sl);
 							sfputr(sp_body, font(FONT_BOLD, style, 0), -1);
 							if (w)
 							{
@@ -3389,7 +3389,7 @@ opthelp(const char* oopts, const char* what)
 						}
 						else if ((flags & OPT_functions) && re > rb)
 						{
-							sfwrite(sp_body, rb, re - rb);
+							sfwrite(sp_body, rb, (size_t)(re - rb));
 							sfputc(sp_body, ' ');
 						}
 						if (w)
@@ -3683,7 +3683,7 @@ opthelp(const char* oopts, const char* what)
 	if (x)
 	{
 		for (t = x + xl; t > x && (*(t - 1) == '\n' || *(t - 1) == '\r'); t--);
-		xl = t - x;
+		xl = (size_t)(t - x);
 		if (style >= STYLE_match)
 		{
 			u = id;
@@ -3737,7 +3737,7 @@ opthelp(const char* oopts, const char* what)
 	astwinsize(1, NULL, &state.width);
 	if (state.width < 20)
 		state.width = OPT_WIDTH;
-	m = strlen((style <= STYLE_long && error_info.id && !strchr(error_info.id, '/')) ? error_info.id : id) + 1;
+	m = (ssize_t)strlen((style <= STYLE_long && error_info.id && !strchr(error_info.id, '/')) ? error_info.id : id) + 1;
 	margin = style == STYLE_api ? (8 * 1024) : (state.width - 1);
 	if (!(state.flags & OPT_preformat))
 	{
@@ -4511,7 +4511,7 @@ optget(char** argv, const char* oopts)
 					{
 						if (*(s + 1) == '=')
 							s++;
-						if (!isalnum(*(s - 1)) && *(w - 1) == (opt_info.assignment = *(s - 1)))
+						if (!isalnum(*(s - 1)) && *(w - 1) == (opt_info.assignment = (unsigned)*(s - 1)))
 							w--;
 						v = ++s;
 						break;
@@ -4601,7 +4601,7 @@ optget(char** argv, const char* oopts)
 		{
 			if (cache)
 			{
-				if (c >= 0 && c < (ssize_t)sizeof(map) && map[c] && cache->equiv[map[c]])
+				if (c >= 0 && c < ssizeof(map) && map[c] && cache->equiv[map[c]])
 					c = cache->equiv[map[c]];
 				if (k = cache->flags[map[c]])
 				{
@@ -4766,7 +4766,7 @@ optget(char** argv, const char* oopts)
 				if (*s == '(')
 				{
 					s = nest(f = s);
-					if (!conformance(f, s - f))
+					if (!conformance(f, (size_t)(s - f)))
 						goto disable;
 				}
 				if (k == '+' || k == '-')
@@ -4965,9 +4965,9 @@ optget(char** argv, const char* oopts)
 										a += 2;
 								}
 								x = -((int)strtol(a, &b, 0));
-								if ((b - a) > (ssize_t)sizeof(opt_info.option) - 2)
-									b = a + (ssize_t)sizeof(opt_info.option) - 2;
-								memcpy(&opt_info.option[1], a, b - a);
+								if ((b - a) > ssizeof(opt_info.option) - 2)
+									b = a + ssizeof(opt_info.option) - 2;
+								memcpy(&opt_info.option[1], a, (size_t)(b - a));
 								opt_info.option[b - a + 1] = 0;
 							}
 							b = e;
@@ -5095,9 +5095,9 @@ optget(char** argv, const char* oopts)
 						if (*f == '=')
 						{
 							c = -((int)strtol(++f, &b, 0));
-							if ((b - f) > (ssize_t)sizeof(opt_info.option) - 2)
-								b = f + (ssize_t)sizeof(opt_info.option) - 2;
-							memcpy(&opt_info.option[1], f, b - f);
+							if ((b - f) > ssizeof(opt_info.option) - 2)
+								b = f + ssizeof(opt_info.option) - 2;
+							memcpy(&opt_info.option[1], f, (size_t)(b - f));
 							opt_info.option[b - f + 1] = 0;
 						}
 						else
@@ -5659,7 +5659,7 @@ optstr(const char* str, const char* opts)
 		{
 			s += v;
 			while (isspace(*++e));
-			sfwrite(mp, e, s - e);
+			sfwrite(mp, e, (size_t)(s - e));
 		}
 		else
 		{

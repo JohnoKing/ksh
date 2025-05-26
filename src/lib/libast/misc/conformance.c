@@ -72,7 +72,7 @@ initconformance(void)
 				if (h & 1)
 					break;
 			}
-		i = sfstrtell(sp);
+		i = (size_t)sfstrtell(sp);
 		sfstrseek(sp, 0, SEEK_SET);
 		if (p = newof(0, char*, j, i))
 		{
@@ -140,7 +140,7 @@ conformance(const char* s, size_t n)
 			break;
 		q = p;
 		while (m = *q++)
-			if (strneq(t, m, s - t))
+			if (strneq(t, m, (size_t)(s - t)))
 				return m;
 		if (s < e)
 			s++;
