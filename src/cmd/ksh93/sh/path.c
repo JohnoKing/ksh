@@ -1291,7 +1291,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_exec,path);
 		UNREACHABLE();
 	}
-	return 0;
+	UNREACHABLE();
 }
 
 /*

@@ -111,7 +111,7 @@ static char*		findnames[] =
  * converted value copied to b of size n
  */
 
-char*
+static char*
 typefix(char* buf, const char* t)
 {
 	int	c;

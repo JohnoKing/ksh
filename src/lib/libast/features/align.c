@@ -40,7 +40,7 @@ union _u_
 	uintmax_t		u6;
 	_ast_fltmax_t		u7;
 	void*			u8;
-	char*			(*u9)();
+	char*			(*u9)(void);
 	jmp_buf			u10;
 };
 

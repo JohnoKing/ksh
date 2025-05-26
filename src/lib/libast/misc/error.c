@@ -307,7 +307,7 @@ context(Sfio_t* sp, Error_context_t* cp)
  * debugging breakpoint
  */
 
-extern void
+static void
 error_break(void)
 {
 	char*	s;

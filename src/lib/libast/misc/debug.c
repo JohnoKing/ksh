@@ -26,7 +26,7 @@
 #include <debug.h>
 #include "FEATURE/time"
 
-void
+noreturn void
 debug_fatal(const char* file, int line)
 {
 	error(2, "%s:%d: debug error", file, line);

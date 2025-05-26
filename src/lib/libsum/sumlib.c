@@ -258,7 +258,7 @@ match(const char* s, const char* p)
 		}
 		s = b;
 	}
-	return 0;
+	UNREACHABLE();
 }
 
 /*

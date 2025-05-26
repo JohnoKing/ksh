@@ -1270,7 +1270,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 			cp = xp;
 		}
 	}
-	return np;
+	UNREACHABLE();
 }
 
 /*

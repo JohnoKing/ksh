@@ -209,7 +209,7 @@ main(void)
 #endif
 #endif
 #endif
-	printf("#define BUFFERSIZE	%u\n", n);
+	printf("#define BUFFERSIZE	%d\n", n);
 	printf("\n");
 	return 0;
 }

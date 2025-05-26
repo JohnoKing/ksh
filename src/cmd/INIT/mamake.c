@@ -1900,7 +1900,7 @@ static void attributes(Rule_t *r, char *s)
  * append libNAME.a to the given buffer
  */
 
-void append_ar_name(Buf_t *buf, char *name)
+static void append_ar_name(Buf_t *buf, char *name)
 {
 	append(buf, "lib");
 	append(buf, name);
