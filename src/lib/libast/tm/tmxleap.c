@@ -43,7 +43,7 @@ tmxleap(Time_t t)
 	{
 		sec = tmxsec(t);
 		for (lp = &tm_data.leap[0]; sec < (Tmxsec_t)(lp->time - lp->total); lp++);
-		t = tmxsns(sec + lp->total, tmxnsec(t));
+		t = tmxsns(sec + (Tmxsec_t)lp->total, tmxnsec(t));
 	}
 	return t;
 }

@@ -274,7 +274,7 @@ extern void*		dllmeth(const char*, const char*, unsigned long);
 
 #define _DTCMP(dt,k1,k2,dc) \
 			((dc)->comparf  ? (*(dc)->comparf)((dt), (k1), (k2), (dc)) : \
-			 (dc)->size > 0 ? memcmp((void*)(k1), ((void*)k2), (dc)->size) : \
+			 (dc)->size > 0 ? memcmp((void*)(k1), ((void*)k2), (size_t)((dc)->size)) : \
 					  strcmp((char*)(k1), ((char*)k2)) )
 
 #define _DTHSH(dt,ky,dc) ((dc)->hashf   ? (*(dc)->hashf)((dt), (ky), (dc)) : \

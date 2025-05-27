@@ -71,11 +71,11 @@ number(char* s, char* e, long n, int p, int w, int pad)
 	}
 	b = s;
 	if (p > 0)
-		s += sfsprintf(s, e - s, "%0*lu", p, n);
+		s += sfsprintf(s, (size_t)(e - s), "%0*lu", p, n);
 	else if (p < 0)
-		s += sfsprintf(s, e - s, "%*lu", -p, n);
+		s += sfsprintf(s, (size_t)(e - s), "%*lu", -p, n);
 	else
-		s += sfsprintf(s, e - s, "%lu", n);
+		s += sfsprintf(s, (size_t)(e - s), "%lu", n);
 	if (w && (s - b) > w)
 		*(s = b + w) = 0;
 	return s;
@@ -532,12 +532,12 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 			if (pad == '0')
 				*f++ = pad;
 			if (width)
-				f += sfsprintf(f, &fmt[sizeof(fmt)] - f, "%d", width);
-			f += sfsprintf(f, &fmt[sizeof(fmt)] - f, "I%du", sizeof(Tmxsec_t));
-			cp += sfsprintf(cp, ep - cp, fmt, tmxsec(now));
+				f += sfsprintf(f, (size_t)(&fmt[sizeof(fmt)] - f), "%d", width);
+			f += sfsprintf(f, (size_t)(&fmt[sizeof(fmt)] - f), "I%du", sizeof(Tmxsec_t));
+			cp += sfsprintf(cp, (size_t)(ep - cp), fmt, tmxsec(now));
 			if (parts > 1)
 			{
-				n = (int)sfsprintf(cp, ep - cp, ".%09I*u", sizeof(Tmxnsec_t), tmxnsec(now));
+				n = (int)sfsprintf(cp, (size_t)(ep - cp), ".%09I*u", sizeof(Tmxnsec_t), tmxnsec(now));
 				if (prec && n >= prec)
 					n = prec + 1;
 				cp += n;
@@ -595,7 +595,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 				continue;
 			}
 			if ((ep - cp) >= 16)
-				cp = tmpoff(cp, ep - cp, "", (flags & TM_UTC) ? 0 : tm->tm_zone->west + (tm->tm_isdst ? tm->tm_zone->dst : 0), pad == '_' ? -24 * 60 : 24 * 60);
+				cp = tmpoff(cp, (size_t)(ep - cp), "", (flags & TM_UTC) ? 0 : tm->tm_zone->west + (tm->tm_isdst ? tm->tm_zone->dst : 0), pad == '_' ? -24 * 60 : 24 * 60);
 			continue;
 		case 'Z':	/* time zone */
 			if (arg)

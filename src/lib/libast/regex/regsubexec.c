@@ -29,10 +29,10 @@
 	{ \
 		if (((b)->re_end - (b)->re_cur) < (n)) \
 		{ \
-			size_t	o = (b)->re_cur - (b)->re_buf; \
-			size_t	a = ((b)->re_end - (b)->re_buf); \
+			size_t	o = ((size_t)((b)->re_cur - (b)->re_buf)); \
+			size_t	a = ((size_t)((b)->re_end - (b)->re_buf)); \
 			if (a < (size_t)(n)) \
-				a = roundof(n, 128); \
+				a = (size_t)roundof(n, 128); \
 			a *= 2; \
 			if (!((b)->re_buf = alloc(p->env->disc, (b)->re_buf, a))) \
 			{ \
@@ -56,7 +56,7 @@
 	do if (z) \
 	{ \
 		NEED(p, b, z, r); \
-		memcpy((b)->re_cur, x, z); \
+		memcpy((b)->re_cur, x, (size_t)(z)); \
 		(b)->re_cur += (z); \
 	} while (0)
 
@@ -169,7 +169,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
 		s += match->rm_eo;
 		if (m <= 0 && !(b->re_flags & REG_SUB_ALL) || !*s)
 			break;
-		if (c = regnexec(p, s, e - s, nmatch, match, p->env->flags|(match->rm_so == match->rm_eo ? REG_ADVANCE : 0)))
+		if (c = regnexec(p, s, (size_t)(e - s), nmatch, match, p->env->flags|(match->rm_so == match->rm_eo ? REG_ADVANCE : 0)))
 		{
 			if (c != REG_NOMATCH)
 				return fatal(p->env->disc, c, NULL);
@@ -188,7 +188,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
 	}
 	NEED(p, b, 1, return fatal(p->env->disc, c, NULL));
 	*b->re_cur = 0;
-	b->re_len = b->re_cur - b->re_buf;
+	b->re_len = (size_t)(b->re_cur - b->re_buf);
 	return 0;
 }
 

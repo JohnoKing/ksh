@@ -50,7 +50,7 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 	uint32_t		i;
 #endif
 
-	tmset(tm_info.zone, tmxsec(t), newzone);
+	tmset(tm_info.zone, (time_t)tmxsec(t), newzone);
 	leapsec = 0;
 	if ((tm_info.flags & (TM_ADJUST|TM_LEAP)) == (TM_ADJUST|TM_LEAP) && (n = tmxsec(t)))
 	{
@@ -59,7 +59,7 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 		{
 			if (n == (Time_t)lp->time && (leapsec = (lp->total - (lp+1)->total)) < 0)
 				leapsec = 0;
-			t = tmxsns(n - lp->total, tmxnsec(t));
+			t = tmxsns(n - (Time_t)lp->total, tmxnsec(t));
 		}
 	}
 	x = tmxsec(t);
@@ -72,21 +72,21 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 	}
 	if ((o = 60 * tm->tm_zone->west) && x > (unsigned)o)
 	{
-		x -= o;
+		x -= (Time_t)o;
 		o = 0;
 	}
 #if TMX_FLOAT
 	i = x / (24 * 60 * 60);
 	z = i;
 	n = x - z * (24 * 60 * 60);
-	tm->tm_sec = n % 60 + leapsec;
+	tm->tm_sec = n % 60 + (Time_t)leapsec;
 	n /= 60;
 	tm->tm_min = n % 60;
 	n /= 60;
 	tm->tm_hour = n % 24;
 #define x	i
 #else
-	tm->tm_sec = x % 60 + leapsec;
+	tm->tm_sec = (int)x % 60 + leapsec;
 	x /= 60;
 	tm->tm_min = x % 60;
 	x /= 60;
@@ -95,7 +95,7 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 #endif
 	tm->tm_wday = (x + 4) % 7;
 	tm->tm_year = (400 * ((int)x + 25202)) / 146097 + 1;
-	n = tm->tm_year - 1;
+	n = (Time_t)tm->tm_year - 1;
 	x -= n * 365 + n / 4 - n / 100 + (n + (1900 - 1600)) / 400 - (1970 - 1901) * 365 - (1970 - 1901) / 4;
 	tm->tm_mon = 0;
 	tm->tm_mday = (int)x + 1;
@@ -106,14 +106,14 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
 	if (tm->tm_zone->daylight)
 	{
 		if ((y = tmequiv(tm) - 1900) == tm->tm_year)
-			now = tmxsec(t);
+			now = (time_t)tmxsec(t);
 		else
 		{
 			Tm_t	te;
 
 			te = *tm;
 			te.tm_year = y;
-			now = tmxsec(tmxtime(&te, tm->tm_zone->west));
+			now = (time_t)tmxsec(tmxtime(&te, tm->tm_zone->west));
 		}
 		if ((tp = tmlocaltime(&now)) && ((tm->tm_isdst = tp->tm_isdst) || o))
 		{

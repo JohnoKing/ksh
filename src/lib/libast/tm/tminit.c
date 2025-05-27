@@ -333,11 +333,11 @@ tmlocal(time_t now)
 				if (!(s = zp->daylight))
 				{
 					e = (s = buf) + sizeof(buf);
-					s = tmpoff(s, e - s, zp->standard, 0, 0);
+					s = tmpoff(s, (size_t)(e - s), zp->standard, 0, 0);
 					if (s < e - 1)
 					{
 						*s++ = ' ';
-						tmpoff(s, e - s, tm_info.format[TM_DT], m, TM_DST);
+						tmpoff(s, (size_t)(e - s), tm_info.format[TM_DT], m, TM_DST);
 					}
 					s = strdup(buf);
 				}
@@ -353,13 +353,13 @@ tmlocal(time_t now)
 			 */
 
 			e = (s = buf) + sizeof(buf);
-			s = tmpoff(s, e - s, tm_info.format[TM_UT], n, 0);
+			s = tmpoff(s, (size_t)(e - s), tm_info.format[TM_UT], n, 0);
 			if (!local.standard)
 				local.standard = strdup(buf);
 			if (s < e - 1)
 			{
 				*s++ = ' ';
-				tmpoff(s, e - s, tm_info.format[TM_UT], m, TM_DST);
+				tmpoff(s, (size_t)(e - s), tm_info.format[TM_UT], m, TM_DST);
 				if (!local.daylight)
 					local.daylight = strdup(buf);
 			}

@@ -116,7 +116,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 	int		f;
 	int		g;
 	ssize_t		n;
-	int		nops;
+	size_t		nops;
 	const char*	o;
 	regdisc_t*	disc;
 
@@ -184,7 +184,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 				return ret;
 			s = (const char*)e;
 		}
-		p->re_npat = s - o;
+		p->re_npat = (size_t)(s - o);
 		s = r;
 	}
 	else
@@ -196,7 +196,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 	again:
 		if (!c)
 		{
-			p->re_npat = s - o - 1;
+			p->re_npat = (size_t)(s - o - 1);
 			break;
 		}
 		else if (c == '\\')
@@ -284,7 +284,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		case 'E':
 			f = g;
 		set:
-			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
+			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (ssize_t)nops)
 			{
 				if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 				{
@@ -320,7 +320,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 			regfree(p);
 			return fatal(disc, REG_ESUBREG, s - 1);
 		}
-		if ((n = op - sub->re_ops) >= (nops - 2))
+		if ((n = op - sub->re_ops) >= ((ssize_t)nops - 2))
 		{
 			if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 			{
@@ -338,7 +338,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		op->op = f;
 		op->off = t - sub->re_rhs;
 	}
-	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
+	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (ssize_t)nops)
 	{
 		if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
 		{

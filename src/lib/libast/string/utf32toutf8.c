@@ -75,7 +75,7 @@ utf32toutf8(char* s, uint32_t w)
 				 /* FALLTHROUGH */
 			case  6: *s++ = 0x80 | (w & 0x3f);
 			}
-			return s - b;
+			return (size_t)(s - b);
 		}
 	}
 	return 0;

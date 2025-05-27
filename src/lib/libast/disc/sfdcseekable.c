@@ -64,14 +64,14 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
 
 	addr = sfseek(sf,0,SEEK_CUR);
 
-	if((ssize_t)(addr+n) <= sk->extent)
+	if((addr+(ssize_t)n) <= sk->extent)
 		return sfread(sf,buf,n);
 
 	if((r = (ssize_t)(sk->extent-addr)) > 0)
-	{	if((w = sfread(sf,buf,r)) != r)
+	{	if((w = sfread(sf,buf,(size_t)r)) != r)
 			return w;
 		buf = (char*)buf + r;
-		n -= r;
+		n -= (size_t)r;
 	}
 
 	/* do a raw read */
@@ -81,7 +81,7 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
 	}
 	else
 	{
-		if((p = sfwrite(sf,buf,w)) != w)
+		if((p = sfwrite(sf,buf,(size_t)w)) != w)
 			sk->eof = 1;
 		if(p > 0)
 			sk->extent += p;
@@ -126,9 +126,9 @@ static Sfoff_t skseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
 		{	if(addr > sk->extent+ssizeof(buf) )
 				w = sizeof(buf);
 			else	w = (int)(addr-sk->extent);
-			if((r = sfrd(f,buf,w,disc)) <= 0)
+			if((r = sfrd(f,buf,(size_t)w,disc)) <= 0)
 				w = r-1;
-			else if((w = sfwrite(sf,buf,r)) > 0)
+			else if((w = sfwrite(sf,buf,(size_t)r)) > 0)
 				sk->extent += w;
 			if(w != r)
 			{	sk->eof = 1;

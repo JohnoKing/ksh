@@ -439,7 +439,7 @@ char	*stkcopy(Sfio_t *stream, const char* str)
 		stream->_data = stream->_next = cp+n;
 		if(off)
 		{
-			_stkseek(stream,off);
+			_stkseek(stream,(ssize_t)off);
 			memcpy(stream->_data, tp, off);
 		}
 	}

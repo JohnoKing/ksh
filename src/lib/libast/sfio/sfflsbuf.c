@@ -51,7 +51,7 @@ ssize_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
 		if(n == (f->endb-data) && (f->flags&SFIO_STRING))
 		{	/* call sfwr() to extend string buffer and process events */
 			w = ((f->bits&SFIO_PUTR) && f->val > 0) ? f->val : 1;
-			(void)SFWR(f, data, w, f->disc);
+			(void)SFWR(f, data, (size_t)w, f->disc);
 
 			/* !(f->flags&SFIO_STRING) is required because exception
 			   handlers may turn a string stream to a file stream */
@@ -87,7 +87,7 @@ ssize_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
 			break;
 
 		isall = SFISALL(f,isall);
-		if((w = SFWR(f,data,n,f->disc)) > 0)
+		if((w = SFWR(f,data,(size_t)n,f->disc)) > 0)
 		{	if((n -= w) > 0) /* save unwritten data, then resume */
 				memmove((char*)f->data,(char*)data+w,n);
 			written += w;

@@ -140,7 +140,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
 			if(n_digit <= 0 || (size_t)n_digit >= (size - 9))
-				n_digit = size - 9;
+				n_digit = (ssize_t)size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexpl(f, &x);
@@ -288,7 +288,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
 			if(n_digit <= 0 || (size_t)n_digit >= (size - 9))
-				n_digit = size - 9;
+				n_digit = (ssize_t)size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexp(f, &x);

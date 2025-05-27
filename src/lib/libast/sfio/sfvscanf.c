@@ -88,7 +88,7 @@ static int _scgetc(void* arg, int flag)
 	if(sc->d >= sc->endd) /* refresh local buffer */
 	{	sc->n_input += sc->d - sc->data;
 		if(sc->peek)
-			SFREAD(sc->f, sc->data, sc->d - sc->data);
+			SFREAD(sc->f, sc->data, (size_t)(sc->d - sc->data));
 		else	sc->f->next = sc->d;
 
 		_sfbuf(sc->f, &sc->peek);
@@ -191,7 +191,7 @@ static int _sfwaccept(wchar_t wc, Accept_t* ac)
 		}
 		else
 		{ one_char:
-			if((n = mbrtowc(&fwc, form, ac->endf-form, &mbs)) > 1 &&
+			if((n = mbrtowc(&fwc, form, (size_t)(ac->endf-form), &mbs)) > 1 &&
 			   wc == fwc )
 				return ac->yes;
 		}
@@ -218,7 +218,7 @@ static int _sfgetwc(Scan_t*	sc,	/* the scanning handle		*/
 
 	/* shift left data so that there will be more room to back up on error.
 	   this won't help streams with small buffers - c'est la vie! */
-	if(sc->d > sc->f->data && (n = sc->endd - sc->d) > 0 && n < SFMBMAX)
+	if(sc->d > sc->f->data && (n = (size_t)(sc->endd - sc->d)) > 0 && n < SFMBMAX)
 	{	memmove(sc->f->data, sc->d, n);
 		if(sc->f->endr == sc->f->endb)
 			sc->f->endr = sc->f->data+n;
@@ -308,7 +308,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 #define SFlen(f)	(d - data)
 #define SFinit(f)	((peek = f->extent < 0 && (f->flags&SFIO_SHARE)), SFbuf(f) )
 #define SFend(f)	((n_input += SFlen(f)), \
-			 (peek ? SFREAD(f,data,SFlen(f)) : ((f->next = d),0)) )
+			 (peek ? SFREAD(f,data,(size_t)SFlen(f)) : ((f->next = d),0)) )
 #define SFgetc(f,c)	((c) = (d < endd || (SFend(f), SFbuf(f), d < endd)) ? \
 				(int)(*d++) : -1 )
 #define SFungetc(f,c)	(d -= 1)
@@ -445,13 +445,13 @@ loop_fmt:
 							if(!(ft->flags&SFFMT_VALUE) )
 								goto t_arg;
 							if((t_str = argv.s) &&
-							   (n_str = (int)ft->size) < 0)
-								n_str = strlen(t_str);
+							   (n_str = (ssize_t)ft->size) < 0)
+								n_str = (ssize_t)strlen(t_str);
 						}
 						else
 						{ t_arg:
 							if((t_str = va_arg(args,char*)) )
-								n_str = strlen(t_str);
+								n_str = (ssize_t)strlen(t_str);
 						}
 					}
 					goto loop_flags;
@@ -831,7 +831,7 @@ loop_fmt:
 				{	/* fast base 10 conversion */
 #define TEN(x) (((x) << 3) + ((x) << 1) )
 					if (inp >= '0' && inp <= '9')
-					{	argv.lu = TEN(argv.lu) + (inp-'0');
+					{	argv.lu = TEN(argv.lu) + (Sfulong_t)(inp-'0');
 						n += 1;
 					}
 					else if(inp == thousand)
@@ -849,7 +849,7 @@ loop_fmt:
 				}
 
 				if(fmt == 'i' && inp == '#' && !(flags&SFFMT_ALTER) )
-				{	base = (int)argv.lu;
+				{	base = (ssize_t)argv.lu;
 					if(base < 2 || base > SFIO_RADIX)
 						goto pop_fmt;
 					argv.lu = 0;
@@ -876,13 +876,13 @@ loop_fmt:
 					else	shift = base < 64 ? 5 : 6;
 
 			base_shift:	do
-					{ argv.lu = (argv.lu << shift) + sp[inp];
+					{ argv.lu = (argv.lu << shift) + (Sfulong_t)sp[inp];
 					} while(--width > 0 &&
 					        SFgetc(f,inp) >= 0 && sp[inp] < base);
 				}
 				else
 				{	do
-					{ argv.lu = (argv.lu * base) + sp[inp];
+					{ argv.lu = (argv.lu * (Sfulong_t)base) + (Sfulong_t)sp[inp];
 					} while(--width > 0 &&
 						SFgetc(f,inp) >= 0 && sp[inp] < base);
 				}

@@ -151,9 +151,9 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 
 	NOT_USED(sp);
 	fp->level++;
-	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf(fp->fmt.n_str + 1)))
+	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)fp->fmt.n_str + 1)))
 	{
-		memcpy(v, fp->fmt.t_str, fp->fmt.n_str);
+		memcpy(v, fp->fmt.t_str, (size_t)fp->fmt.n_str);
 		v[fp->fmt.n_str] = 0;
 		b = v;
 		for (;;)
@@ -336,7 +336,8 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 ssize_t
 sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
 {
-	size_t		i, r;
+	size_t		i;
+	ssize_t		r;
 	Fmt_t		fmt;
 
 	memset(&fmt, 0, sizeof(fmt));

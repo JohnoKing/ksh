@@ -35,7 +35,7 @@
 
 typedef struct
 {
-	int32_t		nsec;
+	uint32_t	nsec;
 	int		year;
 	int		mon;
 	int		week;
@@ -306,7 +306,7 @@ scan(const char* s, char** e, const char* format, char** f, Time_t t, long flags
 				continue;
 			case 'N':
 				NUMBER(9, 0, 999999999L);
-				set.nsec = n;
+				set.nsec = (uint32_t)n;
 				continue;
 			case 'p':
 				if ((n = tmlex(s, &u, tm_info.format + TM_MERIDIAN, TM_UT - TM_MERIDIAN, NULL, 0)) < 0)

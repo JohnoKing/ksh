@@ -148,7 +148,7 @@ vecopen(ssize_t inc, size_t siz)
 		inc = 16;
 	if (!(sp = stkopen(STK_SMALL|STK_NULL)))
 		return NULL;
-	if (!(v = stkseek(sp, sizeof(Vector_t) + inc * siz)))
+	if (!(v = stkseek(sp, (ssize_t)(sizeof(Vector_t) + (size_t)inc * siz))))
 	{
 		stkclose(sp);
 		return NULL;
@@ -169,12 +169,12 @@ vecseek(Vector_t** p, ssize_t index)
 	if (index >= v->max)
 	{
 		while ((v->max += v->inc) <= index);
-		if (!(v = stkseek(v->stk, sizeof(Vector_t) + v->max * v->siz)))
+		if (!(v = stkseek(v->stk, (ssize_t)(sizeof(Vector_t) + (size_t)v->max * v->siz))))
 			return NULL;
 		*p = v;
 		v->vec = (char*)v + sizeof(Vector_t);
 	}
-	return v->vec + index * v->siz;
+	return v->vec + (size_t)index * v->siz;
 }
 
 static void
@@ -246,16 +246,16 @@ _matchpush(Env_t* env, Rex_t* rex)
 	regmatch_t*	m;
 	regmatch_t*	e;
 	regmatch_t*	s;
-	int		num;
+	ssize_t		num;
 
 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
 		num = 0;
-	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + (num - 1) * sizeof(regmatch_t))))
+	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + ((size_t)num - 1) * sizeof(regmatch_t))))
 	{
 		env->error = REG_ESPACE;
 		return 1;
 	}
-	f->size = num * sizeof(regmatch_t);
+	f->size = (size_t)num * sizeof(regmatch_t);
 	f->match = m = env->match + rex->re.group.number;
 	e = m + num;
 	s = f->save;
@@ -596,11 +596,11 @@ collelt(Celt_t* ce, char* key, int c, ssize_t x)
 				return 1;
 			continue;
 		case COLL_range_lc:
-			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswlower(c) || !iswupper(c)))
+			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswlower((wint_t)c) || !iswupper((wint_t)c)))
 				return 1;
 			continue;
 		case COLL_range_uc:
-			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswupper(c) || !iswlower(c)))
+			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswupper((wint_t)c) || !iswlower((wint_t)c)))
 				return 1;
 			continue;
 		}
@@ -616,10 +616,10 @@ collic(Celt_t* ce, char* key, char* nxt, int c, ssize_t x)
 	{
 		if (collelt(ce, key, c, x))
 			return 1;
-		if (iswlower(c))
-			c = towupper(c);
-		else if (iswupper(c))
-			c = towlower(c);
+		if (iswlower((wint_t)c))
+			c = (int)towupper((wint_t)c);
+		else if (iswupper((wint_t)c))
+			c = (int)towlower((wint_t)c);
 		else
 			return 0;
 		x = mbconv(key, c);
@@ -657,7 +657,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 	ic = (rex->flags & REG_ICASE);
 	if ((w = MBSIZE(s)) > 1)
 	{
-		memcpy((char*)key, (char*)s, w);
+		memcpy((char*)key, (char*)s, (size_t)w);
 		key[w] = 0;
 		t = s;
 		c = mbchar(t);
@@ -878,7 +878,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				{
 					c = mbchar(s);
 					d = mbchar(t);
-					if (towupper(c) != towupper(d))
+					if (towupper((wint_t)c) != towupper((wint_t)d))
 						return NONE;
 				}
 			}
@@ -956,7 +956,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			e = env->end;
 			if (!(rex->flags & REG_MINIMAL))
 			{
-				if (!(b = stkpush(env->mst, n)))
+				if (!(b = stkpush(env->mst, (size_t)n)))
 				{
 					env->error = REG_ESPACE;
 					return BAD;
@@ -1056,7 +1056,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 					return GOOD;
 			}
 			env->best[0].rm_eo = n;
-			memcpy(&env->best[1], &env->match[1], r * sizeof(regmatch_t));
+			memcpy(&env->best[1], &env->match[1], (size_t)r * sizeof(regmatch_t));
 			n = env->pos->cur;
 			pos = vector(Pos_t, env->bestpos, n);
 			if (!pos)
@@ -1065,7 +1065,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				return BAD;
 			}
 			env->bestpos->cur = n;
-			memcpy(env->bestpos->vec, env->pos->vec, n * sizeof(Pos_t));
+			memcpy(env->bestpos->vec, env->pos->vec, (size_t)n * sizeof(Pos_t));
 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
 			return GOOD;
 		}
@@ -1106,7 +1106,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				}
 				else
 				{
-					if (!(b = stkpush(env->mst, n)))
+					if (!(b = stkpush(env->mst, (size_t)n)))
 					{
 						env->error = REG_ESPACE;
 						return BAD;
@@ -1349,9 +1349,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 			n = ((i + 7) >> 3) + 1;
 			catcher.type = REX_NEG_CATCH;
 			catcher.re.neg_catch.beg = s;
-			if (!(p = stkpush(env->mst, n)))
+			if (!(p = stkpush(env->mst, (size_t)n)))
 				return BAD;
-			memset(catcher.re.neg_catch.index = p, 0, n);
+			memset(catcher.re.neg_catch.index = p, 0, (size_t)n);
 			catcher.next = rex->next;
 			if (parse(env, rex->re.group.expr.rex, &catcher, s) == BAD)
 				r = BAD;
@@ -1448,7 +1448,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 				}
 				else
 				{
-					if (!(b = stkpush(env->mst, n)))
+					if (!(b = stkpush(env->mst, (size_t)n)))
 					{
 						env->error = REG_ESPACE;
 						return BAD;
@@ -1469,7 +1469,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 						for (i = 0; s < e && i < n; i++, s = t)
 						{
 							t = s;
-							if (towupper(mbchar(t)) != (wint_t)c)
+							if (towupper((wint_t)mbchar(t)) != (wint_t)c)
 								break;
 							b[i] = t - s;
 						}
@@ -1577,7 +1577,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 						for (i = 0; i < m && s < e; i++, s = t)
 						{
 							t = s;
-							if (towupper(mbchar(t)) != (wint_t)c)
+							if (towupper((wint_t)mbchar(t)) != (wint_t)c)
 								return r;
 						}
 						while (i++ <= n)
@@ -1594,7 +1594,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 							}
 							if (s >= e)
 								break;
-							if (towupper(mbchar(s)) != (wint_t)c)
+							if (towupper((wint_t)mbchar(s)) != (wint_t)c)
 								break;
 						}
 					}
@@ -1658,7 +1658,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
 				{
 					c = mbchar(s);
 					d = mbchar(t);
-					if (towupper(c) != (wint_t)d)
+					if (towupper((wint_t)c) != (wint_t)d)
 						return NONE;
 				}
 			}
@@ -1669,7 +1669,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
 			return parsetrie(env, x, rex, cont, s);
 		case REX_EXEC:
 			u = 0;
-			r = (*env->disc->re_execf)(env->regex, rex->re.exec.data, rex->re.exec.text, rex->re.exec.size, (const char*)s, env->end - s, &u, env->disc);
+			r = (*env->disc->re_execf)(env->regex, rex->re.exec.data, rex->re.exec.text, rex->re.exec.size, (const char*)s, (size_t)(env->end - s), &u, env->disc);
 			e = (unsigned char*)u;
 			if (e >= s && e <= env->end)
 				s = e;
@@ -1807,8 +1807,8 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
 	stknew(env->mst, &env->stk);
 	if (env->stack = env->hard || !(env->flags & REG_NOSUB) && nmatch)
 	{
-		n = env->nsub;
-		if (!(env->match = stkpush(env->mst, 2 * (n + 1) * sizeof(regmatch_t))) ||
+		n = (ssize_t)env->nsub;
+		if (!(env->match = stkpush(env->mst, 2 * ((size_t)n + 1) * sizeof(regmatch_t))) ||
 		    !env->pos && !(env->pos = vecopen(16, sizeof(Pos_t))) ||
 		    !env->bestpos && !(env->bestpos = vecopen(16, sizeof(Pos_t))))
 		{

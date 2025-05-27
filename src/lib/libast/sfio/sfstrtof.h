@@ -367,7 +367,7 @@ S2F_function(const char* str, char** end)
 		if (c >= '0' && c <= '9')
 		{
 			digits++;
-			n = (n << 3) + (n << 1) + (c - '0');
+			n = (n << 3) + (n << 1) + (S2F_batch)(c - '0');
 			if (n >= ((~((S2F_batch)0)) / 10) && part < (ssize_t)elementsof(parts))
 			{
 				parts[part].batch = n;
@@ -432,7 +432,7 @@ S2F_function(const char* str, char** end)
 		n = 0;
 		while (c >= '0' && c <= '9')
 		{
-			n = (n << 3) + (n << 1) + (c - '0');
+			n = (n << 3) + (n << 1) + (S2F_batch)(c - '0');
 			c = GET(s);
 		}
 		if (enegative)

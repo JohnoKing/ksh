@@ -239,7 +239,7 @@ addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char*
 	ssize_t		offset;
 	int		type;
 
-	stkseek(globstk,MATCHPATH(gp));
+	stkseek(globstk,(ssize_t)MATCHPATH(gp));
 	if (dir)
 	{
 		sfputr(globstk,dir,-1);
@@ -612,7 +612,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	const char*	nocheck = pattern;
 	ssize_t		optlen = 0;
 	size_t		suflen = 0;
-	int		extra = 1;
+	ssize_t		extra = 1;
 	unsigned char	intr = 0;
 
 	gp->gl_rescan = 0;
@@ -801,10 +801,10 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 		gp->gl_list = gp->gl_match;
 	else
 	{
-		argv = stkalloc(globstk,(gp->gl_pathc + extra) * sizeof(char*));
+		argv = stkalloc(globstk,(gp->gl_pathc + (size_t)extra) * sizeof(char*));
 		if (gp->gl_flags & GLOB_APPEND)
 		{
-			skip += --extra;
+			skip += (size_t)--extra;
 			memcpy(argv, gp->gl_pathv, skip * sizeof(char*));
 			av = argv + skip;
 		}
@@ -827,7 +827,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 		{
 			strsort(av, (int)(argv - av), strcoll);
 			if (gp->gl_starstar > 1)
-				av[gp->gl_pathc = struniq(av, (int)(argv - av))] = 0;
+				av[gp->gl_pathc = (size_t)struniq(av, (int)(argv - av))] = 0;
 			gp->gl_starstar = 0;
 		}
 	}

@@ -38,7 +38,7 @@ regexec_20120528(const regex_t* p, const char* s, size_t nmatch, regmatch_t* mat
 		regoff_t	m = match->rm_so;
 		regmatch_t*	e;
 
-		if (!(r = regnexec(p, s + m, match->rm_eo - m, nmatch, match, flags)) && m > 0)
+		if (!(r = regnexec(p, s + m, (size_t)(match->rm_eo - m), nmatch, match, flags)) && m > 0)
 			for (e = match + nmatch; match < e; match++)
 				if (match->rm_so >= 0)
 				{

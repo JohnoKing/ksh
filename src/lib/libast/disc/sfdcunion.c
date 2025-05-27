@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 #include	"sfdchdr.h"
@@ -63,10 +64,10 @@ static ssize_t unread(Sfio_t*	f,	/* stream involved */
 	ssize_t	r, m;
 
 	un = (Union_t*)disc;
-	m = n;
+	m = (ssize_t)n;
 	f = un->f[un->c].f;
 	while(1)
-	{	if((r = sfread(f,buf,m)) < 0 || (r == 0 && un->c == un->n-1) )
+	{	if((r = sfread(f,buf,(size_t)m)) < 0 || (r == 0 && un->c == un->n-1) )
 			break;
 
 		m -= r;
@@ -79,7 +80,7 @@ static ssize_t unread(Sfio_t*	f,	/* stream involved */
 		if(sfeof(f) && un->c < un->n-1)
 			f = un->f[un->c += 1].f;
 	}
-	return n-m;
+	return (ssize_t)n-m;
 }
 
 static Sfoff_t unseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
@@ -148,7 +149,7 @@ int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
 	if(n <= 0)
 		return -1;
 
-	if(!(un = (Union_t*)malloc(sizeof(Union_t)+(n-1)*sizeof(File_t))) )
+	if(!(un = (Union_t*)malloc(sizeof(Union_t)+((size_t)n-1)*sizeof(File_t))) )
 		return -1;
 	memset(un, 0, sizeof(*un));
 

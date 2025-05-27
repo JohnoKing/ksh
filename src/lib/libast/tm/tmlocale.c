@@ -580,19 +580,19 @@ load(Lc_info_t* li)
 				if (tp = sfstropen())
 				{
 					sfread(sp, u, 3);
-					n = iconv_move(cvt, sp, tp, SFIO_UNBOUND, NULL);
+					n = iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
 				}
 				iconv_close(cvt);
 			}
 			if (!tp)
 				sfread(sp, u, 0);
 		}
-		if (b = newof(0, char*, TM_NFORM, n + 2))
+		if (b = newof(0, char*, TM_NFORM, (size_t)n + 2))
 		{
 			v = b;
 			e = b + TM_NFORM;
 			s = (char*)e;
-			if (tp && memcpy(s, sfstrbase(tp), n) || !tp && sfread(sp, s, n) == n)
+			if (tp && memcpy(s, sfstrbase(tp), (size_t)n) || !tp && sfread(sp, s, (size_t)n) == n)
 			{
 				s[n] = '\n';
 				while (v < e)

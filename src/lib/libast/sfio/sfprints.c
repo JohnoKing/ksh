@@ -63,7 +63,7 @@ char* sfprints(const char* form, ...)
 ssize_t sfvaprints(char** sp, const char* form, va_list args)
 {
 	char	*s;
-	ssize_t	n;
+	size_t	n;
 
 	if(!sp || !(s = sfvprints(form,args)) )
 		return -1;
@@ -71,7 +71,7 @@ ssize_t sfvaprints(char** sp, const char* form, va_list args)
 	{	if(!(*sp = (char*)malloc(n = strlen(s)+1)) )
 			return -1;
 		memcpy(*sp, s, n);
-		return n-1;
+		return (ssize_t)n-1;
 	}
 }
 

@@ -462,8 +462,8 @@ typedef struct Trie_node_s
 typedef struct Trie_s
 {
 	Trie_node_t**	root;
-	int		min;
-	int		max;
+	ssize_t		min;
+	ssize_t		max;
 } Trie_t;
 
 /*

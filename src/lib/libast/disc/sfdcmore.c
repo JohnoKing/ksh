@@ -135,7 +135,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
 	int		r;
 
 	if (!more->row)
-		return n;
+		return (ssize_t)n;
 	if (!more->col)
 		return sfwr(f, buf, n, dp);
 	w = 0;
@@ -148,7 +148,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
 		for (r = more->pattern[0];; s++)
 		{
 			if (s >= e)
-				return n;
+				return (ssize_t)n;
 			if (*s == '\n')
 				b = s + 1;
 			else if (*s == r && (e - s) >= (ssize_t)more->match && !strncmp(s, more->pattern, more->match))
@@ -182,7 +182,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
 			more->col = 1;
 			continue;
 		}
-		w += sfwr(f, b, s - b, dp);
+		w += sfwr(f, b, (size_t)(s - b), dp);
 		b = s;
 		r = ttyquery(sfstdin, f, more->prompt, dp);
 		if (r == '/' || r == 'n')
@@ -190,7 +190,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
 			if (r == '/')
 			{
 				sfwr(f, "/", 1, dp);
-				if ((s = sfgetr(sfstdin, '\n', 1)) && (n = sfvalue(sfstdin) - 1) > 0)
+				if ((s = sfgetr(sfstdin, '\n', 1)) && (n = (size_t)sfvalue(sfstdin) - 1) > 0)
 				{
 					if (n >= sizeof(more->pattern))
 						n = sizeof(more->pattern) - 1;
@@ -218,11 +218,11 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
 			break;
 		default:
 			more->row = 0;
-			return n;
+			return (ssize_t)n;
 		}
 	}
 	if (s > b)
-		w += sfwr(f, b, s - b, dp);
+		w += sfwr(f, b, (size_t)(s - b), dp);
 	return w;
 }
 

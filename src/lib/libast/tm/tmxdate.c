@@ -39,27 +39,27 @@
 
 #undef	BREAK
 
-#define BREAK		(1<<0)
-#define CCYYMMDDHHMMSS	(1<<1)
-#define CRON		(1<<2)
-#define DAY		(1<<3)
-#define EXACT		(1<<4)
-#define FINAL		(1<<5)
-#define HOLD		(1<<6)
-#define HOUR		(1<<7)
-#define LAST		(1<<8)
-#define MDAY		(1<<9)
-#define MINUTE		(1<<10)
-#define MONTH		(1<<11)
-#define NEXT		(1<<12)
-#define NSEC		(1<<13)
-#define ORDINAL		(1<<14)
-#define SECOND		(1<<15)
-#define THIS		(1L<<16)
-#define WDAY		(1L<<17)
-#define WORK		(1L<<18)
-#define YEAR		(1L<<19)
-#define ZONE		(1L<<20)
+#define BREAK		(1U<<0)
+#define CCYYMMDDHHMMSS	(1U<<1)
+#define CRON		(1U<<2)
+#define DAY		(1U<<3)
+#define EXACT		(1U<<4)
+#define FINAL		(1U<<5)
+#define HOLD		(1U<<6)
+#define HOUR		(1U<<7)
+#define LAST		(1U<<8)
+#define MDAY		(1U<<9)
+#define MINUTE		(1U<<10)
+#define MONTH		(1U<<11)
+#define NEXT		(1U<<12)
+#define NSEC		(1U<<13)
+#define ORDINAL		(1U<<14)
+#define SECOND		(1U<<15)
+#define THIS		(1UL<<16)
+#define WDAY		(1UL<<17)
+#define WORK		(1UL<<18)
+#define YEAR		(1UL<<19)
+#define ZONE		(1UL<<20)
 
 #define FFMT		"%s%s%s%s%s%s%s|"
 #define FLAGS(f)	(f&EXACT)?"|EXACT":"",(f&LAST)?"|LAST":"",(f&THIS)?"|THIS":"",(f&NEXT)?"|NEXT":"",(f&ORDINAL)?"|ORDINAL":"",(f&FINAL)?"|FINAL":"",(f&WORK)?"|WORK":""
@@ -69,11 +69,11 @@
  */
 
 static int
-range(char* s, char** e, char* set, int lo, int hi)
+range(char* s, char** e, char* set, size_t lo, size_t hi)
 {
-	int	n;
-	int	m;
-	int	i;
+	long	n;
+	long	m;
+	long	i;
 	char*	t;
 
 	while (isspace(*s) || *s == '_')
@@ -86,18 +86,18 @@ range(char* s, char** e, char* set, int lo, int hi)
 	memset(set, 0, hi + 1);
 	for (;;)
 	{
-		n = (int)strtol(s, &t, 10);
-		if (s == t || n < lo || n > hi)
+		n = strtol(s, &t, 10);
+		if (s == t || n < (ssize_t)lo || n > (ssize_t)hi)
 			return -1;
 		i = 1;
 		if (*(s = t) == '-')
 		{
-			m = (int)strtol(++s, &t, 10);
-			if (s == t || m < n || m > hi)
+			m = strtol(++s, &t, 10);
+			if (s == t || m < n || m > (ssize_t)hi)
 				return -1;
 			if (*(s = t) == '/')
 			{
-				i = (int)strtol(++s, &t, 10);
+				i = strtol(++s, &t, 10);
 				if (s == t || i < 1)
 					return -1;
 				s = t;
@@ -134,7 +134,7 @@ powerize(Tm_t* tm, unsigned long p, unsigned long q, unsigned long u)
 		q *= 10;
 		t *= 10;
 	}
-	tm->tm_nsec += (int)((unsigned long)t % TMX_RESOLUTION);
+	tm->tm_nsec += (uint32_t)((unsigned long)t % TMX_RESOLUTION);
 	tm->tm_sec += (int)(t / TMX_RESOLUTION);
 }
 
@@ -269,7 +269,7 @@ tmxdate(const char* s, char** e, Time_t now)
 					fix = 0;
 					m = 1000000000;
 					while (isdigit(*++s))
-						fix += (*s - '0') * (m /= 10);
+						fix += (Time_t)((*s - '0') * (m /= 10));
 					now = tmxsns(now, fix);
 				}
 				else if (now <= 0x7fffffff)
@@ -491,7 +491,7 @@ tmxdate(const char* s, char** e, Time_t now)
 				case '8':
 				case '9':
 					q *= 10;
-					p = p * 10 + (c - '0');
+					p = p * 10 + ((unsigned long)c - '0');
 					continue;
 				default:
 				exact:
@@ -696,7 +696,7 @@ tmxdate(const char* s, char** e, Time_t now)
 			n = strtol(s, &t, 10);
 			if ((w = t - s) && *t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && isdigit(*(t + 3)))
 			{
-				now = n;
+				now = (Time_t)n;
 				goto sns;
 			}
 			if ((*t == 'T' || *t == 't') && ((set|state) & (YEAR|MONTH)) == (YEAR|MONTH) && isdigit(*(t + 1)))
@@ -798,7 +798,7 @@ tmxdate(const char* s, char** e, Time_t now)
 				{
 					q = 1000000000;
 					while (isdigit(*++t))
-						p += (*t - '0') * (q /= 10);
+						p += ((unsigned long)*t - '0') * (q /= 10);
 					set |= NSEC;
 				}
 				if (n > (59 + TM_MAXLEAP))
@@ -947,7 +947,7 @@ tmxdate(const char* s, char** e, Time_t now)
 								{
 									q = 1000000000;
 									while (isdigit(*++t))
-										p += (*t - '0') * (q /= 10);
+										p += ((unsigned long)*t - '0') * (q /= 10);
 									set |= NSEC;
 								}
 							}
@@ -958,7 +958,7 @@ tmxdate(const char* s, char** e, Time_t now)
 						tm->tm_hour = j;
 						tm->tm_min = i;
 						tm->tm_sec = (int)n;
-						tm->tm_nsec = (int)p;
+						tm->tm_nsec = (uint32_t)p;
 					save_yymmdd:
 						tm->tm_mday = k;
 					save_yymm:
@@ -1008,7 +1008,7 @@ tmxdate(const char* s, char** e, Time_t now)
 							{
 								q = 1000000000;
 								while (isdigit(*++s))
-									m += (*s - '0') * (q /= 10);
+									m += ((unsigned long)*s - '0') * (q /= 10);
 								set |= NSEC;
 							}
 						}
@@ -1021,7 +1021,7 @@ tmxdate(const char* s, char** e, Time_t now)
 						l = tm->tm_min;
 						tm->tm_min = j;
 						tm->tm_sec = (int)n;
-						tm->tm_nsec = (int)m;
+						tm->tm_nsec = (uint32_t)m;
 						while (isspace(*s))
 							s++;
 						switch (tmlex(s, &t, tm_info.format, TM_NFORM, tm_info.format + TM_MERIDIAN, 2))
@@ -1096,12 +1096,12 @@ tmxdate(const char* s, char** e, Time_t now)
 			if (n > 0)
 			{
 				x = s;
-				q = *s++;
+				q = (unsigned long)*s++;
 				message((-1, "AHA#%d n=%d q='%c'", __LINE__, n, q));
 				if (isalpha(*s))
 				{
 					q <<= 8;
-					q |= *s++;
+					q |= (unsigned long)*s++;
 					if (isalpha(*s))
 					{
 						if (tmlex(s, &t, tm_info.format + TM_SUFFIXES, TM_PARTS - TM_SUFFIXES, NULL, 0) >= 0)
@@ -1109,11 +1109,11 @@ tmxdate(const char* s, char** e, Time_t now)
 						if (isalpha(*s))
 						{
 							q <<= 8;
-							q |= *s++;
+							q |= (unsigned long)*s++;
 							if (isalpha(*s))
 							{
 								q <<= 8;
-								q |= *s++;
+								q |= (unsigned long)*s++;
 								if (isalpha(*s))
 									q = 0;
 							}

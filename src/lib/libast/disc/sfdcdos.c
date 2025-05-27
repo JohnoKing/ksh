@@ -38,8 +38,7 @@ typedef struct _dosdisc
 {
 	Sfdisc_t	disc;
 	struct map	*maptable;
-	int		mapsize;
-	int		maptop;
+	void		*buff;
 	Sfoff_t		lhere;
 	Sfoff_t		llast;
 	Sfoff_t		lmax;
@@ -47,17 +46,18 @@ typedef struct _dosdisc
 	Sfoff_t		phere;
 	Sfoff_t		plast;
 	Sfoff_t		begin;
+	size_t		mapsize;
 	ssize_t		skip;
-	void		*buff;
+	ssize_t		bsize;
+	ssize_t		maptop;
 	char		last;
 	char		extra;
-	ssize_t		bsize;
 } Dosdisc_t;
 
 static void addmapping(Dosdisc_t *dp)
 {
-	int n;
-	if((n=dp->maptop++)>=dp->mapsize)
+	ssize_t n;
+	if((n=dp->maptop++)>=(ssize_t)dp->mapsize)
 	{
 		dp->mapsize *= 2;
 		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))
@@ -158,9 +158,9 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 		}
 	}
 	/* save original discipline inside buffer */
-	if(count > dp->bsize && !(dp->buff = realloc(dp->buff, dp->bsize = count)))
+	if(count > dp->bsize && !(dp->buff = realloc(dp->buff, (size_t)(dp->bsize = count))))
 		return -1;
-	memcpy(dp->buff, cp, count);
+	memcpy(dp->buff, cp, (size_t)count);
 	count=1;
 	while(1)
 	{
@@ -172,7 +172,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 		if(cp<=cpmax && *cp!='\n')
 			continue;
 		if((m=(cp-first)-1) >0)
-			memcpy(first-count, first, m);
+			memcpy(first-count, first, (size_t)m);
 		if(cp > cpmax)
 			break;
 		count++;
@@ -277,7 +277,7 @@ retry:
 		sfsk(iop,mp->physical,SEEK_SET,disc);
 		dp->phere = mp->physical;
 		dp->lhere = mp->logical;
-		if((*disc->readf)(iop,iop->data,size,disc)<0)
+		if((*disc->readf)(iop,iop->data,(size_t)size,disc)<0)
 			return -1;
 	}
 	while(1)
@@ -286,7 +286,7 @@ retry:
 			break;
 		if(whence==SEEK_SET && dp->lhere>=offset)
 			break;
-		n=(*disc->readf)(iop,iop->data,size,disc);
+		n=(*disc->readf)(iop,iop->data,(size_t)size,disc);
 		if(n < 0)
 			return -1;
 		if(n==0)
