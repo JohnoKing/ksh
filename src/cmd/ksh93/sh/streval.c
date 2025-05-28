@@ -54,7 +54,7 @@
 #define pow2size(x)		((x)<=2?2:(x)<=4?4:(x)<=8?8:(x)<=16?16:(x)<=32?32:64)
 #define round(x,size)		(((x)+(size)-1)&~((size)-1))
 #define stkpush(stk,v,val,type)	((((v)->offset=round(stktell(stk),pow2size(sizeof(type)))),\
-				stkseek(stk,(v)->offset+sizeof(type)), \
+				stkseek(stk,(v)->offset+ssizeof(type)), \
 				*((type*)stkptr(stk,(v)->offset)) = (val)),(v)->offset)
 #define roundptr(ep,cp,type)	(((unsigned char*)(ep))+round(cp-((unsigned char*)(ep)),pow2size(sizeof(type))))
 
@@ -163,7 +163,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 	if(ep->staksize < SMALL_STACK)
 		sp = small_stack;
 	else
-		sp = stkalloc(sh.stk,ep->staksize*(sizeof(Sfdouble_t)+1));
+		sp = stkalloc(sh.stk,(size_t)ep->staksize*(sizeof(Sfdouble_t)+1));
 	tp = (char*)(sp+ep->staksize);
 	tp--,sp--;
 	while(c = *cp++)
@@ -297,7 +297,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 			cp = roundptr(ep,cp,Math_f);
 			*++sp = (Sfdouble_t)(cp-ep->code);
 			cp += sizeof(Math_f);
-			*++tp = *cp++;
+			*++tp = (char)*cp++;
 			continue;
 		    case A_PUSHN:
 			cp = roundptr(ep,cp,Sfdouble_t);
@@ -914,7 +914,7 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 	ep->code = (unsigned char*)(ep+1);
 	ep->fun = fun;
 	ep->emode = emode;
-	ep->size = offset - sizeof(Arith_t);
+	ep->size = (size_t)offset - sizeof(Arith_t);
 	ep->staksize = cur.stakmaxsize+1;
 	if(last)
 		*last = (char*)(cur.nextchr);
@@ -944,7 +944,7 @@ Sfdouble_t arith_strval(const char *s, char **end, Sfdouble_t(*convert)(const ch
 	ep = arith_compile(s,end,convert,emode);
 	ep->emode = emode;
 	d = arith_exec(ep);
-	stkset(sh.stk,sp?sp:(char*)ep,offset);
+	stkset(sh.stk,sp?sp:(char*)ep,(size_t)offset);
 	return d;
 }
 

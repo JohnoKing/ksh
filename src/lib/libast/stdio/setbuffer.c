@@ -22,5 +22,5 @@
 int
 setbuffer(Sfio_t* f, char* b, int n)
 {
-	return sfsetbuf(f, b, n) ? 0 : -1;
+	return sfsetbuf(f, b, (size_t)n) ? 0 : -1;
 }

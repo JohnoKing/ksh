@@ -24,5 +24,5 @@ fwrite(const void* p, size_t s, size_t n, Sfio_t* f)
 {
 	ssize_t	v;
 
-	return ((v = sfwrite(f, p, s * n)) <= 0) ? 0 : (v / s);
+	return ((v = sfwrite(f, p, s * n)) <= 0) ? 0 : ((size_t)v / s);
 }

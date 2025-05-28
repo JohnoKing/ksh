@@ -422,7 +422,7 @@ process(Sfio_t* mp, Sfio_t* lp, useconds_t delay, int timeout)
 					sfclose(mp);
 					mp = 0;
 				}
-				else if ((r = sfvalue(mp)) > 0 && (sfwrite(sfstdout, s, r) != r || sfsync(sfstdout)))
+				else if ((r = sfvalue(mp)) > 0 && (sfwrite(sfstdout, s, (size_t)r) != r || sfsync(sfstdout)))
 				{
 					error(ERROR_SYSTEM|2, "output write failed");
 					goto done;
@@ -561,7 +561,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 				error(-1, "p \"%s\"", fmtnesq(promptbuf, "\"", promptlen));
 				return r;
 			}
-			while (r = memchr(r, '\n', bp->end - r))
+			while (r = memchr(r, '\n', (size_t)(bp->end - r)))
 			{
 				if (strneq(r, promptbuf, promptlen))
 				{
@@ -655,12 +655,12 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 		return NULL;
 	}
 	n = sfvalue(mp);
-	error(-2, "b \"%s\"", fmtnesq(s, "\"", n));
+	error(-2, "b \"%s\"", fmtnesq(s, "\"", (size_t)n));
 	if ((bp->max - bp->end) < n)
 	{
 		size_t	new_buf_size;
 		r = bp->buf;
-		new_buf_size = roundof(bp->max - bp->buf + 1 + n, SFIO_BUFSIZE);
+		new_buf_size = (size_t)roundof(bp->max - bp->buf + 1 + n, SFIO_BUFSIZE);
 		bp->bufunderflow = vmresize(bp->vm, bp->bufunderflow, new_buf_size + BUFUNDERFLOW);
 		bp->buf = bp->bufunderflow + BUFUNDERFLOW;
 		bp->max = bp->buf + new_buf_size - 1;
@@ -671,11 +671,11 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 			bp->end += d;
 		}
 	}
-	memcpy(bp->end, s, n);
+	memcpy(bp->end, s, (size_t)n);
 	bp->end += n;
 	if ((r = bp->cur) > bp->buf && bp->restore >= 0)
 		*r = bp->restore;
-	if (bp->cur = memchr(bp->cur, '\n', bp->end - bp->cur))
+	if (bp->cur = memchr(bp->cur, '\n', (size_t)(bp->end - bp->cur)))
 	{
 		bp->restore = *++bp->cur;
 		*bp->cur = 0;
@@ -684,7 +684,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 			bp->cur = bp->end = bp->buf;
 			bp->nxt = 0;
 		}
-		else if (bp->nxt = memchr(bp->cur + 1, '\n', bp->end - bp->cur - 1))
+		else if (bp->nxt = memchr(bp->cur + 1, '\n', (size_t)(bp->end - bp->cur - 1)))
 			bp->nxt++;
 		if (prompt)
 			goto again;
@@ -1080,7 +1080,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 		error(ERROR_system(1), "unable to create pty");
 		UNREACHABLE();
 	}
-	if (!(mp = sfnew(NULL, 0, SFIO_UNBOUND, master, SFIO_READ|SFIO_WRITE)))
+	if (!(mp = sfnew(NULL, 0, (size_t)SFIO_UNBOUND, master, SFIO_READ|SFIO_WRITE)))
 	{
 		error(ERROR_system(1), "cannot open master stream");
 		UNREACHABLE();
@@ -1092,7 +1092,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 		for (s = stty; *s; s++)
 			if (isspace(*s))
 				n++;
-		ap = newof(0, Argv_t, 1, (n + 2) * sizeof(char*) + (s - stty + 1));
+		ap = newof(0, Argv_t, 1, ((size_t)n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
 		ap->argc = n + 1;
 		ap->argv = (char**)(ap + 1);
 		ap->args = (char*)(ap->argv + n + 2);

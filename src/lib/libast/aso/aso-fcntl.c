@@ -93,7 +93,7 @@ aso_init_fcntl(void* data, const char* details)
 				ssize_t n;
 				if ((n = opt - (path + 5)) >= ssizeof(tmp))
 					n = ssizeof(tmp) - 1;
-				memcpy(tmp, path + 5, n);
+				memcpy(tmp, path + 5, (size_t)n);
 				tmp[n] = 0;
 				perm = strperm(tmp, NULL, perm);
 			}
@@ -172,7 +172,7 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
 	else
 	{
 		lock.l_type = F_WRLCK;
-		k = HASH(p, apl->size) + 1;
+		k = HASH(p, (ssize_t)apl->size) + 1;
 	}
 	lock.l_whence = SEEK_SET;
 	lock.l_start = k - 1;

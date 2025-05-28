@@ -269,7 +269,7 @@ extern void		nv_setref(Namval_t*, Dt_t*,int);
 extern int		nv_settype(Namval_t*, Namval_t*, int);
 extern void 		nv_setvec(Namval_t*,int,int,char*[]);
 extern void		nv_setvtree(Namval_t*);
-extern size_t 		nv_setsize(Namval_t*,ssize_t);
+extern size_t 		nv_setsize(Namval_t*,size_t);
 extern Namfun_t		*nv_disc(Namval_t*,Namfun_t*,int);
 extern void 		nv_unset(Namval_t*,int);
 extern Namval_t		*nv_search(const char *, Dt_t*, int);
@@ -278,7 +278,7 @@ extern Namval_t		*nv_type(Namval_t*);
 extern void		nv_addtype(Namval_t*,const char*, Optdisc_t*, size_t);
 extern const Namdisc_t	*nv_discfun(int);
 
-#define nv_size(np)		nv_setsize((np),-1)
+#define nv_size(np)		nv_setsize((np),(size_t)-1)
 #define nv_stack(np,nf)		nv_disc(np,nf,0)
 
 #endif /* NV_DEFAULT */

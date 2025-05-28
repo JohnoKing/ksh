@@ -41,8 +41,8 @@ int sfresize(Sfio_t* f, Sfoff_t size)
 				void*	d;
 				if(s < (size_t)f->size && (d = realloc(f->data, s)) )
 				{	f->data = d;
-					f->size = s;
-					f->extent = s;
+					f->size = (ssize_t)s;
+					f->extent = (ssize_t)s;
 				}
 			}
 			memclear((char*)(f->data+size), (size_t)(f->extent-size));

@@ -78,7 +78,7 @@ ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
 
 	/* write out coded bytes */
 	n = ends - s + 1;
-	w = SFWRITE(f,s,n) == n ? w+n : -1;
+	w = SFWRITE(f,s,(size_t)n) == n ? w+n : -1;
 
 	SFOPEN(f,0);
 	return w;

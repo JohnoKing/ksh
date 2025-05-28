@@ -98,7 +98,7 @@ static void namebase(Sfio_t *outfile, char *pathname, char *suffix, char termch)
 		}
 	}
 	if(last>first)
-		sfwrite(outfile,first,last-first);
+		sfwrite(outfile,first,(size_t)(last-first));
 	sfputc(outfile,termch);
 }
 

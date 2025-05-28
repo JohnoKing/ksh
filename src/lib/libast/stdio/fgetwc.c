@@ -31,7 +31,7 @@ fgetwc(Sfio_t* f)
 	wchar_t	c;
 
 	FWIDE(f, WEOF);
-	return (sfread(f, &c, sizeof(c)) == sizeof(c)) ? c : WEOF;
+	return (sfread(f, &c, sizeof(c)) == sizeof(c)) ? (wint_t)c : WEOF;
 }
 
 #endif /* !_has_multibyte */

@@ -27,11 +27,11 @@
 #include "modelib.h"
 
 char*
-fmtmode(int mode, int external)
+fmtmode(mode_t mode, int external)
 {
 	char*		s;
 	struct modeop*	p;
-	char*			buf;
+	char*		buf;
 
 	if (!external)
 		mode = modex(mode);

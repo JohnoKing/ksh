@@ -341,7 +341,7 @@ getrec(Join_t* jp, ssize_t index, ssize_t discard)
 					break;
 				case S_WIDE:
 					tp = cp;
-					if (iswspace(mbchar(tp)))
+					if (iswspace((wint_t)mbchar(tp)))
 					{
 						cp = tp;
 						break;
@@ -360,7 +360,7 @@ getrec(Join_t* jp, ssize_t index, ssize_t discard)
 							continue;
 						case S_WIDE:
 							tp = cp - 1;
-							if (iswspace(mbchar(tp)))
+							if (iswspace((wint_t)mbchar(tp)))
 							{
 								cp = tp;
 								continue;
@@ -425,7 +425,7 @@ getrec(Join_t* jp, ssize_t index, ssize_t discard)
 						continue;
 					case S_WIDE:
 						tp = cp - 1;
-						if (iswspace(mbchar(tp)))
+						if (iswspace((wint_t)mbchar(tp)))
 						{
 							cp = tp;
 							continue;
@@ -486,7 +486,7 @@ outfield(Join_t* jp, ssize_t index, ssize_t n, ssize_t last)
 						continue;
 					case S_WIDE:
 						tp = cp - 1;
-						if (iswspace(mbchar(tp)))
+						if (iswspace((wint_t)mbchar(tp)))
 						{
 							cp = tp;
 							continue;
@@ -972,8 +972,8 @@ b_join(int argc, char** argv, Shbltin_t* context)
 	}
 	if (jp->buffered)
 	{
-		sfsetbuf(jp->file[0].iop, jp->file[0].iop, SFIO_UNBOUND);
-		sfsetbuf(jp->file[1].iop, jp->file[1].iop, SFIO_UNBOUND);
+		sfsetbuf(jp->file[0].iop, jp->file[0].iop, (size_t)SFIO_UNBOUND);
+		sfsetbuf(jp->file[1].iop, jp->file[1].iop, (size_t)SFIO_UNBOUND);
 	}
 	jp->outfile = sfstdout;
 	if (!jp->outlist)

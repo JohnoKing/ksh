@@ -91,7 +91,7 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
 			n -= (size_t)r;
 		}
 
-		if(n <= 0)	/* all done */
+		if((ssize_t)n <= 0)	/* all done */
 			break;
 
 		if(!(f->flags&SFIO_STRING) && !(f->bits&SFIO_MMAP) )

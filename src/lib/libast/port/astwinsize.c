@@ -58,7 +58,7 @@
 #undef	ioctl
 #undef	sleep
 
-static int		ttctl(int, int, void*);
+static int		ttctl(int, unsigned long, void*);
 
 void
 astwinsize(int fd, int* rows, int* cols)
@@ -113,7 +113,7 @@ astwinsize(int fd, int* rows, int* cols)
  */
 
 static int
-ttctl(int fd, int op, void* tt)
+ttctl(int fd, unsigned long op, void* tt)
 {
 	int	v;
 

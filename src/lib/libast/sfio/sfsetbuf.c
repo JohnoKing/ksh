@@ -242,7 +242,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 		if(_Sfpage <= 0)
 		{
 #if _lib_getpagesize
-			if((_Sfpage = (size_t)getpagesize()) <= 0)
+			if((_Sfpage = (ssize_t)getpagesize()) <= 0)
 #endif
 				_Sfpage = SFIO_PAGE;
 		}
@@ -317,8 +317,8 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 		{	f->bits |= SFIO_MMAP;
 			if(size == (size_t)SFIO_UNBOUND)
 			{	if(bufsize > _Sfpage)
-					size = bufsize * SFIO_NMAP;
-				else	size = _Sfpage * SFIO_NMAP;
+					size = (size_t)bufsize * SFIO_NMAP;
+				else	size = (size_t)_Sfpage * SFIO_NMAP;
 				if(size > 256*1024)
 					size = 256*1024;
 			}
@@ -331,7 +331,7 @@ setbuf:
 	if(size == (size_t)SFIO_UNBOUND)
 	{	/* define a default size suitable for block transfer */
 		if(init && osize > 0)
-			size = osize;
+			size = (size_t)osize;
 		else if(f == sfstderr && (f->mode&SFIO_WRITE))
 			size = 0;
 		else if(f->flags&SFIO_STRING )
@@ -339,8 +339,8 @@ setbuf:
 		else if((f->flags&SFIO_READ) && !(f->bits&SFIO_BOTH) &&
 			f->extent > 0 && f->extent < (Sfoff_t)_Sfpage )
 			size = (((size_t)f->extent + SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
-		else if((ssize_t)(size = _Sfpage) < bufsize)
-			size = bufsize;
+		else if((ssize_t)(size = (size_t)_Sfpage) < bufsize)
+			size = (size_t)bufsize;
 
 		buf = NULL;
 	}
@@ -372,13 +372,13 @@ setbuf:
 	}
 
 	/* set up new buffer */
-	f->size = size;
+	f->size = (ssize_t)size;
 	f->next = f->data = f->endr = f->endw = (uchar*)buf;
 	f->endb = buf ? ((f->mode&SFIO_READ) ? f->data : f->data+size) : NULL;
 	if(f->flags&SFIO_STRING)
 	{	/* these fields are used to test actual size - see sfseek() */
 		f->extent = (!sf_malloc &&
-			     ((f->flags&SFIO_READ) || (f->bits&SFIO_BOTH)) ) ? size : 0;
+			     ((f->flags&SFIO_READ) || (f->bits&SFIO_BOTH)) ) ? (Sflong_t)size : 0;
 		f->here = 0;
 
 		/* read+string stream should have all data available */
@@ -405,7 +405,7 @@ done:
 		blksz = SFIO_GRAIN;
 	while(blksz > f->size/2)
 		blksz /= 2;
-	f->blksz = blksz;
+	f->blksz = (size_t)blksz;
 
 	SFOPEN(f,local);
 

@@ -52,7 +52,7 @@ ssize_t _sfputl(Sfio_t*	f,	/* write a portable long to this stream */
 	n = (ps-s)+1;
 
 	if(n > 8 || SFWPEEK(f,ps,p) < n)
-		n = SFWRITE(f,s,n); /* write the hard way */
+		n = SFWRITE(f,s,(size_t)n); /* write the hard way */
 	else
 	{	switch(n)
 		{

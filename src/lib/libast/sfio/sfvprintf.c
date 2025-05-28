@@ -31,7 +31,6 @@
 **	Written by Kiem-Phong Vo.
 */
 
-#define HIGHBITI	(~((~((uint)0)) >> 1))
 #define HIGHBITS	(~((~((size_t)0)) >> 1))
 #define HIGHBITL	(~((~((Sfulong_t)0)) >> 1))
 
@@ -1004,7 +1003,7 @@ loop_fmt :
 					break;
 				if(lv < 0 && fmt == 'd' )
 				{	flags |= SFFMT_MINUS;
-					if(lv == HIGHBITL) /* avoid overflow */
+					if((Sfulong_t)lv == HIGHBITL) /* avoid overflow */
 					{	lv = (Sflong_t)(HIGHBITL/(Sfulong_t)base);
 						*--sp = _Sfdigits[HIGHBITL -
 								  ((Sfulong_t)lv)*(Sfulong_t)base];
@@ -1062,7 +1061,7 @@ loop_fmt :
 					break;
 				if(v < 0 && fmt == 'd' )
 				{	flags |= SFFMT_MINUS;
-					if(v == HIGHBITS) /* avoid overflow */
+					if((size_t)v == HIGHBITS) /* avoid overflow */
 					{	v = (ssize_t)(HIGHBITS/(size_t)base);
 						*--sp = _Sfdigits[HIGHBITS -
 								  (size_t)v*(size_t)base];

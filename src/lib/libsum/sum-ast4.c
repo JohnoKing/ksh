@@ -80,7 +80,7 @@ ast4_block(Sum_t* p, const void* s, size_t n)
 	Ast4_sum_t*	a = &((Ast4_t*)p)->cur;
 	unsigned char*	b = (unsigned char*)s;
 	unsigned char*	e = b + n;
-	int		c;
+	unsigned int	c;
 
 	while (b < e)
 	{

@@ -143,7 +143,7 @@ extern int	lchmod(const char*, mode_t);
 int
 b_chmod(int argc, char** argv, Shbltin_t* context)
 {
-	int		mode = 0;
+	mode_t		mode = 0;
 	int		force = 0;
 	int		flags;
 	char*		amode = 0;
@@ -153,7 +153,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
 	int		(*chmodf)(const char*, mode_t);
 	int		logical = 1;
 	int		notify = 0;
-	int		ignore = 0;
+	mode_t		ignore = 0;
 	int		show = 0;
 	int		chlink = 0;
 	struct stat	st;
@@ -242,7 +242,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
 	else
 	{
 		amode = *argv++;
-		mode = strperm(amode, &last, 0);
+		mode = (mode_t)strperm(amode, &last, 0);
 		if (*last)
 		{
 			if (ignore)
@@ -285,7 +285,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
 		commit:
 #endif
 			if (amode)
-				mode = strperm(amode, &last, ent->fts_statp->st_mode);
+				mode = (mode_t)strperm(amode, &last, (int)ent->fts_statp->st_mode);
 			if (show || (*chmodf)(ent->fts_accpath, mode) >= 0)
 			{
 				if (notify == 2 || notify == 1 && (mode&S_IPERM) != (ent->fts_statp->st_mode&S_IPERM))

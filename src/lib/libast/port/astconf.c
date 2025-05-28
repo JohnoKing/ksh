@@ -94,7 +94,7 @@ typedef struct Feature_s
 	char*		value;
 	char*		std;
 	char*		ast;
-	short		length;
+	ssize_t		length;
 	short		standard;
 	unsigned int	flags;
 	short		op;
@@ -325,7 +325,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 		if ((s = getenv(state.name)) || getenv(state.strict) && (s = (char*)state.standard))
 			n += strlen(s) + 1;
 		n = roundof(n, 32);
-		if (!(state.data = newof(0, char, n, 0)))
+		if (!(state.data = newof(0, char, (size_t)n, 0)))
 			return NULL;
 		state.last = state.data + n - 1;
 		strcpy(state.data, state.name);
@@ -366,7 +366,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 	{
 		if (!value)
 			return NULL;
-		n = strlen(value);
+		n = (ssize_t)strlen(value);
 		goto ok;
 	}
 	s = (char*)fp->name;
@@ -378,7 +378,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 			d++;
 		if (!*d)
 			break;
-		if (strneq(d, s, n) && isspace(d[n]))
+		if (strneq(d, s, (size_t)n) && isspace(d[n]))
 		{
 			if (!value)
 			{
@@ -393,7 +393,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 			for (; isspace(*s); s++);
 			for (v = s; *s && !isspace(*s); s++);
 			n = s - v;
-			if ((!path || *path == *p && (ssize_t)strlen(path) == (v - p - 1) && !memcmp(path, p, v - p - 1)) && strneq(v, value, n))
+			if ((!path || *path == *p && (ssize_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
 				goto ok;
 			for (; isspace(*s); s++);
 			if (*s)
@@ -433,7 +433,7 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 		state.data -= state.prefix;
 		c = n + state.last - state.data + 3 * MAXVAL;
 		c = roundof(c, 32);
-		if (!(state.data = newof(state.data, char, c, 0)))
+		if (!(state.data = newof(state.data, char, (size_t)c, 0)))
 			return NULL;
 		state.last = state.data + c - 1;
 		state.data += state.prefix;
@@ -458,12 +458,12 @@ synthesize(Feature_t* fp, const char* path, const char* value)
 		fp->value = 0;
 	if (n == 1 && (*value == '0' || *value == '-'))
 		n = 0;
-	if (!(fp->value = newof(fp->value, char, n, 1)))
+	if (!(fp->value = newof(fp->value, char, (size_t)n, 1)))
 		fp->value = null;
 	else
 	{
 		fp->flags |= CONF_ALLOC;
-		memcpy(fp->value, value, n);
+		memcpy(fp->value, value, (size_t)n);
 		fp->value[n] = 0;
 	}
 	return fp->value;
@@ -528,7 +528,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
 						{
 							if (r = p - d - 1)
 							{
-								sfwrite(tmp, d, r);
+								sfwrite(tmp, d, (size_t)r);
 								sfputc(tmp, '/');
 								sfputr(tmp, command, 0);
 								if ((d = sfstruse(tmp)) && !eaccess(d, X_OK))
@@ -699,16 +699,17 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 		{
 			if (state.synthesizing)
 			{
+				size_t len;
 				if (!(fp->flags & CONF_ALLOC))
 					fp->value = 0;
-				n = (int)strlen(value);
-				if (!(fp->value = newof(fp->value, char, n, 1)))
+				len = strlen(value);
+				if (!(fp->value = newof(fp->value, char, len, 1)))
 					fp->value = null;
 				else
 				{
 					fp->flags |= CONF_ALLOC;
-					memcpy(fp->value, value, n);
-					fp->value[n] = 0;
+					memcpy(fp->value, value, len);
+					fp->value[len] = 0;
 				}
 			}
 			else
@@ -742,7 +743,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 static char*
 feature(Feature_t* fp, const char* name, const char* path, const char* value, unsigned int flags, Error_f conferror)
 {
-	int		n;
+	size_t		n;
 
 	if (value && (streq(value, "-") || streq(value, "0")))
 		value = null;
@@ -757,7 +758,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 			return NULL;
 		if (state.notify && !(*state.notify)(name, path, value))
 			return NULL;
-		n = (int)strlen(name);
+		n = strlen(name);
 		if (!(fp = newof(0, Feature_t, 1, n + 1)))
 		{
 			if (conferror)
@@ -767,7 +768,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 		fp->op = -1;
 		fp->name = (const char*)fp + sizeof(Feature_t);
 		strcpy((char*)fp->name, name);
-		fp->length = n;
+		fp->length = (ssize_t)n;
 		fp->std = &null[0];
 		fp->next = state.features;
 		state.features = fp;
@@ -813,7 +814,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
 		name++;
  again:
 	for (p = prefix; p < &prefix[prefix_elements]; p++)
-		if (strneq(name, p->name, p->length) && ((c = name[p->length] == '_' || name[p->length] == '(' || name[p->length] == '#') || (v = isdigit(name[p->length]) && name[p->length + 1] == '_')))
+		if (strneq(name, p->name, (size_t)p->length) && ((c = name[p->length] == '_' || name[p->length] == '(' || name[p->length] == '#') || (v = isdigit(name[p->length]) && name[p->length + 1] == '_')))
 		{
 			if (p->call < 0)
 			{
@@ -1022,7 +1023,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 	case CONF_confstr:
 		call = "confstr";
 #if _lib_confstr
-		if (!(v = confstr(p->op, buf, sizeof(buf))))
+		if (!(v = (Sflong_t)confstr(p->op, buf, sizeof(buf))))
 		{
 			defined = 0;
 			v = -1;
@@ -1318,7 +1319,7 @@ nativeconf(Proc_t** pp, const char* operand)
 	ops[1] = 0;
 	if (*pp = procopen(_pth_getconf, cmd, environ, ops, PROC_READ))
 	{
-		if (sp = sfnew(NULL, NULL, SFIO_UNBOUND, (*pp)->rfd, SFIO_READ))
+		if (sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, (*pp)->rfd, SFIO_READ))
 		{
 			sfdisc(sp, SFIO_POPDISC);
 			return sp;

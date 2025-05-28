@@ -29,7 +29,7 @@ wint_t
 fputwc(wchar_t c, Sfio_t* f)
 {
 	FWIDE(f, WEOF);
-	return (sfwrite(f, &c, sizeof(c)) == sizeof(c)) ? c : WEOF;
+	return (sfwrite(f, &c, sizeof(c)) == sizeof(c)) ? (wint_t)c : WEOF;
 }
 
 #endif /* !_has_multibyte */

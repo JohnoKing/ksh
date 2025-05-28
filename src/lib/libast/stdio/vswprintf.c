@@ -42,7 +42,7 @@ vswprintf(wchar_t* s, size_t n, const wchar_t* fmt, va_list args)
 	f.flags = SFIO_STRING|SFIO_WRITE;
 	f.bits = SFIO_PRIVATE;
 	f.mode = SFIO_WRITE;
-	f.size = n - 1;
+	f.size = (ssize_t)n - 1;
 	f.data = f.next = f.endr = (uchar*)s;
 	f.endb = f.endw = f.data + f.size;
 

@@ -122,7 +122,7 @@ long_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 	if (flags & SUM_SIZE)
 	{
 		z = (flags & SUM_TOTAL) ? x->total_size : x->size;
-		if ((flags & SUM_SCALE) && ((n = scale) || (n = x->method->scale)))
+		if ((flags & SUM_SCALE) && ((n = scale) || (n = (size_t)x->method->scale)))
 			z = SCALE(z, n);
 		sfprintf(sp, " %*I*u", (flags & SUM_LEGACY) ? 6 : 0, sizeof(z), z);
 	}

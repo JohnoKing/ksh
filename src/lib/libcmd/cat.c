@@ -179,12 +179,12 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 										header = 0;
 										sfprintf(op, "%6d\t", line);
 									}
-									sfwrite(op, cur, m);
+									sfwrite(op, cur, (size_t)m);
 									*(cp = cur = end) = 0;
 								}
 								else
 								{
-									memcpy(tmp, pp, c);
+									memcpy(tmp, pp, (size_t)c);
 									if (!(nxt = (unsigned char*)(*reserve)(ip, SFIO_UNBOUND, 0)))
 									{
 										states[0] = sfvalue(ip) ? T_ERROR : T_EOF;
@@ -207,7 +207,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
  mb:
 									if ((n = end - cp + 1) >= (ssizeof(tmp) - c))
 										n = ssizeof(tmp) - c - 1;
-									memcpy(tmp + c, cp, n);
+									memcpy(tmp + c, cp, (size_t)n);
 									if ((m = mbsize(tmp)) >= c)
 									{
 										any = 1;
@@ -216,7 +216,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 											header = 0;
 											sfprintf(op, "%6d\t", line);
 										}
-										sfwrite(op, tmp, m);
+										sfwrite(op, tmp, (size_t)m);
 										cur = cp += m - c;
 									}
 								}
@@ -243,7 +243,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 				sfprintf(op, "%6d\t", line);
 			}
 			if (m)
-				sfwrite(op, cur, m);
+				sfwrite(op, cur, (size_t)m);
 		}
  special:
 		switch (n)
@@ -532,7 +532,7 @@ b_cat(int argc, char** argv, Shbltin_t* context)
 			continue;
 		}
 		if (flags&U_FLAG)
-			sfsetbuf(fp, fp, -1);
+			sfsetbuf(fp, fp, (size_t)SFIO_UNBOUND);
 		if (dovcat)
 			n = vcat(states, fp, sfstdout, reserve, flags);
 		else if (sfmove(fp, sfstdout, SFIO_UNBOUND, -1) >= 0 && sfeof(fp))

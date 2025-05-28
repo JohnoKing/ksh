@@ -39,7 +39,8 @@
 int	b_umask(int argc,char *argv[],Shbltin_t *context)
 {
 	char *mask;
-	int flag = 0, sflag = 0;
+	mode_t flag = 0;
+	int sflag = 0;
 	NOT_USED(context);
 	while((argc = optget(argv,sh_optumask))) switch(argc)
 	{
@@ -68,7 +69,7 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
 			while(c = *mask++)
 			{
 				if (c>='0' && c<='7')
-					flag = (flag<<3) + (c-'0');
+					flag = (flag<<3) + (mode_t)(c-'0');
 				else
 				{
 					errormsg(SH_DICT,ERROR_exit(1),e_number,*argv);

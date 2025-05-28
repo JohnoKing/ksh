@@ -33,14 +33,14 @@
 
 #undef	modei
 
-int
-modei(int x)
+mode_t
+modei(mode_t x)
 {
 #if _S_IDPERM
 	return x & X_IPERM;
 #else
-	int	i;
-	int	c;
+	mode_t	i;
+	mode_t	c;
 
 	i = 0;
 	for (c = 0; c < PERMLEN; c += 2)

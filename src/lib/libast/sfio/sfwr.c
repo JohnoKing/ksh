@@ -74,7 +74,7 @@ static ssize_t sfoutput(Sfio_t* f, char* buf, size_t n)
 				break;
 
 			/* skip a dirty page */
-			n -= _Sfpage;
+			n -= (size_t)_Sfpage;
 			buf += _Sfpage;
 		}
 
@@ -84,7 +84,7 @@ static ssize_t sfoutput(Sfio_t* f, char* buf, size_t n)
 			{	buf = endbuf;
 				n = s = 0;
 			}
-			if((wr = write(f->file,wbuf,buf-wbuf)) > 0)
+			if((wr = write(f->file,wbuf,(size_t)(buf-wbuf))) > 0)
 			{	w += wr;
 				f->bits &= ~SFIO_HOLE;
 			}
@@ -99,7 +99,7 @@ static ssize_t sfoutput(Sfio_t* f, char* buf, size_t n)
 			if(SFSK(f,(Sfoff_t)s,SEEK_CUR,NULL) < 0)
 				break;
 			w += s;
-			n -= s;
+			n -= (size_t)s;
 			wbuf = (buf += s);
 			f->bits |= SFIO_HOLE;
 
@@ -107,7 +107,7 @@ static ssize_t sfoutput(Sfio_t* f, char* buf, size_t n)
 			{	/* next page must be dirty */
 				s = (ssize_t)n <= _Sfpage ? 1 : _Sfpage;
 				buf += s;
-				n -= s;
+				n -= (size_t)s;
 			}
 		}
 	}
@@ -142,16 +142,16 @@ ssize_t sfwr(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* disc)
 
 		dc = disc;
 		if(f->flags&SFIO_STRING)	/* just asking to extend buffer */
-			w = n + (f->next - f->data);
+			w = (ssize_t)n + (f->next - f->data);
 		else
 		{	/* warn that a write is about to happen */
 			SFDISC(f,dc,writef);
 			if(dc && dc->exceptf && (f->flags&SFIO_IOCHECK) )
-			{	int	rv;
+			{	ssize_t	rv;
 				if(local)
 					SETLOCAL(f);
-				if((rv = _sfexcept(f,SFIO_WRITE,n,dc)) > 0)
-					n = rv;
+				if((rv = _sfexcept(f,SFIO_WRITE,(ssize_t)n,dc)) > 0)
+					n = (size_t)rv;
 				else if(rv < 0)
 				{	f->flags |= SFIO_ERROR;
 					return rv;
@@ -177,7 +177,7 @@ ssize_t sfwr(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* disc)
 			{	SFDCWR(f,buf,n,dc,w);
 			}
 			else if(SFISNULL(f))
-				w = n;
+				w = (ssize_t)n;
 			else if(f->flags&SFIO_WHOLE)
 				goto do_write;
 			else if((ssize_t)n >= _Sfpage &&

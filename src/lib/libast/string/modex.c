@@ -31,14 +31,14 @@
 
 #undef	modex
 
-int
-modex(int i)
+mode_t
+modex(mode_t i)
 {
 #if _S_IDPERM && _S_IDTYPE
 	return i;
 #else
-	int	x;
-	int	c;
+	mode_t	x;
+	mode_t	c;
 
 	x = 0;
 #if _S_IDPERM

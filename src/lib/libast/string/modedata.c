@@ -48,7 +48,7 @@ struct modeop	modetab[MODELEN] =
 #endif
 };
 
-int	permmap[PERMLEN] =
+mode_t	permmap[PERMLEN] =
 {
 	S_ISUID, X_ISUID,
 	S_ISGID, X_ISGID,

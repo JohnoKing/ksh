@@ -30,17 +30,17 @@
 int
 strmode(const char* s)
 {
-	int		c;
+	mode_t		c;
 	char*		t;
 	struct modeop*	p;
-	int		mode;
+	mode_t		mode;
 
 	mode = 0;
 	for (p = modetab; (c = *s++) && p < &modetab[MODELEN]; p++)
 		for (t = p->name; *t; t++)
 			if (*t == c)
 			{
-				c = (int)(t - p->name);
+				c = (mode_t)(t - p->name);
 				mode |= (p->mask1 & (c << p->shift1)) | (p->mask2 & (c << p->shift2));
 				break;
 			}

@@ -421,7 +421,7 @@ uint32_t
 asoinc32(uint32_t volatile* p)
 {
 	ssize_t		k;
-	int		o;
+	uint32_t	o;
 
 #if defined(_aso_inc32)
 	if (!state.lockf)
@@ -529,7 +529,7 @@ uint32_t
 asodec32(uint32_t volatile* p)
 {
 	ssize_t		k;
-	int		o;
+	uint32_t	o;
 
 #if defined(_aso_dec32)
 	if (!state.lockf)

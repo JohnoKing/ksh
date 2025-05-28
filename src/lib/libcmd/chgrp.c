@@ -153,7 +153,7 @@ getids(char* s, char** e, Key_t* key, int options)
 		options |= OPT_CHOWN;
 		if ((n = t++ - s) >= ssizeof(buf))
 			n = ssizeof(buf) - 1;
-		*((s = (char*)memcpy(buf, s, n)) + n) = 0;
+		*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
 	}
 	if (options & OPT_CHOWN)
 	{
@@ -177,7 +177,7 @@ getids(char* s, char** e, Key_t* key, int options)
 		{
 			if ((n = t++ - s) >= ssizeof(buf))
 				n = ssizeof(buf) - 1;
-			*((s = (char*)memcpy(buf, s, n)) + n) = 0;
+			*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
 		}
 	}
 	if (*s)
@@ -299,8 +299,8 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 				error(ERROR_exit(1), "%s: cannot stat", opt_info.arg);
 				UNREACHABLE();
 			}
-			uid = st.st_uid;
-			gid = st.st_gid;
+			uid = (int)st.st_uid;
+			gid = (int)st.st_gid;
 			options |= OPT_UID|OPT_GID;
 			continue;
 		case 'u':
@@ -442,8 +442,8 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 				size_t i;
 				options &= ~(OPT_UID|OPT_GID);
 				uid = gid = -1;
-				keys[0].uid = keys[1].uid = ent->fts_statp->st_uid;
-				keys[0].gid = keys[2].gid = ent->fts_statp->st_gid;
+				keys[0].uid = keys[1].uid = (int)ent->fts_statp->st_uid;
+				keys[0].gid = keys[2].gid = (int)ent->fts_statp->st_gid;
 				i = 0;
 				do
 				{
@@ -465,9 +465,9 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 			else
 			{
 				if (!(options & OPT_UID))
-					uid = ent->fts_statp->st_uid;
+					uid = (int)ent->fts_statp->st_uid;
 				if (!(options & OPT_GID))
-					gid = ent->fts_statp->st_gid;
+					gid = (int)ent->fts_statp->st_gid;
 			}
 			if ((options & OPT_UNMAPPED) && (uid < 0 || gid < 0))
 			{
@@ -489,7 +489,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
 					}
 					sfprintf(sfstdout, "%s uid:%05d->%05d gid:%05d->%05d %s\n", op, ent->fts_statp->st_uid, uid, ent->fts_statp->st_gid, gid, ent->fts_path);
 				}
-				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, uid, gid) && !(options & OPT_FORCE))
+				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, (uid_t)uid, (gid_t)gid) && !(options & OPT_FORCE))
 					error(ERROR_system(0), "%s: cannot change%s", ent->fts_path, s);
 			}
 			break;

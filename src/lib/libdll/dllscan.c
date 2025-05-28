@@ -108,7 +108,7 @@ dllinfo(void)
 				for (;;)
 				{
 					for (d = s; *s && *s != ':' && *s != ','; s++);
-					if (!(dn = s - d))
+					if (!(dn = (size_t)(s - d)))
 						d = 0;
 					if (*s == ':')
 					{
@@ -118,7 +118,7 @@ dllinfo(void)
 						if (*s == ':')
 						{
 							for (p = ++s; *s && *s != ':' && *s != ','; s++);
-							if (!(pn = s - p))
+							if (!(pn = (size_t)(s - p)))
 								p = 0;
 						}
 						else
@@ -148,7 +148,7 @@ dllinfo(void)
 				{
 					if(vn <= 0)
 						abort();
-					memcpy(info.envbuf, v, vn);
+					memcpy(info.envbuf, v, (size_t)vn);
 					info.env = info.envbuf;
 				}
 			}
@@ -263,9 +263,9 @@ dllsopen(const char* lib, const char* name, const char* version)
 	}
 	else if (t = strrchr(name, '/'))
 	{
-		if (!(scan->pb = vmnewof(vm, 0, char, t - (char*)name, 2)))
+		if (!(scan->pb = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 2)))
 			goto bad;
-		memcpy(scan->pb, name, t - (char*)name);
+		memcpy(scan->pb, name, (size_t)(t - (char*)name));
 		name = (const char*)(t + 1);
 	}
 	if (name)
@@ -292,9 +292,9 @@ dllsopen(const char* lib, const char* name, const char* version)
 					if (*t != '-')
 						scan->flags |= DLL_MATCH_VERSION;
 					version = t + 1;
-					if (!(s = vmnewof(vm, 0, char, t - (char*)name, 1)))
+					if (!(s = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 1)))
 						goto bad;
-					memcpy(s, name, t - (char*)name);
+					memcpy(s, name, (size_t)(t - (char*)name));
 					name = (const char*)s;
 					break;
 				}

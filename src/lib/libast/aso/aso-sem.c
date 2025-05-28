@@ -83,7 +83,7 @@ aso_init_semaphore(void* data, const char* details)
 		{
 			if (strneq(path, "perm=", 5))
 			{
-				if ((n = opt - (path + 5)) >= sizeof(tmp))
+				if ((n = (size_t)(opt - (path + 5))) >= sizeof(tmp))
 					n = sizeof(tmp) - 1;
 				memcpy(tmp, path + 5, n);
 				tmp[n] = 0;
@@ -178,7 +178,7 @@ aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
 	else
 	{
 		sem.sem_op = -1;
-		k = HASH(p, apl->size) + 1;
+		k = HASH(p, (ssize_t)apl->size) + 1;
 	}
 	sem.sem_num = k;
 	sem.sem_flg = 0;

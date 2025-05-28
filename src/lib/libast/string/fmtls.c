@@ -62,7 +62,7 @@ fmtls(char* buf, const char* name, struct stat* st, const char* info, const char
 	}
 	if (flags & LS_LONG)
 	{
-		s += sfsprintf(s, LS_W_MAX, "%s%3u", fmtmode((int)st->st_mode, flags & LS_EXTERNAL), (unsigned int)st->st_nlink);
+		s += sfsprintf(s, LS_W_MAX, "%s%3u", fmtmode(st->st_mode, flags & LS_EXTERNAL), (unsigned int)st->st_nlink);
 		if (!(flags & LS_NOUSER))
 		{
 			if (flags & LS_NUMBER)

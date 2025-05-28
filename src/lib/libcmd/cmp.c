@@ -206,7 +206,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 		pos += c1;
 		if (flags & CMP_SILENT)
 		{
-			if (memcmp(p1, p2, c1))
+			if (memcmp(p1, p2, (size_t)c1))
 				return 1;
 			p1 += c1;
 			p2 += c1;

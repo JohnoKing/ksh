@@ -320,16 +320,16 @@ static void hist_subst(const char *command,int fd,char *replace)
 {
 	char *newp=replace;
 	char *sp;
-	ssize_t c;
+	size_t c;
 	off_t size;
 	char *string;
 	while(*++newp != '='); /* skip to '=' */
 	if((size = lseek(fd,0,SEEK_END)) < 0)
 		return;
 	lseek(fd,0,SEEK_SET);
-	c = (ssize_t)size;
+	c = (size_t)size;
 	string = stkalloc(sh.stk,c+1);
-	if(read(fd,string,c)!=c)
+	if(read(fd,string,c)!=(ssize_t)c)
 		return;
 	string[c] = 0;
 	*newp++ =  0;

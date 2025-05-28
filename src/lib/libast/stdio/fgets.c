@@ -47,7 +47,7 @@ _stdgets(Sfio_t* f, char* us, ssize_t n, int isgets)
 		if(p > n)
 			p = n;
 
-		if((ps = (uchar*)memccpy((char*)is,(char*)ps,'\n',p)) != NULL)
+		if((ps = (uchar*)memccpy((char*)is,(char*)ps,'\n',(size_t)p)) != NULL)
 			p = ps-is;
 		is += p;
 		ps  = f->next+p;

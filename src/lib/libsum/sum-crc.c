@@ -154,13 +154,13 @@ crc_open(const Method_t* method, const char* name)
 		k = (v ? v : s) - t;
 		if (isdigit(*t) || v && k >= 4 && strneq(t, "poly", 4) && (t = v + 1))
 			polynomial = (Crcnum_t)strtoul(t, NULL, 0);
-		else if (strneq(t, "done", k))
+		else if (strneq(t, "done", (size_t)k))
 			sum->done = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum->done;
-		else if (strneq(t, "init", k))
+		else if (strneq(t, "init", (size_t)k))
 			sum->init = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum->init;
-		else if (strneq(t, "rotate", k))
+		else if (strneq(t, "rotate", (size_t)k))
 			sum->rotate = 1;
-		else if (strneq(t, "size", k))
+		else if (strneq(t, "size", (size_t)k))
 		{
 			sum->addsize = 1;
 			if (v)

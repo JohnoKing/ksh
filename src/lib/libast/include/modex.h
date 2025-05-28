@@ -28,8 +28,8 @@
 #include <ast_fs.h>
 #include <modecanon.h>
 
-extern int		modei(int);
-extern int		modex(int);
+extern mode_t		modei(mode_t);
+extern mode_t		modex(mode_t);
 
 #if _S_IDPERM
 #define modei(m)	((m)&X_IPERM)

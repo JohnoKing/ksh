@@ -135,7 +135,7 @@ static const char usage_tail[] =
 #include <stk.h>
 #include <tmx.h>
 
-#define PATH_CHUNK	256
+#define PATH_CHUNK	256U
 
 #define CP		1
 #define LN		2
@@ -159,9 +159,9 @@ typedef struct State_s			/* program state		*/
 	int		force;		/* force approval		*/
 	int		hierarchy;	/* preserve hierarchy		*/
 	int		interactive;	/* prompt for approval		*/
-	int		missmode;	/* default missing dir mode	*/
+	mode_t		missmode;	/* default missing dir mode	*/
+	mode_t		perm;		/* permissions to preserve	*/
 	int		op;		/* {CP,LN,MV}			*/
-	int		perm;		/* permissions to preserve	*/
 	int		preserve;	/* preserve { ids perms times }	*/
 	int		recursive;	/* subtrees too			*/
 	int		remove;		/* remove destination before op	*/
@@ -210,13 +210,13 @@ preserve(State_t* state, const char* path, struct stat* ns, struct stat* os)
 			switch (n)
 			{
 			case 01:
-				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid(os->st_gid));
+				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid((int)os->st_gid));
 				break;
 			case 02:
-				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid(os->st_uid));
+				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid((int)os->st_uid));
 				break;
 			case 03:
-				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid(os->st_uid), fmtgid(os->st_gid));
+				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid((int)os->st_uid), fmtgid((int)os->st_gid));
 				break;
 			}
 	}
@@ -235,7 +235,7 @@ visit(State_t* state, FTSENT* ent)
 	int		rm = state->remove || ent->fts_info == FTS_SL;
 	int		m;
 	int		v;
-	ssize_t		length;
+	size_t		length;
 	char*		s;
 	char*		e;
 	char*		protection;
@@ -254,12 +254,12 @@ visit(State_t* state, FTSENT* ent)
 	if (ent->fts_level == 0)
 	{
 		base = ent->fts_name;
-		len = ent->fts_namelen;
+		len = (ssize_t)ent->fts_namelen;
 		if (state->hierarchy)
 			state->presiz = -1;
 		else
 		{
-			state->presiz = ent->fts_pathlen;
+			state->presiz = (ssize_t)ent->fts_pathlen;
 			while (*base == '.' && *(base + 1) == '/')
 				for (base += 2; *base == '/'; base++);
 			if (*base == '.' && !*(base + 1))
@@ -279,12 +279,12 @@ visit(State_t* state, FTSENT* ent)
 	else
 	{
 		base = ent->fts_path + state->presiz + 1;
-		len = ent->fts_pathlen - state->presiz - 1;
+		len = (ssize_t)ent->fts_pathlen - state->presiz - 1;
 	}
 	len++;
 	if (state->directory)
 	{
-		if ((state->postsiz + len) > state->pathsiz && !(state->path = newof(state->path, char, state->pathsiz = roundof(state->postsiz + len, PATH_CHUNK), 0)))
+		if ((state->postsiz + (size_t)len) > state->pathsiz && !(state->path = newof(state->path, char, state->pathsiz = roundof(state->postsiz + (size_t)len, PATH_CHUNK), 0)))
 		{
 			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
 			UNREACHABLE();
@@ -292,7 +292,7 @@ visit(State_t* state, FTSENT* ent)
 		if (state->hierarchy && ent->fts_level == 0 && strchr(base, '/'))
 		{
 			s = state->path + state->postsiz;
-			memcpy(s, base, len);
+			memcpy(s, base, (size_t)len);
 			while (e = strchr(s, '/'))
 			{
 				*e = 0;
@@ -323,7 +323,7 @@ visit(State_t* state, FTSENT* ent)
 		if (state->preserve && state->op != LN || ent->fts_level > 0 && (ent->fts_statp->st_mode & S_IRWXU) != S_IRWXU)
 		{
 			if (len && ent->fts_level > 0)
-				memcpy(state->path + state->postsiz, base, len);
+				memcpy(state->path + state->postsiz, base, (size_t)len);
 			else
 				state->path[state->postsiz] = 0;
 			if (stat(state->path, &st))
@@ -363,7 +363,7 @@ visit(State_t* state, FTSENT* ent)
 			/* FALLTHROUGH */
 		case FTS_D:
 			if (state->directory)
-				memcpy(state->path + state->postsiz, base, len);
+				memcpy(state->path + state->postsiz, base, (size_t)len);
 			if (!(*state->stat)(state->path, &st))
 			{
 				if (!S_ISDIR(st.st_mode))
@@ -397,7 +397,7 @@ visit(State_t* state, FTSENT* ent)
 		break;
 	}
 	if (state->directory)
-		memcpy(state->path + state->postsiz, base, len);
+		memcpy(state->path + state->postsiz, base, (size_t)len);
 	if ((*state->stat)(state->path, &st))
 		st.st_mode = 0;
 	else if (state->update && !S_ISDIR(st.st_mode) && (unsigned long)ent->fts_statp->st_mtime < (unsigned long)st.st_mtime)
@@ -587,14 +587,14 @@ visit(State_t* state, FTSENT* ent)
 			}
 			else if (ent->fts_statp->st_size > 0)
 			{
-				if (!(ip = sfnew(NULL, NULL, SFIO_UNBOUND, rfd, SFIO_READ)))
+				if (!(ip = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, rfd, SFIO_READ)))
 				{
 					error(ERROR_SYSTEM|2, "%s: %s read stream error", ent->fts_path, state->path);
 					close(rfd);
 					close(wfd);
 					return 0;
 				}
-				if (!(op = sfnew(NULL, NULL, SFIO_UNBOUND, wfd, SFIO_WRITE)))
+				if (!(op = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, wfd, SFIO_WRITE)))
 				{
 					error(ERROR_SYSTEM|2, "%s: %s write stream error", ent->fts_path, state->path);
 					close(wfd);
@@ -876,12 +876,12 @@ b_cp(int argc, char** argv, Shbltin_t* context)
 		argc--;
 		argv++;
 	}
-	if (!(v = stkalloc(stkstd, (argc + 2) * sizeof(char*))))
+	if (!(v = stkalloc(stkstd, ((size_t)argc + 2) * sizeof(char*))))
 	{
 		error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
 		UNREACHABLE();
 	}
-	memcpy(v, argv, (argc + 1) * sizeof(char*));
+	memcpy(v, argv, ((size_t)argc + 1) * sizeof(char*));
 	argv = v;
 	if (!standard)
 	{

@@ -203,7 +203,7 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
 				if (*p != '\n')
 					sumblock(state->sum, "\r", 1);
 			}
-			while (r = memchr(p, '\r', e - p))
+			while (r = memchr(p, '\r', (size_t)(e - p)))
 			{
 				if (++r >= e)
 				{
@@ -211,17 +211,17 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
 					peek = 1;
 					break;
 				}
-				sumblock(state->sum, p, r - p - (*r == '\n'));
+				sumblock(state->sum, p, (size_t)(r - p - (*r == '\n')));
 				p = r;
 			}
-			sumblock(state->sum, p, e - p);
+			sumblock(state->sum, p, (size_t)(e - p));
 		}
 		if (peek)
 			sumblock(state->sum, "\r", 1);
 	}
 	else
 		while (p = sfreserve(ip, SFIO_UNBOUND, 0))
-			sumblock(state->sum, p, sfvalue(ip));
+			sumblock(state->sum, p, (size_t)sfvalue(ip));
 	if (sfvalue(ip))
 		error(ERROR_SYSTEM|2, "%s: read error", file);
 	sumdone(state->sum);
@@ -237,8 +237,8 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
 				else
 					sfprintf(sfstdout, " %04o %s %s",
 						modex(st->st_mode & S_IPERM),
-						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid(st->st_uid) : "-",
-						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid(st->st_gid) : "-");
+						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid((int)st->st_uid) : "-",
+						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid((int)st->st_gid) : "-");
 			}
 			if (ip != sfstdin)
 				sfprintf(op, " %s", file);
@@ -258,7 +258,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 	char*		e;
 	char*		file;
 	int		attr;
-	int		mode;
+	mode_t		mode;
 	int		uid = -1;
 	int		gid = -1;
 	Sfio_t*		sp;
@@ -272,7 +272,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 			file = t;
 		*file++ = 0;
 		attr = 0;
-		if ((mode = (int)strtol(file, &e, 8)) && *e == ' ' && (e - file) == 4)
+		if ((mode = (mode_t)strtoul(file, &e, 8)) && *e == ' ' && (e - file) == 4)
 		{
 			mode = modei(mode);
 			if (t = strchr(++e, ' '))
@@ -346,7 +346,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 					}
 					if (state->permissions && (uid >= 0 || gid >= 0))
 					{
-						if (chown(file, uid, gid) < 0)
+						if (chown(file, (uid_t)uid, (uid_t)gid) < 0)
 						{
 							if (uid < 0)
 								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid(gid));
@@ -472,7 +472,7 @@ b_cksum(int argc, char** argv, Shbltin_t* context)
 			state.text = 0;
 			continue;
 		case 'B':
-			state.scale = opt_info.num;
+			state.scale = (size_t)opt_info.num;
 			continue;
 		case 'c':
 			if (!(state.check = sfstropen()))

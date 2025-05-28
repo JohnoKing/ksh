@@ -56,11 +56,11 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 			char		buf[16];
 			ssize_t	r;
 
-			for(w = n; w > 0; )
+			for(w = (ssize_t)n; w > 0; )
 			{	if((r = w) > ssizeof(buf))
 					r = sizeof(buf);
-				if((r = read(f->file,buf,r)) <= 0)
-				{	n -= w;
+				if((r = read(f->file,buf,(size_t)r)) <= 0)
+				{	n -= (size_t)w;
 					break;
 				}
 				else	w -= r;
@@ -91,14 +91,14 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 		{	if(w > (ssize_t)n)
 				w = (ssize_t)n;
 			f->next = (s += w);
-			n -= w;
+			n -= (size_t)w;
 			break;
 		}
 
 		/* attempt to create space in buffer */
 		if(w == 0 || ((f->flags&SFIO_WHOLE) && w < (ssize_t)n) )
 		{	if(f->flags&SFIO_STRING) /* extend buffer */
-			{	(void)SFWR(f, s, n-w, f->disc);
+			{	(void)SFWR(f, s, n-(size_t)w, f->disc);
 				if((w = f->endb - f->next) < (ssize_t)n)
 				{	if(!(f->flags&SFIO_STRING)) /* maybe sftmp */
 					{	if(f->next > f->data)
@@ -128,12 +128,13 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 				w = (ssize_t)n;
 			if(w <= 0) /* no forward progress possible */
 				break;
-			memmove(f->next, s, w);
+			memmove(f->next, s, (size_t)w);
 			f->next += w;
 		}
 
 		s += w;
-		if((n -= w) <= 0)
+		n -= (size_t)w;
+		if((ssize_t)n <= 0)
 			break;
 	}
 
@@ -143,8 +144,8 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 
 	/* check to see if buffer should be flushed */
 	else if(n == 0 && (f->flags&SFIO_LINE) && !(f->flags&SFIO_STRING))
-	{	if((ssize_t)(n = f->next-f->data) > (w = s-begs))
-			n = w;
+	{	if((ssize_t)(n = (size_t)(f->next-f->data)) > (w = s-begs))
+			n = (size_t)w;
 		if(n > 0 && n < HIFORLINE)
 		{	for(next = f->next-1; n > 0; --n, --next)
 			{	if(*next == '\n')

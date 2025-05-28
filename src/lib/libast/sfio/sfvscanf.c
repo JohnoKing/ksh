@@ -108,17 +108,17 @@ static int _scgetc(void* arg, int flag)
 
 /* structure to match characters in a character class */
 typedef struct _accept_s
-{	char	ok[SFIO_MAXCHAR+1];
-	int	yes;
-	char	*form, *endf;
+{	unsigned char	ok[SFIO_MAXCHAR+1];
+	int		yes;
+	unsigned char	*form, *endf;
 #if _has_multibyte
 	wchar_t	wc;
 #endif
 } Accept_t;
 
-static char* _sfsetclass(const char*	form,	/* format string			*/
-			 Accept_t*	ac,	/* values of accepted characters	*/
-			 int		flags)	/* SFFMT_LONG for wchar_t		*/
+static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
+				 Accept_t*		ac,	/* values of accepted characters	*/
+				 int			flags)	/* SFFMT_LONG for wchar_t		*/
 {
 	int		c, endc, n;
 	SFMBDCL(mbs)
@@ -133,10 +133,10 @@ static char* _sfsetclass(const char*	form,	/* format string			*/
 		ac->ok[c] = !ac->yes;
 
 	if(*form == ']' || *form == '-') /* special first char */
-	{	ac->ok[*((unsigned char*)form)] = ac->yes;
+	{	ac->ok[*form] = ac->yes;
 		form += 1;
 	}
-	ac->form = (char*)form;
+	ac->form = form;
 
 	if(flags&SFFMT_LONG)
 		SFMBCLR(&mbs);
@@ -165,8 +165,8 @@ static char* _sfsetclass(const char*	form,	/* format string			*/
 		}
 	}
 
-	ac->endf = (char*)form;
-	return (char*)(form+1);
+	ac->endf = form;
+	return form+1;
 }
 
 #if _has_multibyte
@@ -175,23 +175,23 @@ static int _sfwaccept(wchar_t wc, Accept_t* ac)
 	int		endc, c;
 	size_t		n;
 	wchar_t		fwc;
-	char		*form = ac->form;
+	unsigned char	*form = ac->form;
 	SFMBDCL(mbs)
 
 	SFMBCLR(&mbs);
 	for(n = 1; *form != ']'; form += n)
-	{	if((c = *((uchar*)form)) == 0)
+	{	if((c = *form) == 0)
 			return 0;
 
 		if(*(form+1) == '-')
-		{	endc = *((uchar*)(form+2));
+		{	endc = *(form+2);
 			if(c >= 128 || endc >= 128 ) /* range must be ASCII */
 				goto one_char;
 			n = 3;
 		}
 		else
 		{ one_char:
-			if((n = mbrtowc(&fwc, form, (size_t)(ac->endf-form), &mbs)) > 1 &&
+			if((n = mbrtowc(&fwc, (const char*)form, (size_t)(ac->endf-form), &mbs)) > 1 &&
 			   wc == fwc )
 				return ac->yes;
 		}
@@ -947,7 +947,7 @@ loop_fmt:
 			}
 			else	size = 0;
 
-			if(fmt == '[' && !(form = _sfsetclass(form,&acc,flags)) )
+			if(fmt == '[' && !(form = (const char*)_sfsetclass((unsigned char*)form,&acc,flags)) )
 			{	SFungetc(f,inp);
 				goto pop_fmt;
 			}

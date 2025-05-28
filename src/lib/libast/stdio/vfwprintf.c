@@ -50,7 +50,7 @@ vfwprintf(Sfio_t* f, const wchar_t* fmt, va_list args)
 			else
 			{
 				n = mbstowcs(NULL, x, 0);
-				if (w = (wchar_t*)sfreserve(f, n * sizeof(wchar_t) + 1, 0))
+				if (w = (wchar_t*)sfreserve(f, (ssize_t)(n * sizeof(wchar_t) + 1), 0))
 					v = (int)mbstowcs(w, x, n + 1);
 				else
 					v = -1;

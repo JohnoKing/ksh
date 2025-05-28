@@ -37,25 +37,29 @@
 #include <modex.h>
 
 int
-strperm(const char* aexpr, char** e, int perm)
+strperm(const char* aexpr, char** e, int p)
 {
 	char*	expr = (char*)aexpr;
 	int	c;
-	int	typ;
-	int	who;
+	mode_t	typ;
+	mode_t	who;
+	mode_t	perm;
+	mode_t	mask;
 	int	num;
 	int	op;
-	mode_t	mask;
 	int	masked;
 
-	if (perm == -1)
+	if (p == -1)
 	{
 		perm = 0;
 		masked = 1;
 		mask = ~0U;
 	}
 	else
+	{
+		perm = (mode_t)p;
 		masked = 0;
+	}
 	for (;;)
 	{
 		op = num = who = typ = 0;
