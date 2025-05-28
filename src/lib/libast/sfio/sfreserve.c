@@ -166,7 +166,7 @@ done:	/* compute the buffer to be returned */
 		data = f->next;
 	else if(f->flags&SFIO_STRING) /* try extending string buffer */
 	{	if((f->mode&SFIO_WRITE) && (f->flags&SFIO_MALLOC) )
-		{	(void)SFWR(f,f->next,sz,f->disc);
+		{	(void)SFWR(f,f->next,(size_t)sz,f->disc);
 			if((n = f->endb - f->next) >= sz )
 				data = f->next;
 		}
@@ -176,7 +176,7 @@ done:	/* compute the buffer to be returned */
 			data = rsrv->data;
 	}
 	else if(type != SFIO_LOCKR && sz > f->size && (rsrv = _sfrsrv(f,sz)) )
-	{	if((n = SFREAD(f,rsrv->data,sz)) >= sz) /* read side buffer */
+	{	if((n = SFREAD(f,rsrv->data,(size_t)sz)) >= sz) /* read side buffer */
 			data = rsrv->data;
 		else	rsrv->slen = -n;
 	}

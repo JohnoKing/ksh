@@ -31,7 +31,7 @@ extern ssize_t sfpeek(Sfio_t*	f,	/* file to peek */
 	int	mode;
 
 	/* query for the extent of the remainder of the buffer */
-	if((sz = size) == 0 || !bp)
+	if((sz = (ssize_t)size) == 0 || !bp)
 	{	if(f->mode&SFIO_INIT)
 			(void)_sfmode(f,0,0);
 

@@ -207,7 +207,6 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
 
 	if(f->endb > f->next)
 	{	/* reduce wastage in future buffer fillings */
-		f->iosz = (f->next - f->data) + (f->endb - f->next)/2;
 		f->iosz = ((f->iosz + f->blksz-1)/f->blksz)*f->blksz;
 	}
 	if(f->iosz >= (size_t)f->size)
@@ -217,13 +216,13 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
 	f->next = f->endr = f->endb = f->data;
 
 	/* small backseeks often come in bunches, so seek back as far as possible */
-	if(p < f->lpos && (size_t)f->size > f->blksz && (p + f->blksz) > (unsigned)s)
+	if(p < f->lpos && (size_t)f->size > f->blksz && ((size_t)p + f->blksz) > (size_t)s)
 	{	if((r = s - f->size) < 0)
 			r = 0;
 	}
 	/* try to align buffer to block boundary to enhance I/O speed */
 	else if(f->blksz > 0 && (size_t)f->size >= 2*f->blksz)
-		r = p - (p%f->blksz);
+		r = p - (p%(Sflong_t)f->blksz);
 	else
 	{	r = p;
 
@@ -241,7 +240,7 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
 	}
 
 	if(r < p) /* read to cover p */
-	{	(void)SFRD(f, f->data, f->size, f->disc);
+	{	(void)SFRD(f, f->data, (size_t)f->size, f->disc);
 		if(p <= f->here && p >= (f->here - (f->endb - f->data)) )
 			f->next = f->endb - (size_t)(f->here-p);
 		else /* recover from read failure by just seeking to p */

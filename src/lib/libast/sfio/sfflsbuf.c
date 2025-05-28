@@ -89,7 +89,7 @@ ssize_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
 		isall = SFISALL(f,isall);
 		if((w = SFWR(f,data,(size_t)n,f->disc)) > 0)
 		{	if((n -= w) > 0) /* save unwritten data, then resume */
-				memmove((char*)f->data,(char*)data+w,n);
+				memmove((char*)f->data,(char*)data+w,(size_t)n);
 			written += w;
 			f->next = f->data+n;
 			if(c < 0 && (!isall || n == 0))

@@ -70,13 +70,13 @@ int sfungetc(Sfio_t*	f,	/* push back one byte to this stream */
 	{	uchar*	data;
 		if(f->size < 0)
 			f->size = 0;
-		if(!(data = (uchar*)malloc(f->size+16)))
+		if(!(data = (uchar*)malloc((size_t)f->size+16)))
 		{	c = -1;
 			goto done;
 		}
 		f->flags |= SFIO_MALLOC;
 		if(f->data)
-			memcpy((char*)(data+16),(char*)f->data,f->size);
+			memcpy((char*)(data+16),(char*)f->data,(size_t)f->size);
 		f->size += 16;
 		f->data  = data;
 		f->next  = data+16;

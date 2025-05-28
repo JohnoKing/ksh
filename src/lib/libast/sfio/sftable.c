@@ -330,7 +330,7 @@ static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,in
 
 	maxp = nargs > xargs ? nargs : xargs;
 	if(!fp) /* constructing position array only */
-	{	if(!dollar || !(fp = (Fmtpos_t*)malloc((maxp+1)*sizeof(Fmtpos_t))) )
+	{	if(!dollar || !(fp = (Fmtpos_t*)malloc(((size_t)maxp+1)*sizeof(Fmtpos_t))) )
 			return NULL;
 		for(n = 0; n <= maxp; ++n)
 			fp[n].ft.fmt = 0;
@@ -407,7 +407,7 @@ static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,in
 		{ arg_list:
 			if(fp[n].ft.fmt == LEFTP)
 			{	fp[n].argv.s = va_arg(args, char*);
-				fp[n].ft.size = strlen(fp[n].argv.s);
+				fp[n].ft.size = (ssize_t)strlen(fp[n].argv.s);
 			}
 			else if(fp[n].ft.fmt == '.' || fp[n].ft.fmt == 'I')
 				fp[n].argv.i = va_arg(args, int);

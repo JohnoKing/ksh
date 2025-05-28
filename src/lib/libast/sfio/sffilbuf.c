@@ -33,7 +33,8 @@ ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 		  ssize_t	n)	/* see above */
 {
 	ssize_t		r, ret;
-	int		first, local, rcrv, rc, justseek;
+	int		first, local, rc, justseek;
+	unsigned int	rcrv;
 
 	if(!f)
 		return -1;
@@ -63,17 +64,17 @@ ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 			/* try shifting left to make room for new data */
 			if(!(f->bits&SFIO_MMAP) && f->next > f->data &&
 			   n > (f->size - (f->endb-f->data)) )
-			{	ssize_t	s = r;
+			{	size_t	s = (size_t)r;
 
 				/* try to maintain block alignment */
-				if(f->blksz > 0 && (f->here%f->blksz) == 0 )
-				{	s = ((r + f->blksz-1)/f->blksz)*f->blksz;
-					if(s+n > f->size)
-						s = r;
+				if(f->blksz > 0 && ((unsigned)f->here%f->blksz) == 0 )
+				{	s = (((size_t)r + f->blksz-1)/f->blksz)*f->blksz;
+					if((ssize_t)s+n > f->size)
+						s = (size_t)r;
 				}
 
 				memmove(f->data, f->endb-s, s);
-				f->next = f->data + (s-r);
+				f->next = f->data + (s-(size_t)r);
 				f->endb = f->data + s;
 			}
 		}
@@ -88,14 +89,14 @@ ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 			{	if(r > n && f->extent < 0 && (f->flags&SFIO_SHARE) )
 					r = n;	/* read only as much as requested */
 				else if(justseek && n <= (ssize_t)f->iosz && (ssize_t)f->iosz <= f->size)
-					r = f->iosz;	/* limit buffer filling */
+					r = (ssize_t)f->iosz;	/* limit buffer filling */
 			}
 		}
 
 		/* SFRD takes care of discipline read and stack popping */
 		f->mode |= rcrv;
 		f->getr = rc;
-		if((r = SFRD(f,f->endb,r,f->disc)) >= 0)
+		if((r = SFRD(f,f->endb,(size_t)r,f->disc)) >= 0)
 		{	r = f->endb - f->next;
 			break;
 		}

@@ -106,12 +106,12 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
 		if((k = v - (f->endb-f->data)) <= 0)
 			k = 0;
 		else	/* try to write out amount exceeding f's capacity */
-		{	if((w = SFWR(head,head->data,k,head->disc)) == k)
+		{	if((w = SFWR(head,head->data,(size_t)k,head->disc)) == k)
 				v -= k;
 			else	/* write failed, recover buffer then quit */
 			{	if(w > 0)
 				{	v -= w;
-					memmove(head->data,(head->data+w),v);
+					memmove(head->data,(head->data+w),(size_t)v);
 				}
 				head->next = head->data+v;
 				goto done;
@@ -120,7 +120,7 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
 
 		/* move data from head to f */
 		if((head->data+k) != f->data )
-			memmove(f->data,(head->data+k),v);
+			memmove(f->data,(head->data+k),(size_t)v);
 		f->next = f->data+v;
 	}
 

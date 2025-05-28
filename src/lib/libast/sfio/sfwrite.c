@@ -33,7 +33,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 	int		local;
 
 	if(!f)
-		return (ssize_t)(-1);
+		return -1;
 
 	GETLOCAL(f,local);
 
@@ -43,11 +43,11 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 	/* release peek lock */
 	if(f->mode&SFIO_PEEK)
 	{	if(!(f->mode&SFIO_WRITE) && (f->flags&SFIO_RDWR) != SFIO_RDWR)
-			return (ssize_t)(-1);
+			return -1;
 
 		if((uchar*)buf != f->next &&
 		   (!f->rsrv || f->rsrv->data != (uchar*)buf) )
-			return (ssize_t)(-1);
+			return -1;
 
 		f->mode &= ~SFIO_PEEK;
 

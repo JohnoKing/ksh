@@ -127,7 +127,7 @@ header(void)
 #define DR0	'>'
 #define DR1	0xbb		/* 8-bit mini >> on xterm	*/
 
-#define DB	(ssizeof(wchar_t)*8-1)
+#define DB	((int)sizeof(wchar_t)*8-1)
 #define DC	7		/* wchar_t embedded char bits	*/
 #define DX	(DB/DC)		/* wchar_t max embedded chars	*/
 #define DZ	(DB-DX*DC+1)	/* wchar_t embedded size bits	*/
@@ -315,7 +315,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
 				{
 					for (q = s + 2; q < r; q++)
 						if (t < e)
-							*t++ = (signed)debug_order[*((unsigned char*)q)];
+							*t++ = (char)debug_order[*((unsigned char*)q)];
 					while (w++ < DX)
 						if (t < e)
 							*t++ = 1;
@@ -330,9 +330,9 @@ debug_strxfrm(char* t, const char* s, size_t n)
 			if (t)
 			{
 				if (t < e)
-					*t++ = (signed)debug_order[((unsigned char*)s)[0]];
+					*t++ = (char)debug_order[((unsigned char*)s)[0]];
 				if (t < e)
-					*t++ = (signed)debug_order[((unsigned char*)s)[1]];
+					*t++ = (char)debug_order[((unsigned char*)s)[1]];
 				if (t < e)
 					*t++ = 1;
 				if (t < e)
@@ -347,11 +347,11 @@ debug_strxfrm(char* t, const char* s, size_t n)
 			if (t)
 			{
 				if (t < e)
-					*t++ = (signed)debug_order[((unsigned char*)s)[0]];
+					*t++ = (char)debug_order[((unsigned char*)s)[0]];
 				if (t < e)
-					*t++ = (signed)debug_order[((unsigned char*)s)[1]];
+					*t++ = (char)debug_order[((unsigned char*)s)[1]];
 				if (t < e)
-					*t++ = (signed)debug_order[((unsigned char*)s)[2]];
+					*t++ = (char)debug_order[((unsigned char*)s)[2]];
 				if (t < e)
 					*t++ = 1;
 			}
@@ -362,7 +362,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
 		if (t)
 		{
 			if (t < e)
-				*t++ = (signed)debug_order[((unsigned char*)s)[0]];
+				*t++ = (char)debug_order[((unsigned char*)s)[0]];
 			if (t < e)
 				*t++ = 1;
 			if (t < e)

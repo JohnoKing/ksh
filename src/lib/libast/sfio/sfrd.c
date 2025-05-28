@@ -55,7 +55,8 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 {
 	Sfoff_t		r;
 	Sfdisc_t*	dc;
-	int		local, rcrv, dosync, oerrno;
+	int		local, dosync, oerrno;
+	uint32_t	rcrv;
 
 	if(!f)
 		return -1;
@@ -107,11 +108,11 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 		/* warn that a read is about to happen */
 		SFDISC(f,dc,readf);
 		if(dc && dc->exceptf && (f->flags&SFIO_IOCHECK) )
-		{	int	rv;
+		{	ssize_t	rv;
 			if(local)
 				SETLOCAL(f);
-			if((rv = _sfexcept(f,SFIO_READ,n,dc)) > 0)
-				n = rv;
+			if((rv = _sfexcept(f,SFIO_READ,(ssize_t)n,dc)) > 0)
+				n = (size_t)rv;
 			else if(rv < 0)
 			{	f->flags |= SFIO_ERROR;
 				return (ssize_t)rv;
@@ -125,7 +126,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 
 			/* determine if we have to copy data to buffer */
 			if((uchar*)buf >= f->data && (uchar*)buf <= f->endb)
-			{	n += f->endb - f->next;
+			{	n += (size_t)(f->endb - f->next);
 				buf = NULL;
 			}
 
@@ -146,13 +147,13 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 			}
 
 			/* make sure current position is page aligned */
-			if((a = (size_t)(f->here%_Sfpage)) != 0)
+			if((a = (ssize_t)(f->here%_Sfpage)) != 0)
 			{	f->here -= a;
 				r += a;
 			}
 
 			/* map minimal requirement */
-			if(r > (round = (1 + (n+a)/f->size)*f->size) )
+			if(r > (round = (ssize_t)(1 + ((ssize_t)n+a)/f->size)*f->size) )
 				r = round;
 
 			if(f->data)
@@ -186,13 +187,13 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 
 				if(buf)
 				{	if(n > (size_t)(r-a))
-						n = (ssize_t)(r-a);
+						n = (size_t)(r-a);
 					memmove(buf,f->next,n);
 					f->next += n;
 				}
-				else	n = f->endb - f->next;
+				else	n = (size_t)(f->endb - f->next);
 
-				return n;
+				return (ssize_t)n;
 			}
 			else
 			{	r = -1;
@@ -206,7 +207,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 
 				if(!buf)
 				{	buf = f->data;
-					n = f->size;
+					n = (size_t)f->size;
 				}
 			}
 		}
@@ -284,8 +285,8 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 		case SFIO_ECONT :
 			goto do_continue;
 		case SFIO_EDONE :
-			n = local ? 0 : (ssize_t)r;
-			return n;
+			n = local ? 0 : (size_t)r;
+			return (ssize_t)n;
 		case SFIO_EDISC :
 			if(!local && !(f->flags&SFIO_STRING))
 				goto do_continue;

@@ -57,7 +57,7 @@ ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 			if(p >= (n + (rc < 0 ? 0 : 1)) )
 			{	/* buffer can hold everything */
 				if(n > 0)
-				{	memcpy(ps, s, n);
+				{	memcpy(ps, s, (size_t)n);
 					ps += n;
 					w += n;
 				}
@@ -76,10 +76,10 @@ ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 					n = 0;
 				else
 				{	if(n > 0)
-						memcpy(rsrv->data, s, n);
+						memcpy(rsrv->data, s, (size_t)n);
 					if(rc >= 0)
 						rsrv->data[n] = rc;
-					if((n = SFWRITE(f,rsrv->data,p)) < 0 )
+					if((n = SFWRITE(f,rsrv->data,(size_t)p)) < 0 )
 						n = 0;
 				}
 
@@ -101,7 +101,7 @@ ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 		 * same buffer. See: https://github.com/att/ast/issues/78
 		 */
 		for(; p > 0; --p, ++ps, ++s)
-			if((*ps = *s) == 0)
+			if((*ps = (uchar)*s) == 0)
 				break;
 
 		w += ps - f->next;
@@ -117,7 +117,7 @@ ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 	{	if(n > w)
 			n = w;
 		f->next -= n;
-		(void)SFWRITE(f,f->next,n);
+		(void)SFWRITE(f,f->next,(size_t)n);
 	}
 
 	SFOPEN(f,0);

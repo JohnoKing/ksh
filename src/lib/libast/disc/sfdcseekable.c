@@ -44,7 +44,7 @@ static ssize_t skwrite(Sfio_t*		f,	/* stream involved */
 	NOT_USED(buf);
 	NOT_USED(n);
 	NOT_USED(disc);
-	return (ssize_t)(-1);
+	return -1;
 }
 
 static ssize_t skread(Sfio_t*	f,	/* stream involved */

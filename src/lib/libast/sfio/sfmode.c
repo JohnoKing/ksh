@@ -59,7 +59,7 @@ static void _sfcleanup(void)
 	Sfpool_t*	p;
 	Sfio_t*		f;
 	int		n;
-	int		pool;
+	unsigned int	pool;
 
 	f = (Sfio_t*)Version; /* shut compiler warning */
 
@@ -123,11 +123,11 @@ int _sfsetpool(Sfio_t* f)
 		}
 		else	/* allocate a larger array */
 		{	n = (p->sf != p->array ? p->s_sf : (p->s_sf/4 + 1)*4) + 4;
-			if(!(array = (Sfio_t**)malloc(n*sizeof(Sfio_t*))) )
+			if(!(array = (Sfio_t**)malloc((size_t)n*sizeof(Sfio_t*))) )
 				goto done;
 
 			/* move old array to new one */
-			memcpy(array,p->sf,p->n_sf*sizeof(Sfio_t*));
+			memcpy(array,p->sf,(size_t)p->n_sf*sizeof(Sfio_t*));
 			if(p->sf != p->array)
 				free(p->sf);
 
@@ -154,12 +154,12 @@ Sfrsrv_t* _sfrsrv(Sfio_t* f, ssize_t size)
 	/* make buffer if nothing yet */
 	size = ((size + SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
 	if(!(rsrv = f->rsrv) || size > rsrv->size)
-	{	if(!(rs = (Sfrsrv_t*)malloc(size+sizeof(Sfrsrv_t))))
+	{	if(!(rs = (Sfrsrv_t*)malloc((size_t)size+sizeof(Sfrsrv_t))))
 			size = -1;
 		else
 		{	if(rsrv)
 			{	if(rsrv->slen > 0)
-					memcpy(rs,rsrv,sizeof(Sfrsrv_t)+rsrv->slen);
+					memcpy(rs,rsrv,sizeof(Sfrsrv_t)+(size_t)rsrv->slen);
 				free(rsrv);
 			}
 			f->rsrv = rsrv = rs;
@@ -265,7 +265,7 @@ static int _sfpmode(Sfio_t* f, int type)
 			}
 		}
 		if(p->ndata > 0)
-			memcpy(p->rdata,f->next,p->ndata);
+			memcpy(p->rdata,f->next,(size_t)p->ndata);
 		f->endb = f->data;
 	}
 	else
@@ -395,12 +395,12 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 		}
 		else
 		{	n = f->flags;
-			(void)SFSETBUF(f,f->data,f->size);
+			(void)SFSETBUF(f,f->data,(size_t)f->size);
 			f->flags |= (n&SFIO_MALLOC);
 		}
 	}
 
-	if(wanted == (int)SFMODE(f,1))
+	if(wanted == SFMODE(f,1))
 		goto done;
 
 	switch(SFMODE(f,1))

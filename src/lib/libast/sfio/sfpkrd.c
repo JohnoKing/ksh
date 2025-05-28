@@ -189,12 +189,12 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 			if((action = action ? -action : 1) > (int)n)
 				action = (int)n;
 			r = 0;
-			while((q = read(fd,buf,action)) > 0)
+			while((q = read(fd,buf,(size_t)action)) > 0)
 			{	r += q;
 				for(endbuf = buf+q; buf < endbuf;)
 					if(*buf++ == rc)
 						action -= 1;
-				if(action == 0 || (int)(n-r) < action)
+				if(action == 0 || ((int)n-(int)r) < action)
 					break;
 			}
 			return r == 0 ? q : r;
@@ -215,7 +215,7 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 
 	/* advance */
 	if(action <= 0)
-		r = read(fd,buf,r);
+		r = read(fd,buf,(size_t)r);
 
 	return r;
 }

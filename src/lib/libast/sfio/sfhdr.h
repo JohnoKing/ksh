@@ -268,7 +268,7 @@
 typedef struct _sfpool_s	Sfpool_t;
 struct _sfpool_s
 {	Sfpool_t*	next;
-	int		mode;		/* type of pool			*/
+	uint32_t	mode;		/* type of pool			*/
 	ssize_t		s_sf;		/* size of pool array		*/
 	ssize_t		n_sf;		/* number currently in pool	*/
 	Sfio_t**	sf;		/* array of streams		*/

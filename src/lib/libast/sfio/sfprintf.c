@@ -53,7 +53,7 @@ ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 	{	if(((size_t)rv+1) >= n)
 			n--;
 		else
-			n = rv;
+			n = (size_t)rv;
 		memcpy(s, f->data, n);
 		s[n] = 0;
 	}

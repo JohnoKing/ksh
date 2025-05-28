@@ -122,14 +122,14 @@ ssize_t sfwr(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* disc)
 	int		local, oerrno;
 
 	if(!f)
-		return (ssize_t)(-1);
+		return -1;
 
 	GETLOCAL(f,local);
 	if(!local && !(f->bits&SFIO_DCDOWN)) /* an external user's call */
 	{	if(f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0 )
-			return (ssize_t)(-1);
+			return -1;
 		if(f->next > f->data && SFSYNC(f) < 0 )
-			return (ssize_t)(-1);
+			return -1;
 	}
 
 	for(;;)
@@ -223,7 +223,7 @@ ssize_t sfwr(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* disc)
 				goto do_continue;
 			/* FALLTHROUGH */
 		case SFIO_ESTACK :
-			return (ssize_t)(-1);
+			return -1;
 		}
 
 	do_continue:

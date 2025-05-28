@@ -45,11 +45,11 @@ ssize_t sfnputc(Sfio_t*		f,	/* file to write */
 	if((size_t)(p = (f->endb-(ps = f->next))) < n)
 		{ ps = buf; p = sizeof(buf); }
 	if((size_t)p > n)
-		p = n;
-	MEMSET(ps,c,p);
+		p = (ssize_t)n;
+	MEMSET(ps,c,(size_t)p);
 	ps -= p;
 
-	w = n;
+	w = (ssize_t)n;
 	if(ps == f->next)
 	{	/* simple sfwrite */
 		f->next += p;
@@ -60,12 +60,12 @@ ssize_t sfnputc(Sfio_t*		f,	/* file to write */
 
 	for(;;)
 	{	/* hard write of data */
-		if((p = SFWRITE(f,ps,p)) <= 0 || (n -= p) <= 0)
-		{	w -= n;
+		if((p = SFWRITE(f,ps,(size_t)p)) <= 0 || (n -= (size_t)p) <= 0)
+		{	w -= (ssize_t)n;
 			goto done;
 		}
-		if((size_t)p > n)
-			p = n;
+		if(p > (ssize_t)n)
+			p = (ssize_t)n;
 	}
 done :
 	SFOPEN(f,local);
