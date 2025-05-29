@@ -21,6 +21,9 @@ else
 	alias sanity=true
 fi
 
+export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
+export GIT_AUTHOR_NAME='Johnothan King'
+
 ### TODO: Split this into multiple patches ###
 
 fetch src/lib/libast/sfio
@@ -289,3 +292,5 @@ Conspicuous changes of note:
   unsigned.
 
 Fixes https://github.com/ksh93/ksh/issues/592"
+
+git format-patch -k dev..64bit-fixes-series
