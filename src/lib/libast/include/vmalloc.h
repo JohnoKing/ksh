@@ -42,8 +42,8 @@ extern void		vmclear(Vmalloc_t*);
 extern void		vmclose(Vmalloc_t*);
 
 /* region option bits */
-#define VM_INIT		0x01			/* initialize allocated/grown memory	*/
-#define VM_FREEONFAIL	0x02			/* vmresize frees block on resize fail	*/
+#define VM_INIT		0x01U			/* initialize allocated/grown memory	*/
+#define VM_FREEONFAIL	0x02U			/* vmresize frees block on resize fail	*/
 
 /* legacy */
 #define vmnewof(v,p,t,n,x)	( (t*)_Vm_newoldof_((v), (p), sizeof(t)*(n)+(x), 1) )
