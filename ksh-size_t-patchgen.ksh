@@ -41,6 +41,7 @@ fetch src/lib/libast/string/modei.c
 fetch src/lib/libast/string/modex.c
 fetch src/lib/libast/string/fmtmode.c
 fetch src/lib/libast/string/modedata.c
+fetch src/lib/libast/string/strmode.c
 fetch src/lib/libast/include/regex.h
 fetch src/lib/libast/include/hash.h
 fetch src/lib/libast/hash

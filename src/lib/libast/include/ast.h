@@ -399,7 +399,7 @@ extern int		strngrpmatch(const char*, size_t, const char*, ssize_t*, ssize_t, re
 extern size_t		strhash(const char*);
 extern void*		strlook(const void*, size_t, const char*);
 extern int		strmatch(const char*, const char*);
-extern int		strmode(const char*);
+extern mode_t		strmode(const char*);
 extern int		strnacmp(const char*, const char*, size_t);
 extern char*		strncopy(char*, const char*, size_t);
 extern int		strnpcmp(const char*, const char*, size_t);

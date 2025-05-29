@@ -27,10 +27,10 @@
 
 #include "modelib.h"
 
-int
+mode_t
 strmode(const char* s)
 {
-	mode_t		c;
+	int		c;
 	char*		t;
 	struct modeop*	p;
 	mode_t		mode;
@@ -40,8 +40,8 @@ strmode(const char* s)
 		for (t = p->name; *t; t++)
 			if (*t == c)
 			{
-				c = (mode_t)(t - p->name);
-				mode |= (p->mask1 & (c << p->shift1)) | (p->mask2 & (c << p->shift2));
+				c = (int)(t - p->name);
+				mode |= (p->mask1 & ((mode_t)c << p->shift1)) | (p->mask2 & ((mode_t)c << p->shift2));
 				break;
 			}
 	return mode;
