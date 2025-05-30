@@ -98,7 +98,7 @@ fmtint(intmax_t ll, int unsign)
 		k = 3;
 		buff = fmtbuf((size_t)k);
 		buff[--k] = 0;
-		buff[--k] = '0' + n;
+		buff[--k] = (char)('0' + n);
 		goto skip;
 	}
 	buff = fmtbuf((size_t)k);

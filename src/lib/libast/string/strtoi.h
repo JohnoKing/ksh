@@ -301,7 +301,7 @@ S2I_function(const char* a, char** e, int base)
 		else
 		{
 			if (basep)
-				*basep = base;
+				*basep = (char)base;
 			m = -1;
 		}
 #endif

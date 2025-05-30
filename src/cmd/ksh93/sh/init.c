@@ -537,7 +537,7 @@ static char* get_ifs(Namval_t *np, Namfun_t *fp)
 					n = S_NL;
 				else if(isspace(c))
 					n = S_SPACE;
-				sh.ifstable[c] = n;
+				sh.ifstable[c] = (char)n;
 			}
 		}
 		else
@@ -791,11 +791,11 @@ static void match2d(struct match *mp)
 			np->nvname = mp->names + 3 * i;
 			if(i > 9)
 			{
-				*np->nvname = '0' + i / 10;
+				*np->nvname = (char)('0' + i / 10);
 				np->nvname[1] = '0' + (i % 10);
 			}
 			else
-				*np->nvname = '0' + i;
+				*np->nvname = (char)('0' + i);
 			nv_putsub(np, NULL, 1);
 			nv_putsub(np, NULL, 0);
 			nv_putsub(SH_MATCHNOD, NULL, i);
@@ -1049,7 +1049,7 @@ static void math_init(void)
 		np = nv_namptr(sh.mathnodes,i);
 		np->nvfun = &math_child_fun;
 		memcpy(name,"arg",3);
-		name[3] = '1'+i;
+		name[3] = (char)('1'+i);
 		np->nvname = name;
 		name+=5;
 		nv_onattr(np,NV_MINIMAL|NV_NOFREE|NV_LDOUBLE|NV_RDONLY);

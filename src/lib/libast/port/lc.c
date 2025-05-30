@@ -291,7 +291,7 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
 				}
 				else if (!isalnum(c))
 					u = 1;
-				*s++ = c;
+				*s++ = (char)c;
 			}
 		}
 		else
@@ -321,11 +321,11 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
 					}
 					else if (!isalnum(c))
 						u = 1;
-					*s++ = c;
+					*s++ = (char)c;
 				}
 			}
 			else
-				for (t = tp->code; s < e && (*s = toupper(*t++)); s++);
+				for (t = tp->code; s < e && (*s = (char)toupper(*t++)); s++);
 			if (r)
 			{
 				*s = 0;
@@ -348,19 +348,19 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
 			t = cp->code;
 			if (streq(cp->code, "utf8") && (t = _locale_utf8_str))
 				for (; s < e && (c = *t++); s++)
-					*s = c;
+					*s = (char)c;
 			else
 				for (t = cp->code; s < e && (c = *t++); s++)
 				{
 					if (islower(c))
 						c = toupper(c);
-					*s = c;
+					*s = (char)c;
 				}
 		}
 		for (c = '@'; ap && s < e; ap = ap->next)
 			if (!(flags & (LC_abbreviated|LC_default|LC_verbose)) || !(ap->attribute->flags & LC_default))
 			{
-				*s++ = c;
+				*s++ = (char)c;
 				c = ',';
 				for (t = ap->attribute->name; s < e && (*s = *t++); s++);
 			}
@@ -504,7 +504,7 @@ lcmake(const char* name)
 		{
 			if (isupper(c))
 				c = tolower(c);
-			*s++ = c;
+			*s++ = (char)c;
 		}
 	}
 	if ((t = a) && s < e)
@@ -532,7 +532,7 @@ lcmake(const char* name)
 				break;
 			if (isupper(c))
 				c = tolower(c);
-			*s++ = c;
+			*s++ = (char)c;
 		}
 	}
 	*s = 0;
@@ -559,7 +559,7 @@ lcmake(const char* name)
 			c = s[2];
 			s[2] = 0;
 			for (lp = lc_languages; lp->code && !streq(s, lp->code); lp++);
-			s[2] = c;
+			s[2] = (char)c;
 			if (lp->code)
 				n = 1;
 		}
@@ -722,7 +722,7 @@ lcmake(const char* name)
 					al = ai;
 				}
 			}
-			*s = c;
+			*s = (char)c;
 		} while (*s++);
 	}
 

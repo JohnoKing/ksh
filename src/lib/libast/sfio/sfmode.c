@@ -342,7 +342,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 		}
 #endif
 		if(f->getr)
-		{	f->next[-1] = f->getr;
+		{	f->next[-1] = (char)f->getr;
 			f->getr = 0;
 		}
 	}

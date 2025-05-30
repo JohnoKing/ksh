@@ -158,12 +158,12 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
 				if (mkdir(path, n ? dmode : mode) < 0 && errno != EEXIST && access(path, F_OK) < 0)
 				{
 					error(ERROR_system(0), "%s: cannot create intermediate directory", path);
-					*part = n;
+					*part = (char)n;
 					break;
 				}
 				if (vflag)
 					error(0, "%s: directory created", path);
-				if (!(*part = n))
+				if (!(*part = (char)n))
 				{
 					made = 1;
 					break;

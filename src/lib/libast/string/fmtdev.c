@@ -50,8 +50,8 @@ fmtdev(struct stat* st)
 		 * Plan? Nein!
 		 */
 
-		buf[0] = ma;
-		buf[1] = mi;
+		buf[0] = (char)ma;
+		buf[1] = (char)mi;
 		buf[2] = 0;
 	}
 	else

@@ -236,7 +236,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 					goto done;
 				}
 				else if((n = (long)(f *= 10.)) < 10)
-				{	*sp++ = '0' + n;
+				{	*sp++ = (char)('0' + n);
 					f -= n;
 				}
 				else /* n == 10 */

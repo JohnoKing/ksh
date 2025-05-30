@@ -112,7 +112,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
 			if (part > 4)
 				goto done;
 			if (z <= 32 && (!old || part < 2))
-				bits = z;
+				bits = (unsigned char)z;
 			else if (z)
 			{
 				if (part == 4 && (z & 0x8000001) == 1)

@@ -474,7 +474,7 @@ typedef struct Rex_s
 {
 	unsigned char	type;			/* node type		*/
 	unsigned char	marked;			/* already marked	*/
-	short		serial;			/* subpattern number	*/
+	int		serial;			/* subpattern number	*/
 	regflags_t	flags;			/* scoped flags		*/
 	int		explicit;		/* scoped explicit match*/
 	struct Rex_s*	next;			/* remaining parts	*/

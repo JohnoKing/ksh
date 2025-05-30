@@ -302,7 +302,7 @@ lock(void* data, ssize_t k, void volatile* p)
 uint8_t
 asoget8(uint8_t volatile* p)
 {
-	int	o;
+	uint8_t		o;
 
 	do
 	{
@@ -314,7 +314,7 @@ asoget8(uint8_t volatile* p)
 uint16_t
 asoget16(uint16_t volatile* p)
 {
-	int	o;
+	uint16_t	o;
 
 	do
 	{
@@ -371,7 +371,7 @@ uint8_t
 asoinc8(uint8_t volatile* p)
 {
 	ssize_t		k;
-	int		o;
+	uint8_t		o;
 
 #if defined(_aso_inc8)
 	if (!state.lockf)
@@ -396,7 +396,7 @@ uint16_t
 asoinc16(uint16_t volatile* p)
 {
 	ssize_t		k;
-	int		o;
+	uint16_t	o;
 
 #if defined(_aso_inc16)
 	if (!state.lockf)
@@ -479,7 +479,7 @@ uint8_t
 asodec8(uint8_t volatile* p)
 {
 	ssize_t		k;
-	int		o;
+	uint8_t		o;
 
 #if defined(_aso_dec8)
 	if (!state.lockf)
@@ -504,7 +504,7 @@ uint16_t
 asodec16(uint16_t volatile* p)
 {
 	ssize_t		k;
-	int		o;
+	uint16_t	o;
 
 #if defined(_aso_dec16)
 	if (!state.lockf)
@@ -584,7 +584,7 @@ asodec64(uint64_t volatile* p)
  */
 
 uint8_t
-asocas8(uint8_t volatile* p, int o, int n)
+asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 {
 	ssize_t		k;
 

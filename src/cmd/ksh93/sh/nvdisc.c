@@ -1036,7 +1036,7 @@ Namval_t *nv_search(const char *name, Dt_t *root, int mode)
  */
 Namval_t *nv_bfsearch(const char *name, Dt_t *root, Namval_t **var, char **last)
 {
-	int		c;
+	char		c;
 	ssize_t		offset = stktell(sh.stk);
 	char		*sp, *cp=0;
 	Namval_t	*np, *nq;

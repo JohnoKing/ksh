@@ -73,6 +73,7 @@ typedef struct Stats_s
 	unsigned long	k;	/* min length to left of y		*/
 	unsigned long	m;	/* min length				*/
 	unsigned long	n;	/* max length				*/
+	unsigned long	t;	/* number of tries			*/
 	unsigned short	a;	/* number of alternations		*/
 	unsigned short	b;	/* number of backrefs			*/
 	unsigned short	c;	/* number of closures			*/
@@ -80,7 +81,6 @@ typedef struct Stats_s
 	unsigned short	i;	/* number of negations			*/
 	unsigned short	p;	/* number of named subexpressions	*/
 	unsigned short	s;	/* number of simple closures		*/
-	unsigned short	t;	/* number of tries			*/
 	unsigned short	u;	/* number of unnamed subexpressions	*/
 	Rex_t*		x;	/* max length REX_STRING		*/
 	Rex_t*		y;	/* max length REX_TRIE			*/
@@ -366,8 +366,8 @@ stats(Cenv_t* env, Rex_t* e)
 	Rex_t*			q;
 	Rex_t*			x;
 	Rex_t*			y;
-	unsigned char		c;
-	unsigned char		b;
+	unsigned short		c;
+	unsigned short		b;
 
 	do
 	{
@@ -1051,7 +1051,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
 					cc = -1;
 				}
 			}
-			*k++ = c;
+			*k++ = (unsigned char)c;
 		}
 		else if (bw < COLL_KEY_MAX)
 		{
@@ -1076,7 +1076,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
 				k += mbconv((char*)k, c);
 			}
 			else
-				for (e = k + bw; k < e; *k++ = (unsigned)*s++);
+				for (e = k + bw; k < e; *k++ = (unsigned char)*s++);
 		}
 		*k = 0;
 		mbxfrm(ce->beg, key, COLL_KEY_MAX);
@@ -1107,7 +1107,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
 						cc = -1;
 					}
 				}
-				*k++ = c;
+				*k++ = (unsigned char)c;
 			}
 			else if (ew < COLL_KEY_MAX)
 			{
@@ -1132,7 +1132,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
 					k += mbconv((char*)k, c);
 				}
 				else
-					for (e = k + ew; k < e; *k++ = (unsigned)*s++);
+					for (e = k + ew; k < e; *k++ = (unsigned char)*s++);
 			}
 			*k = 0;
 			mbxfrm(ce->end, key, COLL_KEY_MAX);
@@ -1437,7 +1437,7 @@ bra(Cenv_t* env)
 			{
 				for (i = 0; i < elementsof(primary) - 1; i++, cc++)
 				{
-					cc->nam[0] = (unsigned)primary[i];
+					cc->nam[0] = (unsigned char)primary[i];
 					mbxfrm(cc->key, cc->nam, COLL_KEY_MAX);
 					dtinsert(dt, cc);
 				}
@@ -1890,7 +1890,7 @@ isstring(Rex_t* e)
 }
 
 static Trie_node_t*
-trienode(Cenv_t* env, int c)
+trienode(Cenv_t* env, unsigned char c)
 {
 	Trie_node_t*	t;
 
@@ -2592,7 +2592,7 @@ seq(Cenv_t* env)
 			if (c >= 0)
 			{
 				n = 1;
-				*s++ = (env->flags & REG_ICASE) ? toupper((int)c) : c;
+				*s++ = (unsigned char)((env->flags & REG_ICASE) ? toupper((int)c) : c);
 			}
 			else if (c == C_ESC || (env->flags & REG_ICASE))
 			{
@@ -2602,7 +2602,7 @@ seq(Cenv_t* env)
 				if ((size_t)(&buf[sizeof(buf)] - s) < MB_CUR_MAX)
 					break;
 				if ((n = mbconv((char*)s, (wchar_t)c)) < 0)
-					*s++ = c;
+					*s++ = (unsigned char)c;
 				else if (n)
 					s += n;
 				else
@@ -2645,7 +2645,7 @@ seq(Cenv_t* env)
 						drop(env->disc, e);
 						return NULL;
 					}
-					f->re.onechar = (env->flags & REG_ICASE) ? toupper((int)x) : x;
+					f->re.onechar = (unsigned char)((env->flags & REG_ICASE) ? toupper((int)x) : x);
 				}
 				else
 				{
@@ -2959,7 +2959,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 		if (!(fold = newof(0, unsigned char, UCHAR_MAX, 1)))
 			return fatal(disc, REG_ESPACE, pattern);
 		for (i = 0; i <= UCHAR_MAX; i++)
-			fold[i] = toupper(i);
+			fold[i] = (unsigned char)toupper(i);
 		LCINFO(AST_LC_CTYPE)->data = fold;
 	}
  again:

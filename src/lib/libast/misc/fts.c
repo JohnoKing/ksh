@@ -422,7 +422,7 @@ setdir(char* home, char* path)
 static int
 setpdir(char* home, char* path, char* base)
 {
-	int	c;
+	char	c;
 	int	cdrv;
 
 	if (base > path)

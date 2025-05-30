@@ -133,7 +133,7 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 		ac->ok[c] = !ac->yes;
 
 	if(*form == ']' || *form == '-') /* special first char */
-	{	ac->ok[*form] = ac->yes;
+	{	ac->ok[*form] = (unsigned char)ac->yes;
 		form += 1;
 	}
 	ac->form = form;
@@ -151,7 +151,7 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 				goto one_char;
 #endif
 			for(; c <= endc; ++c)
-				ac->ok[c] = ac->yes;
+				ac->ok[c] = (unsigned char)ac->yes;
 			n = 3;
 		}
 		else
@@ -161,7 +161,7 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 				return NULL;
 			if(n == 1)
 #endif
-				ac->ok[c] = ac->yes;
+				ac->ok[c] = (unsigned char)ac->yes;
 		}
 	}
 
@@ -233,7 +233,7 @@ static int _sfgetwc(Scan_t*	sc,	/* the scanning handle		*/
 	for(n = 0; n < SFMBMAX; )
 	{	if((v = _scgetc(sc, 0)) <= 0)
 			goto no_match;
-		else	b[n++] = v;
+		else	b[n++] = (unsigned char)v;
 
 		if(mbrtowc(wc, (char*)b, n, (mbstate_t*)mbs) == (size_t)(-1))
 			goto no_match;  /* malformed multi-byte char */
@@ -972,13 +972,13 @@ loop_fmt:
 				{	if(isspace(inp))
 						break;
 					if((n += 1) <= size)
-						*argv.s++ = inp;
+						*argv.s++ = (char)inp;
 				} while(--width > 0 && SFgetc(f,inp) >= 0);
 			}
 			else if(fmt == 'c')
 			{	do
 			 	{	if((n += 1) <= size)
-						*argv.s++ = inp;
+						*argv.s++ = (char)inp;
 				} while(--width > 0 && SFgetc(f,inp) >= 0);
 			}
 			else /* if(fmt == '[') */
@@ -992,7 +992,7 @@ loop_fmt:
 						}
 					}
 					if((n += 1) <= size)
-						*argv.s++ = inp;
+						*argv.s++ = (char)inp;
 				} while(--width > 0 && SFgetc(f,inp) >= 0);
 			}
 

@@ -66,7 +66,7 @@ ssize_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
 		if(c >= 0)
 		{	/* write into buffer */
 			if(n < (f->endb - (data = f->data)))
-			{	*f->next++ = c;
+			{	*f->next++ = (char)c;
 				if(c == '\n' &&
 				   (f->flags&SFIO_LINE) && !(f->flags&SFIO_STRING))
 				{	c = -1;

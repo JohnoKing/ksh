@@ -209,7 +209,7 @@ static void
 trim(char* sp, char* p1, ssize_t* n1, char* p2, ssize_t* n2)
 {
 	char*	dp = sp;
-	int	c;
+	char	c;
 
 	if (p1)
 		*n1 = 0;

@@ -237,7 +237,7 @@ debug_wctomb(char* s, wchar_t c)
 	{
 		w++;
 		if (s)
-			*s = c;
+			*s = (char)c;
 	}
 	else if ((i = c & ((1<<DZ)-1)) > DX)
 		return -1;
@@ -249,12 +249,12 @@ debug_wctomb(char* s, wchar_t c)
 		c >>= DZ;
 		w++;
 		if (s)
-			*s++ = i + '0';
+			*s++ = (char)(i + '0');
 		while (i--)
 		{
 			w++;
 			if (s)
-				*s++ = (k = c & ((1<<DC)-1)) ? k : '?';
+				*s++ = (k = c & ((1<<DC)-1)) ? (char)k : '?';
 			c >>= DC;
 		}
 		w++;

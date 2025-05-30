@@ -215,7 +215,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 			}
 			if (c == '&')
 			{
-				*t++ = c;
+				*t++ = (char)c;
 				continue;
 			}
 		}
@@ -223,7 +223,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		{
 			if (sre)
 			{
-				*t++ = c;
+				*t++ = (char)c;
 				continue;
 			}
 		}
@@ -246,7 +246,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 					c = toupper(c);
 				break;
 			}
-			*t++ = c;
+			*t++ = (char)c;
 			continue;
 		}
 		switch (c)
@@ -269,7 +269,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 				s++;
 				if (isupper(c))
 					c = tolower(c);
-				*t++ = c;
+				*t++ = (char)c;
 			}
 			continue;
 		case 'u':
@@ -278,7 +278,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 				s++;
 				if (islower(c))
 					c = toupper(c);
-				*t++ = c;
+				*t++ = (char)c;
 			}
 			continue;
 		case 'E':
@@ -307,7 +307,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
 		default:
 			if (!sre)
 			{
-				*t++ = chresc(s - 2, &e);
+				*t++ = (char)chresc(s - 2, &e);
 				s = (const char*)e;
 				continue;
 			}

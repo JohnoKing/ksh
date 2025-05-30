@@ -78,7 +78,7 @@ int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
 			while(*--cp != '\n');
 			if(cp==buff && n!='\n')
 			{
-				*cp = n;
+				*cp = (char)n;
 				nleft += cpold-cp;
 				break;
 			}

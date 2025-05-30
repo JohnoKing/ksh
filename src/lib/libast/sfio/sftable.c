@@ -484,26 +484,26 @@ static int sfcvinit(void)
 
 	/* [0-9] */
 	for(d = 0; d < 10; ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = d;
-		_Sfcv64[(uchar)_Sfdigits[d]] = d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)d;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
 	}
 
 	/* [a-z] */
 	for(; d < 36; ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = d;
-		_Sfcv64[(uchar)_Sfdigits[d]] = d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)d;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
 	}
 
 	/* [A-Z] */
 	for(l = 10; d < 62; ++l, ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = l;
-		_Sfcv64[(uchar)_Sfdigits[d]] = d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)l;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
 	}
 
 	/* remaining digits */
 	for(; d < SFIO_RADIX; ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = d;
-		_Sfcv64[(uchar)_Sfdigits[d]] = d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)d;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
 	}
 
 	_Sftype['d'] = _Sftype['i'] = SFFMT_INT;

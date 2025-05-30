@@ -56,7 +56,7 @@ static const char usage[] =
  */
 static int rev_char(Sfio_t *in, Sfio_t *out)
 {
-	int c;
+	char c;
 	char *ep, *bp, *cp;
 	wchar_t *wp, *xp;
 	size_t n;

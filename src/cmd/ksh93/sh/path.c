@@ -312,7 +312,7 @@ static char *dotpaths_lib(Pathcomp_t *pp, char *path)
 		}
 		pcomp.len = 0;
 		if(last)
-			pcomp.len = last-path;
+			pcomp.len = (size_t)(last-path);
 		memcpy(save, stkptr(sh.stk,PATH_OFFSET+pcomp.len),sizeof(save));
 		if(checkdotpaths(NULL,NULL,&pcomp,PATH_OFFSET))
 			return stkfreeze(sh.stk,1);
@@ -541,7 +541,8 @@ static void funload(int fno, const char *name)
 	Namval_t	*np, *np_loopdetect;
 	static Dt_t	*loopdetect_tree;
 	struct Ufunction *rp,*rpfirst;
-	int		savestates = sh_getstate(), oldload=sh.funload, savelineno = sh.inlineno;
+	int		savestates = sh_getstate(), savelineno = sh.inlineno;
+	char		oldload = sh.funload;
 	pname = path_fullname(stkptr(sh.stk,PATH_OFFSET));
 	if(sh.fpathdict && (rp = dtmatch(sh.fpathdict,pname)))
 	{

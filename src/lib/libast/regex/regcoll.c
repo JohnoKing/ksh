@@ -38,13 +38,13 @@
 int
 regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 {
-	int			c;
+	char			c;
+	char			term;
 	char*			b;
 	char*			x;
 	const char*		t;
 	ssize_t			i;
 	ssize_t			r;
-	int			term;
 	wchar_t			w;
 	char			xfm[256];
 	char			tmp[sizeof(xfm)];

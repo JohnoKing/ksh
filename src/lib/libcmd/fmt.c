@@ -398,14 +398,14 @@ dofmt(Fmt_t* fp)
 					if (cp < lp && *cp == ']')
 					{
 						cp++;
-						*dp++ = c;
+						*dp++ = (char)c;
 					}
 					else
 					{
 						fp->section = 1;
 						fp->retain = 0;
 					flush:
-						*dp++ = c;
+						*dp++ = (char)c;
 						*dp = 0;
 						split(fp, buf, 0);
 						outline(fp);
@@ -547,7 +547,7 @@ dofmt(Fmt_t* fp)
 				ep = 0;
 			else if (!ep)
 				ep = dp;
-			*dp++ = c;
+			*dp++ = (char)c;
 		}
 		if (ep)
 			*ep = 0;

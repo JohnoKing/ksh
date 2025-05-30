@@ -96,7 +96,7 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 			s -= m;
 #endif
 			while (m--)
-				*b++ = (signed)*s++;
+				*b++ = (char)*s++;
 		}
 		else
 		{
@@ -176,8 +176,8 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 					{
 						escaped = 1;
 						*b++ = '\'';
-						*b++ = c;
-						*b++ = (signed)*s++;
+						*b++ = (char)c;
+						*b++ = (char)*s++;
 						if (shell)
 						{
 							spaced = 1;
@@ -188,7 +188,7 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 					else
 					{
 						escaped = 1;
-						*b++ = c;
+						*b++ = (char)c;
 						c = *s++;
 					}
 				}

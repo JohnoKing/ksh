@@ -218,7 +218,7 @@ void	sh_winsize(void)
 	if (columns && (columns != sh.columns || nv_isnull(COLUMNS)) && (i = columns))
 	{
 		nv_putval(COLUMNS, (char*)&i, NV_INT32|NV_RDONLY);
-		sh.columns = columns;
+		sh.columns = (unsigned short)columns;
 		sh.winch = 1;
 	}
 }
@@ -405,7 +405,7 @@ void	sh_chktrap(void)
 	/* execute errexit trap first */
 	if(sh_isstate(SH_ERREXIT) && sh.exitval)
 	{
-		int	sav_trapnote = sh.trapnote;
+		unsigned char	sav_trapnote = sh.trapnote;
 		sh.trapnote &= ~SH_SIGSET;
 		if(sh.st.trap[SH_ERRTRAP])
 		{

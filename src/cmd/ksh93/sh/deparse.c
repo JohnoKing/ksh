@@ -355,7 +355,7 @@ static void p_tree(const Shnode_t *t,int tflags)
 					sfputr(outfile,"!",' ');
 				if(t->tre.tretyp&TUNARY)
 				{
-					un_op[1] = flags;
+					un_op[1] = (char)flags;
 					sfputr(outfile,un_op,' ');
 				}
 				else

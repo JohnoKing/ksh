@@ -178,7 +178,7 @@ fmtfmt(const char* as)
 				i++;
 			if (i < (ssize_t)elementsof(formats))
 			{
-				formats[i] = t;
+				formats[i] = (char)t;
 				if (extra[i] = (unsigned)x)
 					do z++; while (x /= 10);
 				if (m < i)

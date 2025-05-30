@@ -31,20 +31,21 @@
 typedef struct Stack_s
 {
 	char*		beg;
-	short		len;
-	short		min;
+	ssize_t		len;
+	char		min;
 } Stack_t;
 
 char*
 fmtre(const char* as)
 {
 	char*		s = (char*)as;
-	int		c;
+	char		c;
+	ssize_t		i;
 	char*		t;
 	Stack_t*	p;
 	char*		x;
-	int		n;
-	int		end;
+	char		n;
+	char		end;
 	char*		buf;
 	Stack_t		stack[32];
 
@@ -189,8 +190,8 @@ fmtre(const char* as)
 				return NULL;
 			*t++ = c;
 			p--;
-			for (c = 0; c < p->len; c++)
-				*t++ = p->beg[c];
+			for (i = 0; i < p->len; i++)
+				*t++ = p->beg[i];
 			if (p->min)
 				*t++ = '?';
 			continue;

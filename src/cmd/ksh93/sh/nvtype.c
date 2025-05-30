@@ -351,8 +351,9 @@ static Namfun_t *clone_type(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 	ssize_t			i;
 	Namval_t		*nq, *nr;
 	size_t			size = fp->dsize;
-	ssize_t			save, offset=stktell(sh.stk);
+	ssize_t			offset=stktell(sh.stk);
 	char			*cp;
+	char			save_nofree;
 	Dt_t			*root = sh.last_root;
 	Namval_t		*last_table = sh.last_table;
 	struct Namref		*nrp = 0;
@@ -403,10 +404,10 @@ static Namfun_t *clone_type(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 			sfputr(sh.stk,cp,'.');
 			sfputr(sh.stk,nq->nvname,0);
 			root = nv_dict(mp);
-			save = fp->nofree;
+			save_nofree = fp->nofree;
 			fp->nofree = 1;
 			nr = nv_create(stkptr(sh.stk,offset),root,NV_VARNAME|NV_NOADD,fp);
-			fp->nofree = save;
+			fp->nofree = save_nofree;
 			stkseek(sh.stk,offset);
 			if(nr)
 			{
@@ -1036,7 +1037,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 			cp = strcopy(cp,np->nvmeta);
 			cc = *help[k];
 			if(islower(cc))
-				*help[k] = toupper(cc);
+				*help[k] = (char)toupper(cc);
 			*cp++ = 0;
 			np->nvmeta = NULL;
 		}
@@ -1329,7 +1330,7 @@ int nv_settype(Namval_t* np, Namval_t *tp, int flags)
 	}
 	if(ap)
 	{
-		int nofree;
+		char nofree;
 		nv_disc(np,&ap->hdr,NV_POP);
 		np->nvalue = NULL;
 		nv_clone(tp,np,flags|NV_NOFREE);

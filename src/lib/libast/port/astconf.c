@@ -935,7 +935,7 @@ fmtlower(const char* s)
 	{
 		if (isupper(c))
 			c = tolower(c);
-		*t++ = c;
+		*t++ = (char)c;
 	}
 	*t = 0;
 	return b;
@@ -1457,7 +1457,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 			}
 			for (s = altname; *s; s++)
 				if (isupper(*s))
-					*s = tolower(*s);
+					*s = (char)tolower(*s);
 			if (tmp = sfstropen())
 			{
 				for (n = 0; n < elementsof(dirs); n++)

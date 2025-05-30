@@ -145,7 +145,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 		if (c != '%')
 		{
 			if (cp < ep)
-				*cp++ = c;
+				*cp++ = (char)c;
 			continue;
 		}
 		alt = 0;
@@ -216,7 +216,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 					else if (c == ')' && !--i)
 						break;
 					else if (arg < &argbuf[sizeof(argbuf) - 1])
-						*arg++ = c;
+						*arg++ = (char)c;
 				}
 				*arg = 0;
 				arg = argbuf;
@@ -358,7 +358,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 		case 'P':	/* (AST|GNU) lower case meridian */
 			p = tm_info.format[TM_MERIDIAN + (tm->tm_hour >= 12)];
 			while (cp < ep && (n = *p++))
-				*cp++ = isupper(n) ? tolower(n) : n;
+				*cp++ = (char)(isupper(n) ? tolower(n) : n);
 			continue;
 		case 'q':	/* quarter of the year (1-4) */
 			cp = number(cp, ep, (long)(tm->tm_mon / 3) + 1, 0, width, pad);
@@ -530,7 +530,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 			f = fmt;
 			*f++ = '%';
 			if (pad == '0')
-				*f++ = pad;
+				*f++ = (char)pad;
 			if (width)
 				f += sfsprintf(f, (size_t)(&fmt[sizeof(fmt)] - f), "%d", width);
 			f += sfsprintf(f, (size_t)(&fmt[sizeof(fmt)] - f), "I%du", sizeof(Tmxsec_t));
@@ -623,7 +623,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 			if (cp < ep)
 				*cp++ = '%';
 			if (cp < ep)
-				*cp++ = c;
+				*cp++ = (char)c;
 			continue;
 		}
 	index:

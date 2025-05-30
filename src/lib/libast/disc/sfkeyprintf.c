@@ -84,7 +84,7 @@ getfield(Field_t* f, int restore)
 	if (f->first)
 		f->first = 0;
 	else if (restore)
-		*s = f->delimiter;
+		*s = (char)f->delimiter;
 	b = ++s;
 	lp = rp = n = 0;
 	for (;;)
@@ -191,7 +191,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 						x = FMT_case;
 					else if (streq(a, "edit"))
 						x = FMT_edit;
-					*(a + 4) = d;
+					*(a + 4) = (char)d;
 					if (x)
 						a = 0;
 				}
@@ -204,7 +204,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 		h = (*fp->lookup)(fp->handle, &fp->fmt, a, &s, &n);
 		fp->fmt.t_str = t;
 		if (i)
-			*v++ = i;
+			*v++ = (char)i;
 	}
 	else
 	{
@@ -215,7 +215,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 	switch (fp->fmt.fmt)
 	{
 	case 'c':
-		value->c = s ? *s : n;
+		value->c = s ? *s : (char)n;
 		break;
 	case 'd':
 	case 'i':
@@ -267,16 +267,16 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 							fmt.tmp[h] = 0;
 						if (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
 							s = "";
-						*(v - 1) = d;
+						*(v - 1) = (char)d;
 						if (f.delimiter)
-							*f.next = d;
+							*f.next = (char)d;
 						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
 							if (fmt.tmp[h])
 								sfclose(fmt.tmp[h]);
 						h = 1;
 						break;
 					}
-					*(v - 1) = d;
+					*(v - 1) = (char)d;
 				}
 				break;
 			case FMT_edit:

@@ -188,7 +188,8 @@ void job_chldtrap(int unpost)
 {
 	struct process *pw,*pwnext;
 	pid_t bckpid;
-	int oldexit,trapnote;
+	int oldexit;
+	unsigned char trapnote;
 	job_lock();
 	sh.sigflag[SIGCHLD] &= ~SH_SIGTRAP;
 	trapnote = sh.trapnote;

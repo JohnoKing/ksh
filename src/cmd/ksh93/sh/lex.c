@@ -172,7 +172,8 @@ static int lexfill(Lex_t *lp)
 	int c;
 	Lex_t savelex;
 	struct argnod *ap;
-	int aok,docextra;
+	int docextra;
+	char aok;
 	savelex = *lp;
 	ap = lp->arg;
 	c = fcfill();
@@ -403,7 +404,7 @@ int sh_lex(Lex_t* lp)
 						fcseek(1);
 				}
 				while(c=='#');
-				lp->lexd.nocopy = n;
+				lp->lexd.nocopy = (char)n;
 				if(c<0)
 					return lp->token=EOFSYM;
 				n = S_NLTOK;
@@ -810,7 +811,7 @@ int sh_lex(Lex_t* lp)
 				else if((n=endchar(lp))==c)
 				{
 					if(sh.inlineno > lp->lastline)
-						lp->lex.last_quote = c;
+						lp->lex.last_quote = (char)c;
 					/*
 					 * At this point, we know that the previous skipping of characters was done
 					 * according to the ST_QUOTE state table. We also know that the character that
@@ -1350,7 +1351,7 @@ breakloop:
 	else
 		lp->arg = endword(0);
 	state = lp->arg->argval;
-	lp->comp_assign = assignment;
+	lp->comp_assign = (char)assignment;
 	if(assignment)
 	{
 		lp->arg->argflag |= ARG_ASSIGN;
@@ -1574,10 +1575,10 @@ static int comsub(Lex_t *lp, int endtok)
 	struct ionod *inheredoc = lp->heredoc;
 	char save_arithexp = lp->lexd.dolparen_arithexp;
 	char *first,*cp=fcseek(0),word[5];
-	int messages=0, assignok=lp->assignok, csub;
+	int messages=0;
+	char assignok=lp->assignok, csub=lp->comsub;
 	ssize_t off;
 	struct _shlex_pvt_lexstate_ save = lp->lex;
-	csub = lp->comsub;
 	sh_lexopen(lp,1);
 	lp->lexd.dolparen++;
 	lp->lexd.dolparen_arithexp = endtok==LPAREN && fcpeek(1)==LPAREN;  /* $(( */
@@ -1592,7 +1593,7 @@ static int comsub(Lex_t *lp, int endtok)
 		c=*cp, *cp=0;
 	n = sh_lex(lp);
 	if(off<0)
-		*cp = c;
+		*cp = (char)c;
 	if(n==endtok || off<0)
 	{
 		if(endtok==LPAREN && lp->lexd.paren)
@@ -1627,7 +1628,7 @@ static int comsub(Lex_t *lp, int endtok)
 					}
 					goto skip;
 				}
-				word[n++] = c;
+				word[n++] = (char)c;
 			}
 			if(sh_lexstates[ST_NAME][c]==S_BREAK)
 			{
@@ -2350,7 +2351,7 @@ static struct argnod *endword(int mode)
 				if(n=='\n')
 					dp--;
 				else
-					dp[-1] = n;
+					dp[-1] = (unsigned char)n;
 				sp++;
 			}
 			break;
@@ -2472,7 +2473,7 @@ static int alias_exceptf(Sfio_t *iop,int type,void *data, Sfdisc_t *handle)
 		int c = fcpeek(-1);
 		if(isblank((wint_t)c))
 			lp->aliasok = 1;
-		*ap->buf = ap->nextc;
+		*ap->buf = (char)ap->nextc;
 		ap->nextc = 0;
 		sfsetbuf(iop,ap->buf,1);
 		return 1;

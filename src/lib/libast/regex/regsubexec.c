@@ -95,7 +95,7 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
 					c = *s++;
 					if (islower(c))
 						c = toupper(c);
-					*b->re_cur++ = c;
+					*b->re_cur++ = (char)c;
 				}
 				break;
 			case REG_SUB_LOWER:
@@ -104,7 +104,7 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
 					c = *s++;
 					if (isupper(c))
 						c = tolower(c);
-					*b->re_cur++ = c;
+					*b->re_cur++ = (char)c;
 				}
 				break;
 			case REG_SUB_UPPER|REG_SUB_LOWER:
@@ -115,7 +115,7 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
 						c = tolower(c);
 					else if (islower(c))
 						c = toupper(c);
-					*b->re_cur++ = c;
+					*b->re_cur++ = (char)c;
 				}
 				break;
 			default:
@@ -184,7 +184,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
 	while (s < e)
 	{
 		c = *s++;
-		PUTC(p, b, c, return fatal(p->env->disc, c, NULL));
+		PUTC(p, b, (char)c, return fatal(p->env->disc, c, NULL));
 	}
 	NEED(p, b, 1, return fatal(p->env->disc, c, NULL));
 	*b->re_cur = 0;

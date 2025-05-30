@@ -945,7 +945,7 @@ static Namarr_t *nv_changearray(Namval_t *np, void *(*fun)(Namval_t*,const char*
 			else while( n = digit )
 			{
 				digit /= 10;
-				*--string_index = '0' + (n-10*digit);
+				*--string_index = (char)('0' + (n-10*digit));
 			}
 			nv_putsub(np, string_index, ARRAY_ADD);
 			vpp = (void**)((*ap->fun)(np,NULL,0));
@@ -1341,7 +1341,7 @@ ssize_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 				sfprintf(out,"[%zd]",fp->cur[n]);
 		}
 		if(dim)
-			*dim = (signed)fp->dim;
+			*dim = (char)fp->dim;
 		return fp->curi;
 	}
 	if(out)
@@ -1481,7 +1481,8 @@ skip:
  */
 char *nv_endsubscript(Namval_t *np, char *cp, int mode)
 {
-	int quoted=0, c;
+	int quoted=0;
+	char c;
 	ssize_t count=1;
 	char *sp = cp+1;
 	assert(*cp=='[');
@@ -1607,7 +1608,7 @@ char	*nv_getsub(Namval_t* np)
 	else while(n=dot)
 	{
 		dot /= 10;
-		*--cp = '0' + (n-10*dot);
+		*--cp = (char)('0' + (n-10*dot));
 	}
 	return cp;
 }

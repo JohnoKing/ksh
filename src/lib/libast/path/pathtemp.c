@@ -304,7 +304,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	if (d)
 	{
 		while (s < x && (n = *d++))
-			*s++ = n;
+			*s++ = (char)n;
 		if (s < x && s > b && *(s - 1) != '/')
 			*s++ = '/';
 	}
@@ -314,7 +314,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	{
 		if (n == '/' || n == '\\' || n == z)
 			n = '_';
-		*s++ = n;
+		*s++ = (char)n;
 	}
 	*s = 0;
 	len -= (size_t)(s - b);

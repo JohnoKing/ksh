@@ -86,7 +86,8 @@ static const char usage[] =
 static void fold(Sfio_t *in, Sfio_t *out, ssize_t width, const char *cont, size_t contsize, char *cols)
 {
 	char *cp, *first;
-	ssize_t n, col=0, x=0;
+	ssize_t n, col=0;
+	char x=0;
 	char *last_space=0;
 	cols[0] = 0;
 	for (;;)

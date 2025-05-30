@@ -130,7 +130,7 @@ typedef struct
 {
 	unsigned char*	p;		/* where in string		*/
 	size_t		length;		/* length in string		*/
-	short		serial;		/* preorder subpattern number	*/
+	int		serial;		/* preorder subpattern number	*/
 	short		be;		/* which end of pair		*/
 } Pos_t;
 
@@ -272,7 +272,7 @@ _matchpush(Env_t* env, Rex_t* rex)
  */
 
 static int
-pospush(Env_t* env, Rex_t* rex, unsigned char* p, int be)
+pospush(Env_t* env, Rex_t* rex, unsigned char* p, short be)
 {
 	Pos_t*	pos;
 
@@ -631,9 +631,9 @@ collic(Celt_t* ce, char* key, char* nxt, int c, ssize_t x)
 		if (collic(ce, key, nxt + 1, c, x))
 			return 1;
 		if (islower(*nxt))
-			*nxt = toupper(*nxt);
+			*nxt = (char)toupper(*nxt);
 		else if (isupper(*nxt))
-			*nxt = tolower(*nxt);
+			*nxt = (char)tolower(*nxt);
 		else
 			return 0;
 		nxt++;
@@ -671,7 +671,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 		c = s[0];
 		if (ic && isupper(c))
 			c = tolower(c);
-		key[0] = c;
+		key[0] = (unsigned char)c;
 		key[1] = 0;
 		if (isalpha(c))
 		{
@@ -686,7 +686,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 				z = mbxfrm(elt, key, COLL_KEY_MAX);
 				if (ic && isupper(c))
 					c = tolower(c);
-				key[w] = c;
+				key[w] = (unsigned char)c;
 				key[w + 1] = 0;
 				if (mbxfrm(elt, key, COLL_KEY_MAX) != z)
 					break;
@@ -963,7 +963,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				}
 				for (i = 0; s < e && i < n && collmatch(rex, s, e, &t); i++)
 				{
-					b[i] = t - s;
+					b[i] = (unsigned char)(t - s);
 					s = t;
 				}
 				for (; i-- >= rex->lo; s -= b[i])
@@ -1113,7 +1113,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 					}
 					e = env->end;
 					for (i = 0; s < e && i < n && *s != c; i++)
-						s += b[i] = MBSIZE(s);
+						s += b[i] = (unsigned char)MBSIZE(s);
 					for (; i-- >= m; s -= b[i])
 						switch (follow(env, rex, cont, s))
 						{
@@ -1461,7 +1461,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 							t = s;
 							if (mbchar(t) != c)
 								break;
-							b[i] = t - s;
+							b[i] = (unsigned char)(t - s);
 						}
 					}
 					else
@@ -1471,7 +1471,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 							t = s;
 							if (towupper((wint_t)mbchar(t)) != (wint_t)c)
 								break;
-							b[i] = t - s;
+							b[i] = (unsigned char)(t - s);
 						}
 					}
 					for (; i-- >= m; s -= b[i])

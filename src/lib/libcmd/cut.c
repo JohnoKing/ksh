@@ -85,7 +85,6 @@ typedef struct Delim_s
 typedef struct Cut_s
 {
 	int		mb;
-	int		eob;
 	int		cflag;
 	int		nosplit;
 	int		sflag;
@@ -94,6 +93,7 @@ typedef struct Cut_s
 	Delim_t		wdelim;
 	Delim_t		ldelim;
 	unsigned char	space[UCHAR_MAX+1];
+	unsigned char	eob;
 	ssize_t		list[2];	/* NOTE: must be last member */
 } Cut_t;
 
@@ -150,7 +150,7 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
 	if (wdelim->len == 1)
 		cut->space[wdelim->chr] = SP_WORD;
 	cut->ldelim = *ldelim;
-	cut->eob = (ldelim->len == 1) ? ldelim->chr : 0;
+	cut->eob = (ldelim->len == 1) ? (unsigned char)ldelim->chr : 0;
 	cut->space[cut->eob] = SP_LINE;
 	cut->cflag = (mode&C_CHARS) && cut->mb;
 	cut->nosplit = (mode&(C_BYTES|C_NOSPLIT)) == (C_BYTES|C_NOSPLIT) && cut->mb;
@@ -382,7 +382,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 	int nodelim=0, empty=0, inword=0;
 	unsigned char *ep;
 	unsigned char *bp, *first=NULL;
-	int lastchar;
+	unsigned char lastchar;
 	wchar_t w;
 	Sfio_t *fdtmp = 0;
 	long offset = 0;
@@ -465,7 +465,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 									{
 										copy = bp;
 										if (w == cut->ldelim.chr)
-											lastchar = cut->ldelim.chr;
+											lastchar = (unsigned char)cut->ldelim.chr;
 										else if (w != cut->wdelim.chr)
 										{
 											empty = 0;

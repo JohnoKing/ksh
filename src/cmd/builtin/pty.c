@@ -514,7 +514,7 @@ typedef struct Master_s
 	char*		prompt;		/* peek prompt				*/
 	ssize_t		cursor;		/* cursor in buf, 0 if fresh line	*/
 	int		line;		/* prompt line number			*/
-	int		restore;	/* previous line save char		*/
+	char		restore;	/* previous line save char		*/
 } Master_t;
 #define BUFUNDERFLOW	128		/* bytes of buffer underflow to allow	*/
 

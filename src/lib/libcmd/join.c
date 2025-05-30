@@ -454,7 +454,7 @@ static unsigned char* u1;
  * print field <n> from file <index>
  */
 static int
-outfield(Join_t* jp, ssize_t index, ssize_t n, ssize_t last)
+outfield(Join_t* jp, ssize_t index, ssize_t n, char last)
 {
 	File_t*		fp = &jp->file[index];
 	char*		cp;
@@ -531,7 +531,7 @@ outfield(Join_t* jp, ssize_t index, ssize_t n, ssize_t last)
 	else
 	{
 		last = cp[size-1];
-		cp[size-1] = n;
+		cp[size-1] = (char)n;
 		if (sfwrite(iop, cp, (size_t)size) < 0)
 			return -1;
 		cp[size-1] = last;

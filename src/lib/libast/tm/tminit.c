@@ -269,8 +269,8 @@ tmlocal(time_t now)
 			break;
 		}
 	}
-	local.west = n;
-	local.dst = m;
+	local.west = (short)n;
+	local.dst = (short)m;
 
 	/*
 	 * now get the time zone names

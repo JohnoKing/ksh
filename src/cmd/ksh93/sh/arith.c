@@ -76,7 +76,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 	{
 		ssize_t offset;
 		/* do binding to node now */
-		int c = cp[flag];
+		char c = cp[flag];
 		cp[flag] = 0;
 		if((!(np = nv_open(cp,sh.var_tree,assign|NV_VARNAME|NV_NOADD|NV_NOFAIL)) || nv_isnull(np))
 		&& sh_macfun(cp, offset = stktell(sh.stk)))
@@ -165,7 +165,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 				sfputr(sh.strbuf,sub,-1);
 				sub = sfstruse(sh.strbuf);
 			}
-			*cp = flag;
+			*cp = (char)flag;
 			if(c || hasdot)
 			{
 				np = nv_open(sub,sh.var_tree,NV_VARNAME|assign);
@@ -365,7 +365,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				ssize_t offset = stktell(sh.stk);
 				char *saveptr = stkfreeze(sh.stk,0);
 				Dt_t  *root = (lvalue->emode&ARITH_COMP)?sh.var_base:sh.var_tree;
-				*str = c;
+				*str = (char)c;
 				cp = str;
 				while(c=='[' || c=='.')
 				{
@@ -417,7 +417,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				else
 					stkseek(sh.stk,offset);
 			}
-			*str = c;
+			*str = (char)c;
 			if(!np && lvalue->value)
 				break;
 			lvalue->value = (char*)np;
@@ -445,7 +445,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 		}
 		else
 		{
-			char	lastbase=0, *val = xp, oerrno = errno;
+			char	lastbase=0, *val = xp;
+			int	oerrno = errno;
 			lvalue->isenum = 0;
 			errno = 0;
 			r = strtonll(val,&str, &lastbase,-1);

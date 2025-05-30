@@ -912,7 +912,7 @@ init(char* s, Optpass_t* p)
 		state.xp = sfstropen();
 		if (!map[opts[0]])
 			for (n = 0, o = opts; *o; o++)
-				map[*o] = ++n;
+				map[*o] = (unsigned char)++n;
 	}
 #if _BLD_DEBUG
 	error(-2, "optget debug");
@@ -991,7 +991,7 @@ init(char* s, Optpass_t* p)
 						p->flags |= OPT_old;
 						break;
 					case 'p':
-						p->prefix = n;
+						p->prefix = (unsigned char)n;
 						break;
 					case 's':
 						if (n > 1 && n < 5)
@@ -3540,7 +3540,7 @@ opthelp(const char* oopts, const char* what)
 		{
 			if (islower(c))
 				c = toupper(c);
-			*t++ = c;
+			*t++ = (char)c;
 		}
 		*t = 0;
 		t = rd;
@@ -3548,7 +3548,7 @@ opthelp(const char* oopts, const char* what)
 		{
 			*t++ = ' ';
 			while (t < &rd[sizeof(rd)-2] && (c = *s++) && c != ']')
-				*t++ = c;
+				*t++ = (char)c;
 		}
 		*t = 0;
 		sfprintf(sp, "\
@@ -3758,7 +3758,7 @@ opthelp(const char* oopts, const char* what)
 			{
 				if (islower(c))
 					c = toupper(c);
-				*t++ = c;
+				*t++ = (char)c;
 			}
 			*t = 0;
 			sfprintf(mp, "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n<HTML>\n<HEAD>\n<META name=\"generator\" content=\"" OPTGET_VERSION "\">\n%s<TITLE>%s man document</TITLE>\n<STYLE type=\"text/css\">\ndiv.SH { padding-left:2em; text-indent:0em; }\ndiv.SY { padding-left:4em; text-indent:-2em; }\ndt { float:left; clear:both; }\ndd { margin-left:3em; }\n</STYLE>\n</HEAD>\n<BODY bgcolor=white>\n", (state.flags & OPT_proprietary) ? "<!--INTERNAL-->\n" : "", id);
@@ -3813,7 +3813,7 @@ opthelp(const char* oopts, const char* what)
 					if (jj > pt->level)
 					{
 						pt++;
-						pt->level = jj;
+						pt->level = (unsigned char)jj;
 						pt->id = TAG_NONE;
 						for (y = p; *y && *y != '\n'; y++)
 						{
@@ -4499,7 +4499,7 @@ optget(char** argv, const char* oopts)
 			{
 				x = 0;
 				state.style = STYLE_long;
-				opt_info.option[0] = opt_info.name[0] = opt_info.name[1] = c;
+				opt_info.option[0] = opt_info.name[0] = opt_info.name[1] = (char)c;
 				w = &opt_info.name[prefix];
 				if ((*s == 'n' || *s == 'N') && (*(s + 1) == 'o' || *(s + 1) == 'O') && *(s + 2) && *(s + 2) != '=')
 					no = *(s + 2) == '-' ? 3 : 2;
@@ -4511,7 +4511,7 @@ optget(char** argv, const char* oopts)
 					{
 						if (*(s + 1) == '=')
 							s++;
-						if (!isalnum(*(s - 1)) && *(w - 1) == (opt_info.assignment = (unsigned)*(s - 1)))
+						if (!isalnum(*(s - 1)) && *(w - 1) == (opt_info.assignment = (unsigned char)*(s - 1)))
 							w--;
 						v = ++s;
 						break;
@@ -4534,8 +4534,8 @@ optget(char** argv, const char* oopts)
 		{
 			if ((k = argv[opt_info.index][0]) != '-' && k != '+')
 				k = '-';
-			opt_info.option[0] = opt_info.name[0] = k;
-			opt_info.option[1] = opt_info.name[1] = c;
+			opt_info.option[0] = opt_info.name[0] = (char)k;
+			opt_info.option[1] = opt_info.name[1] = (char)c;
 			opt_info.option[2] = opt_info.name[2] = 0;
 			break;
 		}
@@ -4570,11 +4570,11 @@ optget(char** argv, const char* oopts)
 				v = s + 1;
 			}
 		}
-		opt_info.option[1] = c;
+		opt_info.option[1] = (char)c;
 		opt_info.option[2] = 0;
 		if (!w)
 		{
-			opt_info.name[1] = c;
+			opt_info.name[1] = (char)c;
 			opt_info.name[2] = 0;
 		}
 		goto help;
@@ -4781,7 +4781,7 @@ optget(char** argv, const char* oopts)
 						sfputc(vp, k);
 						s = expand(s + 2, NULL, &t, vp, id);
 						if (*s)
-							*(f = s - 1) = k;
+							*(f = s - 1) = (char)k;
 						else
 						{
 							f = sfstrbase(vp);
@@ -4949,7 +4949,7 @@ optget(char** argv, const char* oopts)
 							}
 							else if (*(f + 1) == ':' || *(f + 1) == '!' && *(f + 2) == ':')
 							{
-								opt_info.option[1] = x;
+								opt_info.option[1] = (char)x;
 								opt_info.option[2] = 0;
 							}
 							else
@@ -4988,7 +4988,7 @@ optget(char** argv, const char* oopts)
 					else if (k == c && prefix == 1)
 					{
 						w = 0;
-						opt_info.name[1] = c;
+						opt_info.name[1] = (char)c;
 						opt_info.name[2] = 0;
 						opt_info.offset = 2;
 						opt_info.index--;
@@ -5040,7 +5040,7 @@ optget(char** argv, const char* oopts)
 							else if (*(f + 1) == '=')
 								break;
 							else
-								cache->flags[map[*((unsigned char*)f)]] = m;
+								cache->flags[map[*((unsigned char*)f)]] = (unsigned char)m;
 							j = 0;
 							/*
 							 * parse and cache short option equivalents,
@@ -5159,7 +5159,7 @@ optget(char** argv, const char* oopts)
 						if (*(s + 2) == '?')
 							m |= OPT_cache_optional;
 					}
-					cache->flags[map[*((unsigned char*)s)]] = m;
+					cache->flags[map[*((unsigned char*)s)]] = (unsigned char)m;
 				}
 				s++;
 				continue;
@@ -5226,7 +5226,7 @@ optget(char** argv, const char* oopts)
 			return opterror("", 0, version, id, catalog);
 		}
 		s = numopt;
-		c = opt_info.option[1] = numchr;
+		c = opt_info.option[1] = (char)numchr;
 		opt_info.offset--;
 	}
 	opt_info.arg = 0;

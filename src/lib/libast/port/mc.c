@@ -153,7 +153,7 @@ mcfind(const char* locale, const char* catalog, int category, int nls, char* pat
 							v = lc_categories[category].name;
 							break;
 						default:
-							*s++ = c;
+							*s++ = (char)c;
 							continue;
 						}
 						if (v)
@@ -172,7 +172,7 @@ mcfind(const char* locale, const char* catalog, int category, int nls, char* pat
 					/* FALLTHROUGH */
 				default:
 					if (s < e)
-						*s++ = c;
+						*s++ = (char)c;
 					continue;
 				}
 				break;

@@ -716,7 +716,7 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 			state.before = state.after = 2;
 		break;
 	case 'H':
-		state.prefix = opt_info.num;
+		state.prefix = (unsigned char)opt_info.num;
 		break;
 	case 'L':
 		state.list = (ssize_t)(-opt_info.num);
@@ -770,7 +770,7 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 			flags &= ~FTS_TOP;
 		break;
 	case 's':
-		state.suppress = opt_info.num;
+		state.suppress = (unsigned char)opt_info.num;
 		break;
 	case 't':
 		state.count |= 2;

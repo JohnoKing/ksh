@@ -168,7 +168,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 						{
 							if (last > 0)
 							{
-								*end = last;
+								*end = (unsigned char)last;
 								last = -1;
 								c = end - pp + 1;
 								if ((m = mbsize(pp)) == c)
@@ -293,7 +293,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 			{
 				if (!(n = states[c]))
 				{
-					*(cur = tmp) = c;
+					*(cur = tmp) = (unsigned char)c;
 					m = 1;
 					goto flush;
 				}
@@ -302,7 +302,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 					cp--;
 					goto special;
 				}
-				tmp[0] = c;
+				tmp[0] = (unsigned char)c;
 				c = 1;
 				goto mb;
 			}
@@ -319,7 +319,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 			do
 			{
 				n = c & ~0200;
-				meta[2] = printof(n);
+				meta[2] = (unsigned char)printof(n);
 				sfwrite(op, (char*)meta, 3);
 			} while (states[c = *++cp] == T_CNTL8BIT && raw);
 			break;
@@ -327,7 +327,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 			meta[1] = '-';
 			do
 			{
-				meta[2] = c & ~0200;
+				meta[2] = (unsigned char)(c & ~0200);
 				sfwrite(op, (char*)meta, 3);
 			} while (states[c = *++cp] == T_EIGHTBIT && raw);
 			break;

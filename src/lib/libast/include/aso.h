@@ -80,7 +80,7 @@ extern int			asolock(unsigned int volatile*, unsigned int, int);
 extern int			asoloop(uintmax_t);
 extern int			asorelax(uint32_t);
 
-extern uint8_t			asocas8(uint8_t volatile*, int, int);
+extern uint8_t			asocas8(uint8_t volatile*, uint8_t, uint8_t);
 extern uint8_t			asoget8(uint8_t volatile*);
 extern uint8_t			asoinc8(uint8_t volatile*);
 extern uint8_t			asodec8(uint8_t volatile*);

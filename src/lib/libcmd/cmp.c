@@ -124,7 +124,7 @@ pretty(Sfio_t *out, int o, int delim, int flags)
 			*s++ = ' ';
 			*s++ = ' ';
 		}
-		*s++ = o;
+		*s++ = (char)o;
 	}
 	*s = 0;
 	sfputr(out, buf, delim);

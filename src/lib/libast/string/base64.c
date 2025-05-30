@@ -174,7 +174,7 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 	{
 		memset(m, B64_IGN, sizeof(map));
 		for (tp = (unsigned char*)alp; c = *tp; tp++)
-			m[c] =  tp - (unsigned char*)alp;
+			m[c] = (unsigned char)(tp - (unsigned char*)alp);
 		m[PAD] = B64_PAD;
 		m[' '] = m['\t'] = m['\n'] = B64_SPC;
 	}
@@ -214,12 +214,12 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 							n = tp - (unsigned char*)tb + 4;
 							if (tp < te)
 							{
-								*tp++ = (v >> 16);
+								*tp++ = (unsigned char)(v >> 16);
 								if (tp < te)
 								{
-									*tp++ = (v >> 8);
+									*tp++ = (unsigned char)(v >> 8);
 									if (tp < te)
-										*tp++ = (v);
+										*tp++ = (unsigned char)(v);
 								}
 							}
 							if (tn)
@@ -230,9 +230,9 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 					}
 					else
 					{
-						*tp++ = (v >> 16);
-						*tp++ = (v >> 8);
-						*tp++ = (v);
+						*tp++ = (unsigned char)(v >> 16);
+						*tp++ = (unsigned char)(v >> 8);
+						*tp++ = (unsigned char)(v);
 					}
 					fc = fp;
 					state = 0;
@@ -248,7 +248,7 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 			goto done;
 		case 2:
 			if (tp < te)
-				*tp++ = v >> 4;
+				*tp++ = (unsigned char)(v >> 4);
 			else if (n)
 				n++;
 			else
@@ -263,9 +263,9 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
 		case 3:
 			if (tp < te)
 			{
-				*tp++ = v >> 10;
+				*tp++ = (unsigned char)(v >> 10);
 				if (tp < te)
-					*tp++ = v >> 2;
+					*tp++ = (unsigned char)(v >> 2);
 				else
 				{
 					n = tp - (unsigned char*)tb + 2;

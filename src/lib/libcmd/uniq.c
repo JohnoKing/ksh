@@ -170,7 +170,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 							f = 0;
 							while(f < CWIDTH-1)
 								outp[f++] = ' ';
-							outp[f++] = '0' + count + 1;
+							outp[f++] = (char)('0' + count + 1);
 							outp[f] = ' ';
 						}
 						else if(count<MAXCNT)

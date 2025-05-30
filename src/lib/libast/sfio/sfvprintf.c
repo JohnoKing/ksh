@@ -40,7 +40,7 @@
 
 #include <ccode.h>
 
-static int chr2str(char* buf, int v)
+static int chr2str(char* buf, char v)
 {
 	if(isprint(v) && v != '\\')
 	{	*buf++ = v;
@@ -529,7 +529,7 @@ loop_fmt :
 				}
 				else	/* reload ft on type mismatch */
 				{	FMTSET(ft, form, args, fmt, size, flags, width, precis, base, t_str, n_str);
-					(*ft->reloadf)(argp, fmt, &argv, ft);
+					(*ft->reloadf)(argp, (char)fmt, &argv, ft);
 					FMTGET(ft, form, args, fmt, size, flags, width, precis, base);
 				}
 			}
@@ -1092,7 +1092,7 @@ loop_fmt :
 					if(sp == endsp)
 						break;
 					if(sp <= endsp-3)
-						*ep++ = thousand;
+						*ep++ = (char)thousand;
 					endep = ep+3;
 				}
 				sp = buf+SLACK;
@@ -1235,7 +1235,7 @@ loop_fmt :
 
 			SFSETLOCALE(&decimal,&thousand);
 			if(precis > 0 || (flags&SFFMT_ALTER))
-				*endsp++ = decimal;
+				*endsp++ = (char)decimal;
 			ssp = endsp;
 			endep = ep+precis;
 			while((*endsp++ = *ep++) && ep <= endep)
@@ -1283,7 +1283,7 @@ loop_fmt :
 					n = 3;
 				while(ep < endep && (*endsp++ = *ep++) )
 				{	if(--n == 0 && (ep <= endep-3) )
-					{	*endsp++ = thousand;
+					{	*endsp++ = (char)thousand;
 						n = 3;
 					}
 				}
@@ -1296,7 +1296,7 @@ loop_fmt :
 				*endsp++ = '0';
 
 			if(precis > 0 || (flags&SFFMT_ALTER))
-				*endsp++ = decimal;
+				*endsp++ = (char)decimal;
 
 			if((n = -decpt) > 0)
 			{	/* output zeros for negative exponent */
@@ -1333,7 +1333,7 @@ loop_fmt :
 		{	if(flags&SFFMT_LEFT)
 				v = -v;
 			else if(flags&SFFMT_PREFIX) /* blank padding, output prefix now */
-			{	*--sp = fmt;
+			{	*--sp = (char)fmt;
 				flags &= ~SFFMT_PREFIX;
 			}
 		}

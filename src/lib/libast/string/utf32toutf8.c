@@ -62,18 +62,18 @@ utf32toutf8(char* s, uint32_t w)
 		if (w < ops[i].range)
 		{
 			b = s;
-			*s++ = ops[i].prefix | (w >> ops[i].shift);
+			*s++ = (char)(ops[i].prefix | (w >> ops[i].shift));
 			switch (ops[i].shift)
 			{
-			case 30: *s++ = 0x80 | ((w >> 24) & 0x3f);
+			case 30: *s++ = (char)(0x80 | ((w >> 24) & 0x3f));
 				 /* FALLTHROUGH */
-			case 24: *s++ = 0x80 | ((w >> 18) & 0x3f);
+			case 24: *s++ = (char)(0x80 | ((w >> 18) & 0x3f));
 				 /* FALLTHROUGH */
-			case 18: *s++ = 0x80 | ((w >> 12) & 0x3f);
+			case 18: *s++ = (char)(0x80 | ((w >> 12) & 0x3f));
 				 /* FALLTHROUGH */
-			case 12: *s++ = 0x80 | ((w >>  6) & 0x3f);
+			case 12: *s++ = (char)(0x80 | ((w >>  6) & 0x3f));
 				 /* FALLTHROUGH */
-			case  6: *s++ = 0x80 | (w & 0x3f);
+			case  6: *s++ = (char)(0x80 | (w & 0x3f));
 			}
 			return (size_t)(s - b);
 		}

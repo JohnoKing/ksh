@@ -399,7 +399,7 @@ endloop1:
 		{
 			if(range==1)
 			{
-				pat[0] = first;
+				pat[0] = (char)first;
 				cp = &pat[1];
 			}
 			else

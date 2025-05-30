@@ -145,7 +145,7 @@ extern void fcrestore(Fcin_t *fp)
 }
 
 #if SHOPT_MULTIBYTE
-int _fcmbget(short *len)
+int _fcmbget(ssize_t *len)
 {
 	int	c;
 	switch(*len = mbsize(_Fcin.fcptr))

@@ -38,7 +38,7 @@ struct list
 static int	sh_unquote(char* string)
 {
 	char *sp=string, *dp;
-	int c;
+	char c;
 	while((c= *sp) && c!='\'')
 		sp++;
 	if(c==0)

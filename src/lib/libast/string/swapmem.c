@@ -37,7 +37,7 @@ swapmem(int op, const void* from, void* to, size_t n)
 {
 	char*	f = (char*)from;
 	char*	t = (char*)to;
-	int	c;
+	char	c;
 
 	switch (op & (int)(n - 1))
 	{

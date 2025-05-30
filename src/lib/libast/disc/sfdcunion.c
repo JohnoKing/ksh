@@ -36,9 +36,9 @@ typedef struct _file_s
 typedef struct _union_s
 {
 	Sfdisc_t	disc;	/* discipline structure */
-	short		type;	/* type of streams	*/
-	short		c;	/* current stream	*/
-	short		n;	/* number of streams	*/
+	int		type;	/* type of streams	*/
+	int		c;	/* current stream	*/
+	int		n;	/* number of streams	*/
 	Sfoff_t		here;	/* current location	*/
 	File_t		f[1];	/* array of streams	*/
 } Union_t;

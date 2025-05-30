@@ -66,7 +66,7 @@ ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
 	while(s > ends)
 	{	/* get 2^SFIO_PRECIS precision at a time */
 		n = (int)(x = ldexpl(v,SFIO_PRECIS));
-		*--s = n|SFIO_MORE;
+		*--s = (char)(n|SFIO_MORE);
 		v = x-n;
 		if(v <= 0.)
 			break;

@@ -245,7 +245,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
 	{
 		if (islower(c))
 			c = toupper(c);
-		*b++ = c;
+		*b++ = (char)c;
 	}
 	*b = 0;
 #if DEBUG_TRACE
@@ -320,7 +320,7 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		}
 		else
 			w = c;
-		*t++ = w;
+		*t++ = (unsigned char)w;
 	}
 	*fn -= (size_t)((char*)f - (*fb));
 	*fb = (char*)f;
@@ -366,7 +366,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		else if (!c)
 			c = 1;
 		if (!(w & ~0x7F))
-			*t++ = w;
+			*t++ = (unsigned char)w;
 		else
 		{
 			if (!(w & ~0x7FF))
@@ -376,7 +376,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 					e = E2BIG;
 					break;
 				}
-				*t++ = 0xC0 + (w >> 6);
+				*t++ = (unsigned char)(0xC0 + (w >> 6));
 			}
 			else if (!(w & ~0xffff))
 			{
@@ -385,7 +385,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 					e = E2BIG;
 					break;
 				}
-				*t++ = 0xE0 + (w >> 12);
+				*t++ = (unsigned char)(0xE0 + (w >> 12));
 				*t++ = 0x80 + ((w >> 6 ) & 0x3F);
 			}
 			else
@@ -425,8 +425,8 @@ static int
 umeinit(void)
 {
 	const unsigned char*	s;
-	int			i;
-	int			c;
+	unsigned char		i;
+	unsigned char		c;
 
 	if (!ume_d[ume_D[0]])
 	{
@@ -477,7 +477,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			else if ((w = ume_m[c]) == NOE)
 			{
 				s = 0;
-				*t++ = c;
+				*t++ = (unsigned char)c;
 			}
 			else if (f >= (fe - 2))
 			{
@@ -491,7 +491,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 				w = (w << 6) | ume_m[*f++];
 				w = (w << 6) | ume_m[*f++];
 				if (!(w & ~0xFF))
-					*t++ = w;
+					*t++ = (unsigned char)w;
 				else if (t >= (te - 1))
 				{
 					f = p;
@@ -508,7 +508,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		else if (c == '+')
 			s = 1;
 		else
-			*t++ = c;
+			*t++ = (unsigned char)c;
 	}
 	*fn -= (size_t)((char*)f - (*fb));
 	*fb = (char*)f;
@@ -563,7 +563,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 				s = 0;
 				*t++ = '-';
 			}
-			*t++ = w;
+			*t++ = (unsigned char)w;
 		}
 		else if (t >= (te - (4 + s)))
 		{
@@ -618,7 +618,7 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		w = *f++;
 		w = (w << 8) | *f++;
 		if (!(w & ~0xFF))
-			*t++ = w;
+			*t++ = (unsigned char)w;
 		else if (t >= (te - 1))
 		{
 			f -= 2;
@@ -711,7 +711,7 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		w = *f++;
 		w = w | (*f++ << 8);
 		if (!(w & ~0xFF))
-			*t++ = w;
+			*t++ = (unsigned char)w;
 		else if (t >= (te - 1))
 		{
 			f -= 2;
@@ -1141,7 +1141,7 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
 				{
 					if (!(disc->flags & ICONV_OMIT) && tn > 0)
 					{
-						*ts++ = (disc->fill >= 0) ? disc->fill : **fb;
+						*ts++ = (disc->fill >= 0) ? (char)disc->fill : **fb;
 						tn--;
 					}
 					(*fb)++;
@@ -1247,7 +1247,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 				{
 					if (!(disc->flags & ICONV_OMIT) && tn > 0)
 					{
-						*ts++ = (disc->fill >= 0) ? disc->fill : *fs;
+						*ts++ = (disc->fill >= 0) ? (char)disc->fill : *fs;
 						tn--;
 					}
 					fs++;

@@ -59,7 +59,7 @@ struct _glob_
 	const char*	gl_suffix;
 	unsigned char*	gl_intr;
 
-	int		gl_delim;
+	char		gl_delim;
 
 	void*		gl_handle;
 	void*		(*gl_diropen)(glob_t*, const char*);

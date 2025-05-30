@@ -725,9 +725,9 @@ static void set(char *argv[], struct termios *sp)
 				UNREACHABLE();
 			}
 			if(tp->mask)
-				win.ws_col = (cc_t)n;
+				win.ws_col = (unsigned short)n;
 			else
-				win.ws_row = (cc_t)n;
+				win.ws_row = (unsigned short)n;
 			if(ioctl(0,TIOCSWINSZ,&win)<0)
 			{
 				error(ERROR_system(1),"cannot set %s",tp->name);

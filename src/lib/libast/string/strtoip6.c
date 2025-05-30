@@ -83,14 +83,14 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 			case PFX:
 				if ((x - b) < 2)
 					break;
-				*b++ = a>>8;
-				*b++ = a;
+				*b++ = (unsigned char)(a>>8);
+				*b++ = (unsigned char)a;
 				break;
 			case COL:
 				if ((x - b) < 2)
 					break;
-				*b++ = a>>8;
-				*b++ = a;
+				*b++ = (unsigned char)(a>>8);
+				*b++ = (unsigned char)a;
 				a = 0;
 				if (*s == ':')
 				{
@@ -123,13 +123,13 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 					case END:
 					case PFX:
 						if (b < x)
-							*b++ = a;
+							*b++ = (unsigned char)a;
 						a = 0;
 						break;
 					case DOT:
 						if (b >= x)
 							break;
-						*b++ = a;
+						*b++ = (unsigned char)a;
 						a = 0;
 						continue;
 					default:
@@ -188,7 +188,7 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 			}
 			else
 				a = 0xff;
-			*bits = a;
+			*bits = (unsigned char)a;
 		}
 	}
 	if (e)

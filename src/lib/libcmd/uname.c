@@ -320,7 +320,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
 			*t++ = 'S';
 			*t++ = '_';
 			while (t < e && (n = *s++))
-				*t++ = islower(n) ? toupper(n) : n;
+				*t++ = (char)(islower(n) ? toupper(n) : n);
 			*t = 0;
 			sfprintf(sfstdout, "%s%c", *(t = astconf(buf, NULL, NULL)) ? t : *(t = astconf(buf+3, NULL, NULL)) ? t :  "unknown", *argv ? ' ' : '\n');
 		}
