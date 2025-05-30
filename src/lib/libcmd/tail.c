@@ -179,7 +179,7 @@ tailpos(Sfio_t* fp, Sfoff_t number, int delim)
 		if ((offset = last - SFIO_BUFSIZE) < first)
 			offset = first;
 		sfseek(fp, offset, SEEK_SET);
-		n = last - offset;
+		n = (ssize_t)(last - offset);
 		if (!(s = sfreserve(fp, n, SFIO_LOCKR)))
 			return -1;
 		t = s + n;

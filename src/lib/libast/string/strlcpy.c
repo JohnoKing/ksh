@@ -54,7 +54,7 @@ strlcpy(char* s, const char* t, size_t n)
 		} while (*s++ = *t++);
 	if (!n)
 		while (*t++);
-	return t - o - 1;
+	return (size_t)(t - o - 1);
 }
 
 #endif

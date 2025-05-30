@@ -304,7 +304,8 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 			num = *((Sfdouble_t*)cp);
 			cp += sizeof(Sfdouble_t);
 			*++sp = num;
-			*++tp = type = *cp++;
+			type = (int)*cp++;
+			*++tp = (char)type;
 			break;
 		    case A_NOT:
 			type=0;

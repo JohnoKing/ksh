@@ -178,11 +178,11 @@ putid(Sfio_t* sp, int flags, const char* label, const char* name, long number)
 	if (flags & O_FLAG)
 	{
 		if (name) sfputr(sp, name, -1);
-		else sfprintf(sp, "%lu", number);
+		else sfprintf(sp, "%ld", number);
 	}
 	else
 	{
-		sfprintf(sp, "%u", number);
+		sfprintf(sp, "%ld", number);
 		if (name) sfprintf(sp, "(%s)", name);
 	}
 }
@@ -302,8 +302,8 @@ getids(Sfio_t* sp, const char* name, int flags)
 #endif
 	if ((flags & (U_FLAG|G_FLAG|S_FLAG)) == (U_FLAG|G_FLAG|S_FLAG))
 	{
-		putid(sp, flags, "uid", name, user);
-		putid(sp, flags, " gid", gname, group);
+		putid(sp, flags, "uid", name, (long)user);
+		putid(sp, flags, " gid", gname, (long)group);
 		if ((flags & X_FLAG) && name)
 		{
 #if _lib_getgrent
@@ -335,9 +335,9 @@ getids(Sfio_t* sp, const char* name, int flags)
 		else
 		{
 			if ((euid = geteuid()) != user)
-				putid(sp, flags, " euid", (pw = getpwuid(euid)) ? pw->pw_name : NULL, euid);
+				putid(sp, flags, " euid", (pw = getpwuid(euid)) ? pw->pw_name : NULL, (long)euid);
 			if ((egid = getegid()) != group)
-				putid(sp, flags, " egid", (grp = getgrgid(egid)) ? grp->gr_name : NULL, egid);
+				putid(sp, flags, " egid", (grp = getgrgid(egid)) ? grp->gr_name : NULL, (long)egid);
 			if (ngroups > 0)
 			{
 				sfputr(sp, " groups", -1);
@@ -356,7 +356,7 @@ getids(Sfio_t* sp, const char* name, int flags)
 				}
 			}
 #if _lib_fsid
-			putid(sp, flags, " fsid", fs_name, fs_id);
+			putid(sp, flags, " fsid", fs_name, (long)fs_id);
 #endif
 		}
 		sfputc(sp,'\n');

@@ -2909,12 +2909,11 @@ void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
 				 */
 				char *cq = cp;
 				wchar_t c;
-				int w;
-				n = 0;
+				int w, wlen = 0;
 				while(c = mbchar(cq))
 					if ((w = mbwidth(c)) > 0)
-						n += (unsigned)w;
-				size = n;
+						wlen += w;
+				size = wlen;
 			}
 		}
 		else if(!trans)

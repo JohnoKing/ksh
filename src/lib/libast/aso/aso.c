@@ -137,7 +137,7 @@ static State_t			state =
 };
 
 static int
-asoerror(int type, const char* format, const char* a, const char* b, long n)
+asoerror(int type, const char* format, const char* a, const char* b, unsigned int n)
 {
 	char	buf[128];
 

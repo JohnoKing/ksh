@@ -66,7 +66,7 @@ strlcat(char* s, const char* t, size_t n)
 	}
 	if (!n)
 		while (*t++);
-	return (t - o) + m - 1;
+	return (size_t)(t - o) + m - 1;
 }
 
 #endif
