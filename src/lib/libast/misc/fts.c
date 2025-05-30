@@ -81,7 +81,7 @@ typedef int (*Stat_f)(const char*, struct stat*);
 	FTSENT*		right;			/* right child		*/ \
 	FTSENT*		pwd;			/* pwd parent		*/ \
 	FTSENT*		stack;			/* getlist() stack	*/ \
-	unsigned long	nlink;			/* FTS_D link count	*/ \
+	nlink_t		nlink;			/* FTS_D link count	*/ \
 	unsigned char	must;			/* must stat		*/ \
 	unsigned char	type;			/* DT_* type		*/ \
 	unsigned char	symlink;		/* originally a symlink	*/ \

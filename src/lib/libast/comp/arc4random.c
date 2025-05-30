@@ -173,7 +173,7 @@ _ast_getentropy(void *s, size_t len)
 				continue;
 			return -1;
 		}
-		o += r;
+		o += (size_t)r;
 	}
 	close(fd);
 	return 0;
