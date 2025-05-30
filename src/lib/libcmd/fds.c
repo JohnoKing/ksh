@@ -215,7 +215,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
 	}
 	if (unit == 1)
 		sp = sfstdout;
-	else if (fstat(unit, &st) || !(sp = sfnew(NULL, NULL, SFIO_UNBOUND, unit, SFIO_WRITE)))
+	else if (fstat(unit, &st) || !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, unit, SFIO_WRITE)))
 	{
 		error(ERROR_SYSTEM|3, "%d: cannot write to file descriptor");
 		UNREACHABLE();
@@ -343,7 +343,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
 				a = fam;
 				e = (b = (unsigned char*)&addr) + addrlen;
 				while (b < e && a < &fam[sizeof(fam)-1])
-					a += sfsprintf(a, &fam[sizeof(fam)] - a - 1, ".%d", *b++);
+					a += sfsprintf(a, (size_t)(&fam[sizeof(fam)] - a - 1), ".%d", *b++);
 				a = a == fam ? "0" : fam + 1;
 			}
 			if (port)

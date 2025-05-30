@@ -108,7 +108,7 @@ static int invalid(const char *file, int nlines)
  * handle UTF space characters
  */
 
-static int chkstate(int state, unsigned int c)
+static int chkstate(int state, int c)
 {
 	switch(state)
 	{
@@ -145,7 +145,7 @@ static int chkstate(int state, unsigned int c)
 		state = (c==0x9f?10:0);
 		break;
 	case 8:
-		return (iswspace(c)?10:0);
+		return (iswspace((wint_t)c)?10:0);
 	}
 	return state;
 }
@@ -182,14 +182,14 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 		cp = buff = endbuff = 0;
 		for (;;)
 		{
-			if (cp >= endbuff || (n = mb2wc(x, cp, endbuff-cp)) < 0)
+			if (cp >= endbuff || (n = mb2wc(x, cp, (size_t)(endbuff-cp))) < 0)
 			{
 				if ((o = endbuff-cp) < ssizeof(side))
 				{
 					if (buff)
 					{
 						if (o)
-							memcpy(side, cp, o);
+							memcpy(side, cp, (size_t)o);
 					}
 					else
 						o = 0;
@@ -201,10 +201,10 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 						break;
 					}
 					nbytes += n;
-					if ((c = sizeof(side) - o) > n)
+					if ((c = ssizeof(side) - o) > n)
 						c = n;
 					if (c)
-						memcpy(cp, buff, c);
+						memcpy(cp, buff, (size_t)c);
 					endbuff = buff + n;
 					cp = side;
 					x = mbchar(cp);
@@ -234,7 +234,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 				nlines++;
 				lasttype = 1;
 			}
-			else if (iswspace(x))
+			else if (iswspace((wint_t)x))
 				lasttype = 1;
 			else if (lasttype)
 			{

@@ -698,7 +698,7 @@ static void chkmail(char *files)
 		cp = sp;
 	}
 	while(save);
-	stkset(sh.stk,savstak,offset);
+	stkset(sh.stk,savstak,(size_t)offset);
 }
 
 #undef PSTAT
@@ -723,8 +723,8 @@ static void fixargs(char **argv, int mode)
 {
 #   if PSTAT
 	char *cp;
-	ssize_t offset=0,size;
-	static ssize_t command_len;
+	size_t offset=0,size;
+	static size_t command_len;
 	char *buff;
 	union pstun un;
 	if(mode==0)
@@ -755,7 +755,7 @@ static void fixargs(char **argv, int mode)
 #   elif _lib_setproctitle
 #	define CMDMAXLEN 255
 	char *cp;
-	ssize_t offset=0,size;
+	size_t offset=0,size;
 	char buff[CMDMAXLEN + 1];
 	if(mode==0)
 		return;
@@ -773,8 +773,8 @@ static void fixargs(char **argv, int mode)
 #   else
 	/* Generic version, works on at least Linux and macOS */
 	char *cp;
-	ssize_t offset=0,size;
-	static ssize_t buffsize;
+	size_t offset=0, size;
+	static size_t buffsize;
 	static char *buff;
 	if(mode==0)
 	{

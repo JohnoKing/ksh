@@ -274,12 +274,12 @@ retry:
 	else
 		maxlines = HIST_DFLT;
 	for(histmask=16;histmask <= maxlines; histmask <<=1 );
-	hp = new_of(History_t,(--histmask)*sizeof(off_t));
+	hp = new_of(History_t,(size_t)(--histmask)*sizeof(off_t));
 	sh.hist_ptr = hist_ptr = hp;
 	hp->histsize = maxlines;
 	hp->histmask = histmask;
 	hp->histfp= sfnew(NULL,hp->histbuff,HIST_BSIZE,fd,SFIO_READ|SFIO_WRITE|SFIO_APPENDWR|SFIO_SHARE);
-	memset((char*)hp->histcmds,0,sizeof(off_t)*(hp->histmask+1));
+	memset((char*)hp->histcmds,0,sizeof(off_t)*(size_t)(hp->histmask+1));
 	hp->histind = 1;
 	hp->histcmds[1] = 2;
 	hp->histcnt = 2;
@@ -479,7 +479,7 @@ static History_t* hist_trim(History_t *hp, int n)
 			cp = endbuff;
 		c = (int)(cp-buff);
 		hist_new->histcnt += c;
-		sfwrite(hist_new->histfp,buff,c);
+		sfwrite(hist_new->histfp,buff,(size_t)c);
 	}
 	hist_cancel(hist_new);
 	sfclose(hist_old->histfp);
@@ -524,7 +524,7 @@ static int hist_nearend(History_t *hp, Sfio_t *iop, off_t size)
 				break;
 		}
 		size += n;
-		sfread(iop,(char*)buff,n);
+		sfread(iop,(char*)buff,(size_t)n);
 		if(incmd < 0)
 		{
 			if((n=sfread(iop,(char*)marker,4))==4)
@@ -718,12 +718,12 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 {
 	History_t *hp = (History_t*)handle;
 	char *bufptr = ((char*)buff)+insize;
-	ssize_t size = insize;
+	ssize_t size = (ssize_t)insize;
 	off_t cur;
 	int c,saved=0;
 	char saveptr[HIST_MARKSZ];
 	if(!hp->histflush)
-		return write(sffileno(iop),(char*)buff,size);
+		return write(sffileno(iop),(char*)buff,(size_t)size);
 	if((cur = lseek(sffileno(iop),0,SEEK_END)) <0)
 	{
 		errormsg(SH_DICT,2,"hist_flush: EOF seek failed errno=%d",errno);
@@ -743,7 +743,7 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 	}
 	/* don't count empty lines */
 	if(++bufptr <= (char*)buff)
-		return insize;
+		return (ssize_t)insize;
 	*bufptr++ = '\n';
 	*bufptr++ = 0;
 	size = bufptr - (char*)buff;
@@ -790,13 +790,13 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 		size += HIST_MARKSZ;
 	}
 	errno = 0;
-	size = write(sffileno(iop),(char*)buff,size);
+	size = write(sffileno(iop),(char*)buff,(size_t)size);
 	if(saved)
 		memcpy(bufptr,saveptr,HIST_MARKSZ);
 	if(size>=0)
 	{
 		hp->histwfail = 0;
-		return insize;
+		return (ssize_t)insize;
 	}
 	return -1;
 }

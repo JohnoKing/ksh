@@ -167,8 +167,8 @@ extern void	*ed_open(void);
 	extern int ed_internal(const char*, genchar*);
 	extern int ed_external(const genchar*, char*);
 	extern void ed_gencpy(genchar*,const genchar*);
-	extern void ed_genncpy(genchar*,const genchar*,int);
-	extern int ed_genlen(const genchar*);
+	extern void ed_genncpy(genchar*,const genchar*,size_t);
+	extern size_t ed_genlen(const genchar*);
 #endif /* SHOPT_MULTIBYTE */
 
 extern const char	e_runvi[];

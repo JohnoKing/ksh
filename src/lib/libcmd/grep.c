@@ -178,7 +178,7 @@ struct State_s				/* program state		*/
 
 	regmatch_t	posvec[1];	/* match position vector	*/
 	regmatch_t*	pos;		/* match position pointer	*/
-	int		posnum;		/* number of match positions	*/
+	size_t		posnum;		/* number of match positions	*/
 
 	ssize_t		after;		/* # lines to list after match	*/
 	ssize_t		before;		/* # lines to list before match	*/
@@ -209,7 +209,7 @@ labelcomp(const regex_t* re, const char* s, size_t len, regdisc_t* disc)
 	NOT_USED(disc);
 	n = 0;
 	while (s < e)
-		n = (n << 3) + (*s++ - '0');
+		n = (n << 3) + (uintmax_t)(*s++ - '0');
 	return (void*)((uintptr_t)n);
 }
 
@@ -229,7 +229,7 @@ labelexec(const regex_t* re, void* data, const char* xstr, size_t xlen, const ch
 static int
 addre(State_t* state, char* s)
 {
-	ssize_t		c;
+	size_t		c;
 	int		r;
 	char*		b;
 	Item_t*		x;
@@ -244,7 +244,7 @@ addre(State_t* state, char* s)
 			error(2, "%s: label:pattern expected", b);
 			goto done;
 		}
-		c = s - b;
+		c = (size_t)(s - b);
 		s++;
 		if (!(x = vmnewof(state->vm, 0, Item_t, 1, c)))
 		{
@@ -344,7 +344,7 @@ compile(State_t* state)
 		error_info.line = 0;
 		while (s = (char*)sfreserve(f, SFIO_UNBOUND, SFIO_LOCKR))
 		{
-			if (!(n = sfvalue(f)))
+			if (!(n = (size_t)sfvalue(f)))
 				break;
 			if (s[n - 1] != '\n')
 			{
@@ -354,7 +354,7 @@ compile(State_t* state)
 					sfread(f, s, 0);
 					break;
 				}
-				n = t - s + 1;
+				n = (size_t)(t - s + 1);
 			}
 			s[n - 1] = 0;
 			if (addre(state, s))
@@ -446,22 +446,22 @@ hit(State_t* state, const char* prefix, int sep, uintmax_t line, const char* s, 
 			sfwrite(sfstdout, s, len + 1);
 		else if (state->only)
 		{
-			sfwrite(sfstdout, s + state->pos[0].rm_so, state->pos[0].rm_eo - state->pos[0].rm_so);
+			sfwrite(sfstdout, s + state->pos[0].rm_so, (size_t)(state->pos[0].rm_eo - state->pos[0].rm_so));
 			sfputc(sfstdout, '\n');
 			s += state->pos[0].rm_eo;
-			if ((len -= state->pos[0].rm_eo) && !regnexec(&state->re, s, len, state->posnum, state->pos, 0))
+			if ((len -= (size_t)state->pos[0].rm_eo) && !regnexec(&state->re, s, len, state->posnum, state->pos, 0))
 				goto another;
 		}
 		else
 		{
 			do
 			{
-				sfwrite(sfstdout, s, state->pos[0].rm_so);
+				sfwrite(sfstdout, s, (size_t)state->pos[0].rm_so);
 				sfwrite(sfstdout, bold, sizeof(bold));
-				sfwrite(sfstdout, s + state->pos[0].rm_so, state->pos[0].rm_eo - state->pos[0].rm_so);
+				sfwrite(sfstdout, s + state->pos[0].rm_so, (size_t)(state->pos[0].rm_eo - state->pos[0].rm_so));
 				sfwrite(sfstdout, normal, sizeof(normal));
 				s += state->pos[0].rm_eo;
-				if (!(len -= state->pos[0].rm_eo))
+				if (!(len -= (size_t)state->pos[0].rm_eo))
 					break;
 			} while (!regnexec(&state->re, s, len, state->posnum, state->pos, 0));
 			sfwrite(sfstdout, s, len + 1);
@@ -501,7 +501,7 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
 		Context_t*	cp;
 		Context_line_t*	lp;
 
-		if (!(cp = context_open(input, state->before, state->after, list, state)))
+		if (!(cp = context_open(input, (size_t)state->before, (size_t)state->after, list, state)))
 		{
 			error(2, "context_open() failed");
 			goto bad;
@@ -526,10 +526,10 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
 				goto bad;
 			error_info.line++;
 			if (s = sfgetr(input, '\n', 0))
-				len = sfvalue(input) - 1;
+				len = (size_t)sfvalue(input) - 1;
 			else if (s = sfgetr(input, '\n', -1))
 			{
-				len = sfvalue(input);
+				len = (size_t)sfvalue(input);
 				s[len] = '\n';
 			}
 			else if (sferror(input) && errno != EISDIR)
@@ -544,7 +544,7 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
 				regfatal(&state->re, 2, result);
 				goto bad;
 			}
-			if ((result == 0) == state->match && hit(state, name, ':', error_info.line, s, len) < 0)
+			if ((result == 0) == state->match && hit(state, name, ':', (uintmax_t)error_info.line, s, len) < 0)
 				break;
 		}
 	}

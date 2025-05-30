@@ -55,7 +55,7 @@ aso_init_semaphore(void* data, const char* details)
 	size_t		n;
 	int		key;
 	int		id;
-	int		perm;
+	mode_t		perm;
 	struct sembuf	sem;
 	char		tmp[64];
 
@@ -100,7 +100,7 @@ aso_init_semaphore(void* data, const char* details)
 	key = (!path || !*path || streq(path, "private")) ? IPC_PRIVATE : (strsum(path, 0) & 0x7fff);
 	for (;;)
 	{
-		if ((id = semget(key, (int)size, IPC_CREAT|IPC_EXCL|perm)) >= 0)
+		if ((id = semget(key, (int)size, IPC_CREAT|IPC_EXCL|(int)perm)) >= 0)
 		{
 			/*
 			 * initialize all semaphores to 0
@@ -121,7 +121,7 @@ aso_init_semaphore(void* data, const char* details)
 			size /= 2;
 		else if (errno != EEXIST)
 			return NULL;
-		else if ((id = semget(key, (int)size, perm)) >= 0)
+		else if ((id = semget(key, (int)size, (int)perm)) >= 0)
 		{
 			struct semid_ds	ds;
 			Semun_t		arg;

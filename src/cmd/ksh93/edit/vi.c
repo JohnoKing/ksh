@@ -70,7 +70,7 @@
     static genchar	_c;
 #   define gencpy(a,b)	strcopy((char*)(a),(char*)(b))
 #   define genncpy(a,b,n) strncopy((char*)(a),(char*)(b),n)
-#   define genlen(str)	((int)strlen(str))
+#   define genlen(str)	(strlen(str))
 #   define isalph(v)	((_c=virtual[v])=='_'||isalnum(_c))
 #   undef  isblank
 #   define isblank(v)	isspace(virtual[v])
@@ -620,7 +620,7 @@ static int cntlmode(Vi_t *vp)
 #if SHOPT_MULTIBYTE
 			ed_internal((char*)virtual,virtual);
 #endif /* SHOPT_MULTIBYTE */
-			if((last_virt=genlen(virtual)-1) >= 0  && cur_virt == INVALID)
+			if((last_virt=(int)genlen(virtual)-1) >= 0  && cur_virt == INVALID)
 				cur_virt = 0;
 			virtual[last_virt+1] = '\0';
 			gencpy(vp->U_space, virtual);
@@ -643,7 +643,7 @@ static int cntlmode(Vi_t *vp)
 			else
 			{
 				gencpy(virtual, vp->U_space);
-				last_virt = genlen(vp->U_space) - 1;
+				last_virt = (int)genlen(vp->U_space) - 1;
 				cur_virt = 0;
 			}
 			break;
@@ -1106,7 +1106,7 @@ static void getline(Vi_t* vp,int mode)
 					c = max_virt-cur_virt;
 					if(c > 0 && last_save>=cur_virt)
 					{
-						genncpy((&virtual[cur_virt]),&saveline[cur_virt],c);
+						genncpy((&virtual[cur_virt]),&saveline[cur_virt],(size_t)c);
 						if(last_virt>=last_save)
 							last_virt=last_save-1;
 						refresh(vp,INPUT);
@@ -1132,7 +1132,7 @@ static void getline(Vi_t* vp,int mode)
 					c = last_save = last_virt+1;
 					if(c >= MAXLINE)
 						c = MAXLINE-1;
-					genncpy(saveline, virtual, c);
+					genncpy(saveline, virtual, (size_t)c);
 				}
 			}
 			break;
@@ -1721,7 +1721,7 @@ static void refresh(Vi_t* vp, int mode)
 	}
 	virtual[last_virt+1] = 0;
 	ncur_phys = ed_virt_to_phys(vp->ed,virtual,physical,cur_virt,v,p);
-	p = genlen(physical);
+	p = (int)genlen(physical);
 	if( --p < 0 )
 		last_phys = 0;
 	else
@@ -1922,7 +1922,7 @@ static void restore_v(Vi_t *vp)
 	save_v(vp);
 	gencpy(virtual, tmpspace);
 	cur_virt = tmpcol;
-	last_virt = genlen(tmpspace) - 1;
+	last_virt = (int)genlen(tmpspace) - 1;
 	vp->ocur_virt = MAXCHAR;	/** invalidate refresh optimization **/
 	return;
 }
@@ -1944,7 +1944,7 @@ static void save_last(Vi_t* vp)
 		/*** save last thing user typed ***/
 		if(i >= MAXLINE)
 			i = MAXLINE-1;
-		genncpy(vp->lastline, (&virtual[first_virt]), i);
+		genncpy(vp->lastline, (&virtual[first_virt]), (size_t)i);
 		vp->lastline[i] = '\0';
 	}
 	return;

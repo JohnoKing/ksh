@@ -224,7 +224,7 @@ static int getnode(State_t* state, Node_t *np)
 					error(ERROR_exit(2), "string argument expected");
 					UNREACHABLE();
 				}
-				np->num = strlen(cp);
+				np->num = (long)strlen(cp);
 				np->type = T_NUM;
 				goto next;
 			}

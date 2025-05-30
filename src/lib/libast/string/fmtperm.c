@@ -27,7 +27,7 @@
 #include <ls.h>
 
 char*
-fmtperm(int perm)
+fmtperm(mode_t perm)
 {
 	char*	s;
 	char*		buf;

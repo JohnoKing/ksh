@@ -150,7 +150,7 @@ typedef struct Join_s
 	char*		nullfield;
 	char*		delimstr;
 	ssize_t		delim;
-	ssize_t		delimlen;
+	size_t		delimlen;
 	ssize_t		buffered;
 	ssize_t		ignorecase;
 	ssize_t		mb;
@@ -215,7 +215,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 	ssize_t		c;
 	ssize_t*	outptr;
 	ssize_t*	outmax;
-	ssize_t		nfield = NFIELD;
+	size_t		nfield = NFIELD;
 	char*		str;
 
 	outptr = jp->outlist = newof(0, ssize_t, NFIELD + 1, 0);
@@ -326,7 +326,7 @@ getrec(Join_t* jp, ssize_t index, ssize_t discard)
 			if (field >= fieldmax)
 			{
 				n = 2 * fp->maxfields;
-				fp->fields = newof(fp->fields, Field_t, n + 1, 0);
+				fp->fields = newof(fp->fields, Field_t, (size_t)n + 1, 0);
 				field = fp->fields + fp->maxfields;
 				fp->maxfields = n;
 				fieldmax = fp->fields + n;
@@ -391,7 +391,7 @@ getrec(Join_t* jp, ssize_t index, ssize_t discard)
 							n = S_DELIM;
 							break;
 						}
-						if (jp->delim == -1 && iswspace((wchar_t)n))
+						if (jp->delim == -1 && iswspace((wint_t)n))
 						{
 							n = S_SPACE;
 							break;
@@ -516,7 +516,7 @@ outfield(Join_t* jp, ssize_t index, ssize_t n, ssize_t last)
 			if (jp->nullfield && sfputr(iop, jp->nullfield, -1) < 0)
 				return -1;
 		}
-		else if (sfwrite(iop, cp, size) < 0)
+		else if (sfwrite(iop, cp, (size_t)size) < 0)
 			return -1;
 		if (sfwrite(iop, jp->delimstr, jp->delimlen) < 0)
 			return -1;
@@ -532,7 +532,7 @@ outfield(Join_t* jp, ssize_t index, ssize_t n, ssize_t last)
 	{
 		last = cp[size-1];
 		cp[size-1] = n;
-		if (sfwrite(iop, cp, size) < 0)
+		if (sfwrite(iop, cp, (size_t)size) < 0)
 			return -1;
 		cp[size-1] = last;
 	}
@@ -647,12 +647,12 @@ join(Join_t* jp)
 		{
 			n = n1 < n2 ? n1 : n2;
 #if DEBUG_TRACE
-			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)))
+			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, (size_t)n) : memcmp(cp1, cp2, (size_t)n)))
 				cmp = n1 - n2;
 sfprintf(sfstdout, "[C#%d:%d(%c-%c),%d,%lld,%lld%s]", __LINE__, cmp, *cp1, *cp2, same, lo, hi, (jp->outmode & C_COMMON) ? ",COMMON" : "");
 			if (!cmp)
 #else
-			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)) && !(cmp = n1 - n2))
+			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, (size_t)n) : memcmp(cp1, cp2, (size_t)n)) && !(cmp = n1 - n2))
 #endif
 			{
 				if (!(jp->outmode & C_COMMON))
@@ -700,18 +700,19 @@ sfprintf(sfstdout, "[2#%d:0,%lld,%lld]", __LINE__, lo, hi);
 					if (n2 > jp->samesize)
 					{
 						jp->samesize = roundof(n2, 16);
-						if (!(jp->same = newof(jp->same, char, jp->samesize, 0)))
+						if (!(jp->same = newof(jp->same, char, (size_t)jp->samesize, 0)))
 						{
 							done(jp);
 							error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
 							UNREACHABLE();
 						}
 					}
-					memcpy(jp->same, cp2, o2 = n2);
+					o2 = n2;
+					memcpy(jp->same, cp2, (size_t)o2);
 					if (!(cp2 = getrec(jp, 1, 0)))
 						break;
 					n2 = jp->file[1].fieldlen;
-					if (n2 == o2 && *cp2 == *jp->same && !memcmp(cp2, jp->same, n2))
+					if (n2 == o2 && *cp2 == *jp->same && !memcmp(cp2, jp->same, (size_t)n2))
 						goto next;
 					continue;
 				}
@@ -899,7 +900,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 				jp->delim = mbchar(cp);
 				if ((n = cp - opt_info.arg) > 1)
 				{
-					jp->delimlen = n;
+					jp->delimlen = (size_t)n;
 					jp->delimstr = opt_info.arg;
 					continue;
 				}

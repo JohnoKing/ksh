@@ -40,7 +40,7 @@ strsum(const char* as, unsigned long c)
 	const unsigned char*	s = (const unsigned char*)as;
 	int			n;
 
-	while (n = *s++) HASHPART(c, n);
+	while (n = *s++) HASHPART(c, (size_t)n);
 #if LONG_MAX > 2147483647
 	return c & 0xffffffff;
 #else

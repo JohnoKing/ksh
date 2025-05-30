@@ -258,7 +258,7 @@ static int waitnotify(int fd, long timeout, int rw)
 
 static int service_init(void)
 {
-	int n = 20;
+	size_t n = 20;
 	file_list = (int*)sh_newof(NULL,short,n,0);
 	poll_list = sh_newof(NULL,Sfio_t*,n,0);
 	service_list = sh_newof(NULL,Service_t*,n,0);

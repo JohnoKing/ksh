@@ -101,7 +101,7 @@ static void fold(Sfio_t *in, Sfio_t *out, ssize_t width, const char *cont, size_
 		/* special case -b since no column adjustment is needed */
 		if(cols['\b']==0 && (n=sfvalue(in))<=width)
 		{
-			sfwrite(out,cp,n);
+			sfwrite(out,cp,(size_t)n);
 			continue;
 		}
 		first = cp;
@@ -116,7 +116,7 @@ static void fold(Sfio_t *in, Sfio_t *out, ssize_t width, const char *cont, size_
 					col = last_space - first;
 				else
 					col = width-col;
-				sfwrite(out,first,col);
+				sfwrite(out,first,(size_t)col);
 				first += col;
 				col = 0;
 				last_space = 0;
@@ -141,7 +141,7 @@ static void fold(Sfio_t *in, Sfio_t *out, ssize_t width, const char *cont, size_
 				col +=n;
 				if((cp-first) > (width-col))
 				{
-					sfwrite(out,first,(--cp)-first);
+					sfwrite(out,first,(size_t)((--cp)-first));
 					sfwrite(out, cont, contsize);
 					first = cp;
 					col =  TABSIZE-1;
@@ -159,7 +159,7 @@ static void fold(Sfio_t *in, Sfio_t *out, ssize_t width, const char *cont, size_
 			}
 			break;
 		}
-		sfwrite(out,first,cp-first);
+		sfwrite(out,first,(size_t)(cp-first));
 	}
 }
 
@@ -189,7 +189,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
 			cols['\t'] = cols[' '];
 			continue;
 		case 'c':
-			contsize = stresc(cont = strdup(opt_info.arg));
+			contsize = (size_t)stresc(cont = strdup(opt_info.arg));
 			continue;
 		case 'd':
 			if (n = *opt_info.arg)

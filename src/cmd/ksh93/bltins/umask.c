@@ -63,9 +63,9 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
 	argv += opt_info.index;
 	if(mask = *argv)
 	{
-		int c;
 		if(isdigit(*mask))
 		{
+			int c;
 			while(c = *mask++)
 			{
 				if (c>='0' && c<='7')
@@ -80,6 +80,7 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
 		else
 		{
 			char *cp = mask;
+			mode_t c;
 			flag = umask(0);
 			c = strperm(cp,&cp,~flag&0777);
 			if(*cp)

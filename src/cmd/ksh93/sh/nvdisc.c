@@ -692,19 +692,19 @@ Namfun_t *nv_clone_disc(Namfun_t *fp, int flags)
 int nv_adddisc(Namval_t *np, const char **names, Namval_t **funs)
 {
 	Nambfun_t *vp;
-	int n=0;
+	ssize_t n=0;
 	const char **av=names;
 	if(av)
 	{
 		while(*av++)
 			n++;
 	}
-	vp = sh_newof(NULL,Nambfun_t,1,n*sizeof(Namval_t*));
-	vp->fun.dsize = sizeof(Nambfun_t)+n*sizeof(Namval_t*);
+	vp = sh_newof(NULL,Nambfun_t,1,(size_t)n*sizeof(Namval_t*));
+	vp->fun.dsize = sizeof(Nambfun_t)+(size_t)n*sizeof(Namval_t*);
 	vp->fun.nofree |= 2;
 	vp->num = n;
 	if(funs)
-		memcpy(vp->bltins, funs,n*sizeof(Namval_t*));
+		memcpy(vp->bltins, funs,(size_t)n*sizeof(Namval_t*));
 	else while(n>=0)
 		vp->bltins[n--] = 0;
 	vp->fun.disc = &Nv_bdisc;
@@ -833,7 +833,7 @@ static void *newnode(const char *name)
  */
 static void *num_clone(Namval_t *np, void *val)
 {
-	ssize_t size;
+	size_t size;
 	void *nval;
 	if(!val)
 		return NULL;

@@ -152,7 +152,7 @@ char *sh_mactry(char *string)
 static void setup_ifs(Mac_t *mp)
 {
 	if(mp->ifsp = nv_getval(sh_scoped(IFSNOD)))
-		mp->ifs = *mp->ifsp;
+		mp->ifs = (unsigned char)*mp->ifsp;
 	else
 		mp->ifs = ' ';
 }
@@ -1371,7 +1371,7 @@ retry1:
 			{
 				idbuff[0] = mode = c;
 				if((d=fcpeek(0))==c)
-					idbuff[1] = fcget();
+					idbuff[1] = (char)fcget();
 				if(type==M_VNAME)
 					type = M_NAMESCAN;
 				else
@@ -2283,7 +2283,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
 			else
 				sfprintf(sh.strbuf,"%Lg",num);
 			str = sfstruse(sh.strbuf);
-			mac_copy(mp,str,strlen(str));
+			mac_copy(mp,str,(ssize_t)strlen(str));
 			sh.st.staklist = saveslp;
 			fcrestore(&save);
 			return;
@@ -2310,7 +2310,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
 		sh_offstate(SH_VERBOSE);
 		if(mp->sp)
 			sfsync(mp->sp);	/* flush before executing command */
-		sp = sfnew(NULL,str,c,-1,SFIO_STRING|SFIO_READ);
+		sp = sfnew(NULL,str,(size_t)c,-1,SFIO_STRING|SFIO_READ);
 		c = sh.inlineno;
 		sh.inlineno = error_info.line+sh.st.firstline;
 		t = (Shnode_t*)sh_parse(sp,SH_EOF|SH_NL);
@@ -2370,7 +2370,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
 	np = sh_scoped(IFSNOD);
 	nv_putval(np,mp->ifsp,NV_RDONLY);
 	mp->ifsp = nv_getval(np);
-	stkset(stkp,savptr,savtop);
+	stkset(stkp,savptr,(size_t)savtop);
 	newlines = 0;
 	sfsetbuf(sp,sp,0);
 	bufsize = sfvalue(sp);
@@ -2421,11 +2421,11 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
 		if(newlines >0)
 		{
 			if(mp->sp)
-				sfnputc(mp->sp,'\n',newlines);
+				sfnputc(mp->sp,'\n',(size_t)newlines);
 			else if(!mp->quote && mp->split && sh.ifstable['\n'])
 				endfield(mp,0);
 			else
-				sfnputc(stkp,'\n',newlines);
+				sfnputc(stkp,'\n',(size_t)newlines);
 		}
 		else if(lastc)
 		{
@@ -2449,12 +2449,12 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
 	if(--newlines>0 && sh.ifstable['\n']==S_DELIM)
 	{
 		if(mp->sp)
-			sfnputc(mp->sp,'\n',newlines);
+			sfnputc(mp->sp,'\n',(size_t)newlines);
 		else if(!mp->quote && mp->split)
 			while(newlines--)
 				endfield(mp,1);
 		else
-			sfnputc(stkp,'\n',newlines);
+			sfnputc(stkp,'\n',(size_t)newlines);
 	}
 	if(lastc)
 	{
@@ -2477,7 +2477,7 @@ static void mac_copy(Mac_t *mp,const char *str, ssize_t size)
 	ssize_t		c;
 	nopat = (mp->quote||(mp->assign==1)||mp->arith);
 	if(mp->sp)
-		sfwrite(mp->sp,str,size);
+		sfwrite(mp->sp,str,(size_t)size);
 	else if(mp->pattern>=2 || (mp->pattern && nopat) || mp->assign==3)
 	{
 		const char *macro_state = sh_lexstates[ST_MACRO];
@@ -2529,13 +2529,13 @@ static void mac_copy(Mac_t *mp,const char *str, ssize_t size)
 			if(c)
 			{
 				if(c = (cp-1) - str)
-					sfwrite(stkp,str,c);
+					sfwrite(stkp,str,(size_t)c);
 				sfputc(stkp,ESCAPE);
 				str = cp-1;
 			}
 		}
 		if(c = cp-str)
-			sfwrite(stkp,str,c);
+			sfwrite(stkp,str,(size_t)c);
 	}
 	else if(!mp->quote && mp->split && (mp->ifs||mp->pattern))
 	{
@@ -2563,7 +2563,7 @@ static void mac_copy(Mac_t *mp,const char *str, ssize_t size)
 			n = ifs_state[c = *(unsigned char*)cp++];
 			if(mbwide() && n!=S_MBYTE && (len=mbsize(cp-1))>1)
 			{
-				sfwrite(stkp,cp-1, len);
+				sfwrite(stkp,cp-1,(size_t)len);
 				cp += --len;
 				size -= len;
 				continue;
@@ -2650,7 +2650,7 @@ static void mac_copy(Mac_t *mp,const char *str, ssize_t size)
 		}
 	}
 	else
-		sfwrite(stkp,str,size);
+		sfwrite(stkp,str,(size_t)size);
 }
 
 /*
@@ -2717,7 +2717,7 @@ static ssize_t substring(const char *string,size_t len,const char *pat,ssize_t m
 	{
 		if(n=strngrpmatch(sp,len,pat,smatch,elementsof(smatch)/2,STR_RIGHT|STR_MAXIMAL))
 		{
-			memcpy(match,smatch,n*2*sizeof(smatch[0]));
+			memcpy(match,smatch,(size_t)n*2*sizeof(smatch[0]));
 			return n;
 		}
 		return 0;
@@ -2731,8 +2731,8 @@ static ssize_t substring(const char *string,size_t len,const char *pat,ssize_t m
 		if(n=strgrpmatch(sp,pat,smatch,elementsof(smatch)/2,STR_RIGHT|STR_LEFT|STR_MAXIMAL))
 		{
 			nmatch = n;
-			memcpy(match,smatch,n*2*sizeof(smatch[0]));
-			size = sp-string;
+			memcpy(match,smatch,(size_t)n*2*sizeof(smatch[0]));
+			size = (size_t)(sp-string);
 			break;
 		}
 		sp--;
@@ -2784,7 +2784,7 @@ static ssize_t charlen(const char *string,ssize_t len)
 	else
 	{
 		if(len<0)
-			return strlen(string);
+			return (ssize_t)strlen(string);
 		return len;
 	}
 }

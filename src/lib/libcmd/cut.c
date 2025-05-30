@@ -189,7 +189,7 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
 				ssize_t *dp;
 				*lp = HUGE;
 				n = 1 + (lp-cut->list)/2;
-				qsort(lp=cut->list,n,2*sizeof(*lp),mycomp);
+				qsort(lp=cut->list,(size_t)n,2*sizeof(*lp),mycomp);
 				/* eliminate overlapping regions */
 				for(n=0,range= -2,dp=lp; *lp!=HUGE; lp+=2)
 				{
@@ -294,7 +294,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 				{
 					if (!(*s & 0x80))
 						z = 1;
-					else if ((z = mbnsize(s, w)) <= 0)
+					else if ((z = mbnsize(s, (size_t)w)) <= 0)
 					{
 						if (s == bp && xx)
 						{
@@ -324,7 +324,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 				while (w > 0 && ncol > 0)
 				{
 					ncol--;
-					if (!(*s & 0x80) || (z = mbnsize(s, w)) <= 0)
+					if (!(*s & 0x80) || (z = mbnsize(s, (size_t)w)) <= 0)
 						z = 1;
 					s += z;
 					w -= z;
@@ -343,7 +343,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 			}
 			if (!skip && c)
 			{
-				if (sfwrite(fdout, (char*)bp, c) < 0)
+				if (sfwrite(fdout, (char*)bp, (size_t)c) < 0)
 					return;
 				must = 0;
 			}
@@ -357,7 +357,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 		if (!cut->nlflag && (skip || must || cut->reclen))
 		{
 			if (cut->ldelim.len > 1)
-				sfwrite(fdout, cut->ldelim.str, cut->ldelim.len);
+				sfwrite(fdout, cut->ldelim.str, (size_t)cut->ldelim.len);
 			else
 				sfputc(fdout, cut->ldelim.chr);
 		}
@@ -422,7 +422,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 							continue;
 						case SP_WIDE:
 							wp = --cp;
-							while ((c = mb2wc(w, cp, ep - cp)) <= 0)
+							while ((c = mb2wc(w, cp, (size_t)(ep - cp))) <= 0)
 							{
 								/* mb char possibly spanning buffer boundary -- fun stuff */
 								if ((ep - cp) < (ssize_t)mbmax())
@@ -434,13 +434,13 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 									if (lastchar != cut->eob)
 									{
 										*ep = lastchar;
-										if ((c = mb2wc(w, cp, ep - cp)) > 0)
+										if ((c = mb2wc(w, cp, (size_t)(ep - cp))) > 0)
 											break;
 									}
 									if (copy)
 									{
 										empty = 0;
-										if ((c = cp - copy) > 0 && sfwrite(fdout, (char*)copy, c) < 0)
+										if ((c = cp - copy) > 0 && sfwrite(fdout, (char*)copy, (size_t)c) < 0)
 											goto failed;
 									}
 									for (i = 0; i <= (ep - cp); i++)
@@ -455,7 +455,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 									k = 0;
 									while (j < (ssize_t)mbmax())
 										mb[j++] = cp[k++];
-									if ((c = mb2wc(w, (char*)mb, j)) <= 0)
+									if ((c = mb2wc(w, (char*)mb, (size_t)j)) <= 0)
 									{
 										c = i;
 										w = 0;
@@ -469,7 +469,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 										else if (w != cut->wdelim.chr)
 										{
 											empty = 0;
-											if (sfwrite(fdout, (char*)mb, c) < 0)
+											if (sfwrite(fdout, (char*)mb, (size_t)c) < 0)
 												goto failed;
 										}
 									}
@@ -527,7 +527,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 				if (copy)
 				{
 					empty = 0;
-					if ((c = wp - copy) > 0 && sfwrite(fdout, (char*)copy, c) < 0)
+					if ((c = wp - copy) > 0 && sfwrite(fdout, (char*)copy, (size_t)c) < 0)
 						goto failed;
 					copy = 0;
 				}
@@ -557,7 +557,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 				if (offset)
 					sfseek(fdtmp,offset=0,SEEK_SET);
 			}
-			if (copy && (c=cp-copy)>0 && (!nodelim || !cut->sflag) && sfwrite(fdout,(char*)copy,c)< 0)
+			if (copy && (c=cp-copy)>0 && (!nodelim || !cut->sflag) && sfwrite(fdout,(char*)copy,(size_t)c)< 0)
 				goto failed;
 		}
 		/* see whether to save in tmp file */
@@ -566,7 +566,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 			/* copy line to tmpfile in case no fields */
 			if(!fdtmp)
 				fdtmp = sftmp(BLOCK);
-			sfwrite(fdtmp,(char*)first,c);
+			sfwrite(fdtmp,(char*)first,(size_t)c);
 			offset +=c;
 		}
 	}

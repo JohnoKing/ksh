@@ -729,7 +729,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	int fd, pv[3];
 	int savestates = sh_getstate();
 	char savejobcontrol = job.jobcontrol;
-	int savesubshell = sh.subshell;
+	unsigned int savesubshell = sh.subshell;
 	ap = stkseek(sh.stk,ARGVAL);
 	ap->argflag |= ARG_MAKE;
 	ap->argflag &= ~ARG_RAW;

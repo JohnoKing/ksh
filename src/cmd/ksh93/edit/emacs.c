@@ -343,7 +343,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 			draw(ep, count > 1 ? UPDATE : APPEND);
 			continue;
 		case cntl('Y') :
-			c = count * genlen(kstack);
+			c = count * (int)genlen(kstack);
 			if (c + eol > scend)
 			{
 				beep();
@@ -359,7 +359,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 					out[cur++] = i;
 			}
 			draw(ep,UPDATE);
-			eol = genlen(out);
+			eol = (int)genlen(out);
 			continue;
 		case '\n':
 		case '\r':
@@ -374,7 +374,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 			kptr = &kstack[count];	/* move old contents here */
 			if (killing)		/* prepend to killbuf */
 			{
-				c = genlen(kstack) + (int)CHARSIZE; /* include '\0' */
+				c = (int)(genlen(kstack) + CHARSIZE); /* include '\0' */
 				while(c--)	/* copy stuff */
 					kptr[c] = kstack[c];
 			}
@@ -383,7 +383,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 			killing = 2;		/* we are killing */
 			i -= count;
 			eol -= count;
-			genncpy(kstack,out+i,cur-i);
+			genncpy(kstack,out+i,(size_t)(cur-i));
 			gencpy(out+i,out+cur);
 			ep->mark = i;
 			goto update;
@@ -588,7 +588,7 @@ update:
 			ed_internal((char*)(out),out);
 #endif /* SHOPT_MULTIBYTE */
 		drawline:
-			eol = genlen(out);
+			eol = (int)genlen(out);
 			cur = eol;
 			draw(ep,UPDATE);
 			/* skip blank lines when going up/down in history */
@@ -1330,7 +1330,7 @@ static void search(Emacs_t* ep,genchar *out,int direction)
 		draw(ep,APPEND);
 	}
 	skip:
-	i = genlen(string);
+	i = (int)genlen(string);
 	if(backwards_search)
 		ep->prevdirection = -2;
 	if(ep->prevdirection == -2 && i!=4 || direction!=1)

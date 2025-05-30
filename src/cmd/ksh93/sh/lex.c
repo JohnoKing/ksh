@@ -101,7 +101,7 @@ static void refvar(Lex_t *lp, int type)
 		{
 			/* variable starts on stack, copy remainder */
 			if(off>offset)
-				sfwrite(sh.stk,fcfirst()+type,off-offset);
+				sfwrite(sh.stk,fcfirst()+type,(size_t)(off-offset));
 			n = stktell(sh.stk)-kia.offset;
 			begin = stkptr(sh.stk,kia.offset);
 		}
@@ -113,7 +113,7 @@ static void refvar(Lex_t *lp, int type)
 		}
 		savptr = stkfreeze(sh.stk,0);
 		r=kiaentity(lp,begin,n,'v',-1,-1,kia.current,'v',0,"");
-		stkset(sh.stk,savptr,offset);
+		stkset(sh.stk,savptr,(size_t)offset);
 	}
 	sfprintf(kia.tmp,"p;%..64d;v;%..64d;%d;%d;r;\n",kia.current,r,sh.inlineno,sh.inlineno);
 }

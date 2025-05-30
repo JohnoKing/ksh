@@ -2552,7 +2552,7 @@ int sh_exec(const Shnode_t *t, int flags)
 						argv[5] = 0;
 						sh_debug(trap,NULL,NULL,argv,pattern);
 					}
-					n = test_binop(n,left,right);
+					n = test_binop((uint64_t)n,left,right);
 					if(traceon)
 					{
 						sfprintf(sfstderr,"%s %s ",sh_fmtq(left),op);

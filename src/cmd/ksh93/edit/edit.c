@@ -67,7 +67,7 @@ static char *erase_eos;  /* erase to end of screen */
 #define ECHOMODE	3
 #define SYSERR	-1
 
-static int keytrap(Edit_t *,char*, int, int, int);
+static int keytrap(Edit_t *,char*, int, ssize_t, int);
 
 #ifndef _POSIX_DISABLE
 #   define _POSIX_DISABLE	0
@@ -674,7 +674,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		/* an interrupt that should be ignored */
 		errno = 0;
 		if(!waitevent || (rv=(*waitevent)(fd,-1L,0))>=0)
-			rv = (int)sfpkrd(fd,buff,size,delim,-1L,mode);
+			rv = (int)sfpkrd(fd,buff,(size_t)size,delim,-1L,mode);
 	}
 	if(rv < 0)
 	{
@@ -702,7 +702,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 #endif /* _hdr_utime */
 		while(1)
 		{
-			rv = (int)read(fd,buff,size);
+			rv = (int)read(fd,buff,(size_t)size);
 			if(rv>=0 || errno!=EINTR)
 				break;
 			if(sh.trapnote&(SH_SIGSET|SH_SIGTRAP))
@@ -712,7 +712,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		}
 	}
 	else if(rv>=0 && mode>0)
-		rv = (int)read(fd,buff,rv>0?rv:1);
+		rv = (int)read(fd,buff,rv>0?(size_t)rv:1);
 done:
 	sh.waitevent = waitevent;
 	sh_offstate(SH_TTYWAIT);
@@ -1250,7 +1250,7 @@ void	ed_gencpy(genchar *dp,const genchar *sp)
  * copy at most <n> items from <sp> to <dp>
  */
 
-void	ed_genncpy(genchar *dp,const genchar *sp, int n)
+void	ed_genncpy(genchar *dp,const genchar *sp, size_t n)
 {
 	dp = (genchar*)roundof((uintptr_t)dp,sizeof(genchar));
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
@@ -1263,12 +1263,12 @@ void	ed_genncpy(genchar *dp,const genchar *sp, int n)
  * find the string length of <str>
  */
 
-int	ed_genlen(const genchar *str)
+size_t	ed_genlen(const genchar *str)
 {
 	const genchar *sp = str;
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
 	while(*sp++);
-	return (int)(sp-str-1);
+	return (size_t)(sp-str-1);
 }
 #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
 
@@ -1276,7 +1276,7 @@ int	ed_genlen(const genchar *str)
  * Execute keyboard trap on given buffer <inbuff> of given size <isize>
  * <mode> < 0 for vi insert mode
  */
-static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
+static int keytrap(Edit_t *ep,char *inbuff,int insize, ssize_t bufsize, int mode)
 {
 	char *cp;
 	int savexit;
@@ -1309,7 +1309,7 @@ static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
 		nv_unset(ED_CHRNOD,0);
 	else if(bufsize>0)
 	{
-		strncopy(inbuff,cp,bufsize);
+		strncopy(inbuff,cp,(size_t)bufsize);
 		inbuff[bufsize-1]='\0';
 		insize = (int)strlen(inbuff);
 	}

@@ -378,14 +378,14 @@ static int sig_number(const char *string)
 			}
 		}
 		tp = sh_locate(stkptr(sh.stk,o),(const Shtable_t*)shtab_signals,sizeof(*shtab_signals));
-		n = tp->sh_number;
+		n = (int)tp->sh_number;
 		if(sig==1 && (n>=(SH_TRAP-1) && n < (1<<SH_SIGBITS)))
 		{
 			/* sig prefix cannot match internal traps */
 			n = 0;
 			tp = (Shtable_t*)((char*)tp + sizeof(*shtab_signals));
 			if(strcmp(stkptr(sh.stk,o),tp->sh_name)==0)
-				n = tp->sh_number;
+				n = (int)tp->sh_number;
 		}
 		if((n>>SH_SIGBITS)&SH_SIGRUNTIME)
 			n = sh.sigruntime[(n&((1<<SH_SIGBITS)-1))-1];

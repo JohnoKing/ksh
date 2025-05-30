@@ -395,24 +395,24 @@ static void sane(struct termios *sp)
 
 static int gin(char *arg,struct termios *sp)
 {
-	int i;
+	speed_t i;
 	if(*arg++ != ':')
 		return 0;
-	sp->c_iflag = (int)strtol(arg,&arg,16);
+	sp->c_iflag = (tcflag_t)strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
-	sp->c_oflag = (int)strtol(arg,&arg,16);
+	sp->c_oflag = (tcflag_t)strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
-	sp->c_cflag = (int)strtol(arg,&arg,16);
+	sp->c_cflag = (tcflag_t)strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
-	sp->c_lflag = (int)strtol(arg,&arg,16);
+	sp->c_lflag = (tcflag_t)strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
 	for(i=0;i< NCCS; i++)
 	{
-		sp->c_cc[i] = (int)strtol(arg,&arg,16);
+		sp->c_cc[i] = (tcflag_t)strtol(arg,&arg,16);
 		if(*arg++ != ':')
 			return 0;
 	}
@@ -422,11 +422,11 @@ static int gin(char *arg,struct termios *sp)
 		strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
-	i = (int)strtol(arg,&arg,16);
+	i = (speed_t)strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
 	cfsetispeed(sp, i);
-	i = (int)strtol(arg,&arg,16);
+	i = (speed_t)strtol(arg,&arg,16);
 	if(*arg++ != ':')
 		return 0;
 	cfsetospeed(sp, i);
@@ -598,7 +598,7 @@ static int gettchar(const char *cp)
 	if(*cp==0)
 		return -1;
 	if(cp[1]==0)
-		return (unsigned)cp[0];
+		return cp[0];
 	if(*cp=='^' && cp[1] && cp[2]==0)
 	{
 		switch(cp[1])
@@ -764,12 +764,12 @@ static void set(char *argv[], struct termios *sp)
 				break;
 #endif
 			case C_SPEED:
-				if(getspeed(c))
+				if(getspeed((unsigned long)c))
 				{
 					if (*tp->name != 'o')
-						cfsetispeed(sp, c);
+						cfsetispeed(sp, (speed_t)c);
 					if (*tp->name != 'i')
-						cfsetospeed(sp, c);
+						cfsetospeed(sp, (speed_t)c);
 				}
 				else
 				{

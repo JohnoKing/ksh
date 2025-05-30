@@ -75,7 +75,7 @@ struct Namfun
 struct Nambfun
 {
 	Namfun_t        fun;
-	int		num;
+	ssize_t		num;
 	const char	**bnames;
 	Namval_t	*bltins[1];
 };

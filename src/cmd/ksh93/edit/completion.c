@@ -55,7 +55,7 @@ static char *fmtx(const char *string)
 		;
 	if(n==S_EOF && *string!='#')
 		return (char*)string;
-	sfwrite(sh.stk,string,--cp-string);
+	sfwrite(sh.stk,string,(size_t)(--cp-string));
 	for(string=cp;c=mbchar(cp);string=cp)
 	{
 		if((n=(int)(cp-string))==1)
@@ -65,7 +65,7 @@ static char *fmtx(const char *string)
 			sfputc(sh.stk,c);
 		}
 		else
-			sfwrite(sh.stk,string,n);
+			sfwrite(sh.stk,string,(size_t)n);
 		pos++;
 	}
 	sfputc(sh.stk,0);
@@ -270,7 +270,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		}
 		else
 		{
-			stkset(sh.stk,ep->e_stkptr,ep->e_stkoff);
+			stkset(sh.stk,ep->e_stkptr,(size_t)ep->e_stkoff);
 			ep->e_nlist = 0;
 		}
 	}
@@ -328,7 +328,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		{
 			/* expand ${!varname@} to complete variable name(s) */
 			sfputr(sh.stk,"${!",-1);
-			sfwrite(sh.stk,out,last-out);
+			sfwrite(sh.stk,out,(size_t)(last-out));
 			sfputr(sh.stk,"@}",-1);
 			out = last;
 		}
@@ -566,7 +566,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 	sh_offstate(SH_FCOMPLETE);
 	sh_offstate(SH_NOTILDEXP);
 	if(!ep->e_nlist)
-		stkset(sh.stk,ep->e_stkptr,ep->e_stkoff);
+		stkset(sh.stk,ep->e_stkptr,(size_t)ep->e_stkoff);
 	if(nomarkdirs)
 		sh_offoption(SH_MARKDIRS);
 #if SHOPT_MULTIBYTE
@@ -649,7 +649,7 @@ int ed_fulledit(Edit_t *ep)
 		ep->e_inbuf[ep->e_eol+1] = 0;
 		ed_external(ep->e_inbuf, (char *)ep->e_inbuf);
 #endif /* SHOPT_MULTIBYTE */
-		sfwrite(sh.hist_ptr->histfp,(char*)ep->e_inbuf,ep->e_eol+1);
+		sfwrite(sh.hist_ptr->histfp,(char*)ep->e_inbuf,(size_t)ep->e_eol+1);
 		sh_onstate(SH_HISTORY);
 		hist_flush(sh.hist_ptr);
 	}

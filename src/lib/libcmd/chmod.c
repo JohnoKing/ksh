@@ -242,7 +242,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
 	else
 	{
 		amode = *argv++;
-		mode = (mode_t)strperm(amode, &last, 0);
+		mode = strperm(amode, &last, 0);
 		if (*last)
 		{
 			if (ignore)
@@ -285,7 +285,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
 		commit:
 #endif
 			if (amode)
-				mode = (mode_t)strperm(amode, &last, (int)ent->fts_statp->st_mode);
+				mode = strperm(amode, &last, ent->fts_statp->st_mode);
 			if (show || (*chmodf)(ent->fts_accpath, mode) >= 0)
 			{
 				if (notify == 2 || notify == 1 && (mode&S_IPERM) != (ent->fts_statp->st_mode&S_IPERM))

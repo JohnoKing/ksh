@@ -155,7 +155,7 @@ static const char	header_fmt[] = "\n==> %s <==\n";
 static Sfoff_t
 tailpos(Sfio_t* fp, Sfoff_t number, int delim)
 {
-	size_t		n;
+	ssize_t		n;
 	Sfoff_t	offset;
 	Sfoff_t	first;
 	Sfoff_t	last;
@@ -179,7 +179,7 @@ tailpos(Sfio_t* fp, Sfoff_t number, int delim)
 		if ((offset = last - SFIO_BUFSIZE) < first)
 			offset = first;
 		sfseek(fp, offset, SEEK_SET);
-		n = (size_t)(last - offset);
+		n = last - offset;
 		if (!(s = sfreserve(fp, n, SFIO_LOCKR)))
 			return -1;
 		t = s + n;
@@ -637,7 +637,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 	}
 	if (flags & FOLLOW)
 	{
-		if (!(fp = stkalloc(stkstd, argc * sizeof(Tail_t))))
+		if (!(fp = stkalloc(stkstd, (size_t)argc * sizeof(Tail_t))))
 		{
 			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
 			UNREACHABLE();
@@ -700,11 +700,11 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 								format = header_fmt;
 							}
 							fp->cur += w;
-							sfwrite(sfstdout, s, w);
+							sfwrite(sfstdout, s, (size_t)w);
 						}
 						else
 							w = 0;
-						sfread(fp->sp, s, w);
+						sfread(fp->sp, s, (size_t)w);
 						fp->end += w;
 					}
 					goto next;

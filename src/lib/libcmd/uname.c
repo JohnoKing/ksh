@@ -274,7 +274,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
 			continue;
 		case ':':
 			{
-				char **new_argv = stkalloc(stkstd, (argc + 3) * sizeof(char*));
+				char **new_argv = stkalloc(stkstd, ((size_t)argc + 3) * sizeof(char*));
 				new_argv[0] = "command";
 				new_argv[1] = "-px";
 				for (n = 0; n <= argc; n++)

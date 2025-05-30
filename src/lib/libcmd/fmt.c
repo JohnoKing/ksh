@@ -199,13 +199,13 @@ split(Fmt_t* fp, char* buf, int splice)
 		if (fp->nwords == 0)
 		{
 			if (fp->prefix)
-				memset(fp->outbuf, ' ', fp->prefix);
+				memset(fp->outbuf, ' ', (size_t)fp->prefix);
 			fp->outp = &fp->outbuf[fp->prefix];
 			while (*cp == ' ')
 				cp++;
 			n = ep-cp;
 		}
-		memcpy(fp->outp, cp, n);
+		memcpy(fp->outp, cp, (size_t)n);
 		fp->outp += n;
 		fp->nwords++;
 	}
@@ -519,7 +519,7 @@ dofmt(Fmt_t* fp)
 				if (!ep)
 					ep = dp;
 				c = isoption(fp, 'o') ? 1 : TABSZ - (dp - buf) % TABSZ;
-				if (dp >= &buf[sizeof(buf) - c - 3])
+				if (dp >= &buf[sizeof(buf) - (size_t)c - 3])
 				{
 					cp--;
 					break;

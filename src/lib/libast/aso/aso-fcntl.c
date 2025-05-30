@@ -47,7 +47,7 @@ aso_init_fcntl(void* data, const char* details)
 	size_t		references;
 	int		fd;
 	int		drop;
-	int		perm;
+	mode_t		perm;
 	struct flock	lock;
 	char		buf[PATH_MAX];
 	char		tmp[64];

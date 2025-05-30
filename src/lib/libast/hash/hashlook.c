@@ -51,7 +51,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 		{
 			s2 = name;
 			n = 0;
-			while (c = *s2++) HASHPART(n, c);
+			while (c = *s2++) HASHPART(n, (size_t)c);
 		}
 		i = n;
 		for (;;)

@@ -180,7 +180,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	}
 bypass:
 	sh.prompt = default_prompt;
-	if(q && (sh.prompt=(char*)sfreserve(sfstderr,q,SFIO_LOCKR)))
+	if(q && (sh.prompt=(char*)sfreserve(sfstderr,(ssize_t)q,SFIO_LOCKR)))
 	{
 		memcpy(sh.prompt,prompt,q);
 		sfwrite(sfstderr,sh.prompt,q-1);
@@ -347,7 +347,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	if(binary && !(flags&(N_FLAG|NN_FLAG)))
 	{
 		flags |= NN_FLAG;
-		size = nv_size(np);
+		size = (ssize_t)nv_size(np);
 	}
 	was_write = (sfset(iop,SFIO_WRITE,0)&SFIO_WRITE)!=0;
 	if(fd==0)
@@ -359,7 +359,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		if(jmpval)
 			goto done;
 		if(timeout)
-	                timeslot = sh_timeradd(timeout,0,timedout,iop);
+	                timeslot = sh_timeradd((Sfulong_t)timeout,0,timedout,iop);
 	}
 #if !SHOPT_SCRIPTONLY
 	if((flags&S_FLAG) && !sh.hist_ptr)
@@ -375,7 +375,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		/* reserved buffer */
 		if((c=size)>=ssizeof(buf))
 		{
-			var = (char*)sh_malloc(c+1);
+			var = (char*)sh_malloc((size_t)c+1);
 			end = var + c;
 		}
 		else
@@ -422,7 +422,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
 					}
 				}
-				if(m>0 && (flags&N_FLAG) && !binary && (v=memchr(cp,'\n',m)))
+				if(m>0 && (flags&N_FLAG) && !binary && (v=memchr(cp,'\n',(size_t)m)))
 				{
 					*v++ = 0;
 					m = v-(char*)cp;
@@ -437,19 +437,19 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 						m = (end - var) + (c - (end - cur));
 						if (var == buf)
 						{
-							v = (char*)sh_malloc(m+1);
-							var = memcpy(v, var, cur - var);
+							v = (char*)sh_malloc((size_t)m+1);
+							var = memcpy(v, var, (size_t)(cur - var));
 						}
 						else
-							var = sh_newof(var, char, m, 1);
+							var = sh_newof(var, char, (size_t)m, 1);
 						end = var + m;
 						cur = var + cx;
 						up = var + ux;
 					}
 					if(cur!=(char*)cp)
-						memcpy(cur,cp,c);
+						memcpy(cur,cp,(size_t)c);
 					if(f)
-						sfread(iop,cp,c);
+						sfread(iop,cp,(size_t)c);
 					cur += c;
 					if(mbwide() && !binary)
 					{
@@ -481,7 +481,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		}
 		if(timeslot)
 			sh_timerdel(timeslot);
-		if(binary && !((size=nv_size(np)) && nv_isarray(np) && c!=size))
+		if(binary && !((size=(ssize_t)nv_size(np)) && nv_isarray(np) && c!=size))
 		{
 #if SHOPT_OPTIMIZE
 			/* only optimize this operation if the loop invariants optimizer is not being used */
@@ -490,12 +490,12 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 			int optimize = 1;
 #endif
 			if(optimize && c==size && np->nvalue && !nv_isarray(np))
-				memcpy(np->nvalue,var,c);
+				memcpy(np->nvalue,var,(size_t)c);
 			else
 			{
 				Namval_t *mp;
 				if(var==buf)
-					var = sh_memdup(var,c+1);
+					var = sh_memdup(var,(size_t)c+1);
 				nv_putval(np,var,NV_RAW);
 				nv_setsize(np,(size_t)c);
 				if(!nv_isattr(np,NV_MINIMAL|NV_EXPORT) && (mp = np->nvmeta))
@@ -534,7 +534,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 			*(cpmax-1) = delim;
 #if !SHOPT_SCRIPTONLY
 		if(flags&S_FLAG)
-			sfwrite(sh.hist_ptr->histfp,(char*)cp,c);
+			sfwrite(sh.hist_ptr->histfp,(char*)cp,(size_t)c);
 #endif
 		c = sh.ifstable[*cp++];
 #if !SHOPT_MULTIBYTE
@@ -659,7 +659,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 				{
 #if !SHOPT_SCRIPTONLY
 					if(flags&S_FLAG)
-						sfwrite(sh.hist_ptr->histfp,(char*)cp,c);
+						sfwrite(sh.hist_ptr->histfp,(char*)cp,(size_t)c);
 #endif
 					cpmax = cp + c;
 					c = sh.ifstable[*cp++];
@@ -733,7 +733,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 						{
 							if(val)
 							{
-								sfwrite(sh.stk,val,cp-(unsigned char*)val);
+								sfwrite(sh.stk,val,(size_t)(cp-(unsigned char*)val));
 								use_stak = 1;
 							}
 							val = (char*)++cp;
@@ -747,7 +747,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 						{
 							if(val)
 							{
-								sfwrite(sh.stk,val,cp-(unsigned char*)val);
+								sfwrite(sh.stk,val,(size_t)(cp-(unsigned char*)val));
 								use_stak=1;
 							}
 							if(cp = (unsigned char*)sfgetr(iop,delim,0))

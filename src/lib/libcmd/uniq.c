@@ -95,7 +95,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
 		{
 			n = sfvalue(fdin);
-			bufp = memcpy(fmtbuf(n + 1), bufp, n);
+			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
 			bufp[n++] = '\n';
 		}
 		else
@@ -144,7 +144,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 		}
 		else
 			reclen = -2;
-		if(reclen==oreclen && (!reclen || !(*compare)(cp,orecp,reclen)))
+		if(reclen==oreclen && (!reclen || !(*compare)(cp,orecp,(size_t)reclen)))
 		{
 			count++;
 			if (!all)
@@ -190,9 +190,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 							outsize -= (CWIDTH+1);
 							if(outp!=sbufp)
 							{
-								if(!(sbufp=fmtbuf(outsize)))
+								if(!(sbufp=fmtbuf((size_t)outsize)))
 									return 1;
-								memcpy(sbufp,outp+CWIDTH+1,outsize);
+								memcpy(sbufp,outp+CWIDTH+1,(size_t)outsize);
 								sfwrite(fdout,outp,0);
 								outp = sbufp;
 							}
@@ -201,7 +201,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 							sfprintf(fdout,"%4d ",count+1);
 						}
 					}
-					if(sfwrite(fdout,outp,outsize) != outsize)
+					if(sfwrite(fdout,outp,(size_t)outsize) != outsize)
 						return 1;
 				}
 			}
@@ -210,7 +210,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 			break;
 		if(count = next)
 		{
-			if(sfwrite(fdout,outp,outsize) != outsize)
+			if(sfwrite(fdout,outp,(size_t)outsize) != outsize)
 				return 1;
 			if(*all >= 0)
 				*all = 1;
@@ -226,12 +226,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 		{
 			/* no room in outp, clear lock and use side buffer */
 			sfwrite(fdout,outp,0);
-			if(!(sbufp = outp=fmtbuf(outsize=n+cwidth+sep)))
+			outsize = n + cwidth + sep;
+			if(!(sbufp = outp=fmtbuf((size_t)outsize)))
 				return 1;
 		}
 		else
 			outsize = n+cwidth+sep;
-		memcpy(outp+cwidth+sep,bufp,n);
+		memcpy(outp+cwidth+sep,bufp,(size_t)n);
 		if(sep)
 			outp[cwidth] = '\n';
 		oreclen = reclen;

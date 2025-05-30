@@ -1596,7 +1596,7 @@ static int io_heredoc(struct ionod *iop, const char *name, int traceon)
 		}
 		tmp = outfile;
 		if(fno>=0 && !(iop->iofile&IOQUOTE))
-			tmp = sftmp(iop->iosize<(ssize_t)IOBSIZE?iop->iosize:0);
+			tmp = sftmp(iop->iosize<(ssize_t)IOBSIZE?(size_t)iop->iosize:0);
 		if(fno>=0 || (iop->iofile&IOQUOTE))
 		{
 			/* This is a quoted here-document, not expansion */

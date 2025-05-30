@@ -115,7 +115,7 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 			while((n= *++cp))
 			{
 				if(isdigit(n))
-					width = 10*width + n-'0';
+					width = 10*width + (size_t)n-'0';
 				else if(n=='L' || n=='R' || n =='Z')
 					justify=(int)n;
 				else
@@ -2042,7 +2042,7 @@ unsigned long kiaentity(Lex_t *lexp,const char *name,ssize_t len,int type,int fi
 	ssize_t offset = stktell(sh.stk);
 	sfputc(sh.stk,type);
 	if(len>0)
-		sfwrite(sh.stk,name,len);
+		sfwrite(sh.stk,name,(size_t)len);
 	else
 	{
 		if(type=='p')

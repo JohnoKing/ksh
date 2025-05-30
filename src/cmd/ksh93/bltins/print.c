@@ -388,7 +388,7 @@ printf_v:
 			sfprintf(outfile,"%!",&pdata);
 		} while(*pdata.nextarg && pdata.nextarg!=argv);
 		if(pdata.nextarg == nullarg && pdata.argsize>0)
-			if(sfwrite(outfile,stkptr(sh.stk,stktell(sh.stk)),pdata.argsize) < 0)
+			if(sfwrite(outfile,stkptr(sh.stk,stktell(sh.stk)),(size_t)pdata.argsize) < 0)
 				exitval = 1;
 		sfpool(sfstderr,pool,SFIO_WRITE);
 		if (pdata.err)
@@ -453,7 +453,7 @@ static int echolist(Sfio_t *outfile, int raw, char *argv[])
 		if(!raw  && (n=fmtvecho(cp,&pdata))>=0)
 		{
 			if(n)
-				if(sfwrite(outfile,stkptr(sh.stk,stktell(sh.stk)),n) < 0)
+				if(sfwrite(outfile,stkptr(sh.stk,stktell(sh.stk)),(size_t)n) < 0)
 					exitval = 1;
 		}
 		else
@@ -551,7 +551,7 @@ static char *fmthtml(const char *string, int flags)
 			else if(c == 39)		/* ' (&apos; is not HTML) */
 				sfputr(sh.stk,"&#39;",-1);
 			else
-				sfwrite(sh.stk, op, cp-op);
+				sfwrite(sh.stk, op, (size_t)(cp-op));
 		}
 	}
 	else
@@ -641,7 +641,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 				number.i = (int)d;
 			}
 		}
-		return sfwrite(iop, &number, size);
+		return sfwrite(iop, &number, (size_t)size);
 	}
 	if(nv_isattr(np,NV_BINARY))
 	{
@@ -665,8 +665,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 			else
 				cp = np->nvalue;
 			if((size = n)==0)
-				size = strlen(cp);
-			size = sfwrite(iop, cp, size);
+				size = (ssize_t)strlen(cp);
+			size = sfwrite(iop, cp, (size_t)size);
 			return n?n:size;
 		}
 	}
@@ -688,8 +688,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 			nv_offattr(np,NV_EXPORT);
 		if(!cp)
 			return 0;
-		size = strlen(cp);
-		return sfwrite(iop,cp,size);
+		size = (ssize_t)strlen(cp);
+		return sfwrite(iop,cp,(size_t)size);
 	}
 }
 
@@ -725,7 +725,7 @@ static const char *mapformat(Sffmt_t *fe)
 	const struct printmap *pm = Pmap;
 	while(pm->size>0)
 	{
-		if((ssize_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,fe->n_str)==0)
+		if((ssize_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
 			return pm->map;
 		pm++;
 	}
@@ -808,7 +808,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		case 'T':
 			fe->fmt = 'd';
 			tm_info.flags = 0;
-			value->ll = tmxgettime();
+			value->ll = (Sflong_t)tmxgettime();
 			break;
 		case '.':
 			fe->fmt = 'd';
@@ -892,7 +892,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 			else if(fe->base >=0)
 				value->s = argp;
 			else
-				value->c = *argp;
+				value->c = (unsigned char)*argp;
 			fe->flags &= ~SFFMT_LONG;
 			break;
 		case 'o':
@@ -1091,10 +1091,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		{
 			n = fe->t_str[fe->n_str];
 			fe->t_str[fe->n_str] = 0;
-			value->s = fmttmx(fe->t_str, value->ll);
+			value->s = fmttmx(fe->t_str, (Time_t)value->ll);
 			fe->t_str[fe->n_str] = n;
 		}
-		else value->s = fmttmx(NULL, value->ll);
+		else value->s = fmttmx(NULL, (Time_t)value->ll);
 		fe->fmt = 's';
 		fe->size = -1;
 		break;
@@ -1177,12 +1177,12 @@ static ssize_t fmtvecho(const char *string, struct printf *pp)
 		return -1;
 	d = --cp - string;
 	if(d>0)
-		sfwrite(sh.stk,string,d);
+		sfwrite(sh.stk,string,(size_t)d);
 	for(; c= *cp; cp++)
 	{
 		if (mbwide() && ((chlen = mbsize(cp)) > 1))
 		{
-			sfwrite(sh.stk,cp,chlen);
+			sfwrite(sh.stk,cp,(size_t)chlen);
 			cp +=  (chlen-1);
 			continue;
 		}

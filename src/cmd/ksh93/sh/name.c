@@ -1732,7 +1732,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					else if(nv_isattr(np,NV_UNSIGN))
 					{
 						if(flags&NV_LONG)
-							ll = *((Sfulong_t*)sp);
+							ll = (Sflong_t)(*((Sfulong_t*)sp));
 						else if(flags&NV_SHORT)
 							ll = *((uint16_t*)sp);
 						else
@@ -1774,7 +1774,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					else if(nv_isattr(np,NV_UNSIGN))
 					{
 						if(flags&NV_LONG)
-							ll = *((Sfulong_t*)sp);
+							ll = (Sflong_t)(*((Sfulong_t*)sp));
 						else if(flags&NV_SHORT)
 							ll = *((uint16_t*)sp);
 						else
@@ -2681,7 +2681,7 @@ char *nv_getval(Namval_t *np)
 		else if(nv_isattr(np,NV_UNSIGN))
 		{
 	        	if(nv_isattr(np,NV_LONG))
-				ll = *(Sfulong_t*)vp;
+				ll = (Sflong_t)(*(Sfulong_t*)vp);
 			else if(nv_isattr(np,NV_SHORT))
 				ll = *(uint16_t*)vp;
 			else

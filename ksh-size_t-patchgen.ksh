@@ -24,7 +24,7 @@ fi
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
-### TODO: Split this into multiple patches ###
+### TODO: Integrate test.c, macro.c, init.c and defs.h into this commit ###
 
 fetch src/lib/libast/sfio
 fetch src/lib/libast/stdio
@@ -40,10 +40,12 @@ fetch src/lib/libast/string/modelib.h
 fetch src/lib/libast/string/modei.c
 fetch src/lib/libast/string/modex.c
 fetch src/lib/libast/string/fmtmode.c
+fetch src/lib/libast/string/fmtperm.c
 fetch src/lib/libast/string/modedata.c
-fetch src/lib/libast/string/strmode.c
 fetch src/lib/libast/include/regex.h
 fetch src/lib/libast/include/hash.h
+fetch src/cmd/ksh93/include/test.h
+fetch src/lib/libast/string/strperm.c
 fetch src/lib/libast/hash
 fetch src/cmd/ksh93/bltins/print.c
 fetch src/lib/libast/string/strmatch.c
@@ -56,7 +58,7 @@ fetch src/cmd/ksh93/bltins/test.c
 fetch src/lib/libast/string/fmtelapsed.c
 fetch src/lib/libast/string/fmtmode.c
 sanity
-git commit -m 'ssize_t transition part 1: SFIO, hash lib and print(1)
+git commit -m $'ssize_t transition part 1: SFIO, hash lib and print(1)
 
 This is the first of a patch series that enables ksh93 to operate
 withing a 64-bit address space. These changes were accomplished by
@@ -65,8 +67,9 @@ exhibited during compilation with clang. ssize_t was used most
 often to avoid rollover issues (int and ssize_t are both signed),
 but in some cases size_t was used instead to fix the aforementioned
 -Wsign-compare warnings. (There are still many -Wsign-conversion
-warnings, and while a portion of those have been fixed, many were
-left as is.)
+warnings, and while the majority of those have been fixed, many were
+left as is; some are dependent on the OS\'s system headers and
+cannot feasibly be fixed.)
 
 The parts of ksh93 affected by this commit are:
 - SFIO and the associated stdio wrapper. The sfvprintf and sfvscanf
