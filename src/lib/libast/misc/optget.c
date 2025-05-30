@@ -945,7 +945,7 @@ init(char* s, Optpass_t* p)
 					p->version = 1;
 				else
 					while (isdigit(*s))
-						p->version = p->version * 10 + (*s++ - '0');
+						p->version = p->version * 10 + (unsigned char)(*s++ - '0');
 				while (*s && *s != ']')
 				{
 					if ((c = *s++) == '?')
