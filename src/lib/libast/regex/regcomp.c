@@ -2592,7 +2592,7 @@ seq(Cenv_t* env)
 			if (c >= 0)
 			{
 				n = 1;
-				*s++ = (env->flags & REG_ICASE) ? toupper(c) : c;
+				*s++ = (env->flags & REG_ICASE) ? toupper((int)c) : c;
 			}
 			else if (c == C_ESC || (env->flags & REG_ICASE))
 			{
@@ -2645,7 +2645,7 @@ seq(Cenv_t* env)
 						drop(env->disc, e);
 						return NULL;
 					}
-					f->re.onechar = (env->flags & REG_ICASE) ? toupper(x) : x;
+					f->re.onechar = (env->flags & REG_ICASE) ? toupper((int)x) : x;
 				}
 				else
 				{

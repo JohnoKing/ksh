@@ -260,7 +260,7 @@ mntopen(const char* path, const char* mode)
 #if _lib_getfsstat
 	if ((n = getfsstat(NULL, 0, MNT_WAIT)) <= 0)
 		return NULL;
-	n = ((size_t)n - 1) * sizeof(struct statfs);
+	n = (n - 1) * (int)sizeof(struct statfs);
 #else
 	n = 0;
 #endif

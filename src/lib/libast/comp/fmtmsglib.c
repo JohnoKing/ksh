@@ -92,7 +92,7 @@ _mm_severity(void)
 	{
 		char*		s;
 		MM_table_t*	p;
-		int		n;
+		size_t		n;
 		int		c;
 		char*			e;
 		MM_table_t*		q;
@@ -135,8 +135,8 @@ _mm_severity(void)
 			if (n)
 			{
 				for (p = (MM_table_t*)mm_severity_init; p->name; p++);
-				n += p - (MM_table_t*)mm_severity_init + 1;
-				if (severity = newof(0, MM_table_t, n, s - e))
+				n += (size_t)(p - (MM_table_t*)mm_severity_init + 1);
+				if (severity = newof(0, MM_table_t, n, (size_t)(s - e)))
 				{
 					s = (char*)severity + n * sizeof(MM_table_t);
 					strcpy(s, e);
@@ -288,7 +288,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 		else break;
 		if ((mask & MM_label) && label)
 			sfprintf(sp, "%s: ", lab);
-		if ((mask & MM_severity) && (s = display(mm_severity, severity, 0)))
+		if ((mask & MM_severity) && (s = display(mm_severity, (unsigned)severity, 0)))
 			sfprintf(sp, "%s: ", s);
 		n = sfstrtell(sp);
 		if ((mask & MM_text) && text)
@@ -312,11 +312,11 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 			if (mask & (MM_class|MM_source|MM_status))
 			{
 				sfputc(sp, ' ');
-				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, m, 1)))
+				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, (unsigned)m, 1)))
 					sfprintf(sp, " %s", s);
-				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, m, 1)))
+				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, (unsigned)m, 1)))
 					sfprintf(sp, " %s", s);
-				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, m, 1)))
+				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, (unsigned)m, 1)))
 					sfprintf(sp, " %s", s);
 			}
 			sfputc(sp, '\n');
