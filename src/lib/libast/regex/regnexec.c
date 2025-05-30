@@ -136,7 +136,7 @@ typedef struct
 
 /* ===== begin library support ===== */
 
-#define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(i)*(v)->siz):(t*)vecseek(&(v),i))
+#define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(size_t)(i)*(v)->siz):(t*)vecseek(&(v),i))
 
 static Vector_t*
 vecopen(ssize_t inc, size_t siz)

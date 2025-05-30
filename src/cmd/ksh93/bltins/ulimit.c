@@ -94,7 +94,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 			mode |= SOFT;
 			continue;
 		case 'a':
-			hit = ~0;
+			hit = ~0UL;
 			break;
 		default:
 			if(n < 0)

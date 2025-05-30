@@ -260,14 +260,14 @@ mntopen(const char* path, const char* mode)
 #if _lib_getfsstat
 	if ((n = getfsstat(NULL, 0, MNT_WAIT)) <= 0)
 		return NULL;
-	n = (n - 1) * sizeof(struct statfs);
+	n = ((size_t)n - 1) * sizeof(struct statfs);
 #else
 	n = 0;
 #endif
-	if (!(mp = newof(0, Handle_t, 1, n)))
+	if (!(mp = newof(0, Handle_t, 1, (size_t)n)))
 		return NULL;
 #if _lib_getfsstat
-	n = getfsstat(mp->next = mp->buf, n + sizeof(struct statfs), MNT_WAIT);
+	n = getfsstat(mp->next = mp->buf, (size_t)n + sizeof(struct statfs), MNT_WAIT);
 #else
 	n = getmntinfo(&mp->next, 0);
 #endif
@@ -285,7 +285,7 @@ mntread(void* handle)
 {
 	Handle_t*	mp = (Handle_t*)handle;
 	size_t		i;
-	int		n;
+	ssize_t		n;
 	unsigned long	flags;
 
 	if (mp->next < mp->last)
@@ -294,7 +294,7 @@ mntread(void* handle)
 		n = 0;
 		for (i = 0; i < elementsof(options); i++)
 			if (flags & options[i].flag)
-				n += sfsprintf(mp->opt + n, sizeof(mp->opt) - n - 1, ",%s", options[i].name);
+				n += sfsprintf(mp->opt + n, sizeof(mp->opt) - (size_t)n - 1, ",%s", options[i].name);
 		set(&mp->hdr, mp->next->f_mntfromname, mp->next->f_mntonname, TYPE(mp->next), n ? (mp->opt + 1) : NULL);
 		mp->next++;
 		return &mp->hdr.mnt;

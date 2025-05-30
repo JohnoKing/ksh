@@ -201,9 +201,9 @@ getcwd(char* buf, size_t len)
 	}
 	if (!buf)
 	{
-		extra = len;
+		extra = (ssize_t)len;
 		len = PATH_MAX;
-		if (!(buf = newof(0, char, len, extra))) ERROR(ENOMEM);
+		if (!(buf = newof(0, char, len, (size_t)extra))) ERROR(ENOMEM);
 	}
 	d = dots;
 	p = buf + len - 1;
@@ -240,8 +240,8 @@ getcwd(char* buf, size_t len)
 				{
 					d = buf;
 					while (*d++ = *p++);
-					len = d - buf;
-					if (extra >= 0 && !(buf = newof(buf, char, len, extra))) ERROR(ENOMEM);
+					len = (size_t)(d - buf);
+					if (extra >= 0 && !(buf = newof(buf, char, len, (size_t)extra))) ERROR(ENOMEM);
 				}
 				if (dirstk && popdir(dirstk, buf + len - 1))
 				{
@@ -286,7 +286,7 @@ getcwd(char* buf, size_t len)
 		{
 			x = (buf + len - 1) - (p += namlen);
 			s = buf + len;
-			if (extra < 0 || !(buf = newof(buf, char, len += PATH_MAX, extra))) ERROR(ERANGE);
+			if (extra < 0 || !(buf = newof(buf, char, len += PATH_MAX, (size_t)extra))) ERROR(ERANGE);
 			p = buf + len;
 			while (p > buf + len - 1 - x) *--p = *--s;
 		}
