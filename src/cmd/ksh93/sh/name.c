@@ -2928,6 +2928,8 @@ void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
 			free(cp);
 			cp = 0;
 		}
+		if(sh.subshell && !sh.subshare && nv_isattr(np,NV_ARRAY|NV_RDONLY)==NV_ARRAY && sp && sp!=Empty && sp!=AltEmpty && array_assoc(ap))
+			free(sp);
 	}
 	while(ap && nv_nextsub(np));
 #if SHOPT_FIXEDARRAY
@@ -2963,13 +2965,14 @@ static char *oldgetenv(const char *string)
 }
 
 /*
- * This version of getenv uses the hash storage to access environment values
+ * This version of getenv uses the nval(3) storage to access environment values
  */
 char *sh_getenv(const char *name)
 {
 	Namval_t *np, *savns;
 	char *cp, *savpr;
-	if(!sh.var_tree)
+	/* do not read from nval(3) storage before or during initialization */
+	if(!sh.var_tree || sh_isstate(SH_INIT))
 		return oldgetenv(name);
 	/* deactivate a possible namespace or compound assignment */
 	savns = sh.namespace, savpr = sh.prefix;
