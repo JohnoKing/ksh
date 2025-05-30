@@ -835,7 +835,7 @@ static void view(void)
 				zp = zp->next = vp;
 			if (!c)
 				break;
-			*t++ = c;
+			*t++ = (char)c;
 			s = t;
 		}
 	}
@@ -926,7 +926,7 @@ static void substitute(Buf_t *buf, char *s)
 			if (c == '[')
 			{
 				append(buf, b);
-				*vnterm = c;
+				*vnterm = (char)c;
 				continue;
 			}
 
@@ -946,7 +946,7 @@ static void substitute(Buf_t *buf, char *s)
 			if ((c == ':' || c == '=') && (state.strict >= 2 || !v || c == ':' && !*v))
 			{
 				append(buf, b);
-				*vnterm = c;
+				*vnterm = (char)c;
 				continue;
 			}
 
@@ -957,7 +957,7 @@ static void substitute(Buf_t *buf, char *s)
 
 			/* Un-terminate the variable name */
 
-			*vnterm = c;
+			*vnterm = (char)c;
 
 			/* Find the ending '}', dealing with nesting */
 
@@ -994,7 +994,7 @@ static void substitute(Buf_t *buf, char *s)
 						c = *t;
 						*t = 0;
 						substitute(buf, q + 1);
-						*t = c;
+						*t = (char)c;
 					}
 				}
 				else
@@ -1005,7 +1005,7 @@ static void substitute(Buf_t *buf, char *s)
 						c = *q;
 						*q = 0;
 						substitute(buf, t + 1);
-						*q = c;
+						*q = (char)c;
 					}
 				}
 				break;
@@ -1028,7 +1028,7 @@ static void substitute(Buf_t *buf, char *s)
 						c = *q, *q = 0;  /* terminate for duplicate() */
 						if (!(argv = realloc(argv, (size_t)(n+1)*sizeof(char*))) || !(argv[n-1] = duplicate(a)))
 							out_of_memory();
-						*q = c;
+						*q = (char)c;
 					}
 					if (!argv)
 						break;
@@ -1074,13 +1074,13 @@ static void substitute(Buf_t *buf, char *s)
 					q = use(scr);
 					if ((argv ? (argv[2] = q, execute_v(NULL, argv)) : execute(NULL, q)) != 0)
 						error_out("expansion script error", t);
-					*s = n;
+					*s = (char)n;
 					drop(scr);
 					/* read output back, converting each newline but the last to a space */
 					if (!(f = fopen(out, "r")))
 						error_out(strerror(errno), "could not open pipe command output for reading");
 					while ((c = getc(f)) != EOF)
-						add(buf, (final_newline = (c == '\n')) ? ' ' : c);
+						add(buf, (final_newline = (c == '\n')) ? ' ' : (char)c);
 					if (final_newline)
 						unadd(buf);
 					if (ferror(f) || fclose(f) == EOF)
@@ -1104,7 +1104,7 @@ static void substitute(Buf_t *buf, char *s)
 					c = *s;
 					*s = 0;
 					substitute(buf, t);
-					*s = c;
+					*s = (char)c;
 					break;
 				}
 				if (c != '-')
@@ -1164,7 +1164,7 @@ static void substitute(Buf_t *buf, char *s)
 					c = *s;
 					*s = 0;
 					append(buf, b);
-					*s = c;
+					*s = (char)c;
 					continue;
 				}
 				break;
@@ -1173,7 +1173,7 @@ static void substitute(Buf_t *buf, char *s)
 				s++;
 		}
 		else
-			add(buf, c);
+			add(buf, (char)c);
 	}
 }
 
@@ -1267,7 +1267,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
 					c = vp->dir[vp->node];
 					vp->dir[vp->node] = 0;
 					append(buf, vp->dir);
-					vp->dir[vp->node] = c;
+					vp->dir[vp->node] = (char)c;
 				}
 				else
 				{
@@ -1707,7 +1707,7 @@ static void run(Rule_t *r, char *s)
 					else
 					{
 						for (i = 3; isspace(*(t + i)); i++);
-						*s = c;
+						*s = (char)c;
 						for (s = t + i; *s && !isspace(*s); s++);
 						c = *s;
 						*s = 0;
@@ -1731,7 +1731,7 @@ static void run(Rule_t *r, char *s)
 					}
 				}
 			}
-		} while (*s = c);
+		} while (*s = (char)c);
 		s = use(buf);
 		if (tofree)
 			free(tofree);
@@ -1973,7 +1973,7 @@ static char *require(char *lib, int dontcare)
 					break;
 				do
 				{
-					add(tmp, c);
+					add(tmp, (char)c);
 				} while ((c = fgetc(f)) != EOF && !isspace(c));
 				s = use(tmp);
 				if (s[0] && (s[0] != '-' || s[1]))
@@ -2904,7 +2904,7 @@ int main(int argc, char **argv)
 				}
 				setval(state.vars, s - 1, v);
 				if (c)
-					*t = c;
+					*t = (char)c;
 				continue;
 			}
 			usage();
@@ -3068,7 +3068,7 @@ int main(int argc, char **argv)
 				append(tmp, ".FORCE");
 				setval(state.vars, use(tmp), v);
 				drop(tmp);
-				*t = c;
+				*t = (char)c;
 				break;
 			}
 		}

@@ -397,7 +397,7 @@ void	*sh_parse(Sfio_t *iop, int flag)
 	Lex_t		*lexp = (Lex_t*)sh.lex_context;
 	Fcin_t		sav_input;
 	struct argnod	*sav_arg = lexp->arg;
-	int		sav_prompt = sh.nextprompt;
+	short		sav_prompt = sh.nextprompt;
 	if(sh.binscript && (sffileno(iop)==sh.infd || (flag&SH_FUNEVAL)))
 		return sh_trestore(iop);
 	fcsave(&sav_input);
@@ -1200,7 +1200,8 @@ static Shnode_t	*item(Lex_t *lexp,int flag)
 	int tok = (lexp->token&0xff);
 	int savwdval = lexp->lasttok;
 	int savline = lexp->lastline;
-	int showme=0, comsub;
+	int showme=0;
+	char comsub;
 	if(!(flag&SH_NOIO) && (tok=='<' || tok=='>' || lexp->token==IOVNAME))
 		io=inout(lexp,NULL,1);
 	else
@@ -1428,7 +1429,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 	int		was_assign = 0;
 	int		argno = 0;
 	int		assignment = 0;
-	int		key_on = (!(flag&SH_NOIO) && sh_isoption(SH_KEYWORD));
+	char		key_on = (!(flag&SH_NOIO) && sh_isoption(SH_KEYWORD));
 	int		associative=0;
 	if((argp=lexp->arg) && (argp->argflag&ARG_ASSIGN) && argp->argval[0]=='[')
 	{
@@ -1534,7 +1535,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 		{
 			if(argp->argflag&ARG_ASSIGN)
 			{
-				int intypeset = lexp->intypeset;
+				char intypeset = lexp->intypeset;
 				lexp->intypeset = 0;
 				if(t->comnamp == SYSCOMPOUND)
 					type = NV_COMVAR;

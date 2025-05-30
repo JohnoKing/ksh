@@ -231,7 +231,7 @@ typedef uint32_t regflags_t;
 			( (p+=ast.mb.tmp_i),ast.mb.tmp_w) : (p+=ast.mb.sync+1,ast.mb.tmp_i) ) : (*(unsigned char*)(p++)) )
 #define mbsize(p)	mbnsize(p, mbmax())
 #define mbnsize(p,n)	( mbwide() ? (*ast.mb.len)((char*)(p), n) : ((p), 1) )
-#define mbconv(s,w)	( ast.mb.conv ? (*ast.mb.conv)(s,w) : ((*(s)=(w)), 1) )
+#define mbconv(s,w)	( ast.mb.conv ? (*ast.mb.conv)(s,w) : ((*(s)=(char)(w)), 1) )
 #define mbwidth(w)	( ast.mb.width ? (*ast.mb.width)(w) : (w >= 0 && w <= 255 && !iscntrl(w) ? 1 : -1) )
 #define mbxfrm(t,f,n)	( mbcoll() ? (*ast.mb.xfrm)((char*)(t), (char*)(f), n) : 0 )
 #define mbalpha(w)	( ast.mb.alpha ? (*ast.mb.alpha)(w) : isalpha((w) & 0xff) )
@@ -249,7 +249,7 @@ typedef uint32_t regflags_t;
 #define mbnchar(p,n)	mbchar(p)
 #define mbsize(p)	1
 #define mbnsize(p,n)	1
-#define mbconv(s,w)	( (*(s)=(w)), 1 )
+#define mbconv(s,w)	( (*(s)=(char)(w)), 1 )
 #define mbwidth(w)	( w >= 0 && w <= 255 && !iscntrl(w) ? 1 : -1 )
 #define mbxfrm(t,f,n)	0
 #define mbalpha(w)	( isalpha((w) & 0xff) )

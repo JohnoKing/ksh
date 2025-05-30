@@ -253,7 +253,7 @@ tokscan(char* s, char** nxt, const char* fmt, ...)
 			}
 			else
 			{
-				if (p_char) *p_char = c;
+				if (p_char) *p_char = (char)c;
 				s++;
 				num++;
 			}

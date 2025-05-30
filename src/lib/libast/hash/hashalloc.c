@@ -100,7 +100,7 @@ hashalloc(Hash_table_t* ref, ...)
 		case HASH_bucketsize:
 			n = (va_arg(ap, int) + (int)sizeof(char*) - 1) / (int)sizeof(char*);
 			if (n > UCHAR_MAX) goto out;
-			if (n > tab->bucketsize) tab->bucketsize = n;
+			if (n > tab->bucketsize) tab->bucketsize = (unsigned char)n;
 			break;
 		case HASH_clear:
 			tab->flags &= ~(va_arg(ap, int) & ~internal);

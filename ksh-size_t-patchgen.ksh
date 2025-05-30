@@ -289,9 +289,7 @@ This covers the rest of ksh93:
 - streval.c
 - xec.c
 
-Conspicuous changes of note:
-- Incidentally fixed a compiler error for SHOPT_KIA by adding the
-  necessary include directive for shlex.h to defs.c.
+Conspicuous change of note:
 - Removed an (unsigned) cast for sizeof because it's already
   unsigned.
 

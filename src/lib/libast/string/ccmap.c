@@ -666,7 +666,7 @@ _ccmap(int i, int o)
 	z = (unsigned char*)tab + MAP * (2 * (i - 1) + 1);
 	m = map->map;
 	for (n = 0; n < MAP; n++)
-		m[n] = n;
+		m[n] = (unsigned char)n;
 	for (n = MAP - 1; n >= 0; n--)
 		m[n] = a[z[n]];
 	map->next = maps;

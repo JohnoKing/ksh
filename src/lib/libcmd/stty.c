@@ -412,12 +412,12 @@ static int gin(char *arg,struct termios *sp)
 		return 0;
 	for(i=0;i< NCCS; i++)
 	{
-		sp->c_cc[i] = (tcflag_t)strtol(arg,&arg,16);
+		sp->c_cc[i] = (cc_t)strtol(arg,&arg,16);
 		if(*arg++ != ':')
 			return 0;
 	}
 #if _mem_c_line_termios
-	sp->c_line =
+	sp->c_line = (cc_t)
 #endif
 		strtol(arg,&arg,16);
 	if(*arg++ != ':')
@@ -648,7 +648,7 @@ static void set(char *argv[], struct termios *sp)
 			}
 			c = gettchar(*argv++);
 			if(c>=0)
-				sp->c_cc[tp->mask] = c;
+				sp->c_cc[tp->mask] = (cc_t)c;
 			else
 				sp->c_cc[tp->mask] = _POSIX_VDISABLE;
 			break;
@@ -725,9 +725,9 @@ static void set(char *argv[], struct termios *sp)
 				UNREACHABLE();
 			}
 			if(tp->mask)
-				win.ws_col = n;
+				win.ws_col = (cc_t)n;
 			else
-				win.ws_row = n;
+				win.ws_row = (cc_t)n;
 			if(ioctl(0,TIOCSWINSZ,&win)<0)
 			{
 				error(ERROR_system(1),"cannot set %s",tp->name);
@@ -760,7 +760,7 @@ static void set(char *argv[], struct termios *sp)
 			{
 #if _mem_c_line_termios
 			case C_LINE:
-				sp->c_line = c;
+				sp->c_line = (cc_t)c;
 				break;
 #endif
 			case C_SPEED:
@@ -778,7 +778,7 @@ static void set(char *argv[], struct termios *sp)
 				}
 				break;
 			case T_CHAR:
-				sp->c_cc[tp->mask] = c;
+				sp->c_cc[tp->mask] = (cc_t)c;
 				break;
 			}
 			break;

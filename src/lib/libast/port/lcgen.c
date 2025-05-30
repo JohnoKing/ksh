@@ -218,7 +218,7 @@ macro(FILE* f, char* p1, char* p2, char* p3)
 					c = toupper(c);
 				else if (!isalnum(c))
 					c = '_';
-				*b++ = c;
+				*b++ = (char)c;
 			}
 		}
 		*b = 0;

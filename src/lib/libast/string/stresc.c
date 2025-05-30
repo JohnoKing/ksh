@@ -52,7 +52,7 @@ strexp(char* s, int flags)
 				continue;
 			}
 		}
-		*t++ = c;
+		*t++ = (char)c;
 	}
 	*t = 0;
 	return (int)(t - b);

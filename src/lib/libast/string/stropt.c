@@ -126,23 +126,23 @@ stropt(const char* as, const void* tab, int siz, int(*f)(void*, const void*, int
 				{
 					if (c == '\\')
 					{
-						*t++ = chresc(s - 1, &e);
+						*t++ = (char)chresc(s - 1, &e);
 						s = e;
 					}
 					else if (c == qr)
 					{
 						if (qr != ql)
-							*t++ = c;
+							*t++ = (char)c;
 						if (--qc <= 0)
 							qr = ql = 0;
 					}
 					else if (c == ql)
 					{
-						*t++ = c;
+						*t++ = (char)c;
 						qc++;
 					}
 					else if (qr)
-						*t++ = c;
+						*t++ = (char)c;
 					else if (c == ',' || isspace(c))
 						break;
 					else if (c == '"' || c == '\'')
@@ -152,7 +152,7 @@ stropt(const char* as, const void* tab, int siz, int(*f)(void*, const void*, int
 					}
 					else
 					{
-						*t++ = c;
+						*t++ = (char)c;
 						if (c == '{')
 						{
 							ql = c;

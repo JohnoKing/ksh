@@ -123,7 +123,7 @@ typefix(char* buf, const char* t)
 	{
 		if (isupper(c))
 			c = tolower(c);
-		if ((*b++ = c) == '/' && (*t == 'x' || *t == 'X') && *(t + 1) == '-')
+		if ((*b++ = (char)c) == '/' && (*t == 'x' || *t == 'X') && *(t + 1) == '-')
 			t += 2;
 	}
 	*b = 0;
@@ -412,14 +412,14 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
 		{
 			if ((j = sfgetc(fp->fp)) == EOF)
 				goto invalid;
-			if (!(*s++ = fp->decode.bigram1[i] = j) && i)
+			if (!(*s++ = fp->decode.bigram1[i] = (char)j) && i)
 			{
 				i = -i;
 				break;
 			}
 			if ((j = sfgetc(fp->fp)) == EOF)
 				goto invalid;
-			if (!(*s++ = fp->decode.bigram2[i] = j) && (i || fp->decode.bigram1[0] >= '0' && fp->decode.bigram1[0] <= '1'))
+			if (!(*s++ = fp->decode.bigram2[i] = (char)j) && (i || fp->decode.bigram1[0] >= '0' && fp->decode.bigram1[0] <= '1'))
 				break;
 		}
 		if (streq(b, FF_typ_magic))
@@ -457,7 +457,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
 			{
 				if (j == EOF || fp->decode.count >= ssizeof(fp->decode.path))
 					goto invalid;
-				fp->decode.path[fp->decode.count++] = j;
+				fp->decode.path[fp->decode.count++] = (char)j;
 			}
 		}
 		else
@@ -467,16 +467,16 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
 			{
 				if ((j = sfgetc(fp->fp)) == EOF)
 					goto invalid;
-				fp->decode.bigram2[i = -i] = j;
+				fp->decode.bigram2[i = -i] = (char)j;
 			}
 			while (++i < (ssize_t)elementsof(fp->decode.bigram1))
 			{
 				if ((j = sfgetc(fp->fp)) == EOF)
 					goto invalid;
-				fp->decode.bigram1[i] = j;
+				fp->decode.bigram1[i] = (char)j;
 				if ((j = sfgetc(fp->fp)) == EOF)
 					goto invalid;
-				fp->decode.bigram2[i] = j;
+				fp->decode.bigram2[i] = (char)j;
 			}
 			if ((fp->decode.peek = sfgetc(fp->fp)) != FF_OFF)
 				goto invalid;
@@ -635,13 +635,13 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
 				int r;
 				*b++ = 0;
 				while (r = *s++)
-					*b++ = r;
+					*b++ = (char)r;
 				*b-- = 0;
 				fp->decode.end = b;
 				if (fp->decode.ignorecase)
 					for (s = fp->decode.pattern; s <= b; s++)
 						if (isupper(*s))
-							*s = tolower(*s);
+							*s = (char)tolower(*s);
 			}
 		}
 	}
@@ -735,7 +735,7 @@ findread(Find_t* fp)
 			{
 				if ((c = sfgetc(fp->fp)) == EOF)
 					return NULL;
-			} while (*p++ = c);
+			} while (*p++ = (char)c);
 			p -= 2;
 			break;
 		case FF_old:
@@ -789,7 +789,7 @@ findread(Find_t* fp)
 					*p++ = fp->decode.bigram2[c & ((1<<(CHAR_BIT-1))-1)];
 				}
 				else
-					*p++ = c;
+					*p++ = (char)c;
 			*p-- = 0;
 			t = 0;
 			break;
@@ -1105,7 +1105,7 @@ findsync(Find_t* fp)
 		for (n = USHRT_MAX; n >= 0; n--)
 			if (d = fp->encode.hits[n])
 			{
-				fp->encode.hits[n] = m;
+				fp->encode.hits[n] = (unsigned short)m;
 				if ((m += d) > FF_MAX)
 					break;
 			}
@@ -1117,11 +1117,11 @@ findsync(Find_t* fp)
 				{
 					d = fp->encode.code[n][m];
 					b = fp->encode.hits[d] - 1;
-					fp->encode.code[n][m] = b + FF_MAX;
+					fp->encode.code[n][m] = (unsigned short)(b + FF_MAX);
 					if (fp->encode.hits[d]++ >= FF_MAX)
 						fp->encode.hits[d] = 0;
-					fp->encode.bigram[b *= 2] = n;
-					fp->encode.bigram[b + 1] = m;
+					fp->encode.bigram[b *= 2] = (unsigned char)n;
+					fp->encode.bigram[b + 1] = (unsigned char)m;
 				}
 				else
 					fp->encode.code[n][m] = 0;
