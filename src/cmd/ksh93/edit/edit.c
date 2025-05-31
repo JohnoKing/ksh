@@ -1155,7 +1155,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
 			if(curp == sp)
 				r = (int)(dp - phys);
 		}
-		*dp++ = c;
+		*dp++ = (genchar)c;
 		if(dp>=dpmax)
 			break;
 	}

@@ -575,7 +575,7 @@ static Namval_t *next_type(Namval_t* np, Dt_t *root,Namfun_t *fp)
 			nv_putsub(np,NULL,ARRAY_SCAN);
 		dp->current = 0;
 	}
-	else if(++dp->current>=dp->numnodes)
+	else if((ssize_t)++dp->current>=dp->numnodes)
 		return NULL;
 	return nv_namptr(dp->nodes,dp->current);
 }
@@ -823,9 +823,9 @@ void nv_newtype(Namval_t *mp)
 Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 {
 	Namval_t	*mp=nodes[0], *bp=0, *np, *nq, **mnodes=nodes;
-	size_t		nref=0,iref=0,inherit=0;
+	size_t		nref=0,iref=0,inherit=0,nd=0;
 	size_t		size=sizeof(NV_DATA),offset=0,m,dsize=0,j,k;
-	ssize_t		n, nd=0, i, nnodes;
+	ssize_t		n, i, nnodes;
 	char		*name=0, *cp, *sp, **help;
 	Namtype_t	*pp,*qp=0,*dp,*tp;
 	Dt_t		*root = nv_dict(mp);
@@ -905,7 +905,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 	offset = roundof(offset,sizeof(char*));
 	nv_setsize(mp,offset);
 	k = roundof(sizeof(Namtype_t),sizeof(Sfdouble_t)) - sizeof(Namtype_t);
-	pp = sh_newof(NULL, Namtype_t, 1, (size_t)nnodes*NV_MINSZ + offset + size + (size_t)(nnodes+nd)*sizeof(char*) + (size_t)iref*sizeof(struct Namref)+k);
+	pp = sh_newof(NULL, Namtype_t, 1, (size_t)nnodes*NV_MINSZ + offset + size + ((size_t)nnodes+nd)*sizeof(char*) + (size_t)iref*sizeof(struct Namref)+k);
 	pp->fun.dsize = sizeof(Namtype_t)+(size_t)nnodes*NV_MINSZ +offset+k;
 	pp->fun.type = mp;
 	pp->parent = nv_lastdict();
@@ -924,9 +924,9 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 	pp->names = (char**)(nrp+iref);
 	help = &pp->names[nd];
 	pp->strsize = (ssize_t)size;
-	cp = (char*)&pp->names[nd+nnodes];
+	cp = (char*)&pp->names[nd+(size_t)nnodes];
 	if(qp)
-		mnodes = sh_newof(NULL, Namval_t*, (size_t)nd+1, 0);
+		mnodes = sh_newof(NULL, Namval_t*, nd+1, 0);
 	nd = 0;
 	nq = nv_namptr(pp->nodes,0);
 	nq->nvname = cp;
@@ -944,7 +944,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 			if(!std_disc(np, pp))
 			{
 				/* see if discipline already defined */
-				for(j=0; (ssize_t)j<nd; j++)
+				for(j=0; j<nd; j++)
 				{
 					if(strcmp(sp,pp->names[j])==0)
 					{
@@ -952,7 +952,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 						break;
 					}
 				}
-				if((ssize_t)j>=nd)
+				if(j>=nd)
 				{
 					pp->names[nd] = cp;
 					mnodes[nd++] = nodes[i];

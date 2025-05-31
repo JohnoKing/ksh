@@ -693,8 +693,8 @@ again:
 
 		case A_LPAR:
 		{
-			unsigned int	infun = vp->infun;
-			int		userfun=0;
+			int	infun = vp->infun;
+			int	userfun=0;
 			Sfdouble_t (*fun)(Sfdouble_t,...);
 			int nargs = lvalue.nargs;
 			if(nargs<0)
@@ -915,7 +915,7 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 	ep->code = (unsigned char*)(ep+1);
 	ep->fun = fun;
 	ep->emode = emode;
-	ep->size = (size_t)offset - sizeof(Arith_t);
+	ep->size = offset - ssizeof(Arith_t);
 	ep->staksize = cur.stakmaxsize+1;
 	if(last)
 		*last = (char*)(cur.nextchr);

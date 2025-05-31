@@ -1795,19 +1795,19 @@ void sh_lexskip(Lex_t *lp, char close, int copy, int state)
     ssize_t _sfwrite(Sfio_t *sp, const void *buff, size_t n)
     {
 	const char *cp = (const char*)buff, *next=cp, *ep = cp + n;
-	int m=0,k;
-	while(next = (const char*)memchr(next,'\r',ep-next))
+	ssize_t m=0,k;
+	while(next = (const char*)memchr(next,'\r',(size_t)(ep-next)))
 		if(*++next=='\n')
 		{
 			if(k=next-cp-1)
 			{
-				if((k=sfwrite(sp,cp,k)) < 0)
+				if((k=sfwrite(sp,cp,(size_t)k)) < 0)
 					return m>0?m:-1;
 				m += k;
 			}
 			cp = next;
 		}
-	if((k=sfwrite(sp,cp,ep-cp)) < 0)
+	if((k=sfwrite(sp,cp,(size_t)(ep-cp))) < 0)
 		return m>0?m:-1;
 	return m+k;
     }

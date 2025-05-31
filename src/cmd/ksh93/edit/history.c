@@ -1004,7 +1004,7 @@ int hist_copy(char *s1,int size,int command,int line)
  * character following c is considered to start a new word
  */
 
-int hist_iswordbndry(char c)
+int hist_iswordbndry(int c)
 {
 	return isspace(c) || strchr("|&;()`<>",c);
 }
@@ -1014,7 +1014,7 @@ int hist_iswordbndry(char c)
  */
 char *hist_word(char *string,int size,int word)
 {
-	char c;
+	int c;
 	int is_boundary;
 	int quoted;
 	char *s1 = string;
@@ -1024,7 +1024,7 @@ char *hist_word(char *string,int size,int word)
 	if(!hp)
 		return NULL;
 	hist_copy(string,size,(int)hp->histind-1,-1);
-	for(quoted=0;c = *cp;cp++)
+	for(quoted=0;c = (int)*cp;cp++)
 	{
 		is_boundary = !quoted && hist_iswordbndry(c);
 		if(is_boundary && flag)

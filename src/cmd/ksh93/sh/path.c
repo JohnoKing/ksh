@@ -1514,7 +1514,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 	ssize_t n,m;
 	size_t k, l;
 	char *sp,*cp,*ep;
-	stkseek(sh.stk,offset+pp->len);
+	stkseek(sh.stk,offset+(ssize_t)pp->len);
 	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
 		stkseek(sh.stk,offset);
 	sfputr(sh.stk,"/.paths",0);
@@ -1528,8 +1528,8 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			return 0;
 		}
 		l = (size_t)statb.st_size;
-		stkseek(sh.stk,offset+pp->len+(ssize_t)l+2);
-		sp = stkptr(sh.stk,offset+pp->len);
+		stkseek(sh.stk,offset+(ssize_t)pp->len+(ssize_t)l+2);
+		sp = stkptr(sh.stk,(size_t)offset+pp->len);
 		*sp++ = '/';
 		n=read(fd,cp=sp,l);
 		sp[n] = 0;
@@ -1554,7 +1554,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			{
 				if(first)
 				{
-					char *ptr = stkptr(sh.stk,offset+pp->len+1);
+					char *ptr = stkptr(sh.stk,(size_t)offset+pp->len+1);
 					if(ep)
 						memmove(ptr,ep,strlen(ep)+1);
 					path_addcomp(first,old,stkptr(sh.stk,offset),PATH_FPATH|PATH_BFPATH);

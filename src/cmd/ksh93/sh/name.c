@@ -2149,7 +2149,7 @@ char **sh_envgen(void)
 	char **er;
 	int namec;
 	struct adata data;
-	int i;
+	size_t i;
 	data.tp = 0;
 	data.mapname = 0;
 	/* L_ARGNOD gets generated automatically as full path name of command */

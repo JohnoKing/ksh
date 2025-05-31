@@ -720,19 +720,19 @@ typedef struct _sftab_
 #define MEMSET(s,c,n) \
 	switch(n) \
 	{ default : memset(s,(int)c,n); s += n; break; \
-	  case  7 : *s++ = (char)c;	\
-		    /* FALLTHROUGH */	\
-	  case  6 : *s++ = (char)c;	\
-		    /* FALLTHROUGH */	\
-	  case  5 : *s++ = (char)c;	\
-		    /* FALLTHROUGH */	\
-	  case  4 : *s++ = (char)c;	\
-		    /* FALLTHROUGH */	\
-	  case  3 : *s++ = (char)c;	\
-		    /* FALLTHROUGH */	\
-	  case  2 : *s++ = (char)c;	\
-		    /* FALLTHROUGH */	\
-	  case  1 : *s++ = (char)c;	\
+	  case  7 : *s++ = (unsigned char)c;	\
+		    /* FALLTHROUGH */		\
+	  case  6 : *s++ = (unsigned char)c;	\
+		    /* FALLTHROUGH */		\
+	  case  5 : *s++ = (unsigned char)c;	\
+		    /* FALLTHROUGH */		\
+	  case  4 : *s++ = (unsigned char)c;	\
+		    /* FALLTHROUGH */		\
+	  case  3 : *s++ = (unsigned char)c;	\
+		    /* FALLTHROUGH */		\
+	  case  2 : *s++ = (unsigned char)c;	\
+		    /* FALLTHROUGH */		\
+	  case  1 : *s++ = (unsigned char)c;	\
 	}
 
 extern Sftab_t		_Sftable;

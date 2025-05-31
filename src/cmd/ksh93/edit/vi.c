@@ -371,7 +371,7 @@ static void append(Vi_t *vp,int c, int mode)
 			for(i = ++last_virt;  i > j; --i)
 				virtual[i] = virtual[i-1];
 		}
-		virtual[++cur_virt] = c;
+		virtual[++cur_virt] = (genchar)c;
 	}
 	else
 		ed_ringbell();
@@ -815,7 +815,7 @@ static void cdelete(Vi_t *vp,int nchars, int mode)
 			i = cp[nchars];
 			cp[nchars] = 0;
 			gencpy(yankbuf,cp);
-			cp[nchars] = i;
+			cp[nchars] = (genchar)i;
 		}
 
 		/*** now delete these characters ***/
@@ -1881,9 +1881,9 @@ static void replace(Vi_t *vp, int c, int increment)
 	}
 	else
 	{
-		virtual[cur_virt] = c;
-		physical[cur_phys] = c;
-		window[cur_window] = c;
+		virtual[cur_virt] = (genchar)c;
+		physical[cur_phys] = (genchar)c;
+		window[cur_window] = (genchar)c;
 		putchar(c);
 		if(increment)
 		{
@@ -2495,7 +2495,7 @@ deleol:
 		else
 			if((c=getrchar(vp))==ESC)
 				return GOOD;
-		*p = c;
+		*p = (genchar)c;
 		save_v(vp);
 		while(trepeat--)
 			replace(vp,c, trepeat!=0);

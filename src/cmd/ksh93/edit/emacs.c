@@ -256,7 +256,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 			{
 				/* accept a backslashed character */
 				cur--;
-				out[cur++] = c;
+				out[cur++] = (genchar)c;
 				out[eol] = '\0';
 				draw(ep,APPEND);
 				continue;
@@ -339,7 +339,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 				out[i] = out[i - count];
 			backslash = (c == '\\' && !sh_isoption(SH_NOBACKSLCTRL) && count==1);
 			for (i = 0; i < count; i++)
-				out[cur++] = c;
+				out[cur++] = (genchar)c;
 			draw(ep, count > 1 ? UPDATE : APPEND);
 			continue;
 		case cntl('Y') :
@@ -356,7 +356,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 			{
 				kptr=kstack;
 				while (i = *kptr++)
-					out[cur++] = i;
+					out[cur++] = (genchar)i;
 			}
 			draw(ep,UPDATE);
 			eol = (int)genlen(out);
@@ -439,7 +439,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 #endif /* SHOPT_MULTIBYTE */
 					{
 						c += 'A' - 'a';
-						out[i] = c;
+						out[i] = (genchar)c;
 					}
 				}
 				i++;
@@ -486,7 +486,7 @@ update:
 			{
 				c = out[i - 1];
 				out[i-1] = out[i-2];
-				out[i-2] = c;
+				out[i-2] = (genchar)c;
 			}
 			else
 			{
@@ -727,7 +727,7 @@ static int escape(Emacs_t* ep,genchar *out,int count)
 #endif /* SHOPT_MULTIBYTE */
 					{
 						i += 'a' - 'A';
-						out[cur] = i;
+						out[cur] = (genchar)i;
 					}
 					cur++;
 				}
@@ -1324,7 +1324,7 @@ static void search(Emacs_t* ep,genchar *out,int direction)
 					string[--sl] = '\0';
 			}
 		}
-		string[sl++] = i;
+		string[sl++] = (genchar)i;
 		string[sl] = '\0';
 		cur = sl;
 		draw(ep,APPEND);
@@ -1445,7 +1445,7 @@ static void draw(Emacs_t *ep,Draw_t option)
 	    print(i)&&((ep->cursor-ep->screen)<(w_size-1)))
 	{
 		putchar(ep->ed,i);
-		*ep->cursor++ = i;
+		*ep->cursor++ = (genchar)i;
 		*ep->cursor = '\0';
 		return;
 	}

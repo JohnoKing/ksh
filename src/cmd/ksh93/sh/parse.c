@@ -117,9 +117,9 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 				if(isdigit(n))
 					width = 10*width + (size_t)n-'0';
 				else if(n=='L' || n=='R' || n =='Z')
-					justify=(int)n;
+					justify = (int)n;
 				else
-					*attribute++ = n;
+					*attribute++ = (char)n;
 			}
 		}
 	}
@@ -878,7 +878,7 @@ static Shnode_t *funct(Lex_t *lexp)
 				Namval_t *np= nv_open(t->funct.functnam,sh.fun_tree,NV_ADD|NV_VARNAME);
 				rp = np->nvalue = new_of(struct Ufunction,sh.funload?sizeof(Dtlink_t):0);
 				memset(rp, 0, sizeof(struct Ufunction));
-				rp->argc = ac->comarg.dp->dolnum;
+				rp->argc = (short)ac->comarg.dp->dolnum;
 			}
 		}
 		while(lexp->token==NL)
