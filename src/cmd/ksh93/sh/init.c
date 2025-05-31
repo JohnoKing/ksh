@@ -1903,9 +1903,9 @@ static inline int is_ctype_var(char *cp)
 }
 
 /* for env_init: import one env var */
-static void import1var(char *cp, int *save_env_n_ptr)
+static void import1var(char *cp, size_t *save_env_n_ptr)
 {
-	int	n;
+	size_t	n;
 	if(nv_open(cp,sh.var_tree,NV_EXPORT|NV_IDENT|NV_ASSIGN|NV_NOFAIL))
 		return;
 	/*
