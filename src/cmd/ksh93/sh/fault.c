@@ -95,7 +95,7 @@ void	sh_fault(int sig)
 		if(flag&SH_SIGIGNORE)
 		{
 			if(sh.subshell)
-				sh.ignsig = sig;
+				sh.ignsig = (unsigned char)sig;
 			sigrelease(sig);
 			goto done;
 		}
@@ -109,7 +109,7 @@ void	sh_fault(int sig)
 					sh.trapnote |= SH_SIGTERM;
 				goto done;
 			}
-			sh.lastsig = sig;
+			sh.lastsig = (unsigned char)sig;
 			sigrelease(sig);
 			if(pp->mode != SH_JMPSUB)
 			{
@@ -135,7 +135,7 @@ void	sh_fault(int sig)
 	}
 	errno = 0;
 	if(pp->mode==SH_JMPCMD || (pp->mode==1 && sh.bltinfun) && !(flag&SH_SIGIGNORE))
-		sh.lastsig = sig;
+		sh.lastsig = (unsigned char)sig;
 	if(trap)
 	{
 		/*
@@ -147,7 +147,7 @@ void	sh_fault(int sig)
 	}
 	else
 	{
-		sh.lastsig = sig;
+		sh.lastsig = (unsigned char)sig;
 		flag = SH_SIGSET;
 		if(sig==SIGTSTP && pp->mode==SH_JMPCMD)
 		{
@@ -199,7 +199,7 @@ done:
  */
 void	sh_winsize(void)
 {
-	int		lines, columns;
+	int32_t		lines, columns;
 	int32_t		i;
 	astwinsize(2,&lines,&columns);
 	if (lines < 0 || lines > USHRT_MAX)
@@ -218,7 +218,7 @@ void	sh_winsize(void)
 	if (columns && (columns != sh.columns || nv_isnull(COLUMNS)) && (i = columns))
 	{
 		nv_putval(COLUMNS, (char*)&i, NV_INT32|NV_RDONLY);
-		sh.columns = (unsigned short)columns;
+		sh.columns = columns;
 		sh.winch = 1;
 	}
 }
@@ -235,8 +235,8 @@ void sh_siginit(void)
 #if defined(SIGRTMIN) && defined(SIGRTMAX)
 	if ((n = SIGRTMIN) > 0 && (sig = SIGRTMAX) > n && sig < SH_TRAP)
 	{
-		sh.sigruntime[SH_SIGRTMIN] = n;
-		sh.sigruntime[SH_SIGRTMAX] = sig;
+		sh.sigruntime[SH_SIGRTMIN] = (unsigned char)n;
+		sh.sigruntime[SH_SIGRTMAX] = (unsigned char)sig;
 	}
 #endif /* SIGRTMIN && SIGRTMAX */
 	n = SIGTERM;
@@ -266,7 +266,7 @@ void sh_siginit(void)
 			sig = sh.sigruntime[sig];
 		if(sig>=0)
 		{
-			sh.sigflag[sig] = n;
+			sh.sigflag[sig] = (unsigned char)n;
 			if(*tp->sh_name)
 				sh.sigmsg[sig] = (char*)tp->sh_value;
 		}
@@ -298,7 +298,7 @@ void	sh_sigtrap(int sig)
 				signal(sig,fun);
 		}
 		flag &= ~(SH_SIGSET|SH_SIGTRAP);
-		sh.sigflag[sig] = flag;
+		sh.sigflag[sig] = (unsigned char)flag;
 	}
 }
 
@@ -350,7 +350,7 @@ void	sh_sigreset(int mode)
 				flag &= ~SH_SIGFAULT;
 				flag |= SH_SIGOFF;
 			}
-			sh.sigflag[sig] = flag;
+			sh.sigflag[sig] = (unsigned char)flag;
 		}
 	}
 	for(sig=SH_DEBUGTRAP; sig>=0; sig--)
@@ -387,7 +387,7 @@ void	sh_sigclear(int sig)
 			free(trap);
 		sh.st.trapcom[sig]=0;
 	}
-	sh.sigflag[sig] = flag;
+	sh.sigflag[sig] = (unsigned char)flag;
 }
 
 /*
@@ -446,10 +446,10 @@ void	sh_chktrap(void)
 				 * another command, so the lexer state is overwritten. Escape to avoid crashing the lexer. */
 				if(sh.nextprompt == 2)
 				{
-					fcclose();		/* force lexer to abort partial command */
-					sh.nextprompt = 1;	/* next display prompt is PS1 */
-					sh.lastsig = sig;	/* make sh_exit() set $? to signal exit status */
-					sh_exit(SH_EXITSIG);	/* start a new command line */
+					fcclose();				/* force lexer to abort partial command */
+					sh.nextprompt = 1;			/* next display prompt is PS1 */
+					sh.lastsig = (unsigned char)sig;	/* make sh_exit() set $? to signal exit status */
+					sh_exit(SH_EXITSIG);			/* start a new command line */
 				}
  			}
 		}

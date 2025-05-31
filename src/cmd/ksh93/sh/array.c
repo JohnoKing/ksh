@@ -65,10 +65,10 @@ struct assoc_array
 #if SHOPT_FIXEDARRAY
    struct fixed_array
    {
-	unsigned char	ndim;
-	unsigned char	dim;
 	unsigned char	level;
 	unsigned char	ptr;
+	size_t		ndim;
+	size_t		dim;
 	size_t		size;
 	ssize_t		nelem;
 	ssize_t		curi;
@@ -306,7 +306,7 @@ static Namval_t *array_find(Namval_t *np,Namarr_t *arp, int flag)
 #if SHOPT_FIXEDARRAY
 			else if(fp)
 			{
-				int n=fp->ndim;
+				ssize_t n=(ssize_t)fp->ndim;
 				fp->curi = 0;
 				while(--n>=0)
 					fp->cur[n] = 0;
@@ -1266,7 +1266,7 @@ Namval_t *nv_putsub(Namval_t *np,char *sp,long mode)
 		{
 			fp->dim = 0;
 			fp->curi = 0;
-			for(size=fp->ndim;--size>=0;)
+			for(size=(ssize_t)fp->ndim;--size>=0;)
 				fp->cur[size] = 0;
 			ap->header.nelem &= ~ARRAY_MASK;
 			if(mode&ARRAY_FIXED)
@@ -1288,7 +1288,7 @@ Namval_t *nv_putsub(Namval_t *np,char *sp,long mode)
 			}
 			while(fp->dim < fp->ndim)
 				fp->cur[fp->dim++] = 0;
-			fp->dim = ap->header.nelem;
+			fp->dim = (size_t)ap->header.nelem;
 			ap->header.nelem |= ARRAY_FIXED;
 		}
 		else if(fp->dim< fp->ndim)
@@ -1332,7 +1332,7 @@ ssize_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 {
 	Namarr_t		*ap =  nv_arrayptr(np);
 	struct fixed_array	*fp = (struct fixed_array*)ap->fixed;
-	unsigned		n;
+	size_t			n;
 	if(flag)
 	{
 		if(out)
@@ -1388,7 +1388,7 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
 	ap->hdr.nofree &= ~1;
 	fp = (struct fixed_array*)(ap+1);
 	ap->fixed = fp;
-	fp->ndim = n;
+	fp->ndim = (size_t)n;
 	fp->max = (ssize_t*)(fp+1);
 	fp->incr = fp->max+n;
 	fp->cur = fp->incr+n;
@@ -1409,7 +1409,7 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
 	nv_disc(np,(Namfun_t*)ap, NV_FIRST);
 	fp->ptr = !np->nvsize;
 	nv_onattr(np,NV_ARRAY|(fp->ptr?0:NV_NOFREE));
-	fp->incr[n=fp->ndim-1] = 1;
+	fp->incr[n=(ssize_t)fp->ndim-1] = 1;
 	for(sz=1; --n>=0;)
 		sz = fp->incr[n] = sz*fp->max[n+1];
 	fp->nelem = sz*fp->max[0];
@@ -1429,7 +1429,7 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
 	if(ap->nelem&ARRAY_FIXED)
 	{
 		ap->nelem &= ~ARRAY_FIXED;
-		n = fp->dim;
+		n = (ssize_t)fp->dim;
 		sz = fp->curi;
 		if(*sub==0)
 			goto skip;
@@ -1447,7 +1447,7 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
 	sz = fp->curi + fp->cur[n]*fp->incr[n];
 	for(n++,ep=cp;*ep=='['; ep=cp,n++)
 	{
-		if(n >= fp->ndim)
+		if(n >= (ssize_t)fp->ndim)
 		{
 			errormsg(SH_DICT,ERROR_exit(1),e_subscript, nv_name(np));
 			UNREACHABLE();
@@ -1465,10 +1465,10 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
 		sz += fp->cur[n]*fp->incr[n];
 	}
 skip:
-	fp->dim = n;
+	fp->dim = (size_t)n;
 	ap->nelem &= ~ARRAY_MASK;
 	ap->nelem |= fp->max[n];
-	while(n < fp->ndim)
+	while(n < (ssize_t)fp->ndim)
 		fp->cur[n++] = 0;
 	fp->curi = sz;
 	return cp-1;
@@ -1567,7 +1567,7 @@ Namval_t *nv_opensub(Namval_t* np)
 #if SHOPT_FIXEDARRAY
 		else if(fp)
 		{
-			int n = fp->dim;
+			size_t n = fp->dim;
 			if((fp->dim+1) < fp->ndim)
 			{
 				fp->dim++;
@@ -1600,7 +1600,7 @@ char	*nv_getsub(Namval_t* np)
 		np = nv_namptr(ap->xp,0);
 		if(!np->nvalue)
 			np->nvalue = sh_malloc(sizeof(uint16_t));
-		*((uint16_t*)np->nvalue) = ap->cur;
+		*((uint16_t*)np->nvalue) = (uint16_t)ap->cur;
 		return nv_getval(np);
 	}
 	if((dot = ap->cur)==0)

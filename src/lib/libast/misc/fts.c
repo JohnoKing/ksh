@@ -1438,7 +1438,7 @@ fts_set(FTS* fts, FTSENT* f, int status)
 	default:
 		return -1;
 	}
-	f->status = status;
+	f->status = (short)status;
 	return 0;
 }
 

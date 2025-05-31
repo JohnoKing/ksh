@@ -69,7 +69,7 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
 			while(c = *mask++)
 			{
 				if (c>='0' && c<='7')
-					flag = (flag<<3) + (mode_t)(c-'0');
+					flag = (mode_t)((flag<<3) + (mode_t)(c-'0'));
 				else
 				{
 					errormsg(SH_DICT,ERROR_exit(1),e_number,*argv);

@@ -180,7 +180,7 @@ aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
 		sem.sem_op = -1;
 		k = HASH(p, (ssize_t)apl->size) + 1;
 	}
-	sem.sem_num = k;
+	sem.sem_num = (unsigned short)k;
 	sem.sem_flg = 0;
 	return semop(apl->id, &sem, 1) < 0 ? -1 : k;
 }

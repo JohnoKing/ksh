@@ -44,7 +44,7 @@ fmtdev(struct stat* st)
 	ma = (unsigned int)major(mm);
 	mi = (unsigned int)minor(mm);
 	buf = fmtbuf(z = 17);
-	if (ma == '#' && isalnum(mi))
+	if (ma == '#' && isalnum((int)mi))
 	{
 		/*
 		 * Plan? Nein!

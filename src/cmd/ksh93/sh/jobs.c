@@ -345,7 +345,7 @@ int job_reap(int sig)
 		else if(WIFSTOPPED(wstat))
 		{
 			pw->p_flag |= (P_NOTIFY|P_SIGNALLED|P_STOPPED|P_BG);
-			pw->p_exit = WSTOPSIG(wstat);
+			pw->p_exit = (unsigned short)WSTOPSIG(wstat);
 			if(pw->p_pgrp && pw->p_pgrp==job.curpgid && sh_isstate(SH_STOPOK))
 				kill(sh.current_pid,pw->p_exit);
 			if(px)
@@ -396,7 +396,7 @@ int job_reap(int sig)
 			{
 				pw->p_exit =  pw->p_exitmin;
 				if(WEXITSTATUS(wstat) > pw->p_exitmin)
-					pw->p_exit = WEXITSTATUS(wstat);
+					pw->p_exit = (unsigned short)WEXITSTATUS(wstat);
 			}
 #if SHOPT_BGX
 			if(pw->p_flag&P_BG)
@@ -1150,7 +1150,7 @@ int job_post(pid_t pid, pid_t join)
 	pw->p_pid = pid;
 	if(!sh.outpipe || sh.cpid==pid)
 		pw->p_flag = P_EXITSAVE;
-	pw->p_exitmin = sh.xargexit;
+	pw->p_exitmin = (unsigned short)sh.xargexit;
 	pw->p_exit = 0;
 	if(sh_isstate(SH_MONITOR))
 	{
@@ -1172,7 +1172,7 @@ int job_post(pid_t pid, pid_t join)
 		pw->p_name = -1;
 	if ((val = job_chksave(pid))>=0 && !jobfork)
 	{
-		pw->p_exit = val;
+		pw->p_exit = (unsigned short)val;
 		if(pw->p_exit==SH_STOPSIG)
 		{
 			pw->p_flag |= (P_SIGNALLED|P_STOPPED);

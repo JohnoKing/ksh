@@ -42,7 +42,7 @@ nftw_user(Ftw_t* ftw)
 	nftw.level = (int)ftw->level;
 	nftw.quit = 0;
 	n = (*nftw_userf)(ftw->path, &ftw->statb, n, &nftw);
-	ftw->status = nftw.quit;
+	ftw->status = (short)nftw.quit;
 	return n;
 }
 

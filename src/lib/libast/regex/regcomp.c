@@ -91,8 +91,8 @@ typedef struct Token_s
 	unsigned long	min;
 	unsigned long	max;
 	ssize_t		len;
+	ssize_t		esc;
 	short		lex;
-	short		esc;
 	short		att;
 	short		push;
 } Token_t;
@@ -748,7 +748,7 @@ magic(Cenv_t* env, int c, int escaped)
 				env->token.len += ep - sp;
 				if (c >= T_META)
 				{
-					env->token.lex = c;
+					env->token.lex = (short)c;
 					c = C_ESC;
 				}
 				return c;
@@ -810,13 +810,13 @@ magic(Cenv_t* env, int c, int escaped)
 						case T_AT:
 							break;
 						case T_PERCENT:
-							env->token.lex = c;
+							env->token.lex = (short)c;
 							goto group;
 						case T_TILDE:
 							env->token.lex = 0;
 							goto group;
 						default:
-							env->token.lex = c;
+							env->token.lex = (short)c;
 							break;
 						}
 						c = T_OPEN;

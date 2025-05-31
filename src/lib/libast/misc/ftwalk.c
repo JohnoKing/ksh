@@ -53,8 +53,8 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 	FTSENT*		e;
 	int		children;
 	int		rv;
-	int		oi;
-	int		os;
+	unsigned short	oi;
+	short		os;
 	size_t		ns;
 	size_t		nd;
 	FTSENT*		x;

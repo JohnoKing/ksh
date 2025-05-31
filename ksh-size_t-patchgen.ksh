@@ -151,6 +151,12 @@ The parts of ksh93 affected by this commit are:
 - The libast miscellaneous functions (e.g. optget and friends).
 - The libast portability functions.
 
+Remarks:
+- The second argument of getfsstat can either be a long (FreeBSD)
+  or a size_t (OpenBSD). This patch opts to cast the second argument
+  as a size_t, which will produce a warning on FreeBSD and no warning
+  on OpenBSD.
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast
@@ -169,11 +175,17 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libcmd
 sanity
-git commit -m 'ssize_t transition part 6: libcmd builtins
+git commit -m $'ssize_t transition part 6: libcmd builtins
 
 The is the sixth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The entirety of the libcmd builtins.
+
+Remarks:
+- Like the previous problematic getfsstat, sethostname also
+  has a platform-dependent second argument that can be
+  either signed or unsigned. This commit leaves the usage
+  of that function (which passes a size_t value) as is.
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
