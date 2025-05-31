@@ -164,7 +164,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
 				if(sh.subshell && !sh.subshare)
 					sh_subfork();
 				if(sig >= sh.st.trapmax)
-					sh.st.trapmax = sig+1;
+					sh.st.trapmax = (unsigned short)sig+1;
 				arg = sh.st.trapcom[sig];
 				sh_sigtrap(sig);
 				sh.st.trapcom[sig] = (sh.sigflag[sig]&SH_SIGOFF) ? Empty : sh_strdup(action);

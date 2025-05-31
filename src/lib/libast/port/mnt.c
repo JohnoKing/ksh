@@ -749,7 +749,7 @@ mntread(void* handle)
 		goto again;
 	default:
 		if (s < m)
-			*s++ = c;
+			*s++ = (char)c;
 		break;
 	}
 
