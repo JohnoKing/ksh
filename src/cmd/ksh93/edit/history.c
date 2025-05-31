@@ -156,7 +156,7 @@ static int sh_checkaudit(const char *name, char *logbuf, size_t len)
 	uid_t	id1, id2;
 	int	r=0, fd;
 	ssize_t	n;
-	if((fd=open(name, O_RDONLY,O_cloexec)) < 0)
+	if((fd=open(name, O_RDONLY|O_cloexec)) < 0)
 		return 0;
 	if((n = read(fd, logbuf,len-1)) < 0)
 		goto done;
