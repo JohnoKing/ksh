@@ -74,7 +74,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 	lvalue->ovalue = 0;
 	if(cp>=lvalue->expr &&  cp < lvalue->expr+lvalue->elen)
 	{
-		ssize_t offset;
+		ptrdiff_t offset;
 		/* do binding to node now */
 		char c = cp[flag];
 		cp[flag] = 0;
@@ -327,7 +327,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			}
 			if(c=='(')
 			{
-				ssize_t off=stktell(sh.stk);
+				ptrdiff_t off=stktell(sh.stk);
 				size_t fsize = (size_t)(str- (char*)(*ptr));
 				const struct mathtab *tp;
 				c = **ptr;
@@ -362,7 +362,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				np = L_ARGNOD;
 			else
 			{
-				ssize_t offset = stktell(sh.stk);
+				ptrdiff_t offset = stktell(sh.stk);
 				char *saveptr = stkfreeze(sh.stk,0);
 				Dt_t  *root = (lvalue->emode&ARITH_COMP)?sh.var_base:sh.var_tree;
 				*str = (char)c;
@@ -413,7 +413,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 					lvalue->flag =  str-lvalue->value;
 				}
 				if(saveptr != stkptr(sh.stk,0))
-					stkset(sh.stk,saveptr,(size_t)offset);
+					stkset(sh.stk,saveptr,offset);
 				else
 					stkseek(sh.stk,offset);
 			}

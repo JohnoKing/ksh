@@ -115,7 +115,7 @@ extern pid_t		_sh_fork(pid_t, int ,int*);
 extern void		sh_invalidate_ifs(void);
 extern char 		*sh_mactrim(char*,char);
 extern int 		sh_macexpand(struct argnod*,struct argnod**,int);
-extern int		sh_macfun(const char*,ssize_t);
+extern int		sh_macfun(const char*,ptrdiff_t);
 extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
 extern void 		*sh_macopen(void);
 extern char 		*sh_macpat(struct argnod*,int);

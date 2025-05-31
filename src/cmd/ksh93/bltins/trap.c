@@ -356,7 +356,7 @@ static int sig_number(const char *string)
 	else
 	{
 		int c;
-		ssize_t o = stktell(sh.stk);
+		ptrdiff_t o = stktell(sh.stk);
 		do
 		{
 			c = *string++;

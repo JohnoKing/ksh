@@ -39,7 +39,7 @@ static char *fmtx(const char *string)
 	int	 	n = 0, c;
 	int		pos = 0;
 	unsigned char 	*state = (unsigned char*)sh_lexstates[ST_NORM];
-	ssize_t		offset = stktell(sh.stk);
+	ptrdiff_t	offset = stktell(sh.stk);
 	char		hc[3];
 #if SHOPT_HISTEXPAND
 	const char	hexp = sh_isoption(SH_HISTEXPAND)!=0;
@@ -270,7 +270,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		}
 		else
 		{
-			stkset(sh.stk,ep->e_stkptr,(size_t)ep->e_stkoff);
+			stkset(sh.stk,ep->e_stkptr,ep->e_stkoff);
 			ep->e_nlist = 0;
 		}
 	}
@@ -566,7 +566,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 	sh_offstate(SH_FCOMPLETE);
 	sh_offstate(SH_NOTILDEXP);
 	if(!ep->e_nlist)
-		stkset(sh.stk,ep->e_stkptr,(size_t)ep->e_stkoff);
+		stkset(sh.stk,ep->e_stkptr,ep->e_stkoff);
 	if(nomarkdirs)
 		sh_offoption(SH_MARKDIRS);
 #if SHOPT_MULTIBYTE

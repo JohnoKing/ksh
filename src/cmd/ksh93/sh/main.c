@@ -636,7 +636,7 @@ static void chkmail(char *files)
 	char		*cp,*sp,*qp;
 	char		save;
 	struct argnod	*arglist=0;
-	ssize_t		offset = stktell(sh.stk);
+	ptrdiff_t	offset = stktell(sh.stk);
 	char	 	*savstak = stkptr(sh.stk,0);
 	struct stat	statb;
 	if(*(cp=files) == 0)
@@ -704,7 +704,7 @@ static void chkmail(char *files)
 		cp = sp;
 	}
 	while(save);
-	stkset(sh.stk,savstak,(size_t)offset);
+	stkset(sh.stk,savstak,offset);
 }
 
 #undef PSTAT
@@ -742,7 +742,7 @@ static void fixargs(char **argv, int mode)
 		command_len = st.command_length;
 		return;
 	}
-	stkseek(sh.stk,command_len+2);
+	stkseek(sh.stk,(ptrdiff_t)command_len+2);
 	buff = stkseek(sh.stk,0);
 	if(command_len==0)
 		return;

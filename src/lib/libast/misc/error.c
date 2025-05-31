@@ -337,7 +337,7 @@ error(int level, ...)
 void
 errorv(const char* id, int level, va_list ap)
 {
-	ssize_t		n;
+	ptrdiff_t	n;
 	int		fd;
 	int		flags;
 	char*		s;
@@ -409,7 +409,7 @@ errorv(const char* id, int level, va_list ap)
 	fd = (flags & ERROR_OUTPUT) ? va_arg(ap, int) : error_info.fd;
 	if (error_info.write)
 	{
-		ssize_t	off;
+		ptrdiff_t off;
 		char*	bas;
 
 		bas = stkptr(stkstd, 0);
@@ -562,7 +562,7 @@ errorv(const char* id, int level, va_list ap)
 			s = 0;
 			level &= ERROR_LEVEL;
 		}
-		stkset(stkstd, bas, (size_t)off);
+		stkset(stkstd, bas, off);
 	}
 	else
 		s = 0;

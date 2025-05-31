@@ -236,10 +236,10 @@ static void
 addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, int meta)
 {
 	globlist_t*	ap;
-	ssize_t		offset;
+	ptrdiff_t	offset;
 	int		type;
 
-	stkseek(globstk,(ssize_t)MATCHPATH(gp));
+	stkseek(globstk,(ptrdiff_t)MATCHPATH(gp));
 	if (dir)
 	{
 		sfputr(globstk,dir,-1);

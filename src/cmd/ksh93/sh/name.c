@@ -112,7 +112,7 @@ void nv_outname(Sfio_t *out, char *name, ssize_t len)
 {
 	const char *cp=name, *sp;
 	int c;
-	ssize_t offset = stktell(sh.stk);
+	ptrdiff_t offset = stktell(sh.stk);
 	while(sp= strchr(cp,'['))
 	{
 		if(len>0 && cp+len <= sp)
@@ -699,7 +699,7 @@ static void stak_subscript(const char *sub, int last)
  */
 static char *copystack(const char *prefix, const char *name, const char *sub)
 {
-	ssize_t last=0,offset = stktell(sh.stk);
+	ptrdiff_t last=0,offset = stktell(sh.stk);
 	if(prefix)
 	{
 		sfputr(sh.stk,prefix,-1);
@@ -735,7 +735,7 @@ static char *stack_extend(const char *cname, char *cp, ssize_t n)
 	char *name = (char*)cname;
 	ssize_t offset = name - stkptr(sh.stk,0);
 	ssize_t m = cp-name;
-	stkseek(sh.stk,offset + (ssize_t)strlen(name)+n+1);
+	stkseek(sh.stk,offset + (ptrdiff_t)strlen(name)+n+1);
 	name = stkptr(sh.stk,offset);
 	cp =  name + m;
 	m = (ssize_t)strlen(cp)+1;
@@ -1360,7 +1360,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 	int			append=0;
 	const char		*msg = e_varname;
 	char			*fname = 0;
-	ssize_t			offset = stktell(sh.stk);
+	ptrdiff_t		offset = stktell(sh.stk);
 	Dt_t			*funroot = NULL;
 #if NVCACHE
 	struct Cache_entry	*xp;
@@ -1825,7 +1825,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 	else
 	{
 		void *tofree=0;
-		ssize_t offset = 0;
+		ptrdiff_t offset = 0;
 		char buff[PATH_MAX];
 		if(flags&NV_INTEGER)
 		{

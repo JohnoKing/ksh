@@ -1037,7 +1037,7 @@ Namval_t *nv_search(const char *name, Dt_t *root, int mode)
 Namval_t *nv_bfsearch(const char *name, Dt_t *root, Namval_t **var, char **last)
 {
 	char		c;
-	ssize_t		offset = stktell(sh.stk);
+	ptrdiff_t	offset = stktell(sh.stk);
 	char		*sp, *cp=0;
 	Namval_t	*np, *nq;
 	char		*dname=0;
@@ -1127,7 +1127,7 @@ Namval_t *sh_addbuiltin(const char *path, Shbltin_f bltin, void *extra)
 	const char	*name;
 	char		*cp;
 	Namval_t	*np, *nq=0;
-	ssize_t		offset=stktell(sh.stk);
+	ptrdiff_t	offset=stktell(sh.stk);
 	if(extra==(void*)1)
 		name = path;
 	else if((name = path_basename(path))==path && bltin!=b_typeset && (nq=nv_bfsearch(name,sh.bltin_tree,NULL,&cp)))
@@ -1437,7 +1437,7 @@ Namval_t *sh_fsearch(const char *fname, int add)
 {
 	if(*fname!='.')
 	{
-		ssize_t	offset = stktell(sh.stk);
+		ptrdiff_t offset = stktell(sh.stk);
 		sfputr(sh.stk,nv_name(sh.namespace),'.');
 		sfputr(sh.stk,fname,0);
 		fname = stkptr(sh.stk,offset);

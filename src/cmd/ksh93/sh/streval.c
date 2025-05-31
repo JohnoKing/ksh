@@ -54,7 +54,7 @@
 #define pow2size(x)		((x)<=2?2:(x)<=4?4:(x)<=8?8:(x)<=16?16:(x)<=32?32:64)
 #define round(x,size)		(((x)+(size)-1)&~((size)-1))
 #define stkpush(stk,v,val,type)	((((v)->offset=round(stktell(stk),pow2size(sizeof(type)))),\
-				stkseek(stk,(v)->offset+ssizeof(type)), \
+				stkseek(stk,(v)->offset+(ptrdiff_t)sizeof(type)), \
 				*((type*)stkptr(stk,(v)->offset)) = (val)),(v)->offset)
 #define roundptr(ep,cp,type)	(((unsigned char*)(ep))+round(cp-((unsigned char*)(ep)),pow2size(sizeof(type))))
 
@@ -65,7 +65,7 @@ struct vars				/* vars stacked per invocation */
 	const char	*errchr; 	/* next char after error	*/
 	const char	*errstr;	/* error string			*/
 	struct lval	errmsg;	 	/* error message text		*/
-	ssize_t		offset;		/* offset for pushchr macro	*/
+	ptrdiff_t	offset;		/* offset for pushchr macro	*/
 	ssize_t		staksize;	/* current stack size needed	*/
 	ssize_t		stakmaxsize;	/* maximum stack size needed	*/
 	int		emode;
@@ -762,7 +762,7 @@ again:
 
 		case A_QUEST:
 		{
-			ssize_t offset1,offset2;
+			ptrdiff_t offset1,offset2;
 			sfputc(sh.stk,A_JMPZ);
 			offset1 = stkpush(sh.stk,vp,0,short);
 			sfputc(sh.stk,A_POP);
@@ -790,7 +790,7 @@ again:
 		case A_ANDAND:
 		case A_OROR:
 		{
-			ssize_t offset;
+			ptrdiff_t offset;
 			if(op==A_ANDAND)
 				op = A_JMPZ;
 			else
@@ -887,14 +887,14 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 {
 	struct vars cur;
 	Arith_t *ep;
-	ssize_t offset;
+	ptrdiff_t offset;
 	memset(&cur,0,sizeof(cur));
      	cur.expr = cur.nextchr = string;
 	cur.convert = fun;
 	cur.emode = emode;
 	cur.errmsg.value = 0;
 	cur.errmsg.emode = emode;
-	stkseek(sh.stk,sizeof(Arith_t));
+	stkseek(sh.stk,(ptrdiff_t)sizeof(Arith_t));
 	if(!expr(&cur,0) && cur.errmsg.value)
 	{
 		if(cur.errstr)
@@ -939,13 +939,13 @@ Sfdouble_t arith_strval(const char *s, char **end, Sfdouble_t(*convert)(const ch
 	Arith_t *ep;
 	Sfdouble_t d;
 	char *sp=0;
-	ssize_t offset;
+	ptrdiff_t offset;
 	if(offset=stktell(sh.stk))
 		sp = stkfreeze(sh.stk,1);
 	ep = arith_compile(s,end,convert,emode);
 	ep->emode = emode;
 	d = arith_exec(ep);
-	stkset(sh.stk,sp?sp:(char*)ep,(size_t)offset);
+	stkset(sh.stk,sp?sp:(char*)ep,offset);
 	return d;
 }
 

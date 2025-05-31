@@ -148,7 +148,7 @@ vecopen(ssize_t inc, size_t siz)
 		inc = 16;
 	if (!(sp = stkopen(STK_SMALL|STK_NULL)))
 		return NULL;
-	if (!(v = stkseek(sp, (ssize_t)(sizeof(Vector_t) + (size_t)inc * siz))))
+	if (!(v = stkseek(sp, (ptrdiff_t)(sizeof(Vector_t) + (size_t)inc * siz))))
 	{
 		stkclose(sp);
 		return NULL;
@@ -169,7 +169,7 @@ vecseek(Vector_t** p, ssize_t index)
 	if (index >= v->max)
 	{
 		while ((v->max += v->inc) <= index);
-		if (!(v = stkseek(v->stk, (ssize_t)(sizeof(Vector_t) + (size_t)v->max * v->siz))))
+		if (!(v = stkseek(v->stk, (ptrdiff_t)(sizeof(Vector_t) + (size_t)v->max * v->siz))))
 			return NULL;
 		*p = v;
 		v->vec = (char*)v + sizeof(Vector_t);
@@ -191,7 +191,7 @@ typedef struct
 } Stk_frame_t;
 
 #define stknew(s,p)	((p)->offset=(off_t)stktell(s),(p)->base=stkfreeze(s,0))
-#define stkold(s,p)	stkset(s,(p)->base,(size_t)(p)->offset)
+#define stkold(s,p)	stkset(s,(p)->base,(ptrdiff_t)(p)->offset)
 
 #define stkframe(s)	(*((Stk_frame_t**)stktop(s)-1))
 #define stkdata(s,t)	((t*)stkframe(s)->data)

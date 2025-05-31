@@ -2197,12 +2197,12 @@ static int	io_prompt(Sfio_t *iop,int flag)
 		{
 			/* PS2 prompt. Save stack state to avoid corrupting command substitutions
 			 * in case we're executing a PS2.get discipline function at parse time. */
-			ssize_t	savestacktop = stktell(sh.stk);
-			void	*savestackptr = stkfreeze(sh.stk,0);
+			ptrdiff_t savestacktop  = stktell(sh.stk);
+			void      *savestackptr = stkfreeze(sh.stk,0);
 			if (cp = nv_getval(sh_scoped(PS2NOD)))
 				sfputr(sfstderr,cp,-1);
 			/* Restore the stack. (If nv_getval ran a PS2.get discipline, this may free the space cp points to.) */
-			stkset(sh.stk, savestackptr, (size_t)savestacktop);
+			stkset(sh.stk, savestackptr, savestacktop);
 			break;
 		}
 		case 3:

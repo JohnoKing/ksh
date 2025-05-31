@@ -950,7 +950,7 @@ static char *walk_tree(Namval_t *np, Namval_t *xp, int flags)
 	Sfio_t *outfile;
 	Sfoff_t	off = 0;
 	size_t len;
-	ssize_t savtop = stktell(sh.stk);
+	ptrdiff_t savtop = stktell(sh.stk);
 	void *savptr = stkfreeze(sh.stk,0);
 	struct argnod *ap=0;
 	struct argnod *arglist=0;
@@ -1047,7 +1047,7 @@ static char *walk_tree(Namval_t *np, Namval_t *xp, int flags)
 	walk.array = 0;
 	walk.flags = flags;
 	genvalue(argv,name,0,&walk);
-	stkset(sh.stk,savptr,(size_t)savtop);
+	stkset(sh.stk,savptr,savtop);
 	sh.var_tree = save_tree;
 	if(!outfile)
 		return NULL;

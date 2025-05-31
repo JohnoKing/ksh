@@ -93,7 +93,7 @@ static void refvar(Lex_t *lp, int type)
 	}
 	else
 	{
-		ssize_t n,offset = stktell(sh.stk);
+		ptrdiff_t n,offset = stktell(sh.stk);
 		void *savptr;
 		char *begin;
 		off = offset + (fcseek(0)-(type+1)) - fcfirst();
@@ -113,7 +113,7 @@ static void refvar(Lex_t *lp, int type)
 		}
 		savptr = stkfreeze(sh.stk,0);
 		r=kiaentity(lp,begin,n,'v',-1,-1,kia.current,'v',0,"");
-		stkset(sh.stk,savptr,(size_t)offset);
+		stkset(sh.stk,savptr,offset);
 	}
 	sfprintf(kia.tmp,"p;%..64d;v;%..64d;%d;%d;r;\n",kia.current,r,sh.inlineno,sh.inlineno);
 }
@@ -633,10 +633,10 @@ int sh_lex(Lex_t* lp)
 					else
 						fcsopen((char*)state);
 					/* remove \new-line */
-					n = stktell(sh.stk)-c;
-					stkseek(sh.stk,n);
+					n = (ssize_t)stktell(sh.stk)-c;
+					stkseek(sh.stk,(ptrdiff_t)n);
 					lp->arg = ap;
-					if(n<=(signed)ARGVAL)
+					if(n<=(ssize_t)ARGVAL)
 					{
 						mode = 0;
 						lp->lexd.first = 0;
@@ -1291,7 +1291,7 @@ breakloop:
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,stktell(sh.stk)-1);
 	state = stkptr(sh.stk,ARGVAL);
-	n = stktell(sh.stk)-(ssize_t)ARGVAL;
+	n = (ssize_t)stktell(sh.stk)-(ssize_t)ARGVAL;
 	lp->lexd.first=0;
 	if(n==1)
 	{
@@ -1729,7 +1729,7 @@ static void nested_here(Lex_t *lp)
 {
 	struct ionod	*iop;
 	size_t		n=0;
-	ssize_t		offset;
+	ptrdiff_t	offset;
 	struct argnod	*arg = lp->arg;
 	char		*base;
 	if(offset=stktell(sh.stk))
@@ -1756,7 +1756,7 @@ static void nested_here(Lex_t *lp)
 	lp->arg = arg;
 	lp->lexd.docword = 0;
 	if(offset)
-		stkset(sh.stk,base,(size_t)offset);
+		stkset(sh.stk,base,offset);
 	else
 		stkseek(sh.stk,0);
 }
@@ -2170,9 +2170,9 @@ noreturn void sh_syntax(Lex_t *lp, int special)
 static unsigned char *stack_shift(unsigned char *sp, unsigned char *dp)
 {
 	unsigned char *ep;
-	ssize_t offset = stktell(sh.stk);
-	ssize_t left = offset - (sp - (unsigned char*)stkptr(sh.stk, 0));
-	ssize_t shift = (dp+1-sp);
+	ptrdiff_t offset = stktell(sh.stk);
+	ptrdiff_t left = offset - (sp - (unsigned char*)stkptr(sh.stk, 0));
+	ptrdiff_t shift = (dp+1-sp);
 	offset += shift;
 	stkseek(sh.stk,offset);
 	sp = (unsigned char*)stkptr(sh.stk,offset);

@@ -232,7 +232,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	volatile char		was_share = 1;
 	volatile int		keytrap;
 	int			wrd;
-	ssize_t			rel;
+	ptrdiff_t		rel;
 	long			array_index = 0;
 	void			*timeslot=0;
 	int			delim = '\n';

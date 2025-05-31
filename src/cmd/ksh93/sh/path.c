@@ -44,7 +44,7 @@
 static int		canexecute(char*,int);
 static void		funload(int,const char*);
 static noreturn void 	exscript(char*, char*[]);
-static int		checkdotpaths(Pathcomp_t*,Pathcomp_t*,Pathcomp_t*,ssize_t);
+static int		checkdotpaths(Pathcomp_t*,Pathcomp_t*,Pathcomp_t*,ptrdiff_t);
 static void		checkdup(Pathcomp_t*);
 static Pathcomp_t	*defpathinit(void);
 
@@ -353,7 +353,7 @@ static void checkdup(Pathcomp_t *pp)
 	pp->flags |= flag;
 	if(((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH))
 	{
-		ssize_t offset = stktell(sh.stk);
+		ptrdiff_t offset = stktell(sh.stk);
 		sfputr(sh.stk,name,0);
 		checkdotpaths(first,0,pp,offset);
 		stkseek(sh.stk,offset);
@@ -740,7 +740,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
 		{
 #if SHOPT_DYNAMIC
 			Shbltin_f addr;
-			ssize_t n;
+			ptrdiff_t n;
 #endif
 			/* Handle default path-bound builtins */
 			if(*stkptr(sh.stk,PATH_OFFSET)=='/' && nv_search(stkptr(sh.stk,PATH_OFFSET),sh.bltin_tree,0))
@@ -762,7 +762,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
 			{
 				char *fp;
 				void *dll;
-				ssize_t m;
+				ptrdiff_t m;
 				if(fp = strchr(bp, ':'))
 				{
 					*fp++ = 0;
@@ -840,7 +840,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
 		}
 		else if(f>=0 && (oldpp->flags & PATH_STD_DIR))
 		{
-			ssize_t n = stktell(sh.stk);
+			ptrdiff_t n = stktell(sh.stk);
 			sfputr(sh.stk,"/bin/",-1);
 			sfputr(sh.stk,name,0);
 			np = nv_search(stkptr(sh.stk,n),sh.bltin_tree,0);
@@ -898,7 +898,7 @@ static int canexecute(char *path, int isfun)
 		char *cp;
 		if(errno==ENOENT && (!(cp=strrchr(path,'.')) || strlen(cp)>4 || strchr(cp,'/')))
 		{
-			ssize_t offset = stktell(sh.stk)-1;
+			ptrdiff_t offset = stktell(sh.stk)-1;
 			stkseek(sh.stk,offset);
 			sfputr(sh.stk,".bat",0);
 			path = stkptr(sh.stk,PATH_OFFSET);
@@ -1458,7 +1458,7 @@ static noreturn void exscript(char *path,char *argv[])
 static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, int flag)
 {
 	Pathcomp_t *pp, *oldpp;
-	ssize_t offset=stktell(sh.stk);
+	ptrdiff_t offset=stktell(sh.stk);
 	size_t len;
 	if(!(flag&PATH_BFPATH))
 	{
@@ -1507,14 +1507,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
  * This function checks for the .paths file in directory in <pp>
  * it assumes that the directory is on the stack at <offset>
  */
-static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssize_t offset)
+static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrdiff_t offset)
 {
 	struct stat statb;
 	int fd;
 	ssize_t n,m;
 	size_t k, l;
 	char *sp,*cp,*ep;
-	stkseek(sh.stk,offset+(ssize_t)pp->len);
+	stkseek(sh.stk,offset+(ptrdiff_t)pp->len);
 	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
 		stkseek(sh.stk,offset);
 	sfputr(sh.stk,"/.paths",0);
@@ -1528,8 +1528,8 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			return 0;
 		}
 		l = (size_t)statb.st_size;
-		stkseek(sh.stk,offset+(ssize_t)pp->len+(ssize_t)l+2);
-		sp = stkptr(sh.stk,(size_t)offset+pp->len);
+		stkseek(sh.stk,offset+(ptrdiff_t)pp->len+(ptrdiff_t)l+2);
+		sp = stkptr(sh.stk,offset+(ptrdiff_t)pp->len);
 		*sp++ = '/';
 		n=read(fd,cp=sp,l);
 		sp[n] = 0;
@@ -1554,7 +1554,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ssiz
 			{
 				if(first)
 				{
-					char *ptr = stkptr(sh.stk,(size_t)offset+pp->len+1);
+					char *ptr = stkptr(sh.stk,offset+(ptrdiff_t)pp->len+1);
 					if(ep)
 						memmove(ptr,ep,strlen(ep)+1);
 					path_addcomp(first,old,stkptr(sh.stk,offset),PATH_FPATH|PATH_BFPATH);
@@ -1594,7 +1594,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
 {
 	const char *cp;
 	Pathcomp_t *old=0;
-	ssize_t offset = stktell(sh.stk);
+	ptrdiff_t offset = stktell(sh.stk);
 	char *savptr = NULL;
 	if(!path && type!=PATH_PATH)
 		return first;
@@ -1638,7 +1638,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
 	{
 		if(!savptr)
 			abort();
-		stkset(sh.stk,savptr,(size_t)offset);
+		stkset(sh.stk,savptr,offset);
 	}
 	else
 		stkseek(sh.stk,0);
@@ -1700,7 +1700,7 @@ void path_newdir(Pathcomp_t *first)
 		if((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH)
 		{
 			/* try to insert .paths component */
-			ssize_t offset = stktell(sh.stk);
+			ptrdiff_t offset = stktell(sh.stk);
 			sfputr(sh.stk,pp->name,0);
 			stkseek(sh.stk,offset);
 			next = pp->next;

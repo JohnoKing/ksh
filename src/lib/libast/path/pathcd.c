@@ -60,11 +60,11 @@ vchdir(const char* path)
 int
 pathcd(const char* path, const char* home)
 {
-	char*	p = (char*)path;
-	char*	s;
-	ssize_t	n;
-	ssize_t	i;
-	int	r;
+	char*		p = (char*)path;
+	char*		s;
+	ptrdiff_t	n;
+	ptrdiff_t	i;
+	int		r;
 
 	r = 0;
 	for (;;)
@@ -80,7 +80,7 @@ pathcd(const char* path, const char* home)
 		 * chdir failed
 		 */
 
-		if ((n = (ssize_t)strlen(p)) < PATH_MAX)
+		if ((n = (ptrdiff_t)strlen(p)) < PATH_MAX)
 			return -1;
 #ifdef ENAMETOOLONG
 		if (errno != ENAMETOOLONG)

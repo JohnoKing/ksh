@@ -351,7 +351,7 @@ static Namfun_t *clone_type(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 	ssize_t			i;
 	Namval_t		*nq, *nr;
 	size_t			size = fp->dsize;
-	ssize_t			offset=stktell(sh.stk);
+	ptrdiff_t		offset=stktell(sh.stk);
 	char			*cp;
 	char			save_nofree;
 	Dt_t			*root = sh.last_root;
@@ -603,7 +603,7 @@ static int typeinfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 	Namval_t	*np,*nq,*tp;
 	int		j;
 	size_t		i, len;
-	ssize_t		offset=stktell(sh.stk);
+	ptrdiff_t	offset=stktell(sh.stk);
 	Sfio_t		*sp;
 	NOT_USED(op);
 	np = *(Namval_t**)(fp+1);
@@ -688,7 +688,7 @@ static int typeinfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 	sfprintf(out,"}\n");
 	if(dp->ndisc>0)
 	{
-		ssize_t savstak;
+		ptrdiff_t savstak;
 		stkseek(sh.stk,offset);
 		sfputr(sh.stk,NV_CLASS,'.');
 		sfputr(sh.stk,np->nvname,'.');
@@ -1191,7 +1191,7 @@ Namval_t *nv_mkinttype(char *name, size_t size, int sign, const char *help, Namd
 	sfputr(sh.stk,NV_CLASS,'.');
 	sfputr(sh.stk,name,0);
 	mp = nv_open(stkptr(sh.stk,offset), sh.var_tree, NV_VARNAME);
-	stkseek(sh.stk,(ssize_t)offset);
+	stkseek(sh.stk,(ptrdiff_t)offset);
 	offset = size + sizeof(Namdisc_t);
 	fp = sh_newof(NULL, Namfun_t, 1, offset);
 	fp->type = mp;

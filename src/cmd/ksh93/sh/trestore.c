@@ -176,7 +176,7 @@ static struct argnod *r_arg(void)
 	Stk_t		*stkp=sh.stk;
 	while((l=sfgetu(infile))>0)
 	{
-		ap = stkseek(stkp,(ssize_t)l+(ssize_t)ARGVAL);
+		ap = stkseek(stkp,(ptrdiff_t)l+(ptrdiff_t)ARGVAL);
 		if(!aptop)
 			aptop = ap;
 		else

@@ -42,13 +42,13 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 	if(nv_search(s,sh.fun_tree,0))
 #endif /* SHOPT_NAMESPACE */
 	{
-		ssize_t savtop = stktell(stkp);
+		ptrdiff_t savtop = stktell(stkp);
 		void *savptr = stkfreeze(stkp,0);
 		sfputc(stkp,'$');
 		sfputc(stkp,'(');
 		sfputr(stkp,s,')');
 		sfputr(sp,sh_mactry(stkfreeze(stkp,1)),-1);
-		stkset(stkp,savptr,(size_t)savtop);
+		stkset(stkp,savptr,savtop);
 	}
 	return 1;
 }

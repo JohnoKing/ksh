@@ -64,7 +64,7 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
 	Sfio_t *iop;
 	char *cp=(char*)string;
 	int c,quoted=0,literal=0,ac=0;
-	ssize_t offset;
+	ptrdiff_t offset;
 	char *savebase,**av;
 	if(offset=stktell(stkstd))
 		savebase = stkfreeze(stkstd,0);
@@ -186,7 +186,7 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
 	c=0;
 err:
 	if(offset)
-		stkset(stkstd,savebase,(size_t)offset);
+		stkset(stkstd,savebase,offset);
 	else
 		stkseek(stkstd,0);
 	return c;

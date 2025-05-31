@@ -176,7 +176,8 @@ static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
 static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
 {
 	int		c;
-	ssize_t		offset = stktell(sh.stk), o;
+	ptrdiff_t	offset = stktell(sh.stk);
+	size_t		write_len;
 	const char	*first;
 	struct timeval	tv_cpu_sum;
 	struct timeval	*tvp;
@@ -263,8 +264,8 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
 	if(format>first)
 		sfwrite(sh.stk,first, (size_t)(format-first));
 	sfputc(sh.stk,'\n');
-	o = stktell(sh.stk)-offset;
-	sfwrite(out,stkptr(sh.stk,offset),(size_t)o);
+	write_len = (size_t)(stktell(sh.stk)-offset);
+	sfwrite(out,stkptr(sh.stk,offset),write_len);
 	stkseek(sh.stk,offset);
 }
 
@@ -421,7 +422,7 @@ static void out_string(Sfio_t *iop, const char *cp, int c, int quoted)
 {
 	if(quoted)
 	{
-		ssize_t n = stktell(sh.stk);
+		ptrdiff_t n = stktell(sh.stk);
 		cp = sh_fmtq(cp);
 		if(iop==sh.stk && cp==stkptr(sh.stk,n))
 		{
@@ -472,7 +473,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
 {
 	Namval_t		*np = SH_COMMANDNOD;
 	ssize_t			n=4;
-	ssize_t			offset=stktell(sh.stk);
+	ptrdiff_t		offset=stktell(sh.stk);
 	int			r;
 	void			*sav = stkfreeze(sh.stk,0);
 	struct sh_scoped	*savst = stkalloc(sh.stk,sizeof(struct sh_scoped));
@@ -527,7 +528,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
 	update_sh_level();
 	sh.st = *savst;
 	if(sav != stkptr(sh.stk,0))
-		stkset(sh.stk,sav,(size_t)offset);
+		stkset(sh.stk,sav,offset);
 	else
 		stkseek(sh.stk,offset);
 	return r;
@@ -2308,7 +2309,7 @@ int sh_exec(const Shnode_t *t, int flags)
 			{
 				Dt_t *root;
 				Namval_t *oldnspace = sh.namespace;
-				ssize_t offset = stktell(sh.stk);
+				ptrdiff_t offset = stktell(sh.stk);
 				int	flags=NV_NOARRAY|NV_VARNAME;
 				struct checkpt *chkp = stkalloc(sh.stk,sizeof(struct checkpt));
 				int jmpval;
@@ -2352,7 +2353,7 @@ int sh_exec(const Shnode_t *t, int flags)
 			error_info.line = t->funct.functline-sh.st.firstline;
 			if(cp || sh.prefix)
 			{
-				ssize_t offset = stktell(sh.stk);
+				ptrdiff_t offset = stktell(sh.stk);
 				if(sh.prefix)
 				{
 					cp = sh.prefix;
@@ -2626,7 +2627,7 @@ int sh_run(int argn, char *argv[])
 {
 	struct dolnod	*dp;
 	struct comnod	*t = stkalloc(sh.stk,sizeof(struct comnod));
-	ssize_t		savtop = stktell(sh.stk);
+	ptrdiff_t	savtop = stktell(sh.stk);
 	void		*savptr = stkfreeze(sh.stk,0);
 	Opt_t		*op, *np = optctx(0, 0);
 	Shbltin_t	bltindata;
@@ -2644,7 +2645,7 @@ int sh_run(int argn, char *argv[])
 	optctx(op,np);
 	sh.bltindata = bltindata;
 	if(savptr!=stkptr(sh.stk,0))
-		stkset(sh.stk,savptr,(size_t)savtop);
+		stkset(sh.stk,savptr,savtop);
 	else
 		stkseek(sh.stk,savtop);
 	return argn;
@@ -3164,7 +3165,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
 	struct checkpt	*checkpoint;
 	int		jmpval = 0;
 	int		jmpthresh;
-	ssize_t		offset = 0;
+	ptrdiff_t	offset = 0;
 	char		*base;
 	Namval_t	node;
 	struct Namref	nr;
@@ -3213,7 +3214,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
 		unset_instance(&node, &nr, mode);
 	fcrestore(&save);
 	if(offset>0)
-		stkset(sh.stk,base,(size_t)offset);
+		stkset(sh.stk,base,offset);
 	sh.prefix = prefix;
 	if(jmpval >= jmpthresh)
 		siglongjmp(*sh.jmplist,jmpval);

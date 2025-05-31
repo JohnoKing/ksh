@@ -400,7 +400,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 		}
 	}
 
-	if(wanted == SFMODE(f,1))
+	if(wanted == (int)SFMODE(f,1))
 		goto done;
 
 	switch(SFMODE(f,1))

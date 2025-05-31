@@ -528,7 +528,7 @@ static char *fmthtml(const char *string, int flags)
 {
 	const char *cp = string, *op;
 	int c;
-	ssize_t offset = stktell(sh.stk);
+	ptrdiff_t offset = stktell(sh.stk);
 	/*
 	 * The only multibyte locale ksh currently supports is UTF-8, which is a superset of ASCII. So, if we're on an
 	 * EBCDIC system, below we attempt to convert EBCDIC to ASCII only if we're not in a multibyte locale (mbwide()).
@@ -1158,7 +1158,7 @@ static ssize_t fmtvecho(const char *string, struct printf *pp)
 {
 	const char *cp = string, *cpmax;
 	int c;
-	ssize_t offset = stktell(sh.stk), d;
+	ptrdiff_t offset = stktell(sh.stk), d;
 	int chlen;
 	if(mbwide())
 	{

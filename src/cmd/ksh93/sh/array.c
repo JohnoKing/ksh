@@ -1483,7 +1483,7 @@ char *nv_endsubscript(Namval_t *np, char *cp, int mode)
 {
 	int quoted=0;
 	char c;
-	ssize_t count=1;
+	ptrdiff_t count=1;
 	char *sp = cp+1;
 	assert(*cp=='[');
 	/* first find matching ']' */

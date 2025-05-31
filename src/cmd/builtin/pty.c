@@ -704,7 +704,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 	{
 		r -= bp->cursor; /* FIXME: r may now be before bp->buf */
 		if (r < bp->bufunderflow)
-			error(ERROR_PANIC, "pty.c:%d: internal error: r is %zd bytes before bp->bufunderflow", __LINE__, bp->bufunderflow - r);
+			error(ERROR_PANIC, "pty.c:%d: internal error: r is %td bytes before bp->bufunderflow", __LINE__, bp->bufunderflow - r);
 		bp->cursor = 0;
 	}
 	for (t = 0, n = 0; *s; s++)

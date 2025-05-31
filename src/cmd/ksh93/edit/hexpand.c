@@ -62,7 +62,7 @@ struct subst
 static char *parse_subst(const char *s, struct subst *sb)
 {
 	char	*cp,del;
-	ssize_t off;
+	ptrdiff_t off;
 	int	n = 0;
 
 	/* build the strings on the stack, mainly for '&' substitution in "new" */
@@ -150,7 +150,7 @@ void hist_setchars(char *hc)
 
 int hist_expand(const char *ln, char **xp)
 {
-	ssize_t off;	/* stack offset */
+	ptrdiff_t off;	/* stack offset */
 	int	q,	/* quotation flags */
 		p,	/* flag */
 		c,	/* current char */
@@ -243,10 +243,10 @@ int hist_expand(const char *ln, char **xp)
 		case '#': /* the line up to current position */
 			flag |= HIST_HASH;
 			cp++;
-			n = stktell(sh.stk); /* terminate string and dup */
+			n = (Sfoff_t)stktell(sh.stk); /* terminate string and dup */
 			sfputc(sh.stk,'\0');
 			cc = sh_strdup(stkptr(sh.stk,0));
-			stkseek(sh.stk,(ssize_t)n); /* remove null byte again */
+			stkseek(sh.stk,(ptrdiff_t)n); /* remove null byte again */
 			ref = sfopen(ref, cc, "s"); /* open as file */
 			n = 0; /* skip history file referencing */
 			break;
@@ -728,7 +728,7 @@ done:
 
 	/* restore shell stack */
 	if(off)
-		stkset(sh.stk,sp,(size_t)off);
+		stkset(sh.stk,sp,off);
 	else
 		stkseek(sh.stk,0);
 

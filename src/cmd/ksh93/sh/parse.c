@@ -739,7 +739,7 @@ static struct regnod*	syncase(Lex_t *lexp,int esym)
 static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
 {
 	Shnode_t	*t, *tw = tf;
-	ssize_t		offset;
+	ptrdiff_t	offset;
 	struct argnod	*argp;
 	int		n;
 	int		argflag = lexp->arg->argflag;
@@ -2040,7 +2040,7 @@ static Shnode_t *test_primary(Lex_t *lexp)
 unsigned long kiaentity(Lex_t *lexp,const char *name,ssize_t len,int type,int first,int last,unsigned long parent, int pkind, size_t width, const char *attr)
 {
 	Namval_t *np;
-	ssize_t offset = stktell(sh.stk);
+	ptrdiff_t offset = stktell(sh.stk);
 	sfputc(sh.stk,type);
 	if(len>0)
 		sfwrite(sh.stk,name,(size_t)len);

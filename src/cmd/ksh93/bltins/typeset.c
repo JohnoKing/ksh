@@ -526,9 +526,9 @@ endargs:
 	{
 		Stk_t *stkp = sh.stk;
 #if SHOPT_NAMESPACE
-		ssize_t off = 0;
+		ptrdiff_t off = 0;
 #endif /* SHOPT_NAMESPACE */
-		ssize_t offset = stktell(stkp);
+		ptrdiff_t offset = stktell(stkp);
 		if(!tdata.prefix)
 			return sh_outtype(sfstdout);
 		sfputr(stkp,NV_CLASS,-1);
@@ -761,7 +761,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
 					r++;
 				if(tp->help)
 				{
-					ssize_t offset = stktell(sh.stk);
+					ptrdiff_t offset = stktell(sh.stk);
 					if(!np)
 					{
 						sfputr(sh.stk,sh.prefix,'.');
@@ -1130,7 +1130,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 {
 	char *arg=0, *name;
 	int n, r=0, flag=0;
-	ssize_t offset;
+	ptrdiff_t offset;
 	Namval_t *np;
 	int dlete=0;
 	struct tdata tdata;

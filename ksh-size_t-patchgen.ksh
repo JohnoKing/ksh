@@ -24,6 +24,40 @@ fi
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
+fetch src/cmd/ksh93/include/test.h
+fetch src/cmd/ksh93/include/defs.h
+fetch src/cmd/ksh93/include/shell.h
+fetch src/cmd/ksh93/sh/macro.c
+fetch src/cmd/ksh93/sh/init.c
+fetch src/cmd/ksh93/bltins/test.c
+fetch src/lib/libast/man/stk.3
+fetch src/lib/libast/include/stk.h
+fetch src/lib/libast/misc/stk.c
+
+git commit -m $'ssize_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
+
+This is the first of a patch series that enables ksh93 to operate
+withing a 64-bit address space. These changes were accomplished by
+fixing most of the warnings that show up when compiling with the flags
+\'-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion\'
+under clang. Of the changes, int -> ssize_t is of relatively low risk
+because both types are signed. The instances of int -> size_t, however,
+required more attention to ensure rollover doesn\'t occur. (In general,
+size_t was only used if I deemed ssize_t inappropriate.)
+
+Conspicuous changes:
+- Transitioned the strgrpmatch() and strngrpmatch calls to use
+  a ssize_t* pointer rather than an int* pointer and STR_INT.
+- For the sh_options macros/function, enforce uint64_t as the main
+  argument type to fix compiler warnings.
+- The libast stk sublibrary already uses the ssize_t/size_t types,
+  and stktell() returns a ptrdiff_t result. This commit endeavors
+  to transition stk usage to account for this (and corrects/updates
+  stk documentation).
+
+Progresses https://github.com/ksh93/ksh/issues/592'
+
+
 ### TODO: Integrate test.c, macro.c, init.c and defs.h into this commit ###
 
 fetch src/lib/libast/sfio
@@ -44,32 +78,18 @@ fetch src/lib/libast/string/fmtperm.c
 fetch src/lib/libast/string/modedata.c
 fetch src/lib/libast/include/regex.h
 fetch src/lib/libast/include/hash.h
-fetch src/cmd/ksh93/include/test.h
 fetch src/lib/libast/string/strperm.c
 fetch src/lib/libast/hash
-fetch src/cmd/ksh93/bltins/print.c
 fetch src/lib/libast/string/strmatch.c
 fetch src/lib/libast/man/fmt.3
-fetch src/cmd/ksh93/include/defs.h
-fetch src/cmd/ksh93/include/shell.h
-fetch src/cmd/ksh93/sh/macro.c
-fetch src/cmd/ksh93/sh/init.c
-fetch src/cmd/ksh93/bltins/test.c
 fetch src/lib/libast/string/fmtelapsed.c
 fetch src/lib/libast/string/fmtmode.c
+fetch src/cmd/ksh93/bltins/print.c
 sanity
-git commit -m $'ssize_t transition part 1: SFIO, hash lib and print(1)
+git commit -m $'ssize_t transition part 2: SFIO, hash lib and print(1)
 
-This is the first of a patch series that enables ksh93 to operate
-withing a 64-bit address space. These changes were accomplished by
-fixing most of the -Wsign-compare and -Wshorten-64-to-32 warnings
-exhibited during compilation with clang. ssize_t was used most
-often to avoid rollover issues (int and ssize_t are both signed),
-but in some cases size_t was used instead to fix the aforementioned
--Wsign-compare warnings. (There are still many -Wsign-conversion
-warnings, and while the majority of those have been fixed, many were
-left as is; some are dependent on the OS\'s system headers and
-cannot feasibly be fixed.)
+This is the second of a patch series that enables ksh93 to operate
+within a 64-bit address space.
 
 The parts of ksh93 affected by this commit are:
 - SFIO and the associated stdio wrapper. The sfvprintf and sfvscanf
@@ -93,10 +113,8 @@ The parts of ksh93 affected by this commit are:
   modernization.
 - Transitioned the strgrpmatch() family to use regflags_t to fix
   various -Wsign-conversion warnings.
-  - In accompaniment with those changes, applied ssize_t updates to
-    macro.c, init.c and test(1).
-  - The STR_INT flag backported from ksh93v- was left unused due
-    to these changes, so it has been removed.
+  - The now unused STR_INT flag backported from ksh93v- has been
+    removed.
 - Made the snprintf and vsnprintf wrappers standards compliant.
 
 Progresses https://github.com/ksh93/ksh/issues/592'
@@ -108,9 +126,9 @@ fetch src/lib/libast/cdt
 fetch src/lib/libast/features
 fetch src/lib/libast/include/aso.h
 sanity
-git commit -m 'ssize_t transition part 2: aso, CDT, libast feature tests
+git commit -m 'ssize_t transition part 3: aso, CDT, libast feature tests
 
-The is the second in the ssize_t transition patch series.
+The is the third in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The libast aso library.
 - The libast CDT library.
@@ -125,9 +143,9 @@ fetch src/lib/libast/include/regex.h
 fetch src/lib/libast/include/swap.h
 fetch src/lib/libast/man/swap.3
 sanity
-git commit -m 'ssize_t transition part 3: libast regex and string sublibraries
+git commit -m 'ssize_t transition part 4: libast regex and string sublibraries
 
-The is the third in the ssize_t transition patch series.
+The is the fourth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The libast string library.
 - The libast regex engine.
@@ -143,9 +161,9 @@ fetch src/lib/libast/include/cmdarg.h
 fetch src/lib/libast/include/glob.h
 fetch src/lib/libast/features/api
 sanity
-git commit -m 'ssize_t transition part 4: the libast zakkaya
+git commit -m 'ssize_t transition part 5: the libast zakkaya
 
-The is the fourth in the ssize_t transition patch series.
+The is the fifth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The libast compatibility functions.
 - The libast miscellaneous functions (e.g. optget and friends).
@@ -161,9 +179,9 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast
 sanity
-git commit -m 'ssize_t transition part 5: remainder of additaments to libast
+git commit -m 'ssize_t transition part 6: remainder of additaments to libast
 
-The is the fifth in the ssize_t transition patch series.
+The is the sixth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The the reminder of SFIO located in the disc folder.
 - The rest of the libast man pages.
@@ -175,9 +193,9 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libcmd
 sanity
-git commit -m $'ssize_t transition part 6: libcmd builtins
+git commit -m $'ssize_t transition part 7: libcmd builtins
 
-The is the sixth in the ssize_t transition patch series.
+The is the seventh in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The entirety of the libcmd builtins.
 
@@ -194,9 +212,9 @@ fetch src/lib/libsum
 fetch src/cmd/builtin
 fetch src/cmd/INIT
 sanity
-git commit -m $'ssize_t transition part 7: ancillary AST suite components of ksh93
+git commit -m $'ssize_t transition part 8: ancillary AST suite components
 
-The is the seventh in the ssize_t transition patch series.
+The is the eighth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The entirety of the libdll library.
   - Unused code hidden behind \'\#if 0\' has been removed
@@ -211,9 +229,9 @@ fetch src/cmd/ksh93/edit
 fetch src/cmd/ksh93/include/edit.h
 fetch src/cmd/ksh93/include/history.h
 sanity
-git commit -m $'ssize_t transition part 8: ksh93 command line editors
+git commit -m $'ssize_t transition part 9: ksh93 command line editors
 
-The is the eighth in the ssize_t transition patch series.
+The is the ninth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The interactive emacs and vi editor modes.
   Neither possess an exigent need to operate on exceedingly large
@@ -226,9 +244,9 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 fetch src/cmd/ksh93/bltins
 fetch src/cmd/ksh93/include/builtins.h
 sanity
-git commit -m 'ssize_t transition part 9: ksh93 preeminent builtin commands
+git commit -m 'ssize_t transition part 10: ksh93 preeminent builtin commands
 
-The is the ninth in the ssize_t transition patch series.
+The is the tenth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The various primary ksh93 builtins located in the bltins folder.
 
@@ -241,9 +259,9 @@ fetch src/cmd/ksh93/sh/string.c
 fetch src/cmd/ksh93/sh/waitevent.c
 fetch src/cmd/ksh93/nval.3
 sanity
-git commit -m "ssize_t transition part 10: ksh93 variables
+git commit -m "ssize_t transition part 11: ksh93 variables
 
-The is the tenth in the ssize_t transition patch series.
+The is the eleventh in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - The nval system, string.c, array handling and waitevent.c.
   This is probably one of the most consequential changes, the
@@ -273,9 +291,9 @@ fetch src/cmd/ksh93/include/fcin.h
 fetch src/cmd/ksh93/include/shnodes.h
 fetch src/cmd/ksh93/include/shlex.h
 sanity
-git commit -m "ssize_t transition part 11: ksh93 lexing, parsing and subshells
+git commit -m "ssize_t transition part 12: ksh93 lexing, parsing and subshells
 
-The is the eleventh in the ssize_t transition patch series.
+The is the twelfth in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - All C files starting with the letter 't' in the sh folder.
 - The lexing and parsing components in lex.c, parse.c, and fcin.c.
@@ -288,9 +306,9 @@ fetch src
 sanity
 sed -i '5i '${ printf '%(%Y-%0m-%0d)T\n' now ;}':\n\n- Ksh is now capable of allocating memory within a 64-bit address space.\n' NEWS
 git add NEWS
-git commit -m "ssize_t transition part 12: the rest of ksh93
+git commit -m "ssize_t transition part 13: the rest of ksh93
 
-The is the twelfth in the ssize_t transition patch series.
+The is the thirteenth in the ssize_t transition patch series.
 This covers the rest of ksh93:
 - All of the other headers.
 - args.c

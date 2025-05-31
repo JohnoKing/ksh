@@ -22,11 +22,11 @@ unsigned int stklink(Stk_t *\fIstack\fP)
 
 void *stkalloc(Stk_t *\fIstack\fP, size_t \fIsize\fP);
 char *stkcopy(Stk_t *\fIstack\fP, const char *\fIstring\fP);
-void *stkset(Stk_t *\fIstack\fP, void *\fIaddress\fP, size_t \fIoffset\fP);
+void *stkset(Stk_t *\fIstack\fP, void *\fIaddress\fP, ptrdiff_t \fIoffset\fP);
 
-void *stkseek(Stk_t *\fIstack\fP, ssize_t \fIoffset\fP);
-ssize_t stktell(Stk_t *\fIstack\fP);
-char *stkptr(Stk_t *\fIstack\fP, size_t \fIoffset\fP);
+void *stkseek(Stk_t *\fIstack\fP, ptrdiff_t \fIoffset\fP);
+ptrdiff_t stktell(Stk_t *\fIstack\fP);
+char *stkptr(Stk_t *\fIstack\fP, ptrdiff_t \fIoffset\fP);
 void *stkfreeze(Stk_t *\fIstack\fP, size_t \fIextra\fP);
 \fR
 .fi

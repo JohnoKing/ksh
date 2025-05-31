@@ -1094,7 +1094,7 @@ static char *setdisc_any(Namval_t *np, const char *event, Namval_t *action, Namf
 	Namval_t	*mp,fake;
 	char		*name;
 	int		getname=0;
-	ssize_t 	off=stktell(sh.stk);
+	ptrdiff_t 	off=stktell(sh.stk);
 	NOT_USED(fp);
 	fake.nvname = nv_name(np);
 	if(!event)
@@ -1290,7 +1290,7 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
 				sh.shpath = sh_strdup(cp);
 			else if(cp = nv_getval(PWDNOD))
 			{
-				ssize_t offset = stktell(sh.stk);
+				ptrdiff_t offset = stktell(sh.stk);
 				sfputr(sh.stk,cp,'/');
 				sfputr(sh.stk,argv[0],-1);
 				pathcanon(stkptr(sh.stk,offset),PATH_DOTDOT);
@@ -1993,7 +1993,7 @@ static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 {
 	struct Mapchar *mp = (struct Mapchar*)fp;
 	int c;
-	ssize_t offset = stktell(sh.stk), off = offset;
+	ptrdiff_t offset = stktell(sh.stk), off = offset;
 	if(val)
 	{
 		if(mp->lctype!=lctype)

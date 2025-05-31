@@ -172,7 +172,7 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
 #if SHOPT_KIA
     typedef struct
     {
-	off_t		offset;
+	ptrdiff_t	offset;
 	Sfio_t		*file;		/* kia output file */
 	Sfio_t		*tmp;		/* kia reference file */
 	unsigned long	script;		/* script entity number */

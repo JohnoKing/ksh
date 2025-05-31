@@ -296,7 +296,7 @@ int stkclose(Sfio_t* stream)
  * if <address> is not in this stack, the program dumps core
  * otherwise, the top of the stack is set to stkbot+<offset>
  */
-void *stkset(Sfio_t *stream, void *address, size_t offset)
+void *stkset(Sfio_t *stream, void *address, ptrdiff_t offset)
 {
 	struct stk *sp = stream2stk(stream);
 	char *cp, *loc = (char*)address;
@@ -304,7 +304,7 @@ void *stkset(Sfio_t *stream, void *address, size_t offset)
 	int frames = 0;
 	ssize_t n;
 	if(!init)
-		stkinit(offset+1);
+		stkinit((size_t)offset+1);
 	while(1)
 	{
 		fp = (struct frame*)sp->stkbase;
@@ -369,7 +369,7 @@ void *stkalloc(Sfio_t *stream, size_t n)
 /*
  * begin a new stack word of at least <n> bytes
  */
-void *_stkseek(Sfio_t *stream, ssize_t n)
+void *_stkseek(Sfio_t *stream, ptrdiff_t n)
 {
 	if(!init)
 		stkinit((size_t)n);
@@ -439,7 +439,7 @@ char	*stkcopy(Sfio_t *stream, const char* str)
 		stream->_data = stream->_next = cp+n;
 		if(off)
 		{
-			_stkseek(stream,(ssize_t)off);
+			_stkseek(stream,(ptrdiff_t)off);
 			memcpy(stream->_data, tp, off);
 		}
 	}
@@ -462,7 +462,7 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	struct frame *fp= (struct frame*)sp->stkbase;
 	char *cp, *dp=0;
 	size_t m = (size_t)stktell(stream);
-	ssize_t endoff;
+	ptrdiff_t endoff;
 	char *end=0, *oldbase=0;
 	ssize_t nn=0,add=1;
 	n += (m + sizeof(struct frame)+1);

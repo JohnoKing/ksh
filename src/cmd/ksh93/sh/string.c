@@ -269,7 +269,7 @@ static char	*sh_fmtcsv(const char *string)
 {
 	const char *cp = string;
 	int c;
-	ssize_t offset;
+	ptrdiff_t offset;
 	if(!cp)
 		return NULL;
 	offset = stktell(sh.stk);
@@ -333,7 +333,7 @@ char	*sh_fmtq(const char *string)
 {
 	const char *cp = string, *op;
 	int c, state;
-	ssize_t offset;
+	ptrdiff_t offset;
 	if(!cp)
 		return NULL;
 	offset = stktell(sh.stk);
@@ -464,7 +464,7 @@ char	*sh_fmtqf(const char *string, int single, int fold)
 	int n;
 	int q;
 	int a;
-	ssize_t offset;
+	ptrdiff_t offset;
 
 	if (--fold < 8)
 		fold = 0;

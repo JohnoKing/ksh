@@ -75,7 +75,7 @@ typedef struct  _mac_
 	char		arrayok;	/* $x[] ok for arrays */
 	char		subcopy;	/* set when copying subscript */
 	char		macsub;		/* set to 1 when running mac_substitute */
-	ssize_t		dotdot;		/* set for .. in subscript */
+	ptrdiff_t	dotdot;		/* set for .. in subscript */
 	void		*nvwalk;	/* for name space walking */
 } Mac_t;
 
@@ -102,7 +102,7 @@ static void	copyto(Mac_t*, int, char);
 static void	comsubst(Mac_t*, Shnode_t*, char);
 static int	varsub(Mac_t*);
 static void	mac_copy(Mac_t*,const char*, ssize_t);
-static void	tilde_expand2(ssize_t);
+static void	tilde_expand2(ptrdiff_t);
 static char 	*sh_tilde(const char*);
 static char	*special(int);
 static void	endfield(Mac_t*,int);
@@ -269,7 +269,7 @@ int sh_macexpand(struct argnod *argp, struct argnod **arghead,int flag)
  */
 void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
 {
-	ssize_t		c,d,n;
+	ssize_t		c,n;
 	const char	*state = sh_lexstates[ST_QUOTE];
 	char		*cp;
 	Mac_t		*mp = (Mac_t*)sh.mac_context;
@@ -357,8 +357,9 @@ void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
 			    case S_DIG: case S_LBRA:
 			    {
 				Fcin_t	save2;
-				ssize_t offset = stktell(stkp);
-				ssize_t offset2;
+				ptrdiff_t offset = stktell(stkp);
+				ptrdiff_t offset2;
+				size_t write_len;
 				fcnotify(0,lp);
 				sfputc(stkp,c);
 				if(n==S_LBRA)
@@ -382,8 +383,8 @@ void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
 				fcsave(&save2);
 				fcsopen(stkptr(stkp,offset));
 				varsub(mp);
-				if(d=stktell(stkp)-offset2)
-					sfwrite(outfile,(char*)stkptr(stkp,offset2),(size_t)d);
+				if(write_len=(size_t)(stktell(stkp)-offset2))
+					sfwrite(outfile,(char*)stkptr(stkp,offset2),write_len);
 				fcrestore(&save2);
 				stkseek(stkp,offset);
 				break;
@@ -445,8 +446,8 @@ static void copyto(Mac_t *mp,int endch, char newquote)
 	const char	*state = sh_lexstates[ST_MACRO];
 	char		*cp,*first;
 	Lex_t		*lp = (Lex_t*)sh.lex_context;
-	ssize_t		tilde = -1;		/* offset for tilde expansion */
-	ssize_t		dotdot = 0;		/* offset for '..' in subscript */
+	ptrdiff_t	tilde = -1;		/* offset for tilde expansion */
+	ptrdiff_t	dotdot = 0;		/* offset for '..' in subscript */
 	int		paren = 0;		/* level of (parentheses) */
 	int		brace = 0;		/* level of {braces} */
 	char		oldquote = mp->quote;	/* save "double quoted" state */
@@ -608,7 +609,7 @@ static void copyto(Mac_t *mp,int endch, char newquote)
 				comsubst(mp,NULL,0);
 			else if((n= *cp) == '"' && !mp->quote)
 			{
-				ssize_t off = stktell(stkp);
+				ptrdiff_t off = stktell(stkp);
 				char *dp;
 				cp = first = fcseek(1);
 				mp->quote = 1;
@@ -721,7 +722,7 @@ static void copyto(Mac_t *mp,int endch, char newquote)
 			if(mp->arith || (((mp->assign&1) || endch==RBRACT) &&
 				!(mp->quote || mp->lit)))
 			{
-				ssize_t offset=0;
+				ptrdiff_t offset=0;
 				char oldpat = mp->pattern;
 				char oldarith = mp->arith, oldsub=mp->subcopy;
 				sfwrite(stkp,first,(size_t)++c);
@@ -922,7 +923,7 @@ static void mac_substitute(Mac_t *mp, char *cp,char *str,ssize_t subexp[],ssize_
 	char	*first=fcseek(0);
 	char	*ptr;
 	Mac_t	savemac;
-	ssize_t	n = stktell(sh.stk);
+	ptrdiff_t n = stktell(sh.stk);
 	savemac = *mp;
 	mp->pattern = 3;
 	mp->split = 0;
@@ -1078,7 +1079,7 @@ static ssize_t subcopy(Mac_t *mp, int flag)
 	char xpattern = mp->pattern;
 	char xarith = mp->arith;
 	char arrayok = mp->arrayok;
-	ssize_t loc = stktell(sh.stk);
+	ptrdiff_t loc = stktell(sh.stk);
 	mp->split = 0;
 	mp->arith = 0;
 	mp->pattern = flag?4:0;
@@ -1098,7 +1099,7 @@ static ssize_t subcopy(Mac_t *mp, int flag)
  * if name is a discipline function, run the function and put the results
  * on the stack so that ${x.foo} behaves like ${ x.foo;}
  */
-int sh_macfun(const char *name, ssize_t offset)
+int sh_macfun(const char *name, ptrdiff_t offset)
 {
 	Namval_t	*np, *nq;
 	np = nv_bfsearch(name,sh.fun_tree,&nq,NULL);
@@ -1174,7 +1175,7 @@ static int varsub(Mac_t *mp)
 	char		oldpat=mp->pattern;
 	Stk_t		*stkp = sh.stk;
 	size_t		replen=0;
-	ssize_t		offset = -1;
+	ptrdiff_t	offset = -1;
 	mp->wasexpan = 1;
 retry1:
 	idbuff[0] = 0;
@@ -1553,7 +1554,7 @@ retry1:
 			if(savptr==stkptr(sh.stk,0))
 				stkseek(stkp,offset);
 			else
-				stkset(stkp,savptr,(size_t)offset);
+				stkset(stkp,savptr,offset);
 		}
 		else
 		{
@@ -2248,7 +2249,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 	Fcin_t			save;
 	struct slnod            *saveslp = sh.st.staklist;
 	Mac_t			savemac = *mp;
-	ssize_t			savtop = stktell(stkp);
+	ptrdiff_t		savtop = stktell(stkp);
 	char			lastc = '\0';
 	void			*savptr = stkfreeze(stkp,0);
 	int			was_history = sh_isstate(SH_HISTORY);
@@ -2276,7 +2277,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 			else
 				num = sh_arith(sh_mactrim(t->ar.arexpr->argval,3));
 		out_offset:
-			stkset(stkp,savptr,(size_t)savtop);
+			stkset(stkp,savptr,savtop);
 			*mp = savemac;
 			if((Sflong_t)num!=num)
 				sfprintf(sh.strbuf,"%.*Lg",LDBL_DIG,num);
@@ -2372,7 +2373,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 	np = sh_scoped(IFSNOD);
 	nv_putval(np,mp->ifsp,NV_RDONLY);
 	mp->ifsp = nv_getval(np);
-	stkset(stkp,savptr,(size_t)savtop);
+	stkset(stkp,savptr,savtop);
 	newlines = 0;
 	sfsetbuf(sp,sp,0);
 	bufsize = sfvalue(sp);
@@ -2381,9 +2382,9 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 	sh_offstate(SH_INTERACTIVE);
 	if((foff = sfseek(sp,0,SEEK_END)) > 0)
 	{
-		ssize_t soff = stktell(stkp);
+		ptrdiff_t soff = stktell(stkp);
 		sfseek(sp,0,SEEK_SET);
-		stkseek(stkp,(ssize_t)(soff+foff+64));
+		stkseek(stkp,soff+(ptrdiff_t)foff+64);
 		stkseek(stkp,soff);
 	}
 	while((str=(char*)sfreserve(sp,SFIO_UNBOUND,0)) && (c=bufsize=sfvalue(sp))>0)
@@ -2665,7 +2666,7 @@ static void endfield(Mac_t *mp,int split)
 	struct argnod	*argp;
 	ssize_t		count=0;
 	Stk_t		*stkp = sh.stk;
-	if(stktell(stkp) > (ssize_t)ARGVAL || split)
+	if(stktell(stkp) > (ptrdiff_t)ARGVAL || split)
 	{
 		argp = stkfreeze(stkp,1);
 		argp->argnxt.cp = 0;
@@ -2794,11 +2795,11 @@ static ssize_t charlen(const char *string,ssize_t len)
 /*
  * <offset> is byte offset for beginning of tilde string
  */
-static void tilde_expand2(ssize_t offset)
+static void tilde_expand2(ptrdiff_t offset)
 {
 	char		*cp = NULL;			/* character pointer for tilde expansion result */
 	char		*tp = stkptr(sh.stk,offset);	/* pointer to tilde string */
-	ssize_t		curoff = stktell(sh.stk);	/* current offset of current stack object */
+	ptrdiff_t	curoff = stktell(sh.stk);	/* current offset of current stack object */
 	sfputc(sh.stk,0);				/* terminate current stack object to avoid data corruption */
 	/*
 	 * Allow overriding tilde expansion with a .sh.tilde.set or .get discipline function.
@@ -2869,7 +2870,7 @@ static char *sh_tilde(const char *string)
 	{
 		char	*str;
 		ssize_t	n=0;
-		ssize_t	offset=stktell(sh.stk);
+		ptrdiff_t offset=stktell(sh.stk);
 		sfputr(sh.stk,string,-1);
 		do
 		{
