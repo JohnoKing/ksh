@@ -216,7 +216,7 @@ void *nv_diropen(Namval_t *np,const char *name)
 				np = nv_search(last,dp->root,0);
 		}
 		if(next)
-			*next = c;
+			*next = (char)c;
 		if(np==dp->hp && !next)
 			dp->hp = (Namval_t*)dtnext(dp->root,dp->hp);
 		if(np && ((nfp=nextdisc(np)) || nv_istable(np)))
@@ -926,7 +926,7 @@ static char **genvalue(char **argv, const char *prefix, ssize_t n, struct Walk *
 	wp->array = 0;
 	if(outfile)
 	{
-		int c = prefix[m-1];
+		char c = prefix[m-1];
 		cp = (char*)prefix;
 		if(c=='.')
 			cp[m-1] = 0;

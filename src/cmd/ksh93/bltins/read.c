@@ -68,7 +68,8 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	ssize_t	len=0, l;
 	size_t q;
 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
-	int save_prompt, fixargs=context->invariant;
+	int fixargs=context->invariant;
+	short save_prompt;
 	struct read_save *rp;
 	static char default_prompt[3] = {ESC,ESC};
 	rp = (struct read_save*)(context->data);
@@ -305,7 +306,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		if(!(flags&(N_FLAG|NN_FLAG)))
 		{
 			delim = ((unsigned)flags)>>(D_FLAG+1);
-			ep->e_nttyparm.c_cc[VEOL] = delim;
+			ep->e_nttyparm.c_cc[VEOL] = (cc_t)delim;
 			ep->e_nttyparm.c_lflag |= ISIG;
 			tty_set(fd,TCSADRAIN,&ep->e_nttyparm);
 		}
@@ -400,7 +401,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 					cp = 0;
 					f = 0;
 					m = 0;
-					while(c-->0 && (buf[m]=ed_getchar(ep,0)))
+					while(c-->0 && (buf[m]=(char)ed_getchar(ep,0)))
 						m++;
 					if(m>0)
 						cp = (unsigned char*)buf;
@@ -531,7 +532,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 			cpmax--;
 #endif /* SHOPT_CRNL */
 		if(*(cpmax-1) != delim)
-			*(cpmax-1) = delim;
+			*(cpmax-1) = (unsigned char)delim;
 #if !SHOPT_SCRIPTONLY
 		if(flags&S_FLAG)
 			sfwrite(sh.hist_ptr->histfp,(char*)cp,(size_t)c);

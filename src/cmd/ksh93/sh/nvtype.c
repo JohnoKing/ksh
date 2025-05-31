@@ -92,9 +92,9 @@ struct Namtype
 	size_t		dsize;
 	ssize_t		strsize;
 	ssize_t		numnodes;
-	unsigned short	ndisc;
-	unsigned short	current;
-	unsigned short	nref;
+	size_t		ndisc;
+	size_t		nref;
+	size_t		current;
 };
 
 typedef struct
@@ -823,7 +823,7 @@ void nv_newtype(Namval_t *mp)
 Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 {
 	Namval_t	*mp=nodes[0], *bp=0, *np, *nq, **mnodes=nodes;
-	int		nref=0,iref=0,inherit=0;
+	size_t		nref=0,iref=0,inherit=0;
 	size_t		size=sizeof(NV_DATA),offset=0,m,dsize=0,j,k;
 	ssize_t		n, nd=0, i, nnodes;
 	char		*name=0, *cp, *sp, **help;

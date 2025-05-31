@@ -327,16 +327,16 @@ getline:
 			c = *cp;
 			*cp = '\0';
 			errormsg(SH_DICT, ERROR_ERROR, "%s: event not found", evp);
-			*cp = c;
+			*cp = (char)c;
 			ERROROUT;
 		}
 
 		if(str) /* string search: restore orig. line */
 		{
 			if(flag&HIST_QUESTION)
-				*cp++ = c; /* skip second question mark */
+				*cp++ = (char)c; /* skip second question mark */
 			else
-				*cp = c;
+				*cp = (char)c;
 		}
 
 		/* colon introduces either word designators or modifiers */
@@ -432,7 +432,7 @@ getline:
 			c = *cp;
 			*cp = '\0';
 			errormsg(SH_DICT, ERROR_ERROR, "%s: bad word specifier", evp);
-			*cp = c;
+			*cp = (char)c;
 			ERROROUT;
 		}
 
@@ -493,7 +493,7 @@ getsel:
 			c = *cp;
 			*cp = '\0';
 			errormsg(SH_DICT, ERROR_ERROR, "%s: bad word specifier", evp);
-			*cp = c;
+			*cp = (char)c;
 			ERROROUT;
 		}
 		else if(w[1] == -2)	/* skip last word */
@@ -613,7 +613,7 @@ getsel:
 						 "%s%s: no previous substitution",
 						(flag & HIST_QUICKSUBST) ? ":s" : "",
 						evp);
-					*cp = c;
+					*cp = (char)c;
 					ERROROUT;
 				}
 
@@ -630,7 +630,7 @@ getsel:
 						*tempcp = '\0';
 						sfputr(tmp2, str, -1);
 						sfputr(tmp2, sb.str[1], -1);
-						*tempcp = c;
+						*tempcp = (char)c;
 						str = tempcp + strlen(sb.str[0]);
 					}
 					else if(!sftell(tmp2))
@@ -641,7 +641,7 @@ getsel:
 							 "%s%s: substitution failed",
 							(flag & HIST_QUICKSUBST) ? ":s" : "",
 							evp);
-						*cp = c;
+						*cp = (char)c;
 						ERROROUT;
 					}
 					/* loop if g modifier specified */

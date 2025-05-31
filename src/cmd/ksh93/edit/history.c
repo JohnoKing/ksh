@@ -123,7 +123,9 @@ static History_t *hist_ptr;
 			cp = "unknown";
 	}
 	logname = sh_strdup(cp);
-	if((acctfd=sh_open(acctfile,O_BINARY|O_WRONLY|O_APPEND|O_CREAT|O_cloexec,S_IRUSR|S_IWUSR))>=0 && acctfd < 10)
+	if((acctfd=sh_open(acctfile,
+		O_BINARY|O_WRONLY|O_APPEND|O_CREAT,S_IRUSR|S_IWUSR))>=0 &&
+	    (unsigned)acctfd < 10)
 	{
 		int n;
 		if((n = sh_fcntl(acctfd, F_dupfd_cloexec, 10)) >= 0)
@@ -143,8 +145,8 @@ static History_t *hist_ptr;
 		sfsprintf(newfile,sizeof(newfile),"%.8s%d\0",e_devfdNN,acctfd);
 		nv_putval(np,newfile,NV_RDONLY);
 	}
-	else if(!(sh.fdstatus[acctfd]&IOCLEX))
-		sh_fcntl(acctfd,F_SETFD,FD_CLOEXEC);
+	else
+		fcntl(acctfd,F_SETFD,FD_CLOEXEC);
 	return 1;
     }
 #endif /* SHOPT_ACCTFILE */
@@ -205,7 +207,7 @@ int  sh_histinit(void)
 	History_t *hp;
 	char *histname;
 	char *fname=0;
-	int histmask, maxlines, hist_start=0, n;
+	int histmask, maxlines, hist_start=0;
 	char *cp;
 	off_t hsize = 0;
 
@@ -224,10 +226,13 @@ retry:
 	cp = path_relative(histname);
 	if(!histinit)
 		histmode = S_IRUSR|S_IWUSR;
-	if((fd=sh_open(cp,O_BINARY|O_APPEND|O_RDWR|O_CREAT|O_cloexec,histmode))>=0)
-		hsize=lseek(fd,0,SEEK_END);
-	if(fd > 0 && fd < 10)
+	if((fd=open(cp,O_BINARY|O_APPEND|O_RDWR|O_CREAT|O_cloexec,histmode))>=0)
 	{
+		hsize=lseek(fd,0,SEEK_END);
+	}
+	if((unsigned)fd < 10)
+	{
+		int n;
 		if((n=sh_fcntl(fd,F_dupfd_cloexec,10))>=0)
 		{
 			sh_close(fd);
@@ -250,13 +255,13 @@ retry:
 		{
 			if(!(fname = pathtmp(NULL,0,0,NULL)))
 				return 0;
-			fd = sh_open(fname,O_BINARY|O_APPEND|O_CREAT|O_RDWR|O_cloexec,S_IRUSR|S_IWUSR);
+			fd = open(fname,O_BINARY|O_APPEND|O_CREAT|O_RDWR,S_IRUSR|S_IWUSR|O_cloexec);
 		}
 	}
 	if(fd<0)
 		return 0;
-	if(!(sh.fdstatus[fd]&IOCLEX))
-		sh_fcntl(fd,F_SETFD,FD_CLOEXEC);  /* set the file to close-on-exec */
+	/* set the file to close-on-exec */
+	fcntl(fd,F_SETFD,FD_CLOEXEC);
 	if(cp=nv_getval(HISTSIZE))
 	{
 		long long m = strtoll(cp, NULL, 10);
@@ -341,6 +346,7 @@ retry:
 		{
 			if((fd=sh_open(buff,O_BINARY|O_WRONLY|O_APPEND|O_CREAT|O_cloexec,S_IRUSR|S_IWUSR))>=0 && fd < 10)
 			{
+				int n;
 				if((n = sh_fcntl(fd,F_dupfd_cloexec, 10)) >= 0)
 				{
 					sh_close(fd);
@@ -350,8 +356,7 @@ retry:
 			if(fd>=0)
 			{
 				const char *tty;
-				if(!(sh.fdstatus[fd]&IOCLEX))
-					sh_fcntl(fd,F_SETFD,FD_CLOEXEC);
+				fcntl(fd,F_SETFD,FD_CLOEXEC);
 				tty = ttyname(2);
 				hp->tty = sh_strdup(tty?tty:"notty");
 				hp->auditfp = sfnew(NULL,NULL,(size_t)-1,fd,SFIO_WRITE);
@@ -804,9 +809,9 @@ static void hist_marker(char *buff,long cmdno)
 {
 	*buff++ = HIST_CMDNO;
 	*buff++ = 0;
-	*buff++ = (cmdno>>16);
-	*buff++ = (cmdno>>8);
-	*buff++ = cmdno;
+	*buff++ = (char)(cmdno>>16);
+	*buff++ = (char)(cmdno>>8);
+	*buff++ = (char)cmdno;
 	*buff++ = 0;
 }
 
@@ -987,7 +992,7 @@ int hist_copy(char *s1,int size,int command,int line)
 				*--s1 = 0;
 				break;
 			}
-			*s1++ = c;
+			*s1++ = (char)c;
 		}
 	}
 	sfseek(hp->histfp,0,SEEK_END);
@@ -1014,7 +1019,7 @@ int hist_iswordbndry(char c)
  */
 char *hist_word(char *string,int size,int word)
 {
-	int c;
+	char c;
 	int is_boundary;
 	int quoted;
 	char *s1 = string;
@@ -1127,21 +1132,12 @@ static int hist_exceptf(Sfio_t* fp, int type, void *data, Sfdisc_t *handle)
 			return 0;
 		/* write failure could be NFS problem, try to reopen */
 		sh_close(oldfd=sffileno(fp));
-		if((newfd=sh_open(hp->histname,O_BINARY|O_APPEND|O_CREAT|O_RDWR|O_cloexec,S_IRUSR|S_IWUSR)) >= 0)
+		if((newfd=open(hp->histname,O_BINARY|O_APPEND|O_CREAT|O_RDWR|O_cloexec,S_IRUSR|S_IWUSR)) >= 0)
 		{
-			if(newfd != oldfd)
-			{
-				int dupfd = sh_fcntl(newfd, F_dupfd_cloexec, oldfd);
-				sh_close(newfd);
-				if(dupfd != oldfd)
-				{
-					if(dupfd > -1)
-						sh_close(dupfd);
-					return -1;
-				}
-			}
-			if(!(sh.fdstatus[oldfd]&IOCLEX))
-				sh_fcntl(oldfd,F_SETFD,FD_CLOEXEC);
+			if(sh_fcntl(newfd, F_dupfd_cloexec, oldfd) != oldfd)
+				return -1;
+			fcntl(oldfd,F_SETFD,FD_CLOEXEC);
+			close(newfd);
 			if(lseek(oldfd,0,SEEK_END) < hp->histcnt)
 			{
 				int index = hp->histind;

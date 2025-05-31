@@ -1766,7 +1766,7 @@ static void nested_here(Lex_t *lp)
  * if <copy> is non,zero, then the characters are copied to the stack
  * <state> is the initial lexical state
  */
-void sh_lexskip(Lex_t *lp,int close, int copy, int state)
+void sh_lexskip(Lex_t *lp, char close, int copy, int state)
 {
 	char	*cp;
 	lp->lexd.nest = close;

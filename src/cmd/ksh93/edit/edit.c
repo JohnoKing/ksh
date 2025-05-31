@@ -412,7 +412,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
 				for(n=1; c = *last++; n++)
 				{
 					if(pp < ppmax)
-						*pp++ = c;
+						*pp++ = (char)c;
 					if(c=='\a' || c==ESC || c=='\r')
 						break;
 					if(skip || (c>='0' && c<='9'))
@@ -864,7 +864,7 @@ int ed_getchar(Edit_t *ep,int mode)
 							break;
 						}
 						c = -c;
-						readin[n++] = c;
+						readin[n++] = (char)c;
 						if(c>='0' && c<='9' && n>2)
 							continue;
 						if(n>2 || (c!= '['  &&  c!= 'O'))
@@ -918,7 +918,7 @@ void		ed_putchar(Edit_t *ep,int c)
 	char *dp = ep->e_outptr;
 	if(!dp)
 		return;
-	*dp++ = c;
+	*dp++ = (char)c;
 	*dp = '\0';
 	if(dp >= ep->e_outlast)
 		ed_flush(ep);
@@ -992,7 +992,7 @@ Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
 		if(col==0)
 			pos.line++;
 	}
-	pos.col = col;
+	pos.col = (unsigned short)col;
 	return pos;
 }
 #endif /* SHOPT_ESH || SHOPT_VSH */
@@ -1223,7 +1223,7 @@ int	ed_external(const genchar *src, char *dest)
 		{
 			/* copy the character as is */
 			size = 1;
-			*dp = wc;
+			*dp = (char)wc;
 		}
 		dp += size;
 	}

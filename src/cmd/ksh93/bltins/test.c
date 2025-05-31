@@ -485,7 +485,7 @@ int test_unop(int op,const char *arg)
 	    default:
 	    {
 		static char a[3] = "-?";
-		a[1]= op;
+		a[1] = (char)op;
 		errormsg(SH_DICT,ERROR_exit(2),e_badop,a);
 		UNREACHABLE();
 	    }

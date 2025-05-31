@@ -56,7 +56,7 @@ typedef struct pathcomp
 	char		*lib;
 	char		*bbuf;
 	char		*blib;
-	unsigned short	len;
+	size_t		len;
 	unsigned short	flags;
 } Pathcomp_t;
 

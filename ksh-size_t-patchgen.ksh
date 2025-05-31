@@ -256,15 +256,18 @@ fetch src/cmd/ksh93/sh/t*
 fetch src/cmd/ksh93/sh/parse.c
 fetch src/cmd/ksh93/sh/lex.c
 fetch src/cmd/ksh93/sh/fcin.c
+fetch src/cmd/ksh93/sh/subshell.c
 fetch src/cmd/ksh93/include/fcin.h
 fetch src/cmd/ksh93/include/shnodes.h
+fetch src/cmd/ksh93/include/shlex.h
 sanity
-git commit -m "ssize_t transition part 11: ksh93 lexing and parsing
+git commit -m "ssize_t transition part 11: ksh93 lexing, parsing and subshells
 
 The is the eleventh in the ssize_t transition patch series.
 The parts of ksh93 affected by this commit are:
 - All C files starting with the letter 't' in the sh folder.
 - The lexing and parsing components in lex.c, parse.c, and fcin.c.
+- The virtual subshell and forking subshell code.
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 

@@ -69,8 +69,8 @@ struct vars				/* vars stacked per invocation */
 	ssize_t		staksize;	/* current stack size needed	*/
 	ssize_t		stakmaxsize;	/* maximum stack size needed	*/
 	int		emode;
-	unsigned char	paren;	 	/* parenthesis level		*/
-	char		infun;	/* incremented by comma inside function	*/
+	int		infun;		/* incremented by comma inside function	*/
+	unsigned int	paren;	 	/* parenthesis level		*/
 	Sfdouble_t	(*convert)(const char**,struct lval*,int,Sfdouble_t);
 };
 
@@ -253,7 +253,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 				if((Sflong_t)d!=d)
 					type = 1;
 			}
-			*++tp = type;
+			*++tp = (char)type;
 			c = 0;
 			break;
 		    case A_ENUM:
@@ -476,7 +476,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 			type  |= (*tp!=0);
 		}
 		*sp = num;
-		*tp = type;
+		*tp = (char)type;
 	}
 	if(sh.arithrecursion>0)
 		sh.arithrecursion--;
@@ -693,8 +693,8 @@ again:
 
 		case A_LPAR:
 		{
-			int	infun = vp->infun;
-			int	userfun=0;
+			unsigned int	infun = vp->infun;
+			int		userfun=0;
 			Sfdouble_t (*fun)(Sfdouble_t,...);
 			int nargs = lvalue.nargs;
 			if(nargs<0)

@@ -238,7 +238,7 @@ void	sh_trim(char *sp)
 @*/
 {
 	char *dp;
-	int c;
+	char c;
 	if(sp)
 	{
 		dp = sp;

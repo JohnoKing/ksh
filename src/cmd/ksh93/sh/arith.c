@@ -201,7 +201,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 }
 
 /* look up a function in the standard math function table */
-static Math_f sh_mathstdfun(const char *fname, size_t fsize, short * nargs)
+static Math_f sh_mathstdfun(const char *fname, size_t fsize, short *nargs)
 {
 	const struct mathtab *tp;
 	char c = fname[0];

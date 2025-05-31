@@ -470,7 +470,7 @@ static int echolist(Sfio_t *outfile, int raw, char *argv[])
 /*
  * modified version of stresc for generating formats
  */
-static char strformat(char *s)
+static void strformat(char *s)
 {
 	char*		t;
 	int		c;
@@ -508,9 +508,9 @@ static char strformat(char *s)
 			break;
 		    case 0:
 			*t = 0;
-			return t - b;
+			return;
 		}
-		*t++ = c;
+		*t++ = (char)c;
 	}
 }
 
@@ -740,6 +740,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	Sfdouble_t	longmax = LDBL_LLONG_MAX;
 	int		format = fe->fmt;
 	int		n;
+	char		nc;
 	ssize_t		m;
 	int		fold = (int)fe->base;
 	union types_t*	value = (union types_t*)v;
@@ -1089,10 +1090,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	case 'T':
 		if(fe->n_str>0)
 		{
-			n = fe->t_str[fe->n_str];
+			nc = fe->t_str[fe->n_str];
 			fe->t_str[fe->n_str] = 0;
 			value->s = fmttmx(fe->t_str, (Time_t)value->ll);
-			fe->t_str[fe->n_str] = n;
+			fe->t_str[fe->n_str] = nc;
 		}
 		else value->s = fmttmx(NULL, (Time_t)value->ll);
 		fe->fmt = 's';

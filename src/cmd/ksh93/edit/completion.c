@@ -138,7 +138,7 @@ static char *find_begin(char outbuff[], char *last, int endchar, int *type)
 		    case '\'': case '"':
 			if(!inquote)
 			{
-				inquote = c;
+				inquote = (char)c;
 				bp = xp;
 				break;
 			}
@@ -450,7 +450,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 				nocase = (pathicase(saveout) > 0);
 #endif
 			if(dir)
-				*dir = c;
+				*dir = (char)c;
 			/* just expand until name is unique */
 			sz += (ssize_t)strlen(*com);
 		}
@@ -482,7 +482,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 				if(*cp==var)
 					cp++;
 				else
-					*begin++ = var;
+					*begin++ = (char)var;
 				out = strcopy(begin,cp);
 				var = 0;
 			}
@@ -571,7 +571,8 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		sh_offoption(SH_MARKDIRS);
 #if SHOPT_MULTIBYTE
 	{
-		int c,n=0;
+		char c;
+		int n=0;
 		/* first re-adjust cur */
 		c = outbuff[*cur];
 		outbuff[*cur] = 0;
@@ -597,17 +598,17 @@ int ed_macro(Edit_t *ep, int i)
 	Namval_t *np;
 	genchar buff[LOOKAHEAD+1];
 	if(i != '@')
-		ep->e_macro[1] = i;
+		ep->e_macro[1] = (char)i;
 	/* macros of the form <ESC>[c evoke alias __c */
 	if(i=='_')
-		ep->e_macro[2] = i = ed_getchar(ep,1);
+		ep->e_macro[2] = (char)(i = ed_getchar(ep,1));
 	else
 		ep->e_macro[2] = 0;
 	if (isalnum(i)&&(np=nv_search(ep->e_macro,sh.alias_tree,0))&&(out=nv_getval(np)))
 	{
 		/* copy to buff in internal representation */
 #if SHOPT_MULTIBYTE
-		int c = 0;
+		char c = 0;
 		if( strlen(out) > LOOKAHEAD )
 		{
 			c = out[LOOKAHEAD];

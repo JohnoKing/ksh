@@ -1402,7 +1402,7 @@ static void draw(Emacs_t *ep,Draw_t option)
 	sptr = drawbuff;
 	logcursor = sptr + cur;
 	longline = NORMAL;
-	ep->lastdraw = option;
+	ep->lastdraw = (char)option;
 
 	if (option == FIRST || option == REFRESH)
 	{

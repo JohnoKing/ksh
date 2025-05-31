@@ -425,7 +425,7 @@ static void out_string(Sfio_t *iop, const char *cp, int c, int quoted)
 		cp = sh_fmtq(cp);
 		if(iop==sh.stk && cp==stkptr(sh.stk,n))
 		{
-			*stkptr(sh.stk,stktell(sh.stk)-1) = c;
+			*stkptr(sh.stk,stktell(sh.stk)-1) = (char)c;
 			return;
 		}
 	}
@@ -545,7 +545,7 @@ int sh_eval(Sfio_t *iop, int mode)
 	struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 	static Sfio_t *io_save;
 	volatile int traceon=0, lineno=0;
-	int binscript=sh.binscript;
+	char binscript=sh.binscript;
 	char comsub = sh.comsub;
 	io_save = iop; /* preserve correct value across longjmp */
 	sh.binscript = 0;
@@ -1124,10 +1124,11 @@ int sh_exec(const Shnode_t *t, int flags)
 				/* check for builtins */
 				if(np && is_abuiltin(np))
 				{
-					volatile char	scope, share, was_mktype, was_nofork;
+					volatile char	scope, was_mktype, was_nofork;
 					volatile void	*save_ptr;
 					volatile void	*save_data;
-					int		save_prompt;
+					short		save_prompt;
+					int		share;
 					struct checkpt	*buffp;
 					Shbltin_t	*bp = &sh.bltindata;
 					/* Fallback optimization for ':'/'true' and 'false' */
@@ -1642,7 +1643,8 @@ int sh_exec(const Shnode_t *t, int flags)
 		    case TSETIO:
 		    {
 			pid_t	pid = 0;
-			int 	jmpval, waitall = 0;
+			int 	jmpval;
+			char	waitall = 0;
 			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
 			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 			if(sh.subshell && !sh.subshare)
@@ -1702,7 +1704,8 @@ int sh_exec(const Shnode_t *t, int flags)
 				free_list(buffp->olist);
 			if(type&FPIN)
 			{
-				int e = sh.exitval, c = sh.chldexitsig;
+				int e = sh.exitval;
+				char c = sh.chldexitsig;
 				job.waitall = waitall;
 				if(!(e & SH_EXITSIG))
 				{
@@ -1771,11 +1774,11 @@ int sh_exec(const Shnode_t *t, int flags)
 		    {
 			int	pvo[3];	/* old pipe for multi-stage */
 			int	pvn[3];	/* current set up pipe */
-			int	savepipe = pipejob;
+			char	savepipe = pipejob;
 			int	savelock = nlock;
 			int	showme = t->tre.tretyp&FSHOWME;
-			int	e, c;
-			int	waitall, savewaitall = job.waitall;
+			int	e;
+			char	c, waitall, savewaitall = job.waitall;
 			int	savejobid = job.curjobid;
 			int	*exitval=0,*saveexitval = job.exitval;
 			pid_t	savepgid = job.curpgid;
@@ -1958,7 +1961,7 @@ int sh_exec(const Shnode_t *t, int flags)
 				if(t->tre.tretyp&COMSCAN)
 				{
 					char *val;
-					int save_prompt;
+					short save_prompt;
 					if(refresh)
 					{
 						sh_menu(sfstderr,nargs,args);
@@ -2456,7 +2459,7 @@ int sh_exec(const Shnode_t *t, int flags)
 				rp->nspace = sh.namespace;
 				rp->fname = 0;
 				rp->argv = ac ? ac->comarg.dp->dolval + 1 : NULL;
-				rp->argc = ac ? ac->comarg.dp->dolnum : 0;
+				rp->argc = ac ? (short)ac->comarg.dp->dolnum : 0;
 				rp->fdict = sh.fun_tree;
 				fp = (struct functnod*)(slp+1);
 				if(fp->functtyp==(TFUN|FAMP))
@@ -2524,7 +2527,7 @@ int sh_exec(const Shnode_t *t, int flags)
 					{
 						char unop[3];
 						unop[0] = '-';
-						unop[1] = n;
+						unop[1] = (char)n;
 						unop[2] = 0;
 						argv[1] = unop;
 						argv[2] = left;
@@ -2742,7 +2745,8 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
 	forkcnt = 1000UL;
 	if(parent)
 	{
-		int myjob,waitall=job.waitall;
+		int myjob;
+		char waitall=job.waitall;
 		if(job.toclear)
 			job_clear();
 		job.waitall = waitall;

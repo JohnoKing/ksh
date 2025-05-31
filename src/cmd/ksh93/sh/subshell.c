@@ -320,7 +320,8 @@ static void nv_restore(struct subshell *sp)
 	struct Link	*lp, *lq;
 	Namval_t	*mp, *np;
 	Namval_t	*mpnext;
-	int		flags,nofree;
+	int		flags;
+	char		nofree;
 	sh.nv_restore = 1;
 	for(lp=sp->svar; lp; lp=lq)
 	{
@@ -492,7 +493,7 @@ int sh_validate_subpwdfd(void)
  * If comsub is not null, the return value will be a stream consisting of
  * output of command <t>.  Otherwise, NULL will be returned.
  */
-Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 {
 	struct subshell sub_data;
 	struct subshell *sp = &sub_data;
@@ -718,7 +719,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
 		{
 			if(sh.spid)
 			{
-				int e = sh.exitval, c = sh.chldexitsig;
+				int e = sh.exitval;
+				char c = sh.chldexitsig;
 				job_wait(sh.spid);
 				sh.exitval = e, sh.chldexitsig = c;
 				if(sh.pipepid==sh.spid)

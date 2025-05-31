@@ -507,7 +507,7 @@ static int cntlmode(Vi_t *vp)
 		default:		/** input mode **/
 			if(!was_inmacro)
 			{
-				vp->last_cmd = c;
+				vp->last_cmd = (char)c;
 				vp->lastrepeat = vp->repeat;
 			}
 			vp->repeat = 1;
@@ -1562,7 +1562,7 @@ static int mvcursor(Vi_t* vp,int motion)
 
 	case 'T':		/** find up to new char backward **/
 	case 'F':		/** find new char backward **/
-		vp->last_find = motion;
+		vp->last_find = (char)motion;
 		if((vp->findchar=getrchar(vp))==ESC)
 			return 1;
 find_b:
