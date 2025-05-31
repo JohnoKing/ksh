@@ -43,7 +43,7 @@ static Dtdisc_t	_Refdisc =
 
 static void	pushnam(Namval_t*,void*);
 static char	*staknam(Namval_t*, char*);
-static void	rightjust(char*, ssize_t, int);
+static void	rightjust(char*, ssize_t, char);
 static char	*lastdot(char*, int);
 
 /*
@@ -912,7 +912,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #endif /* SHOPT_NAMESPACE */
 			}
 			if(c)
-				*sp = c;
+				*sp = (char)c;
 			top = 0;
 			if(isref)
 			{
@@ -1418,7 +1418,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 			*cp = 0;
 		np = nv_search(name, root, (flags&NV_NOADD)?0:NV_ADD);
 		if(c)
-			*cp = c;
+			*cp = (char)c;
 		goto skip;
 	}
 	else if(flags&NV_IDENT)
@@ -2025,7 +2025,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
  *   If the leftmost digit in <str> is not a digit, <fill>
  *   will default to a blank.
  */
-static void rightjust(char *str, ssize_t size, int fill)
+static void rightjust(char *str, ssize_t size, char fill)
 {
 	char *cp,*sp;
 	ssize_t n = (ssize_t)strlen(str);

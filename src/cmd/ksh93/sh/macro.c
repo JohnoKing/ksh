@@ -98,7 +98,7 @@ typedef struct  _mac_
 
 static noreturn void	mac_error(void);
 static ssize_t	substring(const char*, size_t, const char*, ssize_t[], int);
-static void	copyto(Mac_t*, int, int);
+static void	copyto(Mac_t*, int, char);
 static void	comsubst(Mac_t*, Shnode_t*, int);
 static int	varsub(Mac_t*);
 static void	mac_copy(Mac_t*,const char*, ssize_t);
@@ -164,7 +164,7 @@ static void setup_ifs(Mac_t *mp)
  * yields a single pathname.
  * If <mode> negative, then expansion rules for assignment are applied.
  */
-char *sh_mactrim(char *str, int mode)
+char *sh_mactrim(char *str, char mode)
 {
 	Mac_t	*mp = (Mac_t*)sh.mac_context;
 	Stk_t	*stkp = sh.stk;
@@ -438,7 +438,7 @@ char *sh_macpat(struct argnod *arg, int flags)
 /*
  * Process the characters up to <endch> or end of input string
  */
-static void copyto(Mac_t *mp,int endch, int newquote)
+static void copyto(Mac_t *mp,int endch, char newquote)
 {
 	ssize_t		n;
 	ssize_t		c;
@@ -647,7 +647,7 @@ static void copyto(Mac_t *mp,int endch, int newquote)
 			}
 			cp = first = fcseek(0);
 			if(mp->quote && cp)
-				mp->pattern = c;
+				mp->pattern = (char)c;
 			break;
 		    case S_ENDCH:
 			if(bracketexpr && cp[-1]==RBRACT && !(mp->quote || mp->lit))
@@ -722,8 +722,8 @@ static void copyto(Mac_t *mp,int endch, int newquote)
 				!(mp->quote || mp->lit)))
 			{
 				ssize_t offset=0;
-				int oldpat = mp->pattern;
-				int oldarith = mp->arith, oldsub=mp->subcopy;
+				char oldpat = mp->pattern;
+				char oldarith = mp->arith, oldsub=mp->subcopy;
 				sfwrite(stkp,first,(size_t)++c);
 				if(mp->assign&1)
 				{
@@ -976,7 +976,8 @@ static void mac_substitute(Mac_t *mp, char *cp,char *str,ssize_t subexp[],ssize_
  */
 static char *getdolarg(ssize_t n, ssize_t *size)
 {
-	int c=S_DELIM, d=sh.ifstable['\\'];
+	int c=S_DELIM;
+	char d=sh.ifstable['\\'];
 	unsigned char *first,*last,*cp = (unsigned char*)sh.cur_line;
 	ssize_t m=sh.offsets[0],delim=0;
 	if(m==0)
@@ -1073,10 +1074,10 @@ static char *prefix(char *id)
  */
 static ssize_t subcopy(Mac_t *mp, int flag)
 {
-	int split = mp->split;
-	int xpattern = mp->pattern;
-	int xarith = mp->arith;
-	int arrayok = mp->arrayok;
+	char split = mp->split;
+	char xpattern = mp->pattern;
+	char xarith = mp->arith;
+	char arrayok = mp->arrayok;
 	ssize_t loc = stktell(sh.stk);
 	mp->split = 0;
 	mp->arith = 0;
@@ -1169,7 +1170,8 @@ static int varsub(Mac_t *mp)
 	ssize_t		vsize = -1;
 	char		idbuff[3], *id = idbuff, *pattern=0, *repstr=0, *arrmax=0;
 	char		*idx = 0;
-	int		var=1,addsub=0,oldpat=mp->pattern,idnum=0,nvflag=0,d;
+	int		var=1,addsub=0,idnum=0,nvflag=0,d;
+	char		oldpat=mp->pattern;
 	Stk_t		*stkp = sh.stk;
 	size_t		replen=0;
 	ssize_t		offset = -1;
@@ -1214,7 +1216,7 @@ retry1:
 		/* FALLTHROUGH */
 	    case S_SPC2:
 		var = 0;
-		*id = c;
+		*id = (char)c;
 		v = special((wchar_t)c);
 		if(isastchar(c))
 		{
@@ -1311,7 +1313,7 @@ retry1:
 				{
 					if(type==M_VNAME)
 						type = M_SUBNAME;
-					idbuff[0] = mode = c;
+					idbuff[0] = (char)(mode = c);
 					fcget();
 					c = fcmbget(&LEN);
 					if(c=='.' || c==LBRACT)
@@ -1369,7 +1371,7 @@ retry1:
 		{
 			if(type==M_VNAME || type==M_SIZE)
 			{
-				idbuff[0] = mode = c;
+				idbuff[0] = (char)(mode = c);
 				if((d=fcpeek(0))==c)
 					idbuff[1] = (char)fcget();
 				if(type==M_VNAME)
@@ -1698,11 +1700,11 @@ retry1:
 			}
 			if(c=='/' || c==':' || ((!v || (nulflg && *v==0)) ^ (c=='+' || newops)))
 			{
-				int newquote = mp->quote;
-				int split = mp->split;
-				int quoted = mp->quoted;
-				int arith = mp->arith;
-				int assign = mp->assign;
+				char newquote = mp->quote;
+				char split = mp->split;
+				short quoted = mp->quoted;
+				char arith = mp->arith;
+				char assign = mp->assign;
 				if(newops)
 				{
 					type = fcget();
@@ -2037,7 +2039,7 @@ retry2:
 						char	*cp, *cq, *buf;
 						buf = sh_malloc((size_t)(match[1] - match[0]));
 						for (cp = v + match[0], cq = buf; cp < v + match[1]; cp++, cq++)
-							*cq = c == '^' ? toupper(*cp) : tolower(*cp);
+							*cq = (char)(c == '^' ? toupper(*cp) : tolower(*cp));
 						mac_copy(mp, buf, match[1] - match[0]);
 						free(buf);
 					}
@@ -2473,7 +2475,7 @@ static void mac_copy(Mac_t *mp,const char *str, ssize_t size)
 	const char	*cp=str;
 	int		n,nopat,len;
 	Stk_t		*stkp=sh.stk;
-	int		oldpat = mp->pattern;
+	char		oldpat = mp->pattern;
 	ssize_t		c;
 	nopat = (mp->quote||(mp->assign==1)||mp->arith);
 	if(mp->sp)
@@ -2979,7 +2981,7 @@ static noreturn void mac_error(void)
 static char *mac_getstring(char *pattern)
 {
 	char	*cp = pattern, *rep = NULL, *dp = NULL;
-	int	c;
+	char	c;
 	while(c = *cp++)
 	{
 		if(c==ESCAPE && (!rep || (*cp && strchr("&|()[]*?",*cp))))
