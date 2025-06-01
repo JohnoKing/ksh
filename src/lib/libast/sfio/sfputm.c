@@ -21,7 +21,7 @@
 
 #undef sfputm
 
-ssize_t sfputm(Sfio_t* f, Sfulong_t u, Sfulong_t m)
+ptrdiff_t sfputm(Sfio_t* f, Sfulong_t u, Sfulong_t m)
 {
 	return __sf_putm(f, u, m);
 }

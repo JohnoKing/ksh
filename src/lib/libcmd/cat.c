@@ -129,12 +129,12 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 	int		line;
 	int		raw;
 	int		last;
-	ssize_t		c;
-	ssize_t		m;
-	ssize_t		n;
+	ptrdiff_t	c;
+	ptrdiff_t	m;
+	ptrdiff_t	n;
 	int		any;
 	int		header;
-	ssize_t		sz;
+	ptrdiff_t	sz;
 
 	unsigned char	meta[3];
 	unsigned char	tmp[32];
@@ -205,8 +205,8 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 										*end = 0;
 									}
  mb:
-									if ((n = end - cp + 1) >= (ssizeof(tmp) - c))
-										n = ssizeof(tmp) - c - 1;
+									if ((n = end - cp + 1) >= ((ptrdiff_t)sizeof(tmp) - c))
+										n = (ptrdiff_t)sizeof(tmp) - c - 1;
 									memcpy(tmp + c, cp, (size_t)n);
 									if ((m = mbsize(tmp)) >= c)
 									{

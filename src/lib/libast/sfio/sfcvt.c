@@ -79,11 +79,11 @@ static int neg0d(double f)
 char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 	     char*	buf,		/* conversion goes here		*/
 	     size_t	size,		/* size of buf			*/
-	     ssize_t	n_digit,	/* number of digits wanted	*/
+	     ptrdiff_t	n_digit,	/* number of digits wanted	*/
 	     int*	decpt,		/* to return decimal point	*/
 	     int*	sign,		/* to return sign		*/
-	     ssize_t*	len,		/* return string length		*/
-	     ssize_t	format)		/* conversion format		*/
+	     ptrdiff_t*	len,		/* return string length		*/
+	     ptrdiff_t	format)		/* conversion format		*/
 {
 	char			*sp;
 	long			n, v;
@@ -140,7 +140,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
 			if(n_digit <= 0 || (size_t)n_digit >= (size - 9))
-				n_digit = (ssize_t)size - 9;
+				n_digit = (ptrdiff_t)size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexpl(f, &x);
@@ -288,7 +288,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 			b = sp = buf;
 			ep = (format & SFFMT_UPPER) ? ux : lx;
 			if(n_digit <= 0 || (size_t)n_digit >= (size - 9))
-				n_digit = (ssize_t)size - 9;
+				n_digit = (ptrdiff_t)size - 9;
 			endsp = sp + n_digit + 1;
 
 			g = frexp(f, &x);

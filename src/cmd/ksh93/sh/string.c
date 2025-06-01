@@ -470,7 +470,7 @@ char	*sh_fmtqf(const char *string, int single, int fold)
 		fold = 0;
 	if(single)
 		return sh_fmtcsv(cp);
-	if (!cp || !*cp || !fold || fold && (ssize_t)strlen(string) < fold)
+	if (!cp || !*cp || !fold || fold && (ptrdiff_t)strlen(string) < fold)
 		return sh_fmtq(cp);
 	offset = stktell(sh.stk);
 	single = single ? 1 : 3;

@@ -21,7 +21,7 @@
 
 #undef sfputd
 
-ssize_t sfputd(Sfio_t* f, Sfdouble_t d)
+ptrdiff_t sfputd(Sfio_t* f, Sfdouble_t d)
 {
 	return __sf_putd(f,d);
 }

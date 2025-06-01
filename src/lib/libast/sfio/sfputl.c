@@ -21,7 +21,7 @@
 
 #undef sfputl
 
-ssize_t sfputl(Sfio_t* f, Sflong_t l)
+ptrdiff_t sfputl(Sfio_t* f, Sflong_t l)
 {
 	return __sf_putl(f,l);
 }

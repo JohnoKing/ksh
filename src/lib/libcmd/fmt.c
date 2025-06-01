@@ -56,7 +56,7 @@ typedef struct Fmt_s
 	char*	endbuf;
 	Sfio_t*	in;
 	Sfio_t*	out;
-	ssize_t	prefix;
+	ptrdiff_t prefix;
 	int	indent;
 	int	nextdent;
 	int	nwords;
@@ -78,7 +78,7 @@ outline(Fmt_t* fp)
 	char*	cp = fp->outbuf;
 	int	n = 0;
 	int	c;
-	ssize_t	d;
+	ptrdiff_t d;
 
 	if (!fp->outp)
 		return;
@@ -138,8 +138,8 @@ split(Fmt_t* fp, char* buf, int splice)
 	char*	qp;
 	int	c = 1;
 	int	q = 0;
-	ssize_t	n;
-	ssize_t	prefix;
+	ptrdiff_t n;
+	ptrdiff_t prefix;
 
 	for (ep = buf; *ep == ' '; ep++);
 	prefix = ep - buf;
@@ -151,7 +151,7 @@ split(Fmt_t* fp, char* buf, int splice)
 	if ((*ep == 0 || *buf == '.') && !isoption(fp, 'o'))
 	{
 		if (*ep)
-			prefix = (ssize_t)strlen(buf);
+			prefix = (ptrdiff_t)strlen(buf);
 		outline(fp);
 		strcpy(fp->outbuf, buf);
 		fp->outp = fp->outbuf+prefix;
@@ -590,7 +590,7 @@ b_fmt(int argc, char** argv, Shbltin_t* context)
 			setoption(&fmt, n);
 			continue;
 		case 'w':
-			if (opt_info.num < TABSZ || opt_info.num >= ssizeof(outbuf))
+			if (opt_info.num < TABSZ || opt_info.num >= (ssize_t)sizeof(outbuf))
 				error(2, "width out of range");
 			fmt.endbuf = &outbuf[opt_info.num];
 			continue;

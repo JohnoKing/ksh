@@ -164,12 +164,12 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 	Sfoff_t		nlines;
 	Sfoff_t		eline = -1;
 	Sfoff_t		longest = 0;
-	ssize_t		c;
+	ptrdiff_t	c;
 	unsigned char*	endbuff;
 	int		lasttype = WC_SP;
 	unsigned int	lastchar;
-	ssize_t		n;
-	ssize_t		o;
+	ptrdiff_t	n;
+	ptrdiff_t	o;
 	unsigned char*	buff;
 	wchar_t		x;
 	unsigned char	side[32];
@@ -184,7 +184,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 		{
 			if (cp >= endbuff || (n = mb2wc(x, cp, (size_t)(endbuff-cp))) < 0)
 			{
-				if ((o = endbuff-cp) < ssizeof(side))
+				if ((o = endbuff-cp) < (ptrdiff_t)sizeof(side))
 				{
 					if (buff)
 					{
@@ -201,7 +201,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 						break;
 					}
 					nbytes += n;
-					if ((c = ssizeof(side) - o) > n)
+					if ((c = (ptrdiff_t)sizeof(side) - o) > n)
 						c = n;
 					if (c)
 						memcpy(cp, buff, (size_t)c);

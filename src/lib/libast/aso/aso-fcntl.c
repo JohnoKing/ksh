@@ -90,9 +90,9 @@ aso_init_fcntl(void* data, const char* details)
 		{
 			if (strneq(path, "perm=", 5))
 			{
-				ssize_t n;
-				if ((n = opt - (path + 5)) >= ssizeof(tmp))
-					n = ssizeof(tmp) - 1;
+				ptrdiff_t n;
+				if ((n = opt - (path + 5)) >= (ptrdiff_t)sizeof(tmp))
+					n = (ptrdiff_t)sizeof(tmp) - 1;
 				memcpy(tmp, path + 5, (size_t)n);
 				tmp[n] = 0;
 				perm = strperm(tmp, NULL, perm);

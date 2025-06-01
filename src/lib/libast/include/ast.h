@@ -268,7 +268,6 @@ typedef uint32_t regflags_t;
 #define oldof(p,t,n,x)	((p)?(t*)realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)malloc(sizeof(t)*(n)+(x)))
 #define pointerof(x)	((void*)((uintptr_t)(x)))
 #define roundof(x,y)	(((x)+(y)-1)&~((y)-1))
-#define ssizeof(x)	((ssize_t)sizeof(x))
 
 #define streq(a,b)	(!strcmp(a,b))
 #define strneq(a,b,n)	(!strncmp(a,b,n))

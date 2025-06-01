@@ -57,7 +57,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 			ssize_t	r;
 
 			for(w = (ssize_t)n; w > 0; )
-			{	if((r = w) > ssizeof(buf))
+			{	if((r = w) > (ssize_t)sizeof(buf))
 					r = sizeof(buf);
 				if((r = read(f->file,buf,(size_t)r)) <= 0)
 				{	n -= (size_t)w;

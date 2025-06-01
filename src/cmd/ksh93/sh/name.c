@@ -108,7 +108,7 @@ static char *getbuf(size_t len)
 /*
  * output variable name in format for re-input
  */
-void nv_outname(Sfio_t *out, char *name, ssize_t len)
+void nv_outname(Sfio_t *out, char *name, ptrdiff_t len)
 {
 	const char *cp=name, *sp;
 	int c;
@@ -278,7 +278,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 			if(*arg->argval==0 && arg->argchn.ap && !(arg->argflag&~(ARG_APPEND|ARG_QUOTED|ARG_MESSAGE|ARG_ARRAY)))
 			{
 				int flag = (NV_VARNAME|NV_ARRAY|NV_ASSIGN);
-				ssize_t sub=0;
+				ptrdiff_t sub=0;
 				struct fornod *fp=(struct fornod*)arg->argchn.ap;
 				Shnode_t *tp=fp->fortre;
 				flag |= (flags&(NV_NOSCOPE|NV_STATIC|NV_FARRAY));
@@ -730,7 +730,7 @@ static char *copystack(const char *prefix, const char *name, const char *sub)
  * grow this stack string <name> by <n> bytes and move from cp-1 to end
  * right by <n>.  Returns beginning of string on the stack
  */
-static char *stack_extend(const char *cname, char *cp, ssize_t n)
+static char *stack_extend(const char *cname, char *cp, ptrdiff_t n)
 {
 	char *name = (char*)cname;
 	ptrdiff_t offset = name - stkptr(sh.stk,0);
@@ -917,7 +917,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 			if(isref)
 			{
 #if SHOPT_FIXEDARRAY
-				ssize_t n=0;
+				ptrdiff_t n=0;
 				int dim;
 #endif /* SHOPT_FIXEDARRAY */
 #if NVCACHE
@@ -1354,7 +1354,7 @@ void nv_delete(Namval_t* np, Dt_t *root, int flags)
 Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 {
 	char			*cp=(char*)name;
-	ssize_t			c;
+	ptrdiff_t		c;
 	Namval_t		*np=0;
 	Namfun_t		fun;
 	int			append=0;
@@ -1431,7 +1431,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 			root = sh.var_base;
 		sh.last_table = 0;
 	}
-	if(c=(ssize_t)!isaletter((wchar_t)c))
+	if(c=(ptrdiff_t)!isaletter((wchar_t)c))
 		goto skip;
 #if NVCACHE
 	for(c=0,xp=nvcache.entries ; c < NVCACHE; xp= &nvcache.entries[++c])
@@ -1467,7 +1467,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 		}
 		else
 			xp->len = strlen(name);
-		c = (ssize_t)roundof(xp->len+1,32U);
+		c = (ptrdiff_t)roundof(xp->len+1,32U);
 		if((size_t)c > xp->size)
 			xp->name = sh_realloc(xp->name, xp->size = (size_t)c);
 		memcpy(xp->name,name,xp->len);
@@ -1587,7 +1587,7 @@ skip:
 	return np;
 }
 
-static ssize_t ja_size(char*, ssize_t, int);
+static ptrdiff_t ja_size(char*, ptrdiff_t, int);
 static void ja_restore(void);
 static char *savep;
 static char savechars[8+1];
@@ -1875,7 +1875,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					;
 			size = nv_size(np);
 			if(size)
-				size = (size_t)ja_size((char*)sp,(ssize_t)size,nv_isattr(np,NV_RJUST|NV_ZFILL));
+				size = (size_t)ja_size((char*)sp,(ptrdiff_t)size,nv_isattr(np,NV_RJUST|NV_ZFILL));
 		}
 		if(!*vpp || *(char*)*vpp==0)
 			flags &= ~NV_APPEND;
@@ -2066,13 +2066,13 @@ static void rightjust(char *str, size_t size, char fill)
  * <type> is non-zero for right-justified fields.
  */
 
-static ssize_t ja_size(char *str,ssize_t size,int type)
+static ptrdiff_t ja_size(char *str,ptrdiff_t size,int type)
 {
 	char *cp = str, *oldcp = str;
-	ssize_t c = 0, n = size, oldn = size;
+	ptrdiff_t c = 0, n = size, oldn = size;
 	while(*cp)
 	{
-		ssize_t outsize;
+		ptrdiff_t outsize;
 		wchar_t w;
 		oldn = n;
 		w = mbchar(cp);
@@ -2799,7 +2799,7 @@ Sfdouble_t nv_getnum(Namval_t *np)
  *   value to conform to <newatts>.  The <size> of left and right
  *   justified fields may be given.
  */
-void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
+void nv_newattr (Namval_t *np, unsigned newatts, ptrdiff_t size)
 {
 	char *sp;
 	char *cp = 0;
@@ -2842,7 +2842,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
 			return;
 	}
 	oldsize = nv_size(np);
-	if((size==(ssize_t)oldsize|| (n&NV_INTEGER)) && !trans && ((n^newatts)&~NV_NOCHANGE)==0)
+	if((size==(ptrdiff_t)oldsize|| (n&NV_INTEGER)) && !trans && ((n^newatts)&~NV_NOCHANGE)==0)
 	{
 		if(size>0)
 			np->nvsize = (size_t)size;

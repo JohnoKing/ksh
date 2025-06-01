@@ -112,7 +112,7 @@ extern int b_times(int, char*[],Shbltin_t*);
     extern int B_echo(int, char*[],Shbltin_t*);
 #endif /* SHOPT_ECHOPRINT */
 
-extern ssize_t b_enum_nelem(Namfun_t*);
+extern ptrdiff_t b_enum_nelem(Namfun_t*);
 
 extern const char	e_alrm1[];
 extern const char	e_alrm2[];

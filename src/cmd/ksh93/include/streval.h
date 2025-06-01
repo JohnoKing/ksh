@@ -94,8 +94,8 @@ typedef struct _arith_
 	const char	*expr;
 	Sfdouble_t	(*fun)(const char**,struct lval*,int,Sfdouble_t);
 	size_t		elen;
-	ssize_t		size;
-	ssize_t		staksize;
+	ptrdiff_t	size;
+	ptrdiff_t	staksize;
 	int		emode;
 } Arith_t;
 #define ARITH_COMP	04	/* set when compile separate from execute */

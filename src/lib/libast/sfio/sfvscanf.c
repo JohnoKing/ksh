@@ -51,13 +51,13 @@ static void _sfbuf(Sfio_t* f, int* peek)
 /* buffer used during scanning of a double value or a multi-byte
    character. the fields mirror certain local variables in sfvscanf. */
 typedef struct _scan_s
-{	int	error;	/* get set by _sfdscan if no value specified	*/
-	int	inp;	/* last input character read			*/
-	ssize_t	width;	/* field width					*/
-	Sfio_t	*f;	/* stream being scanned				*/
-	uchar	*d, *endd, *data;	/* local buffering system	*/
-	int	peek;	/* != 0 if unseekable/share stream		*/
-	ssize_t	n_input;/* number of input bytes processed		*/
+{	int		error;			/* get set by _sfdscan if no value specified	*/
+	int		inp;			/* last input character read			*/
+	ptrdiff_t	width;			/* field width					*/
+	Sfio_t		*f;			/* stream being scanned				*/
+	uchar		*d, *endd, *data;	/* local buffering system	*/
+	int		peek;			/* != 0 if unseekable/share stream		*/
+	ptrdiff_t	n_input;		/* number of input bytes processed		*/
 } Scan_t;
 
 /* ds != 0 for scanning double values */
@@ -273,7 +273,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 	     va_list		args)
 {
 	int		inp, shift;
-	ssize_t		size, base, width, n, n_input;
+	ptrdiff_t	size, base, width, n, n_input;
 	int		fmt, flags, dot, n_assign, v;
 	char		*sp;
 
@@ -286,7 +286,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 	Fmtpos_t*	fp;
 	char		*oform;
 	va_list		oargs;
-	ssize_t		argp, argn;
+	ptrdiff_t	argp, argn;
 
 	int		decimal = 0, thousand = 0;
 
@@ -298,7 +298,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 
 	void*		value;	/* location to assign scanned value */
 	char*		t_str;
-	ssize_t		n_str;
+	ptrdiff_t	n_str;
 
 	/* local buffering system */
 	Scan_t		scd;
@@ -445,13 +445,13 @@ loop_fmt:
 							if(!(ft->flags&SFFMT_VALUE) )
 								goto t_arg;
 							if((t_str = argv.s) &&
-							   (n_str = (ssize_t)ft->size) < 0)
-								n_str = (ssize_t)strlen(t_str);
+							   (n_str = (ptrdiff_t)ft->size) < 0)
+								n_str = (ptrdiff_t)strlen(t_str);
 						}
 						else
 						{ t_arg:
 							if((t_str = va_arg(args,char*)) )
-								n_str = (ssize_t)strlen(t_str);
+								n_str = (ptrdiff_t)strlen(t_str);
 						}
 					}
 					goto loop_flags;
@@ -849,7 +849,7 @@ loop_fmt:
 				}
 
 				if(fmt == 'i' && inp == '#' && !(flags&SFFMT_ALTER) )
-				{	base = (ssize_t)argv.lu;
+				{	base = (ptrdiff_t)argv.lu;
 					if(base < 2 || base > SFIO_RADIX)
 						goto pop_fmt;
 					argv.lu = 0;

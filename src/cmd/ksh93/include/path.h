@@ -87,7 +87,7 @@ extern int		path_search(const char*,Pathcomp_t**,int);
 extern char		*path_relative(const char*);
 extern size_t		path_complete(const char*, const char*,struct argnod**);
 #if SHOPT_BRACEPAT
-    extern ssize_t 		path_generate(struct argnod*,struct argnod**, int);
+    extern ptrdiff_t	path_generate(struct argnod*,struct argnod**, int);
 #endif /* SHOPT_BRACEPAT */
 
 #if SHOPT_DYNAMIC

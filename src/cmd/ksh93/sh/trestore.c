@@ -222,7 +222,7 @@ static struct ionod *r_redirect(void)
 			iop->ioname = r_string();	/* file name, descriptor, etc. */
 		if(iop->iodelim = r_string())
 		{
-			iop->iosize = (ssize_t)sfgetl(infile);
+			iop->iosize = (ptrdiff_t)sfgetl(infile);
 			if(sh.heredocs)
 				iop->iooffset = sfseek(sh.heredocs,0,SEEK_END);
 			else

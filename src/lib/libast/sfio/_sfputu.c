@@ -24,12 +24,12 @@
 **	Written by Kiem-Phong Vo.
 */
 
-ssize_t _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
-		Sfulong_t v)	/* the unsigned value to be written */
+ptrdiff_t _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
+		  Sfulong_t	v)	/* the unsigned value to be written */
 {
 #define N_ARRAY		(2*sizeof(Sfulong_t))
 	uchar	*s, *ps;
-	ssize_t	n, p;
+	ptrdiff_t n, p;
 	uchar		c[N_ARRAY];
 
 	if(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))

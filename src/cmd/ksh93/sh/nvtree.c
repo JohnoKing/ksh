@@ -793,12 +793,12 @@ static void outval(char *name, const char *vname, struct Walk *wp)
 /*
  * format initialization list given a list of assignments <argp>
  */
-static char **genvalue(char **argv, const char *prefix, ssize_t n, struct Walk *wp)
+static char **genvalue(char **argv, const char *prefix, ptrdiff_t n, struct Walk *wp)
 {
 	char *cp,*nextcp,*arg;
 	Sfio_t *outfile = wp->out;
 	size_t m,l;
-	ssize_t r;
+	ptrdiff_t r;
 	if(n==0)
 		m = strlen(prefix);
 	else if(cp=nextdot(prefix))
@@ -862,7 +862,7 @@ static char **genvalue(char **argv, const char *prefix, ssize_t n, struct Walk *
 					outval(cp,arg,wp);
 					continue;
 				}
-				argv = genvalue(argv,cp,n+(ssize_t)m+r,wp);
+				argv = genvalue(argv,cp,n+(ptrdiff_t)m+r,wp);
 				if(wp->indent>=0)
 					sfputc(outfile,'\n');
 				if(*argv)

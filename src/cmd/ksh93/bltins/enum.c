@@ -103,7 +103,7 @@ extern const char is_spcbuiltin[];
 struct Enum
 {
 	Namfun_t	hdr;
-	ssize_t		nelem;
+	ptrdiff_t	nelem;
 	short		iflag;
 	const char	*values[1];
 };
@@ -111,7 +111,7 @@ struct Enum
 /*
  * For range checking in arith.c
  */
-ssize_t b_enum_nelem(Namfun_t *fp)
+ptrdiff_t b_enum_nelem(Namfun_t *fp)
 {
 	return ((struct Enum *)fp)->nelem;
 }
@@ -277,7 +277,7 @@ int b_enum(int argc, char** argv, Shbltin_t *context)
 		sz += n*sizeof(char*);
 		ep = sh_newof(0,struct Enum,1,sz);
 		ep->iflag = iflag;
-		ep->nelem = (ssize_t)n;
+		ep->nelem = (ptrdiff_t)n;
 		cp = (char*)&ep->values[n+1];
 		nv_putsub(np, NULL, ARRAY_SCAN);
 		ep->values[n] = 0;

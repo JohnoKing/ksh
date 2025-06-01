@@ -30,7 +30,7 @@ struct ionod
 	struct ionod	*iolst;
 	char		*iodelim;
 	off_t		iooffset;
-	ssize_t		iosize;
+	ptrdiff_t	iosize;
 	char		*iovname;
 };
 

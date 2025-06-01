@@ -81,21 +81,21 @@ int        sfstrclose(Sfio_t* f);
 .nf
 .ft 5
 int        sfgetc(Sfio_t* f);
-ssize_t    sfputc(Sfio_t* f, int c);
-ssize_t    sfnputc(Sfio_t* f, int c, size_t n);
+ptrdiff_t  sfputc(Sfio_t* f, int c);
+ptrdiff_t  sfnputc(Sfio_t* f, int c, size_t n);
 int        sfungetc(Sfio_t* f, int c);
 
 Sfulong_t  sfgetm(Sfio_t* f, Sfulong_t max);
-ssize_t    sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max);
+ptrdiff_t  sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max);
 Sfulong_t  sfgetu(Sfio_t* f);
-ssize_t    sfputu(Sfio_t* f, Sfulong_t v);
+ptrdiff_t  sfputu(Sfio_t* f, Sfulong_t v);
 Sflong_t   sfgetl(Sfio_t* f);
-ssize_t    sfputl(Sfio_t* f, Sflong_t v);
+ptrdiff_t  sfputl(Sfio_t* f, Sflong_t v);
 Sfdouble_t sfgetd(Sfio_t* f);
-ssize_t    sfputd(Sfio_t* f, Sfdouble_t v);
+ptrdiff_t  sfputd(Sfio_t* f, Sfdouble_t v);
 
 char*      sfgetr(Sfio_t* f, int rsc, int type);
-ssize_t    sfputr(Sfio_t* f, const char* s, int rsc);
+ptrdiff_t  sfputr(Sfio_t* f, const char* s, int rsc);
 Sfoff_t    sfmove(Sfio_t* fr, Sfio_t* fw, Sfoff_t n, int rsc);
 
 ssize_t    sfread(Sfio_t* f, void* buf, size_t n);
@@ -112,14 +112,14 @@ int        sfsscanf(const char* s, const char* format, ...);
 int        sfvsscanf(const char* s, const char* format, va_list args);
 int        sfvscanf(Sfio_t* f, const char* format, va_list args);
 
-ssize_t    sfprintf(Sfio_t* f, const char* format, ...);
+ptrdiff_t  sfprintf(Sfio_t* f, const char* format, ...);
 char*      sfprints(const char* format, ...);
 char*      sfvprints(const char* format, va_list args);
-ssize_t    sfaprints(char** sp, const char* format, ...);
-ssize_t    sfvaprints(char** sp, const char* format, va_list args);
-ssize_t    sfsprintf(char* s, size_t n, const char* format, ...);
-ssize_t    sfvsprintf(char* s, size_t n, const char* format, va_list args);
-ssize_t    sfvprintf(Sfio_t* f, const char* format, va_list args);
+ptrdiff_t  sfaprints(char** sp, const char* format, ...);
+ptrdiff_t  sfvaprints(char** sp, const char* format, va_list args);
+ptrdiff_t  sfsprintf(char* s, size_t n, const char* format, ...);
+ptrdiff_t  sfvsprintf(char* s, size_t n, const char* format, va_list args);
+ptrdiff_t  sfvprintf(Sfio_t* f, const char* format, va_list args);
 
 Sffmt_t;
 

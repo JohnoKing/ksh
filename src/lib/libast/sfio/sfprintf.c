@@ -24,20 +24,20 @@
 **	Written by Kiem-Phong Vo.
 */
 
-ssize_t sfprintf(Sfio_t* f, const char* form, ...)
+ptrdiff_t sfprintf(Sfio_t* f, const char* form, ...)
 {
 	va_list	args;
-	ssize_t	rv;
+	ptrdiff_t rv;
 	va_start(args,form);
 	rv = sfvprintf(f,form,args);
 	va_end(args);
 	return rv;
 }
 
-ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
+ptrdiff_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 {
 	Sfio_t		*f;
-	ssize_t		rv;
+	ptrdiff_t	rv;
 	Sfnotify_f	notify = _Sfnotify;
 
 	/* make a temp stream */
@@ -65,10 +65,10 @@ ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 	return rv;
 }
 
-ssize_t sfsprintf(char* s, size_t n, const char* form, ...)
+ptrdiff_t sfsprintf(char* s, size_t n, const char* form, ...)
 {
 	va_list	args;
-	ssize_t	rv;
+	ptrdiff_t rv;
 	va_start(args,form);
 	rv = sfvsprintf(s,n,form,args);
 	va_end(args);

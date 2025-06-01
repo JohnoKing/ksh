@@ -111,7 +111,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 	char *cp, **av, **xv;
 	char **avlast= &argv[sh.xargmax], **saveargs=0;
 	char *const *ev;
-	ssize_t size, left;
+	ptrdiff_t size, left;
 	size_t nlast=1,n;
 	int exitval=0;
 	pid_t pid;
@@ -1046,7 +1046,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 	Namval_t*	np;
 	char		*s, *v;
 	int		r;
-	ssize_t		n, pidsize=0;
+	ptrdiff_t	n, pidsize=0;
 	pid_t		pid= -1;
 	if(!sh_isstate(SH_EXEC) && nv_search(opath,sh.bltin_tree,0))
 	{
@@ -1077,7 +1077,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		/* check for symlink and use symlink name */
 		char buff[PATH_MAX+1];
 		char save[PATH_MAX+1];
-		ssize_t rlen;
+		ptrdiff_t rlen;
 		size_t slen;
 		stkseek(sh.stk,PATH_OFFSET);
 		sfputr(sh.stk,opath,0);
@@ -1511,7 +1511,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 {
 	struct stat statb;
 	int fd;
-	ssize_t n,m;
+	ptrdiff_t n,m;
 	size_t k, l;
 	char *sp,*cp,*ep;
 	stkseek(sh.stk,offset+(ptrdiff_t)pp->len);

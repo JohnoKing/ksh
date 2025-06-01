@@ -140,7 +140,7 @@ static void
 getids(char* s, char** e, Key_t* key, int options)
 {
 	char*	t;
-	ssize_t	n;
+	ptrdiff_t n;
 	char*	z;
 	char	buf[64];
 
@@ -151,8 +151,8 @@ getids(char* s, char** e, Key_t* key, int options)
 	if (n)
 	{
 		options |= OPT_CHOWN;
-		if ((n = t++ - s) >= ssizeof(buf))
-			n = ssizeof(buf) - 1;
+		if ((n = t++ - s) >= (ptrdiff_t)sizeof(buf))
+			n = (ptrdiff_t)sizeof(buf) - 1;
 		*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
 	}
 	if (options & OPT_CHOWN)
@@ -175,8 +175,8 @@ getids(char* s, char** e, Key_t* key, int options)
 		for (s = t; (n = *t) && !isspace((int)n); t++);
 		if (n)
 		{
-			if ((n = t++ - s) >= ssizeof(buf))
-				n = ssizeof(buf) - 1;
+			if ((n = t++ - s) >= (ptrdiff_t)sizeof(buf))
+				n = (ptrdiff_t)sizeof(buf) - 1;
 			*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
 		}
 	}

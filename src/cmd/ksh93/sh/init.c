@@ -169,10 +169,10 @@ struct match
 	char		*nodes;
 	char		*names;
 	size_t		msize;
-	ssize_t		vsize;
-	ssize_t		vlen;
-	ssize_t		first;
-	ssize_t		nmatch;
+	ptrdiff_t	vsize;
+	ptrdiff_t	vlen;
+	ptrdiff_t	first;
+	ptrdiff_t	nmatch;
 	int		index;
 	int		lastsub[2];
 };
@@ -780,7 +780,7 @@ static void put_lastarg(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 static void match2d(struct match *mp)
 {
 	Namval_t	*np;
-	ssize_t		i;
+	ptrdiff_t	i;
 	Namarr_t	*ap;
 	nv_disc(SH_MATCHNOD, &mp->hdr, NV_POP);
 	if(mp->nodes)
@@ -811,12 +811,12 @@ static void match2d(struct match *mp)
  * store the most recent value for use in .sh.match
  * treat .sh.match as a two dimensional array
  */
-void sh_setmatch(const char *v, ssize_t vsize, ssize_t nmatch, ssize_t match[], int index)
+void sh_setmatch(const char *v, ptrdiff_t vsize, ptrdiff_t nmatch, ssize_t match[], int index)
 {
 	Init_t		*ip = sh.init_context;
 	struct match	*mp = &ip->SH_MATCH_init;
 	unsigned int	savesub=sh.subshell;
-	ssize_t		i,n,x;
+	ptrdiff_t	i,n,x;
 	Namarr_t	*ap = nv_arrayptr(SH_MATCHNOD);
 	Namval_t	*np;
 	if(sh.intrace)
@@ -904,15 +904,15 @@ void sh_setmatch(const char *v, ssize_t vsize, ssize_t nmatch, ssize_t match[], 
 				vsize = match[i] -n;
 		}
 		index *= 2*mp->nmatch;
-		i = (index+2*mp->nmatch)*ssizeof(match[0]);
-		if(i >= (ssize_t)mp->msize)
+		i = (index+2*mp->nmatch)*(ptrdiff_t)sizeof(match[0]);
+		if(i >= (ptrdiff_t)mp->msize)
 			mp->match = sh_realloc(mp->match, mp->msize = 2*(size_t)i);
 		if(vsize >= mp->vsize)
 		{
 			mp->vsize = mp->vsize ? 2 * vsize : vsize + 1;
 			mp->val = sh_realloc(mp->val, (size_t)mp->vsize);
 		}
-		memcpy(mp->match+index,match,(size_t)nmatch*2*ssizeof(match[0]));
+		memcpy(mp->match+index,match,(size_t)nmatch*2*sizeof(match[0]));
 		for(i=0; i < 2*nmatch; i++)
 		{
 			if(match[i]>=0)
@@ -932,7 +932,7 @@ static char* get_match(Namval_t *np, Namfun_t *fp)
 {
 	struct match	*mp = (struct match*)fp;
 	int		sub,sub2=0,i=!mp->index;
-	ssize_t		n;
+	ptrdiff_t	n;
 	char		*val;
 	sub = nv_aindex(SH_MATCHNOD);
 	if(sub<0)

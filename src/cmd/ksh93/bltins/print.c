@@ -56,7 +56,7 @@ struct printf
 	char		**argv0; /* see reload() below */
 	char		**nextarg;
 	char		*lastarg;
-	ssize_t		argsize;
+	ptrdiff_t	argsize;
 	int		intvar;
 	char		cescape;
 	char		err;
@@ -83,9 +83,9 @@ static const struct printmap  Pmap[] =
 
 static int		echolist(Sfio_t*, int, char**);
 static int		extend(Sfio_t*,void*, Sffmt_t*);
-static ssize_t		reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe);
+static ptrdiff_t	reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe);
 static char		*genformat(char*);
-static ssize_t		fmtvecho(const char*, struct printf*);
+static ptrdiff_t	fmtvecho(const char*, struct printf*);
 static ssize_t		fmtbase64(Sfio_t*, char*, int);
 struct print
 {
@@ -444,7 +444,7 @@ printf_v:
 static int echolist(Sfio_t *outfile, int raw, char *argv[])
 {
 	char	*cp;
-	ssize_t	n;
+	ptrdiff_t n;
 	struct printf pdata;
 	pdata.cescape = 0;
 	pdata.err = 0;
@@ -694,15 +694,15 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 	}
 }
 
-static int varname(const char *str, ssize_t n)
+static int varname(const char *str, ptrdiff_t n)
 {
 	int c,dot=1;
-	ssize_t len=1;
+	ptrdiff_t len=1;
 	if(n < 0)
 	{
 		if(*str=='.')
 			str++;
-		n = (ssize_t)strlen(str);
+		n = (ptrdiff_t)strlen(str);
 	}
 	for(;n > 0; n-=len)
 	{
@@ -726,7 +726,7 @@ static const char *mapformat(Sffmt_t *fe)
 	const struct printmap *pm = Pmap;
 	while(pm->size>0)
 	{
-		if((ssize_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
+		if((ptrdiff_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
 			return pm->map;
 		pm++;
 	}
@@ -742,7 +742,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	int		format = fe->fmt;
 	int		n;
 	char		nc;
-	ssize_t		m;
+	ptrdiff_t	m;
 	int		fold = (int)fe->base;
 	union types_t*	value = (union types_t*)v;
 	struct printf*	pp = (struct printf*)fe;
@@ -1119,10 +1119,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  * In that case, argv[0] and argv[4] are consumed and nextarg push
  * to &argv[5] argv[1..3] is ignored.
  */
-static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
+static ptrdiff_t reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe)
 {
 	struct printf*	pp = (struct printf*)fe;
-	ssize_t		r;
+	ptrdiff_t	r;
 	ptrdiff_t	n;
 	if(fmt == 0)
 	{
@@ -1135,7 +1135,7 @@ static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
 			while(argn && *pp->nextarg)
 				argn--, pp->nextarg++;
 		}
-		return (ssize_t)n;
+		return n;
 	}
 	/*
 	 * fmt!=0 ==> Late conversion on type mismatch on fp[x], i.e., %1$s %1$d
@@ -1144,7 +1144,7 @@ static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
 	n = pp->nextarg - pp->argv0;
 	pp->nextarg = pp->argv0 + argn;
 	fe->fmt = fmt;
-	r = (ssize_t)extend(0,v,fe);
+	r = extend(0,v,fe);
 	pp->nextarg = pp->argv0 + n;
 	return r;
 }
@@ -1155,7 +1155,7 @@ static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
  * Otherwise, puts null-terminated result on stack, but doesn't freeze it
  * returns length of output.
  */
-static ssize_t fmtvecho(const char *string, struct printf *pp)
+static ptrdiff_t fmtvecho(const char *string, struct printf *pp)
 {
 	const char *cp = string, *cpmax;
 	int c;

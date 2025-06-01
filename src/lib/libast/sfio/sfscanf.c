@@ -46,7 +46,7 @@ int sfvsscanf(const char* s, const char* form, va_list args)
 	f.flags = SFIO_STRING|SFIO_READ;
 	f.bits = SFIO_PRIVATE;
 	f.mode = SFIO_READ;
-	f.size = (ssize_t)strlen((char*)s);
+	f.size = (ptrdiff_t)strlen((char*)s);
 	f.data = f.next = f.endw = (uchar*)s;
 	f.endb = f.endr = f.data+f.size;
 

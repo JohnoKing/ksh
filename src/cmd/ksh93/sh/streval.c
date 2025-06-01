@@ -66,8 +66,8 @@ struct vars				/* vars stacked per invocation */
 	const char	*errstr;	/* error string			*/
 	struct lval	errmsg;	 	/* error message text		*/
 	ptrdiff_t	offset;		/* offset for pushchr macro	*/
-	ssize_t		staksize;	/* current stack size needed	*/
-	ssize_t		stakmaxsize;	/* maximum stack size needed	*/
+	ptrdiff_t	staksize;	/* current stack size needed	*/
+	ptrdiff_t	stakmaxsize;	/* maximum stack size needed	*/
 	int		emode;
 	int		infun;		/* incremented by comma inside function	*/
 	unsigned int	paren;	 	/* parenthesis level		*/
@@ -90,7 +90,7 @@ typedef int        (*Math_3i_f)(Sfdouble_t,Sfdouble_t,Sfdouble_t);
 /*
  * convert ASCII char to math expression token
  */
-#define getop(c)	(((c) >= (ssizeof(strval_states)))? \
+#define getop(c)	(((c) >= ((ptrdiff_t)sizeof(strval_states)))? \
 				((c)=='|'?A_OR:((c)=='^'?A_XOR:((c)=='~'?A_TILDE:A_REG))):\
 				strval_states[(c)])
 
@@ -915,7 +915,7 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 	ep->code = (unsigned char*)(ep+1);
 	ep->fun = fun;
 	ep->emode = emode;
-	ep->size = offset - ssizeof(Arith_t);
+	ep->size = offset - (ptrdiff_t)sizeof(Arith_t);
 	ep->staksize = cur.stakmaxsize+1;
 	if(last)
 		*last = (char*)(cur.nextchr);

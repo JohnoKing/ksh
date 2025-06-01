@@ -784,7 +784,7 @@ static void fixargs(char **argv, int mode)
 	static char *buff;
 	if(mode==0)
 	{
-		ssize_t i;
+		ptrdiff_t i;
 		buff = argv[0];
 		for(i=0; argv[i]; i++)
 			buffsize += strlen(argv[i]) + 1;

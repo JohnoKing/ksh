@@ -24,10 +24,10 @@
 **	Written by Kiem-Phong Vo.
 */
 
-ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
+ptrdiff_t _sfputd(Sfio_t* f, Sfdouble_t v)
 {
 #define N_ARRAY		(16*sizeof(Sfdouble_t))
-	ssize_t		n, w;
+	ptrdiff_t	n, w;
 	uchar		*s, *ends;
 	int		exp;
 	uchar		c[N_ARRAY];

@@ -54,7 +54,7 @@ struct read_save
 	char		*prompt;
 	Sflong_t	timeout;
 	size_t		plen;
-	ssize_t		len;
+	ptrdiff_t	len;
 	int		fd;
 	int		flags;
 };
@@ -65,7 +65,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	char *prompt;
 	const char *msg = e_file+4;
 	int r, flags=0, fd=0;
-	ssize_t	len=0, l;
+	ptrdiff_t len=0, l;
 	size_t q;
 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
 	int fixargs=context->invariant;
@@ -117,7 +117,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	    case 'n': case 'N':
 		flags &= ((1<<D_FLAG)-1);
 		flags |= (r=='n'?N_FLAG:NN_FLAG);
-		len = (ssize_t)opt_info.num;
+		len = (ptrdiff_t)opt_info.num;
 		break;
 	    case 'r':
 		flags |= R_FLAG;
@@ -374,7 +374,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	{
 		char buf[256],*var=buf,*cur,*end,*up,*v;
 		/* reserved buffer */
-		if((c=size)>=ssizeof(buf))
+		if((c=size)>=(ssize_t)sizeof(buf))
 		{
 			var = (char*)sh_malloc((size_t)c+1);
 			end = var + c;
@@ -391,7 +391,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		}
 		else
 		{
-			ssize_t	m;
+			ptrdiff_t m;
 			int	f;
 			for (;;)
 			{
@@ -574,7 +574,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	del = 0;
 	while(1)
 	{
-		ssize_t mbsz;
+		ptrdiff_t mbsz;
 		switch(c)
 		{
 #if SHOPT_MULTIBYTE

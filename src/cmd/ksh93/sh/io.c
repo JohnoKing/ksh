@@ -1692,7 +1692,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
 			return;
 	}
 	/* make sure table is large enough */
-	if(sh.topfd >= (ssize_t)filemapsize)
+	if(sh.topfd >= (ptrdiff_t)filemapsize)
 	{
 		char 	*cp, *oldptr = (char*)filemap;
 		char 	*oldend = (char*)&filemap[filemapsize];

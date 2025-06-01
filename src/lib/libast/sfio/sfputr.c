@@ -23,11 +23,11 @@
 **
 **	Written by Kiem-Phong Vo.
 */
-ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
-	       const char*	s,	/* string to write	*/
-	       int		rc)	/* record separator 	*/
+ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
+	         const char*		s,	/* string to write	*/
+	         int			rc)	/* record separator 	*/
 {
-	ssize_t		p, n, w, sn;
+	ptrdiff_t	p, n, w, sn;
 	uchar		*ps;
 	char		*ss;
 
@@ -40,7 +40,7 @@ ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 	for(w = 0; (*s || rc >= 0); )
 	{	/* need to communicate string size to exception handler */
 		if((f->flags&SFIO_STRING) && f->next >= f->endb )
-		{	sn = sn < 0 ? (ssize_t)strlen(s) : (sn - (s-ss));
+		{	sn = sn < 0 ? (ptrdiff_t)strlen(s) : (sn - (s-ss));
 			ss = (char*)s; /* save current checkpoint */
 			f->val = sn + (rc >= 0 ? 1 : 0); /* space requirement */
 			f->bits |= SFIO_PUTR; /* tell sfflsbuf to use f->val */
@@ -53,7 +53,7 @@ ssize_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 			break;
 
 		if(p == 0 || (f->flags&SFIO_WHOLE) )
-		{	n = sn < 0 ? (ssize_t)strlen(s) : sn - (s-ss);
+		{	n = sn < 0 ? (ptrdiff_t)strlen(s) : sn - (s-ss);
 			if(p >= (n + (rc < 0 ? 0 : 1)) )
 			{	/* buffer can hold everything */
 				if(n > 0)

@@ -40,7 +40,7 @@
 	char*		pb; \
 	char*		pp; \
 	char*		pe; \
-	ssize_t		off; \
+	ptrdiff_t	off; \
 	size_t		prelen; \
 	size_t		suflen; \
 	char**		lib; \
@@ -87,7 +87,7 @@ dllinfo(void)
 	char*			d;
 	char*			v;
 	char*			p;
-	ssize_t			vn;
+	ptrdiff_t		vn;
 	size_t			dn;
 	size_t			pn;
 	char			pat[256];
@@ -144,7 +144,7 @@ dllinfo(void)
 					memcpy(info.sibbuf, d, dn);
 					info.sibling[0] = info.sibbuf;
 				}
-				if (v && vn < ssizeof(info.envbuf))
+				if (v && vn < (ptrdiff_t)sizeof(info.envbuf))
 				{
 					if(vn <= 0)
 						abort();

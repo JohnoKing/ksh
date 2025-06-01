@@ -44,7 +44,7 @@
 
 #if !SHOPT_SCRIPTONLY
 
-#define HIST_MAX	(ssizeof(int)*HIST_BSIZE)
+#define HIST_MAX	((ssize_t)sizeof(int)*HIST_BSIZE)
 #define HIST_BIG	(0100000-1024)	/* 1K less than maximum short */
 #define HIST_LINE	32		/* typical length for history line */
 #define HIST_MARKSZ	6
@@ -155,7 +155,7 @@ static int sh_checkaudit(const char *name, char *logbuf, size_t len)
 	char	*cp, *last;
 	uid_t	id1, id2;
 	int	r=0, fd;
-	ssize_t	n;
+	ptrdiff_t n;
 	if((fd=open(name, O_RDONLY|O_cloexec)) < 0)
 		return 0;
 	if((n = read(fd, logbuf,len-1)) < 0)
@@ -321,7 +321,7 @@ retry:
 	if(hist_clean(fd) && hist_start>1 && hsize > HIST_MAX)
 	{
 #ifdef DEBUG
-		sfprintf(sfstderr,"%jd: hist_trim hsize=%zd\n",(Sflong_t)sh.current_pid,(ssize_t)hsize);
+		sfprintf(sfstderr,"%jd: hist_trim hsize=%td\n",(Sflong_t)sh.current_pid,(ptrdiff_t)hsize);
 		sfsync(sfstderr);
 #endif /* DEBUG */
 		hp = hist_trim(hp,(int)hp->histind-maxlines);

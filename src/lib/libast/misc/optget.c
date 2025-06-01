@@ -835,7 +835,7 @@ expand(char* s, char* e, char** p, Sfio_t* ip, char* id)
 {
 	int	c;
 	char*	b = s;
-	ssize_t	n;
+	ptrdiff_t n;
 
 	n = sfstrtell(ip);
 	c = 1;
@@ -898,7 +898,7 @@ init(char* s, Optpass_t* p)
 	char*	u;
 	int	c;
 	int	a;
-	ssize_t	n;
+	ptrdiff_t n;
 	char*	e;
 	int	l;
 
@@ -1067,7 +1067,7 @@ init(char* s, Optpass_t* p)
 	else if (p->id == error_info.id)
 		p->id = save(p->id, strlen(p->id), 0, 0, 0, 0);
 	if (s = p->catalog)
-		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ssize_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
+		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ptrdiff_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
 	if (!p->catalog)
 	{
 		if (opt_info.disc && opt_info.disc->catalog && (!p->id || !streq(opt_info.disc->catalog, p->id)))
@@ -1792,10 +1792,10 @@ item(Sfio_t* sp, char* s, int about, int level, int style, Sfio_t* ip, int versi
 
 #if _BLD_DEBUG
 
-static char*	textout(Sfio_t*, char*, char*, ssize_t, int, int, int, Sfio_t*, int, char*, char*, int*);
+static char*	textout(Sfio_t*, char*, char*, ptrdiff_t, int, int, int, Sfio_t*, int, char*, char*, int*);
 
 static char*
-trace_textout(Sfio_t* sp, char* p, char* conform, ssize_t conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags, int line)
+trace_textout(Sfio_t* sp, char* p, char* conform, ptrdiff_t conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags, int line)
 {
 	static int	depth = 0;
 
@@ -1808,7 +1808,7 @@ trace_textout(Sfio_t* sp, char* p, char* conform, ssize_t conformlen, int style,
 #endif
 
 static char*
-textout(Sfio_t* sp, char* s, char* conform, ssize_t conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags)
+textout(Sfio_t* sp, char* s, char* conform, ptrdiff_t conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags)
 {
 #if _BLD_DEBUG
 #define textout(sp,s,conform,conformlen,style,level,bump,ip,version,id,catalog,hflags)	trace_textout(sp,s,conform,conformlen,style,level,bump,ip,version,id,catalog,hflags,__LINE__)
@@ -2023,9 +2023,9 @@ textout(Sfio_t* sp, char* s, char* conform, ssize_t conformlen, int style, int l
 							char*	o;
 							char*	v;
 							size_t	j;
-							ssize_t	m;
-							ssize_t	ol;
-							ssize_t	vl;
+							ptrdiff_t m;
+							ptrdiff_t ol;
+							ptrdiff_t vl;
 
 							a = 0;
 							o = 0;
@@ -2370,17 +2370,17 @@ opthelp(const char* oopts, const char* what)
 	int		a;
 	size_t		j;
 	size_t		xl;
-	ssize_t		jj;
-	ssize_t		m;
-	ssize_t		cl;
-	ssize_t		sl;
-	ssize_t		vl;
-	ssize_t		ol;
-	ssize_t		wl;
-	ssize_t		rm;
-	ssize_t		ts;
-	ssize_t		co;
-	ssize_t		margin;
+	ptrdiff_t	jj;
+	ptrdiff_t	m;
+	ptrdiff_t	cl;
+	ptrdiff_t	sl;
+	ptrdiff_t	vl;
+	ptrdiff_t	ol;
+	ptrdiff_t	wl;
+	ptrdiff_t	rm;
+	ptrdiff_t	ts;
+	ptrdiff_t	co;
+	ptrdiff_t	margin;
 	int		z;
 	int		style;
 	int		head;
@@ -3737,7 +3737,7 @@ opthelp(const char* oopts, const char* what)
 	astwinsize(1, NULL, &state.width);
 	if (state.width < 20)
 		state.width = OPT_WIDTH;
-	m = (ssize_t)strlen((style <= STYLE_long && error_info.id && !strchr(error_info.id, '/')) ? error_info.id : id) + 1;
+	m = (ptrdiff_t)strlen((style <= STYLE_long && error_info.id && !strchr(error_info.id, '/')) ? error_info.id : id) + 1;
 	margin = style == STYLE_api ? (8 * 1024) : (state.width - 1);
 	if (!(state.flags & OPT_preformat))
 	{
@@ -4601,7 +4601,7 @@ optget(char** argv, const char* oopts)
 		{
 			if (cache)
 			{
-				if (c >= 0 && c < ssizeof(map) && map[c] && cache->equiv[map[c]])
+				if (c >= 0 && c < (ptrdiff_t)sizeof(map) && map[c] && cache->equiv[map[c]])
 					c = cache->equiv[map[c]];
 				if (k = cache->flags[map[c]])
 				{
@@ -4965,8 +4965,8 @@ optget(char** argv, const char* oopts)
 										a += 2;
 								}
 								x = -((int)strtol(a, &b, 0));
-								if ((b - a) > ssizeof(opt_info.option) - 2)
-									b = a + ssizeof(opt_info.option) - 2;
+								if ((b - a) > (ptrdiff_t)sizeof(opt_info.option) - 2)
+									b = a + (ptrdiff_t)sizeof(opt_info.option) - 2;
 								memcpy(&opt_info.option[1], a, (size_t)(b - a));
 								opt_info.option[b - a + 1] = 0;
 							}
@@ -5095,8 +5095,8 @@ optget(char** argv, const char* oopts)
 						if (*f == '=')
 						{
 							c = -((int)strtol(++f, &b, 0));
-							if ((b - f) > ssizeof(opt_info.option) - 2)
-								b = f + ssizeof(opt_info.option) - 2;
+							if ((b - f) > (ptrdiff_t)sizeof(opt_info.option) - 2)
+								b = f + (ptrdiff_t)sizeof(opt_info.option) - 2;
 							memcpy(&opt_info.option[1], f, (size_t)(b - f));
 							opt_info.option[b - f + 1] = 0;
 						}
@@ -5184,8 +5184,8 @@ optget(char** argv, const char* oopts)
 					num = !num;
 				v = 0;
 			}
-			if ((s - b) >= (ssize_t)elementsof(opt_info.name))
-				s = b + (ssize_t)elementsof(opt_info.name) - 1;
+			if ((s - b) >= (ptrdiff_t)elementsof(opt_info.name))
+				s = b + (ptrdiff_t)elementsof(opt_info.name) - 1;
 			for (;;)
 			{
 				if (b >= s)
@@ -5655,7 +5655,7 @@ optstr(const char* str, const char* opts)
 			sfputc(mp, '-');
 			sfputc(mp, '-');
 		}
-		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (ssize_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
+		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (ptrdiff_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
 		{
 			s += v;
 			while (isspace(*++e));

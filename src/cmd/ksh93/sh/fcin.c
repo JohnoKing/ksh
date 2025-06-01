@@ -73,7 +73,7 @@ ssize_t	fcfopen(Sfio_t* f)
  */
 int fcfill(void)
 {
-	ssize_t n;
+	ptrdiff_t n;
 	Sfio_t	*f;
 	unsigned char	*last=_Fcin.fclast, *ptr=_Fcin.fcptr;
 	if(!(f=fcfile()))
@@ -125,7 +125,7 @@ int fcclose(void)
 /*
  * Set the notify function that is called for each fcfill()
  */
-void fcnotify(void (*fun)(Sfio_t*,const char*,ssize_t,void*),void* context)
+void fcnotify(void (*fun)(Sfio_t*,const char*,ptrdiff_t,void*),void* context)
 {
 	_Fcin.fcfun = fun;
 	_Fcin.context = context;
@@ -144,7 +144,7 @@ extern void fcrestore(Fcin_t *fp)
 }
 
 #if SHOPT_MULTIBYTE
-int _fcmbget(ssize_t *len)
+int _fcmbget(ptrdiff_t *len)
 {
 	int	c;
 	switch(*len = mbsize(_Fcin.fcptr))

@@ -68,13 +68,13 @@ static int sfsetlinemode(void)
 					++astsfio;
 				for(endw = astsfio; *endw && !ISSEPAR(*endw); ++endw)
 					;
-				if((endw-astsfio) > (ssizeof(sf_line)-1) &&
+				if((endw-astsfio) > ((ptrdiff_t)sizeof(sf_line)-1) &&
 				   strncmp(astsfio,sf_line,sizeof(sf_line)-1) == 0)
 					modes |= SFIO_LINE;
-				else if((endw-astsfio) > (ssizeof(sf_maxr)-1) &&
+				else if((endw-astsfio) > ((ptrdiff_t)sizeof(sf_maxr)-1) &&
 				   strncmp(astsfio,sf_maxr,sizeof(sf_maxr)-1) == 0)
-					_Sfmaxr = (ssize_t)strtonll(astsfio+sizeof(sf_maxr)-1,NULL,NULL,0);
-				else if((endw-astsfio) > (ssizeof(sf_wcwidth)-1) &&
+					_Sfmaxr = (ptrdiff_t)strtonll(astsfio+sizeof(sf_maxr)-1,NULL,NULL,0);
+				else if((endw-astsfio) > ((ptrdiff_t)sizeof(sf_wcwidth)-1) &&
 				   strncmp(astsfio,sf_wcwidth,sizeof(sf_wcwidth)-1) == 0)
 					modes |= SFIO_WCWIDTH;
 			}
@@ -90,11 +90,11 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 	       size_t	size)	/* buffer size, -1 for default size */
 {
 	int		sf_malloc, oflags, init, local;
-	ssize_t		bufsize, blksz;
+	ptrdiff_t	bufsize, blksz;
 	Sfdisc_t*	disc;
 	struct stat	st;
 	uchar*		obuf = NULL;
-	ssize_t		osize = 0;
+	ptrdiff_t	osize = 0;
 #ifdef MAP_TYPE
 	int		okmmap;
 #endif
@@ -147,7 +147,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 	if((Sfio_t*)buf != f)
 		blksz = -1;
 	else /* setting alignment size only */
-	{	blksz = (ssize_t)size;
+	{	blksz = (ptrdiff_t)size;
 
 		if(!init) /* stream already initialized */
 		{	obuf = f->data;
@@ -242,7 +242,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 		if(_Sfpage <= 0)
 		{
 #if _lib_getpagesize
-			if((_Sfpage = (ssize_t)getpagesize()) <= 0)
+			if((_Sfpage = (ptrdiff_t)getpagesize()) <= 0)
 #endif
 				_Sfpage = SFIO_PAGE;
 		}
@@ -339,7 +339,7 @@ setbuf:
 		else if((f->flags&SFIO_READ) && !(f->bits&SFIO_BOTH) &&
 			f->extent > 0 && f->extent < (Sfoff_t)_Sfpage )
 			size = (((size_t)f->extent + SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
-		else if((ssize_t)(size = (size_t)_Sfpage) < bufsize)
+		else if((ptrdiff_t)(size = (size_t)_Sfpage) < bufsize)
 			size = (size_t)bufsize;
 
 		buf = NULL;
@@ -372,7 +372,7 @@ setbuf:
 	}
 
 	/* set up new buffer */
-	f->size = (ssize_t)size;
+	f->size = (ptrdiff_t)size;
 	f->next = f->data = f->endr = f->endw = (uchar*)buf;
 	f->endb = buf ? ((f->mode&SFIO_READ) ? f->data : f->data+size) : NULL;
 	if(f->flags&SFIO_STRING)
