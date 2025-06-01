@@ -73,7 +73,7 @@ struct jobs
 	int		numbjob;	/* number of background jobs */
 #endif /* SHOPT_BGX */
 	int		fd;		/* tty descriptor number */
-	int		suspend;	/* suspend character */
+	cc_t		suspend;	/* suspend character */
 	char		jobcontrol;	/* turned on for interactive shell with control of terminal */
 	char		waitsafe;	/* wait will not block */
 	char		waitall;	/* wait for all jobs in pipe */

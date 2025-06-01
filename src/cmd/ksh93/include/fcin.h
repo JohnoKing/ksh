@@ -33,7 +33,7 @@ typedef struct _fcin
 	unsigned char	*fclast;	/* pointer to end of input buffer */
 	unsigned char	*fcptr;		/* pointer to next input char */
 	unsigned char	fcchar;		/* saved character */
-	ptrdiff_t	fclen;		/* last multibyte char len */
+	short		fclen;		/* last multibyte char len */
 	void (*fcfun)(Sfio_t*,const char*,ptrdiff_t,void*);	/* advance function */
 	void		*context;	/* context pointer */
 	Sfoff_t		fcoff;		/* offset for last read */
@@ -41,7 +41,7 @@ typedef struct _fcin
 
 #if SHOPT_MULTIBYTE
 #   define fcmbget(x)	(mbwide()?_fcmbget(x):fcget())
-    extern int		_fcmbget(ptrdiff_t*);
+    extern int		_fcmbget(short*);
 #else
 #   define fcmbget(x)	(fcget())
 #endif

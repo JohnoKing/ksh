@@ -25,7 +25,7 @@ upc() {
 	# Obtain the script from the from ksh wiki
 	test -f ../update-copyright.ksh && ksh ../update-copyright.ksh
 	git checkout HEAD -- COPYRIGHT
-	git add src
+	git add bin src
 }
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
@@ -40,7 +40,8 @@ fetch src/cmd/ksh93/bltins/test.c
 fetch src/lib/libast/man/stk.3
 fetch src/lib/libast/include/stk.h
 fetch src/lib/libast/misc/stk.c
-sanity; upc
+fetch src/cmd/ksh93/shell.3
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
 
 This is the first of a thirteen(!!) part patch series that enables
@@ -136,7 +137,7 @@ fetch src/cmd/ksh93/bltins/print.c
 fetch src/lib/libast/features/stdio
 fetch src/lib/libast/man/hash.3
 fetch src/lib/libast/man/path.3
-sanity; upc
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -179,7 +180,7 @@ unfetch src/lib/libast/features/tty
 fetch src/lib/libast/include/aso.h
 fetch src/lib/libast/man/aso.3
 fetch src/lib/libast/include/cdt.h
-sanity; upc
+sanity
 git commit -m 'size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -199,7 +200,7 @@ fetch src/lib/libast/include/regex.h
 fetch src/lib/libast/include/swap.h
 fetch src/lib/libast/man/swap.3
 fetch src/lib/libast/man/regex.3
-sanity; upc
+sanity
 git commit -m 'size_t/ptrdiff_t transition part 4: libast regex and string sublibraries
 
 This is the fourth of the thickfold patch series, which enables ksh93
@@ -221,7 +222,7 @@ fetch src/lib/libast/include/glob.h
 fetch src/lib/libast/features/api
 fetch src/lib/libast/std/assert.h
 fetch src/lib/libast/include/debug.h
-sanity; upc
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -249,7 +250,7 @@ Remarks:
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast
-sanity; upc
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 6: remainder of additaments to libast
 
 This is the sixth of the thickfold patch series, which enables ksh93
@@ -268,7 +269,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast/features/tty
 fetch src/lib/libcmd
-sanity; upc
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -296,7 +297,7 @@ fetch src/lib/libdll
 fetch src/lib/libsum
 fetch src/cmd/builtin
 fetch src/cmd/INIT
-sanity; upc
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -317,7 +318,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 fetch src/cmd/ksh93/edit
 fetch src/cmd/ksh93/include/edit.h
 fetch src/cmd/ksh93/include/history.h
-sanity; upc
+sanity
 git commit -m $'size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -335,14 +336,17 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/cmd/ksh93/bltins
 fetch src/cmd/ksh93/include/builtins.h
-sanity; upc
-git commit -m 'size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin commands
+sanity
+git commit -m $'size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin commands
 
 This is the tenth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
 
 The parts of ksh93 affected by this commit are:
 - The various primary ksh93 builtins located in the bltins folder.
+  - print_namval() returns a value only used for boolean tests,
+    so it doesn\'t need to return nv_size + 1 and thus a warning
+    can be quashed.
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -352,7 +356,7 @@ fetch src/cmd/ksh93/sh/array.c
 fetch src/cmd/ksh93/sh/string.c
 fetch src/cmd/ksh93/sh/waitevent.c
 fetch src/cmd/ksh93/nval.3
-sanity; upc
+sanity
 git commit -m "size_t/ptrdiff_t transition part 11: ksh93 variables
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -374,6 +378,13 @@ Conspicuous changes of note:
 - nv_setsize() as exposed in the public nval API now requires
   an argument of exactly (size_t)-1 to function like the
   nv_size() macro.
+- nv_create(): ported over an old fix from my expand-nvflags branch
+  to allow usage of strlen without downcasting the result to an int.
+  This fix adds a uint64_t nvflags variable for storing flags, which
+  introduces some inconsequential warnings. Fixing/avoiding those is
+  out of the scope of this project; that\'s better suited for a
+  future revision of expand-nvflags.
+
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -383,27 +394,33 @@ fetch src/cmd/ksh93/sh/parse.c
 fetch src/cmd/ksh93/sh/lex.c
 fetch src/cmd/ksh93/sh/fcin.c
 fetch src/cmd/ksh93/sh/subshell.c
+fetch src/cmd/ksh93/sh/shcomp.c
 fetch src/cmd/ksh93/include/fcin.h
 fetch src/cmd/ksh93/include/shnodes.h
 fetch src/cmd/ksh93/include/shlex.h
-sanity; upc
+sanity
 git commit -m "size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
 
 The parts of ksh93 affected by this commit are:
-- All C files starting with the letter 't' in the sh folder.
-- The lexing and parsing components in lex.c, parse.c, and fcin.c.
-- The virtual subshell and forking subshell code.
+- The lexing and parsing components in lex.c, parse.c, fcin.c
+  and trestore.c.
+  - Removed the set but not used fcleft variable.
+- Minor fixes for the virtual subshell mechanism.
+- The code underlying shcomp(1), aka sh_tdump().
+- A minor fix to a cast in sh_timeradd().
+
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
 
 fetch src
-sanity; upc
+sanity
 sed -i '5i '${ printf '%(%Y-%0m-%0d)T\n' now ;}':\n\n- Ksh is now capable of allocating memory within a 64-bit address space.\n' NEWS
 git add NEWS
+upc
 git commit -m "size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -413,12 +430,22 @@ This covers the rest of ksh93:
 - All of the other headers.
 - args.c
 - arith.c
+- deparse.c
 - expand.c
 - fault.c
 - io.c
+  - In this file ssize_t is preferable because many of the
+    underlying SFIO and POSIX function return values of
+    that type.
+  - sh_sfeval(): removed the set but not used ep->slen variable.
 - jobs.c
+  - Get rid of if/else PID botch; a single casted strtoll is fine.
 - main.c
 - path.c
+  - Use the order 'noreturn void' for exscript() to fix a
+    compiler warning.
+  - path_spawn(): Added an UNREACHABLE() to fix an instance of
+    -Wunreachable-code-return.
 - streval.c
 - xec.c
 

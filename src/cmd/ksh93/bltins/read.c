@@ -54,7 +54,7 @@ struct read_save
 	char		*prompt;
 	Sflong_t	timeout;
 	size_t		plen;
-	ptrdiff_t	len;
+	ssize_t		len;
 	int		fd;
 	int		flags;
 };
@@ -65,7 +65,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	char *prompt;
 	const char *msg = e_file+4;
 	int r, flags=0, fd=0;
-	ptrdiff_t len=0, l;
+	ssize_t len=0;
 	size_t q;
 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
 	int fixargs=context->invariant;
@@ -189,14 +189,14 @@ bypass:
 	sh.timeout = 0;
 	save_prompt = sh.nextprompt;
 	sh.nextprompt = 0;
-	l=sh_readline(argv,fd,flags,len,timeout);
+	r=sh_readline(argv,fd,flags,len,timeout);
 	sh.nextprompt = save_prompt;
-	if(l==0 && (l=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
+	if(r==0 && (r=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
 	{
 		if(fd == sh.cpipe[0] && errno!=EINTR)
 			sh_pclose(sh.cpipe);
 	}
-	return (int)l;
+	return r;
 }
 
 /*
@@ -391,8 +391,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		}
 		else
 		{
-			ptrdiff_t m;
-			int	f;
+			ptrdiff_t	m;
+			int		f;
 			for (;;)
 			{
 				c = size;
@@ -574,7 +574,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	del = 0;
 	while(1)
 	{
-		ptrdiff_t mbsz;
+		ssize_t mbsz;
 		switch(c)
 		{
 #if SHOPT_MULTIBYTE

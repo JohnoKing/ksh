@@ -566,7 +566,7 @@ void job_init(void)
 	/* set the switch character */
 	tty_get(JOBTTY,&my_stty);
 	job.suspend = my_stty.c_cc[VSUSP];
-	if(job.suspend == (unsigned char)CNSUSP)
+	if(job.suspend == CNSUSP)
 	{
 		my_stty.c_cc[VSUSP] = CSWTCH;
 		tty_set(JOBTTY,TCSAFLUSH,&my_stty);

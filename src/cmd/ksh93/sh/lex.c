@@ -1870,7 +1870,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				if(mbsize(fcseek(0)) < 0 && fcleft() < MB_LEN_MAX)
 				{
 					n = S_EOF;
-					SETLEN(-fcleft());
+					SETLEN((short)-fcleft());
 					break;
 				}
 			}
@@ -1895,7 +1895,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				n = LEN;
 				c = fcmbget(&LEN);
-				SETLEN(LEN + n);
+				SETLEN(LEN + (short)n);
 			}
 			else
 				c = lexfill(lp);
