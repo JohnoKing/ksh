@@ -66,7 +66,7 @@ struct frame
 	char	*prev;		/* address of previous frame */
 	char	*end;		/* address of end this frame */
 	char	**aliases;	/* address aliases */
-	ssize_t	nalias;		/* number of aliases */
+	ptrdiff_t nalias;	/* number of aliases */
 };
 
 struct stk
@@ -302,7 +302,7 @@ void *stkset(Sfio_t *stream, void *address, ptrdiff_t offset)
 	char *cp, *loc = (char*)address;
 	struct frame *fp;
 	int frames = 0;
-	ssize_t n;
+	ptrdiff_t n;
 	if(!init)
 		stkinit((size_t)offset+1);
 	while(1)
@@ -359,7 +359,7 @@ void *stkalloc(Sfio_t *stream, size_t n)
 	if(!init)
 		stkinit(n);
 	n = roundof(n,STK_ALIGN);
-	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
+	if(stkleft(stream) <= (ptrdiff_t)n && !stkgrow(stream,n))
 		return NULL;
 	old = stream->_data;
 	stream->_data = stream->_next = old+n;
@@ -392,7 +392,7 @@ void	*stkfreeze(Sfio_t *stream, size_t extra)
 	top = stream->_next;
 	if(extra)
 	{
-		if((ssize_t)extra > (stream->_endb-stream->_next))
+		if((ptrdiff_t)extra > (stream->_endb-stream->_next))
 		{
 			if (!(top = (unsigned char*)stkgrow(stream,extra)))
 				return NULL;
@@ -431,7 +431,7 @@ char	*stkcopy(Sfio_t *stream, const char* str)
 	n = roundof((size_t)(cp-(unsigned char*)str),STK_ALIGN);
 	if(!init)
 		stkinit(n);
-	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
+	if(stkleft(stream) <= (ptrdiff_t)n && !stkgrow(stream,n))
 		cp = 0;
 	else
 	{
@@ -464,7 +464,7 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	size_t m = (size_t)stktell(stream);
 	ptrdiff_t endoff;
 	char *end=0, *oldbase=0;
-	ssize_t nn=0,add=1;
+	ptrdiff_t nn=0,add=1;
 	n += (m + sizeof(struct frame)+1);
 	if(sp->stkflags&STK_SMALL)
 		n = roundof(n,STK_FSIZE/16);

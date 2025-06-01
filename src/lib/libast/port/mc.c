@@ -344,7 +344,7 @@ mcget(Mc_t* mc, int set, int num, const char* msg)
 {
 	char*		s;
 	size_t		n;
-	ssize_t		p;
+	ptrdiff_t	p;
 
 	if (!mc || set < 0 || set > mc->num || num < 1 || num > mc->set[set].num || !(s = mc->set[set].msg[num]))
 		return (char*)msg;

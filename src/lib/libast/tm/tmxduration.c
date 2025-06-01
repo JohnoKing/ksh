@@ -37,7 +37,7 @@ tmxduration(const char* s, char** e)
 	char*		t;
 	char*		x;
 	Sfio_t*		f;
-	ssize_t		i;
+	ptrdiff_t	i;
 
 	now = TMX_NOW;
 	while (isspace(*s))

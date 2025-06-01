@@ -269,8 +269,8 @@ typedef struct _sfpool_s	Sfpool_t;
 struct _sfpool_s
 {	Sfpool_t*	next;
 	uint32_t	mode;		/* type of pool			*/
-	ssize_t		s_sf;		/* size of pool array		*/
-	ssize_t		n_sf;		/* number currently in pool	*/
+	ptrdiff_t	s_sf;		/* size of pool array		*/
+	ptrdiff_t	n_sf;		/* number currently in pool	*/
 	Sfio_t**	sf;		/* array of streams		*/
 	Sfio_t*		array[3];	/* start with 3			*/
 };
@@ -288,8 +288,8 @@ typedef struct _sfproc_s	Sfproc_t;
 struct _sfproc_s
 {	int		pid;	/* process ID			*/
 	uchar*		rdata;	/* read data being cached	*/
-	ssize_t		ndata;	/* size of cached data		*/
-	ssize_t		size;	/* buffer size			*/
+	ptrdiff_t	ndata;	/* size of cached data		*/
+	ptrdiff_t	size;	/* buffer size			*/
 	int		file;	/* saved file descriptor	*/
 	int		sigp;	/* sigpipe protection needed	*/
 };
@@ -334,7 +334,7 @@ struct _fmt_s
 
 	char*		oform;		/* original format string	*/
 	va_list		oargs;		/* original arg list		*/
-	ssize_t		argn;		/* number of args already used	*/
+	ptrdiff_t	argn;		/* number of args already used	*/
 	Fmtpos_t*	fp;		/* position list		*/
 
 	Sffmt_t*	ft;		/* formatting environment	*/
@@ -346,7 +346,7 @@ struct _fmtpos_s
 {	Sffmt_t	ft;			/* environment			*/
 	Argv_t	argv;			/* argument value		*/
 	int	fmt;			/* original format		*/
-	ssize_t	need[FP_INDEX];		/* positions depending on	*/
+	ptrdiff_t need[FP_INDEX];		/* positions depending on	*/
 };
 
 #define LEFTP		'('
@@ -632,7 +632,7 @@ typedef struct _sftab_
 	int		(*sf_cvinitf)(void);	/* initialization function	*/
 	int		sf_cvinit;		/* initialization state		*/
 	Fmtpos_t*	(*sf_fmtposf)(Sfio_t*,const char*,va_list,Sffmt_t*,int);
-	char*		(*sf_fmtintf)(const char*,ssize_t*);
+	char*		(*sf_fmtintf)(const char*,ptrdiff_t*);
 	float*		sf_flt_pow10;		/* float powers of 10		*/
 	double*		sf_dbl_pow10;		/* double powers of 10		*/
 	Sfdouble_t*	sf_ldbl_pow10;		/* Sfdouble_t powers of 10	*/
@@ -720,19 +720,19 @@ typedef struct _sftab_
 #define MEMSET(s,c,n) \
 	switch(n) \
 	{ default : memset(s,(int)c,n); s += n; break; \
-	  case  7 : *s++ = (unsigned char)c;	\
-		    /* FALLTHROUGH */		\
-	  case  6 : *s++ = (unsigned char)c;	\
-		    /* FALLTHROUGH */		\
-	  case  5 : *s++ = (unsigned char)c;	\
-		    /* FALLTHROUGH */		\
-	  case  4 : *s++ = (unsigned char)c;	\
-		    /* FALLTHROUGH */		\
-	  case  3 : *s++ = (unsigned char)c;	\
-		    /* FALLTHROUGH */		\
-	  case  2 : *s++ = (unsigned char)c;	\
-		    /* FALLTHROUGH */		\
-	  case  1 : *s++ = (unsigned char)c;	\
+	  case  7 : *s++ = (uchar)c;	\
+		    /* FALLTHROUGH */	\
+	  case  6 : *s++ = (uchar)c;	\
+		    /* FALLTHROUGH */	\
+	  case  5 : *s++ = (uchar)c;	\
+		    /* FALLTHROUGH */	\
+	  case  4 : *s++ = (uchar)c;	\
+		    /* FALLTHROUGH */	\
+	  case  3 : *s++ = (uchar)c;	\
+		    /* FALLTHROUGH */	\
+	  case  2 : *s++ = (uchar)c;	\
+		    /* FALLTHROUGH */	\
+	  case  1 : *s++ = (uchar)c;	\
 	}
 
 extern Sftab_t		_Sftable;
@@ -742,7 +742,7 @@ extern int		_sfpclose(Sfio_t*);
 extern int		_sfexcept(Sfio_t*, int, ssize_t, Sfdisc_t*);
 extern Sfrsrv_t*	_sfrsrv(Sfio_t*, ssize_t);
 extern int		_sfsetpool(Sfio_t*);
-extern char*		_sfcvt(void*,char*,size_t,ssize_t,int*,int*,ssize_t*,ssize_t);
+extern char*		_sfcvt(void*,char*,size_t,ptrdiff_t,int*,int*,ptrdiff_t*,ptrdiff_t);
 extern char**		_sfgetpath(char*);
 
 extern Sfextern_t	_Sfextern;

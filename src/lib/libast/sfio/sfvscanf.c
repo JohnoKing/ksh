@@ -108,17 +108,17 @@ static int _scgetc(void* arg, int flag)
 
 /* structure to match characters in a character class */
 typedef struct _accept_s
-{	unsigned char	ok[SFIO_MAXCHAR+1];
-	int		yes;
-	unsigned char	*form, *endf;
+{	uchar	ok[SFIO_MAXCHAR+1];
+	int	yes;
+	uchar	*form, *endf;
 #if _has_multibyte
 	wchar_t	wc;
 #endif
 } Accept_t;
 
-static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
-				 Accept_t*		ac,	/* values of accepted characters	*/
-				 int			flags)	/* SFFMT_LONG for wchar_t		*/
+static uchar* _sfsetclass(uchar*	form,	/* format string			*/
+			 Accept_t*	ac,	/* values of accepted characters	*/
+			 int		flags)	/* SFFMT_LONG for wchar_t		*/
 {
 	int		c, endc, n;
 	SFMBDCL(mbs)
@@ -133,7 +133,7 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 		ac->ok[c] = !ac->yes;
 
 	if(*form == ']' || *form == '-') /* special first char */
-	{	ac->ok[*form] = (unsigned char)ac->yes;
+	{	ac->ok[*form] = (uchar)ac->yes;
 		form += 1;
 	}
 	ac->form = form;
@@ -151,7 +151,7 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 				goto one_char;
 #endif
 			for(; c <= endc; ++c)
-				ac->ok[c] = (unsigned char)ac->yes;
+				ac->ok[c] = (uchar)ac->yes;
 			n = 3;
 		}
 		else
@@ -161,7 +161,7 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 				return NULL;
 			if(n == 1)
 #endif
-				ac->ok[c] = (unsigned char)ac->yes;
+				ac->ok[c] = (uchar)ac->yes;
 		}
 	}
 
@@ -172,10 +172,10 @@ static unsigned char* _sfsetclass(unsigned char*	form,	/* format string			*/
 #if _has_multibyte
 static int _sfwaccept(wchar_t wc, Accept_t* ac)
 {
-	int		endc, c;
-	size_t		n;
-	wchar_t		fwc;
-	unsigned char	*form = ac->form;
+	int	endc, c;
+	size_t	n;
+	wchar_t	fwc;
+	uchar	*form = ac->form;
 	SFMBDCL(mbs)
 
 	SFMBCLR(&mbs);
@@ -212,9 +212,9 @@ static int _sfgetwc(Scan_t*	sc,	/* the scanning handle		*/
 		    Accept_t*	ac,	/* accept handle for %[		*/
 		    void*	mbs)	/* multibyte parsing state	*/
 {
-	size_t		n;
-	int		v;
-	unsigned char	b[16];		/* assuming that SFMBMAX <= 16! */
+	size_t	n;
+	int	v;
+	uchar	b[16];		/* assuming that SFMBMAX <= 16! */
 
 	/* shift left data so that there will be more room to back up on error.
 	   this won't help streams with small buffers - c'est la vie! */
@@ -233,7 +233,7 @@ static int _sfgetwc(Scan_t*	sc,	/* the scanning handle		*/
 	for(n = 0; n < SFMBMAX; )
 	{	if((v = _scgetc(sc, 0)) <= 0)
 			goto no_match;
-		else	b[n++] = (unsigned char)v;
+		else	b[n++] = (uchar)v;
 
 		if(mbrtowc(wc, (char*)b, n, (mbstate_t*)mbs) == (size_t)(-1))
 			goto no_match;  /* malformed multi-byte char */
@@ -947,7 +947,7 @@ loop_fmt:
 			}
 			else	size = 0;
 
-			if(fmt == '[' && !(form = (const char*)_sfsetclass((unsigned char*)form,&acc,flags)) )
+			if(fmt == '[' && !(form = (const char*)_sfsetclass((uchar*)form,&acc,flags)) )
 			{	SFungetc(f,inp);
 				goto pop_fmt;
 			}

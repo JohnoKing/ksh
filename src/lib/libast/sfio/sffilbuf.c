@@ -29,10 +29,10 @@
 **	Written by Kiem-Phong Vo
 */
 
-ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
-		  ssize_t	n)	/* see above */
+ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
+		  ptrdiff_t	n)	/* see above */
 {
-	ssize_t		r, ret;
+	ptrdiff_t	r, ret;
 	int		first, local, rc, justseek;
 	unsigned int	rcrv;
 
@@ -69,7 +69,7 @@ ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 				/* try to maintain block alignment */
 				if(f->blksz > 0 && ((unsigned)f->here%f->blksz) == 0 )
 				{	s = (((size_t)r + f->blksz-1)/f->blksz)*f->blksz;
-					if((ssize_t)s+n > f->size)
+					if((ptrdiff_t)s+n > f->size)
 						s = (size_t)r;
 				}
 
@@ -88,8 +88,8 @@ ssize_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 			if(n > 0)
 			{	if(r > n && f->extent < 0 && (f->flags&SFIO_SHARE) )
 					r = n;	/* read only as much as requested */
-				else if(justseek && n <= (ssize_t)f->iosz && (ssize_t)f->iosz <= f->size)
-					r = (ssize_t)f->iosz;	/* limit buffer filling */
+				else if(justseek && n <= (ptrdiff_t)f->iosz && (ptrdiff_t)f->iosz <= f->size)
+					r = (ptrdiff_t)f->iosz;	/* limit buffer filling */
 			}
 		}
 

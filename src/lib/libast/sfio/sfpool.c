@@ -76,7 +76,7 @@ static Sfpool_t* newpool(int mode)
 /* move a stream to head */
 static int _sfphead(Sfpool_t*	p,	/* the pool			*/
 		    Sfio_t*	f,	/* the stream			*/
-		    ssize_t	n)	/* current position in pool	*/
+		    ptrdiff_t	n)	/* current position in pool	*/
 {
 	Sfio_t*		head;
 	ssize_t		k, w, v;
@@ -141,7 +141,7 @@ done:
 /* delete a stream from its pool */
 static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
 		      Sfio_t*	f,	/* the stream		*/
-		      ssize_t	n)	/* position in pool	*/
+		      ptrdiff_t n)	/* position in pool	*/
 {
 
 	p->n_sf -= 1;
@@ -187,7 +187,7 @@ static int _sfpmove(Sfio_t*	f,
 		    int	type)	/* <0 : deleting, 0: move-to-front, >0: inserting */
 {
 	Sfpool_t*	p;
-	ssize_t		n;
+	ptrdiff_t	n;
 
 	if(type > 0)
 		return _sfsetpool(f);

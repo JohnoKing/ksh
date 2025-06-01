@@ -741,7 +741,6 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	Sfdouble_t	longmax = LDBL_LLONG_MAX;
 	int		format = fe->fmt;
 	int		n;
-	char		nc;
 	ptrdiff_t	m;
 	int		fold = (int)fe->base;
 	union types_t*	value = (union types_t*)v;
@@ -1091,6 +1090,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	case 'T':
 		if(fe->n_str>0)
 		{
+			char nc;
 			nc = fe->t_str[fe->n_str];
 			fe->t_str[fe->n_str] = 0;
 			value->s = fmttmx(fe->t_str, (Time_t)value->ll);

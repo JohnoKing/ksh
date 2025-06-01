@@ -127,7 +127,7 @@ static void* listat(Dt_t* dt, Dtstat_t* st)
 	{	memset(st, 0, sizeof(Dtstat_t));
 		st->meth  = dt->meth->type;
 		st->size  = dt->data->size;
-		st->space = (ptrdiff_t)sizeof(Dtlist_t) + (dt->disc->link >= 0 ? 0 : dt->data->size*(ptrdiff_t)sizeof(Dthold_t));
+		st->space = (ssize_t)sizeof(Dtlist_t) + (dt->disc->link >= 0 ? 0 : dt->data->size*(ssize_t)sizeof(Dthold_t));
 	}
 
 	return (void*)dt->data->size;

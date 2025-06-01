@@ -31,7 +31,7 @@
 typedef struct Stack_s
 {
 	char*		beg;
-	ssize_t		len;
+	ptrdiff_t	len;
 	char		min;
 } Stack_t;
 
@@ -40,7 +40,7 @@ fmtre(const char* as)
 {
 	char*		s = (char*)as;
 	char		c;
-	ssize_t		i;
+	ptrdiff_t	i;
 	char*		t;
 	Stack_t*	p;
 	char*		x;

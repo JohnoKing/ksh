@@ -35,7 +35,7 @@ static ptrdiff_t p_comarg(const struct comnod*);
 static ptrdiff_t p_redirect(const struct ionod*);
 static ptrdiff_t p_switch(const struct regnod*);
 static ptrdiff_t p_tree(const Shnode_t*);
-static ptrdiff_t p_string(const char*);
+static ssize_t   p_string(const char*);
 
 static Sfio_t *outfile;
 
@@ -237,7 +237,7 @@ static ptrdiff_t p_switch(const struct regnod *reg)
 	return sfputl(outfile,-1);
 }
 
-static ptrdiff_t p_string(const char *string)
+static ssize_t p_string(const char *string)
 {
 	size_t n=strlen(string);
 	if(sfputu(outfile,n+1)<0)

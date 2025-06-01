@@ -56,18 +56,18 @@ aso_init_fcntl(void* data, const char* details)
 	{
 		lock.l_type = F_WRLCK;
 		lock.l_whence = SEEK_SET;
-		lock.l_start = apl->size;
+		lock.l_start = (off_t)apl->size;
 		lock.l_len = sizeof(references);
 		if (fcntl(apl->fd, F_SETLKW, &lock) >= 0)
 		{
-			if (lseek(apl->fd, apl->size, SEEK_SET) != (ssize_t)apl->size)
+			if (lseek(apl->fd, (off_t)apl->size, SEEK_SET) != (ssize_t)apl->size)
 				references = 0;
 			else if (read(apl->fd, &references, sizeof(references)) != sizeof(references))
 				references = 0;
 			else if (references > 0)
 			{
 				references--;
-				if (lseek(apl->fd, apl->size, SEEK_SET) != (ssize_t)apl->size)
+				if (lseek(apl->fd, (off_t)apl->size, SEEK_SET) != (ssize_t)apl->size)
 					references = 0;
 				else if (write(apl->fd, &references, sizeof(references)) != sizeof(references))
 					references = 0;
@@ -116,7 +116,7 @@ aso_init_fcntl(void* data, const char* details)
 		goto bad;
 	if (fd >= 0 || (fd = open(path, O_RDWR|O_cloexec)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_cloexec, perm)) >= 0)
 	{
-		if (lseek(fd, size, SEEK_SET) != (ssize_t)size)
+		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
 			goto bad;
 		references = 1;
 		if (write(fd, &references, sizeof(references)) != sizeof(references))
@@ -133,12 +133,12 @@ aso_init_fcntl(void* data, const char* details)
 		lock.l_len = sizeof(references);
 		if (fcntl(fd, F_SETLKW, &lock) < 0)
 			goto bad;
-		if (lseek(fd, size, SEEK_SET) != (ssize_t)size)
+		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
 			goto bad;
 		if (read(fd, &references, sizeof(references)) != sizeof(references))
 			goto bad;
 		references++;
-		if (lseek(fd, size, SEEK_SET) != (ssize_t)size)
+		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
 			goto bad;
 		if (write(fd, &references, sizeof(references)) != sizeof(references))
 			goto bad;
@@ -159,8 +159,8 @@ aso_init_fcntl(void* data, const char* details)
 	return NULL;
 }
 
-static ssize_t
-aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
+static ptrdiff_t
+aso_lock_fcntl(void* data, ptrdiff_t k, void volatile* p)
 {
 	APL_t*		apl = (APL_t*)data;
 	struct flock	lock;
@@ -172,7 +172,7 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
 	else
 	{
 		lock.l_type = F_WRLCK;
-		k = HASH(p, (ssize_t)apl->size) + 1;
+		k = HASH(p, (ptrdiff_t)apl->size) + 1;
 	}
 	lock.l_whence = SEEK_SET;
 	lock.l_start = k - 1;

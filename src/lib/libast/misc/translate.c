@@ -79,7 +79,7 @@ static State_t	state =
 	{	offsetof(Catalog_t, name),	0,	0	},
 };
 
-static ssize_t
+static ptrdiff_t
 tempget(Sfio_t* sp)
 {
 	if (sfstrtell(sp) > sfstrsize(sp) / 2)
@@ -88,7 +88,7 @@ tempget(Sfio_t* sp)
 }
 
 static char*
-tempuse(Sfio_t* sp, ssize_t off)
+tempuse(Sfio_t* sp, ptrdiff_t off)
 {
 	sfputc(sp, 0);
 	return sfstrbase(sp) + off;
@@ -293,7 +293,7 @@ translate(const char* loc, const char* cmd, const char* cat, const char* msg)
 {
 	char*		r;
 	char*		t;
-	ssize_t		p;
+	ptrdiff_t	p;
 	int		oerrno;
 	Catalog_t*	cp = NULL;
 	Message_t*	mp;

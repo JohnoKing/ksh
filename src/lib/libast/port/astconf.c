@@ -94,7 +94,7 @@ typedef struct Feature_s
 	char*		value;
 	char*		std;
 	char*		ast;
-	ssize_t		length;
+	ptrdiff_t	length;
 	short		standard;
 	unsigned int	flags;
 	short		op;
@@ -307,7 +307,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 	char*		v;
 	char*		p;
 	char*		newvalue;
-	ssize_t		n;
+	ptrdiff_t	n;
 
 #if DEBUG_astconf
 	if (fp)
@@ -371,7 +371,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 	{
 		if (!value)
 			return NULL;
-		n = (ssize_t)strlen(value);
+		n = (ptrdiff_t)strlen(value);
 		goto ok;
 	}
 	s = (char*)fp->name;
@@ -398,7 +398,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 			for (; isspace(*s); s++);
 			for (v = s; *s && !isspace(*s); s++);
 			n = s - v;
-			if ((!path || *path == *p && (ssize_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
+			if ((!path || *path == *p && (ptrdiff_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
 				goto ok;
 			for (; isspace(*s); s++);
 			if (*s)
@@ -428,11 +428,11 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 		value = "0";
 	if (!path || !path[0] || path[0] == '/' && !path[1])
 		path = "-";
-	n += (ssize_t)(strlen(path) + strlen(value) + 3);
+	n += (ptrdiff_t)(strlen(path) + strlen(value) + 3);
 	if (d + n >= state.last)
 	{
-		ssize_t	c;
-		ssize_t	i;
+		ptrdiff_t c;
+		ptrdiff_t i;
 
 		i = d - state.data;
 		state.data -= state.prefix;
@@ -524,7 +524,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
 	default:
 		if (p = getenv("PATH"))
 		{
-			ssize_t		r = 1;
+			ptrdiff_t	r = 1;
 			char*		d = p;
 			Sfio_t*		tmp;
 
@@ -785,7 +785,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 		fp->op = -1;
 		fp->name = (const char*)fp + sizeof(Feature_t);
 		strcpy((char*)fp->name, name);
-		fp->length = (ssize_t)n;
+		fp->length = (ptrdiff_t)n;
 		fp->std = &null[0];
 		fp->next = state.features;
 		state.features = fp;

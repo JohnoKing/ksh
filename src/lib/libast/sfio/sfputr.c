@@ -62,7 +62,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 					w += n;
 				}
 				if(rc >= 0)
-				{	*ps++ = (unsigned char)rc;
+				{	*ps++ = (uchar)rc;
 					w += 1;
 				}
 				f->next = ps;
@@ -78,7 +78,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 				{	if(n > 0)
 						memcpy(rsrv->data, s, (size_t)n);
 					if(rc >= 0)
-						rsrv->data[n] = (unsigned char)rc;
+						rsrv->data[n] = (uchar)rc;
 					if((n = SFWRITE(f,rsrv->data,(size_t)p)) < 0 )
 						n = 0;
 				}
@@ -89,7 +89,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 		}
 
 		if(*s == 0)
-		{	*ps++ = (unsigned char)rc;
+		{	*ps++ = (uchar)rc;
 			f->next = ps;
 			w += 1;
 			break;

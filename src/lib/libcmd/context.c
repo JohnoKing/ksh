@@ -129,7 +129,7 @@ context_line(Context_t* cp)
 				return 0;
 			cp->end = cp->buf + r;
 			n = (s = memchr(cp->buf, '\n', (size_t)r)) ? (size_t)(s - cp->buf + 1) : (size_t)r;
-			if ((ssize_t)n > (e - t))
+			if ((ptrdiff_t)n > (e - t))
 			{
 				r = t - lp->data;
 				m = (size_t)(r + (s - cp->buf));

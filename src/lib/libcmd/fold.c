@@ -83,10 +83,10 @@ static const char usage[] =
 #define T_SP	5
 #define T_RET	6
 
-static void fold(Sfio_t *in, Sfio_t *out, ssize_t width, const char *cont, size_t contsize, char *cols)
+static void fold(Sfio_t *in, Sfio_t *out, ptrdiff_t width, const char *cont, size_t contsize, char *cols)
 {
 	char *cp, *first;
-	ssize_t n, col=0;
+	ptrdiff_t n, col=0;
 	char x=0;
 	char *last_space=0;
 	cols[0] = 0;
@@ -168,7 +168,7 @@ int
 b_fold(int argc, char** argv, Shbltin_t* context)
 {
 	int n;
-	ssize_t width=WIDTH;
+	ptrdiff_t width=WIDTH;
 	Sfio_t *fp;
 	char *cp;
 	char *cont="\n";
@@ -202,7 +202,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
 				cols['\t'] = T_SP;
 			continue;
 		case 'w':
-			if ((width = (ssize_t)opt_info.num) <= 0)
+			if ((width = (ptrdiff_t)opt_info.num) <= 0)
 				error(2, "%d: width must be positive", opt_info.num);
 			continue;
 		case ':':

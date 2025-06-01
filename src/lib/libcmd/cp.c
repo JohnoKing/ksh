@@ -177,7 +177,7 @@ typedef struct State_s			/* program state		*/
 #define INITSTATE	pathsiz		/* (re)init state before this	*/
 	size_t		pathsiz;	/* state.path buffer size	*/
 	size_t		postsiz;	/* state.path post index	*/
-	ssize_t		presiz;		/* state.path pre index		*/
+	ptrdiff_t	presiz;		/* state.path pre index		*/
 	size_t		suflen;		/* strlen(state.suffix)		*/
 
 
@@ -231,7 +231,7 @@ visit(State_t* state, FTSENT* ent)
 {
 	char*		base;
 	int		n;
-	ssize_t		len;
+	ptrdiff_t	len;
 	int		rm = state->remove || ent->fts_info == FTS_SL;
 	int		m;
 	int		v;
@@ -254,12 +254,12 @@ visit(State_t* state, FTSENT* ent)
 	if (ent->fts_level == 0)
 	{
 		base = ent->fts_name;
-		len = (ssize_t)ent->fts_namelen;
+		len = (ptrdiff_t)ent->fts_namelen;
 		if (state->hierarchy)
 			state->presiz = -1;
 		else
 		{
-			state->presiz = (ssize_t)ent->fts_pathlen;
+			state->presiz = (ptrdiff_t)ent->fts_pathlen;
 			while (*base == '.' && *(base + 1) == '/')
 				for (base += 2; *base == '/'; base++);
 			if (*base == '.' && !*(base + 1))
@@ -279,7 +279,7 @@ visit(State_t* state, FTSENT* ent)
 	else
 	{
 		base = ent->fts_path + state->presiz + 1;
-		len = (ssize_t)ent->fts_pathlen - state->presiz - 1;
+		len = (ptrdiff_t)ent->fts_pathlen - state->presiz - 1;
 	}
 	len++;
 	if (state->directory)

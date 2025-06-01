@@ -109,9 +109,9 @@ struct _dtmethod_s
 
 /* structure to hold methods that manipulate an object */
 struct _dtdisc_s
-{	int		key;	/* where the key resides 	*/
-	ssize_t		size;	/* key size and type		*/
-	int		link;	/* offset to Dtlink_t field	*/
+{	ptrdiff_t	key;	/* where the key resides 	*/
+	ptrdiff_t	size;	/* key size and type		*/
+	ptrdiff_t	link;	/* offset to Dtlink_t field	*/
 	Dtmake_f	makef;	/* object constructor		*/
 	Dtfree_f	freef;	/* object destructor		*/
 	Dtcompar_f	comparf;/* to compare two objects	*/

@@ -28,7 +28,7 @@ Sfulong_t sfgetm(Sfio_t* f, Sfulong_t m)
 {
 	Sfulong_t	v;
 	uchar		*s, *ends, c;
-	ssize_t		p;
+	ptrdiff_t	p;
 
 	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
 		return (Sfulong_t)(-1);

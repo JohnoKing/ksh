@@ -121,7 +121,7 @@ crc_open(const Method_t* method, const char* name)
 	const char*	v;
 	size_t		i;
 	int		j;
-	ssize_t		k;
+	ptrdiff_t	k;
 	Crcnum_t	polynomial;
 	Crcnum_t	x;
 

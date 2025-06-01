@@ -62,7 +62,7 @@ int
 b_mkdir(int argc, char** argv, Shbltin_t* context)
 {
 	char*		path;
-	ssize_t		n;
+	ptrdiff_t	n;
 	mode_t		mode = DIRMODE;
 	mode_t		mask = 0;
 	int		mflag = 0;
@@ -143,7 +143,7 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
 			 */
 
 			made = 0;
-			n = (ssize_t)strlen(path);
+			n = (ptrdiff_t)strlen(path);
 			while (n > 0 && path[--n] == '/');
 			path[n + 1] = 0;
 			for (part = path, n = *part; n;)

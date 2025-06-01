@@ -25,6 +25,6 @@
 extern
 Sfulong_t _sfgetu(Sfio_t* f)
 {
-	sfungetc(f, (unsigned char)_SFIO_(f)->val);
+	sfungetc(f, (uchar)_SFIO_(f)->val);
 	return sfgetu(f);
 }

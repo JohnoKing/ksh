@@ -381,7 +381,7 @@ static Namval_t *array_find(Namval_t *np,Namarr_t *arp, int flag)
 			char *cp;
 			if(!ap->header.table)
 				ap->header.table = dtopen(&_Nvdisc,Dtoset);
-			sfprintf(sh.strbuf,"%zd",ap->cur);
+			sfprintf(sh.strbuf,"%td",ap->cur);
 			cp = sfstruse(sh.strbuf);
 			mp = nv_search(cp, ap->header.table, NV_ADD);
 			mp->nvmeta = np;

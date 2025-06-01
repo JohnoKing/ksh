@@ -772,11 +772,11 @@ again:
 				ERROR(vp,e_questcolon);
 			sfputc(sh.stk,A_JMP);
 			offset2 = stkpush(sh.stk,vp,0,short);
-			*((short*)stkptr(sh.stk,offset1)) = stktell(sh.stk);
+			*((short*)stkptr(sh.stk,offset1)) = (short)stktell(sh.stk);
 			sfputc(sh.stk,A_POP);
 			if(!expr(vp,3))
 				return 0;
-			*((short*)stkptr(sh.stk,offset2)) = stktell(sh.stk);
+			*((short*)stkptr(sh.stk,offset2)) = (short)stktell(sh.stk);
 			lvalue.value = 0;
 			wasop = 0;
 			break;
@@ -800,7 +800,7 @@ again:
 			sfputc(sh.stk,A_POP);
 			if(!expr(vp,c))
 				return 0;
-			*((short*)stkptr(sh.stk,offset)) = stktell(sh.stk);
+			*((short*)stkptr(sh.stk,offset)) = (short)stktell(sh.stk);
 			if(op!=A_QCOLON)
 				sfputc(sh.stk,A_NOTNOT);
 			lvalue.value = 0;

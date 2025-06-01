@@ -45,8 +45,8 @@
 typedef struct regsubop_s
 {
 	int		op;		/* REG_SUB_LOWER,REG_SUB_UPPER	*/
-	ssize_t		off;		/* re_rhs or match[] offset	*/
-	ssize_t		len;		/* re_rhs len or len==0 match[]	*/
+	ptrdiff_t	off;		/* re_rhs or match[] offset	*/
+	ptrdiff_t	len;		/* re_rhs len or len==0 match[]	*/
 } regsubop_t;
 
 #define _REG_SUB_PRIVATE_ \
@@ -296,7 +296,7 @@ typedef struct Vector_s
 {
 	Stk_t*		stk;		/* stack pointer		*/
 	char*		vec;		/* the data			*/
-	ssize_t		inc;		/* growth increment		*/
+	ptrdiff_t	inc;		/* growth increment		*/
 	size_t		siz;		/* element size			*/
 	ssize_t		max;		/* max index			*/
 	ssize_t		cur;		/* current index -- user domain	*/
@@ -356,7 +356,7 @@ typedef struct Group_s
 {
 	int		number;		/* group number			*/
 	int		last;		/* last contained group number	*/
-	ssize_t		size;		/* lookbehind size		*/
+	ptrdiff_t	size;		/* lookbehind size		*/
 	int		back;		/* backreferenced		*/
 	regflags_t	flags;		/* group flags			*/
 	union
@@ -462,8 +462,8 @@ typedef struct Trie_node_s
 typedef struct Trie_s
 {
 	Trie_node_t**	root;
-	ssize_t		min;
-	ssize_t		max;
+	ptrdiff_t	min;
+	ptrdiff_t	max;
 } Trie_t;
 
 /*
@@ -478,8 +478,8 @@ typedef struct Rex_s
 	regflags_t	flags;			/* scoped flags		*/
 	int		explicit;		/* scoped explicit match*/
 	struct Rex_s*	next;			/* remaining parts	*/
-	ssize_t		lo;			/* lo dup count		*/
-	ssize_t		hi;			/* hi dup count		*/
+	ptrdiff_t	lo;			/* lo dup count		*/
+	ptrdiff_t	hi;			/* hi dup count		*/
 	unsigned char*	map;			/* fold and/or ccode map*/
 	union
 	{

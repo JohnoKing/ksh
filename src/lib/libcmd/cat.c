@@ -134,7 +134,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 	ptrdiff_t	n;
 	int		any;
 	int		header;
-	ptrdiff_t	sz;
+	ssize_t		sz;
 
 	unsigned char	meta[3];
 	unsigned char	tmp[32];

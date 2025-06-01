@@ -78,7 +78,7 @@ static const char usage[] =
 typedef struct Delim_s
 {
 	char*		str;
-	ssize_t		len;
+	ptrdiff_t	len;
 	int		chr;
 } Delim_t;
 
@@ -94,7 +94,7 @@ typedef struct Cut_s
 	Delim_t		ldelim;
 	unsigned char	space[UCHAR_MAX+1];
 	unsigned char	eob;
-	ssize_t		list[2];	/* NOTE: must be last member */
+	ptrdiff_t	list[2];	/* NOTE: must be last member */
 } Cut_t;
 
 #define HUGE		INT_MAX
@@ -117,9 +117,9 @@ typedef struct Cut_s
 static int
 mycomp(const void* a, const void* b)
 {
-	if (*((ssize_t*)a) < *((ssize_t*)b))
+	if (*((ptrdiff_t*)a) < *((ptrdiff_t*)b))
 		return -1;
-	if (*((ssize_t*)a) > *((ssize_t*)b))
+	if (*((ptrdiff_t*)a) > *((ptrdiff_t*)b))
 		return 1;
 	return 0;
 }
@@ -127,10 +127,10 @@ mycomp(const void* a, const void* b)
 static Cut_t*
 cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
 {
-	ssize_t*	lp;
-	ssize_t		c;
-	ssize_t		n = 0;
-	ssize_t		range = 0;
+	ptrdiff_t*	lp;
+	ptrdiff_t	c;
+	ptrdiff_t	n = 0;
+	ptrdiff_t	range = 0;
 	char*		cp = str;
 	Cut_t*		cut;
 
@@ -186,7 +186,7 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
 			}
 			if(c==0)
 			{
-				ssize_t *dp;
+				ptrdiff_t *dp;
 				*lp = HUGE;
 				n = 1 + (lp-cut->list)/2;
 				qsort(lp=cut->list,(size_t)n,2*sizeof(*lp),mycomp);
@@ -260,19 +260,19 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
 static void
 cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 {
-	ssize_t		c;
-	ssize_t		len;
-	ssize_t		ncol = 0;
-	const ssize_t*	lp = cut->list;
-	char*		bp;
-	ssize_t		skip; /* non-zero for don't copy */
-	ssize_t		must;
-	const char*	xx;
+	ptrdiff_t		c;
+	ptrdiff_t		len;
+	ptrdiff_t		ncol = 0;
+	const ptrdiff_t*	lp = cut->list;
+	char*			bp;
+	ptrdiff_t		skip; /* non-zero for don't copy */
+	ptrdiff_t		must;
+	const char*		xx;
 
 	for (;;)
 	{
-		if (len = (ssize_t)cut->reclen)
-			bp = sfreserve(fdin, len, -1);
+		if (len = (ptrdiff_t)cut->reclen)
+			bp = sfreserve(fdin, (ssize_t)len, -1);
 		else
 			bp = sfgetr(fdin, '\n', 0);
 		if (!bp && !(bp = sfgetr(fdin, 0, SFIO_LASTR)))
@@ -287,7 +287,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 			if (cut->nosplit)
 			{
 				const char*	s = bp;
-				ssize_t		w = len < ncol ? len : ncol;
+				ptrdiff_t	w = len < ncol ? len : ncol;
 				int		z;
 
 				while (w > 0)
@@ -318,7 +318,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 			else if (cut->cflag)
 			{
 				const char*	s = bp;
-				ssize_t		w = len;
+				ptrdiff_t	w = len;
 				int		z;
 
 				while (w > 0 && ncol > 0)
@@ -375,9 +375,9 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 	unsigned char *sp = cut->space;
 	unsigned char *cp;
 	unsigned char *wp;
-	ssize_t c;
-	ssize_t nfields=0;
-	const ssize_t *lp = cut->list;
+	ptrdiff_t c;
+	ptrdiff_t nfields=0;
+	const ptrdiff_t *lp = cut->list;
 	unsigned char *copy;
 	int nodelim=0, empty=0, inword=0;
 	unsigned char *ep;
@@ -425,11 +425,11 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 							while ((c = mb2wc(w, cp, (size_t)(ep - cp))) <= 0)
 							{
 								/* mb char possibly spanning buffer boundary -- fun stuff */
-								if ((ep - cp) < (ssize_t)mbmax())
+								if ((ep - cp) < (ptrdiff_t)mbmax())
 								{
-									ssize_t	i;
-									ssize_t	j;
-									ssize_t	k;
+									ptrdiff_t i;
+									ptrdiff_t j;
+									ptrdiff_t k;
 
 									if (lastchar != cut->eob)
 									{
@@ -453,7 +453,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 										*ep = cut->eob;
 									j = i;
 									k = 0;
-									while (j < (ssize_t)mbmax())
+									while (j < (ptrdiff_t)mbmax())
 										mb[j++] = cp[k++];
 									if ((c = mb2wc(w, (char*)mb, (size_t)j)) <= 0)
 									{
@@ -581,7 +581,7 @@ b_cut(int argc, char** argv, Shbltin_t* context)
 	char*		cp = 0;
 	Sfio_t*		fp;
 	char*		s;
-	ssize_t		n;
+	ptrdiff_t	n;
 	Cut_t*		cut;
 	int		mode = 0;
 	Delim_t		wdelim;

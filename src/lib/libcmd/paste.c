@@ -79,10 +79,10 @@ typedef struct Delim_s
  * to <out>
  */
 
-static int paste(ssize_t nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, ssize_t dsiz, ssize_t dlen, Delim_t* mp)
+static int paste(ptrdiff_t nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, ptrdiff_t dsiz, ptrdiff_t dlen, Delim_t* mp)
 {
 	const char *cp;
-	ssize_t d, n, i, z, more=1;
+	ptrdiff_t d, n, i, z, more=1;
 	Sfio_t *fp;
 	do
 	{
@@ -142,10 +142,10 @@ static int paste(ssize_t nstream,Sfio_t* streams[],Sfio_t *out, const char *deli
 /*
  * Handles paste -s, for file <in> to file <out> using delimiters <delim>
  */
-static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,ssize_t dlen,Delim_t* mp)
+static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,ptrdiff_t dlen,Delim_t* mp)
 {
 	const char *cp;
-	ssize_t d=0;
+	ptrdiff_t d=0;
 	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,(size_t)sfvalue(in)-1) < 0)
 		return -1;
 	while(cp=sfgetr(in, '\n',0))
@@ -176,7 +176,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
 	char 		*cp, *delim;
 	char		*ep;
 	Delim_t		*mp;
-	ssize_t		dlen, dsiz;
+	ptrdiff_t	dlen, dsiz;
 	char		defdelim[2];
 
 	cmdinit(argc, argv, context, ERROR_CATALOG, 0);

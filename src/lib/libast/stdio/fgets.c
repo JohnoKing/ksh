@@ -21,9 +21,9 @@
 #include "stdhdr.h"
 
 extern char*
-_stdgets(Sfio_t* f, char* us, ssize_t n, int isgets)
+_stdgets(Sfio_t* f, char* us, ptrdiff_t n, int isgets)
 {
-	ssize_t		p;
+	ptrdiff_t	p;
 	unsigned char*	is;
 	unsigned char*	ps;
 
@@ -37,7 +37,7 @@ _stdgets(Sfio_t* f, char* us, ssize_t n, int isgets)
 
 	while(n)
 	{	/* peek the read buffer for data */
-		if((p = (ssize_t)(f->endb - (ps = f->next))) <= 0 )
+		if((p = f->endb - (ps = f->next)) <= 0 )
 		{	f->getr = '\n';
 			f->mode |= SFIO_RC;
 			if(SFRPEEK(f,ps,p) <= 0)

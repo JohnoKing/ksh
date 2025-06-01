@@ -82,7 +82,7 @@ getcwd(char* buf, size_t len)
 struct dirlist				/* long path chdir(2) component	*/
 {
 	struct dirlist*	next;		/* next component		*/
-	ssize_t		index;		/* index from end of buf	*/
+	ptrdiff_t	index;		/* index from end of buf	*/
 };
 
 /*
@@ -149,7 +149,7 @@ getcwd(char* buf, size_t len)
 	char*		s;
 	DIR*		dirp = 0;
 	size_t		n;
-	ssize_t		x;
+	ptrdiff_t	x;
 	size_t		namlen;
 	ssize_t		extra = -1;
 	struct dirent*	entry;
@@ -272,7 +272,7 @@ getcwd(char* buf, size_t len)
 		{
 			if (!(entry = readdir(dirp))) ERROR(ENOENT);
 			namlen = D_NAMLEN(entry);
-			if ((d - dots) > (ssize_t)(PATH_MAX - 1 - namlen))
+			if ((d - dots) > (ptrdiff_t)(PATH_MAX - 1 - namlen))
 			{
 				*d = 0;
 				if (namlen >= PATH_MAX || !(dirstk = pushdir(dirstk, dots + 3, p, buf + len - 1))) ERROR(ERANGE);

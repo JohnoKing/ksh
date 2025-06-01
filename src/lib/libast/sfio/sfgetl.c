@@ -28,7 +28,7 @@ Sflong_t sfgetl(Sfio_t* f)
 {
 	Sflong_t	v;
 	uchar		*s, *ends, c;
-	ssize_t		p;
+	ptrdiff_t	p;
 
 	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
 		return (Sflong_t)(-1);

@@ -553,7 +553,7 @@ load(Lc_info_t* li)
 	char**		v;
 	char**		e;
 	unsigned char*		u;
-	ssize_t			n;
+	ptrdiff_t		n;
 	iconv_t			cvt;
 	Sfio_t*			sp;
 	Sfio_t*			tp;
@@ -571,7 +571,7 @@ load(Lc_info_t* li)
 		tm_info.deformat = tm_info.format[TM_DEFAULT];
 	if (mcfind(NULL, NULL, LC_TIME, 0, path, sizeof(path)) && (sp = sfopen(NULL, path, "r")))
 	{
-		n = (ssize_t)sfsize(sp);
+		n = (ptrdiff_t)sfsize(sp);
 		tp = 0;
 		if (u = (unsigned char*)sfreserve(sp, 3, 1))
 		{

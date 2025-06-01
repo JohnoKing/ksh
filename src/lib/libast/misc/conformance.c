@@ -38,7 +38,7 @@ initconformance(void)
 	size_t			h;
 	size_t			i;
 	size_t			j;
-	ssize_t			d;
+	ptrdiff_t		d;
 	int			c;
 	Sfio_t*			sp;
 

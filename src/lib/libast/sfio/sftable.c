@@ -26,7 +26,7 @@
 **	Written by Kiem-Phong Vo.
 */
 
-static char* sffmtint(const char* str, ssize_t* v)
+static char* sffmtint(const char* str, ptrdiff_t* v)
 {
 	for(*v = 0; isdigit(*str); ++str)
 		*v = *v * 10 + (*str - '0');
@@ -38,17 +38,17 @@ static char* sffmtint(const char* str, ssize_t* v)
 static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,int type)
 {
 	int		fmt, flags, dot;
-	ssize_t		base, width, precis, v, n, argp;
-	ssize_t		n_str, size = 0;
+	ptrdiff_t	base, width, precis, v, n, argp;
+	ptrdiff_t	n_str, size = 0;
 	char		*t_str, *sp;
 	int		skip, dollar, decimal, thousand;
 	Sffmt_t		savft;
 	Fmtpos_t*	fp;	/* position array of arguments	*/
-	ssize_t		maxp;
-	ssize_t		need[FP_INDEX];
-	ssize_t		nargs;	/* the argv[] index of the last seen sequential % format (% or *) */
-	ssize_t		xargs;	/* highest (max) argv[] index see in an indexed format (%x$ *x$)  */
-	ssize_t		nextarg = 0;
+	ptrdiff_t	maxp;
+	ptrdiff_t	need[FP_INDEX];
+	ptrdiff_t	nargs;	/* the argv[] index of the last seen sequential % format (% or *) */
+	ptrdiff_t	xargs;	/* highest (max) argv[] index see in an indexed format (%x$ *x$)  */
+	ptrdiff_t	nextarg = 0;
 	SFMBDCL(fmbs)
 
 	if(type < 0)
@@ -407,7 +407,7 @@ static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,in
 		{ arg_list:
 			if(fp[n].ft.fmt == LEFTP)
 			{	fp[n].argv.s = va_arg(args, char*);
-				fp[n].ft.size = (ssize_t)strlen(fp[n].argv.s);
+				fp[n].ft.size = (ptrdiff_t)strlen(fp[n].argv.s);
 			}
 			else if(fp[n].ft.fmt == '.' || fp[n].ft.fmt == 'I')
 				fp[n].argv.i = va_arg(args, int);
@@ -484,26 +484,26 @@ static int sfcvinit(void)
 
 	/* [0-9] */
 	for(d = 0; d < 10; ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)d;
-		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (uchar)d;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (uchar)d;
 	}
 
 	/* [a-z] */
 	for(; d < 36; ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)d;
-		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (uchar)d;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (uchar)d;
 	}
 
 	/* [A-Z] */
 	for(l = 10; d < 62; ++l, ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)l;
-		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (uchar)l;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (uchar)d;
 	}
 
 	/* remaining digits */
 	for(; d < SFIO_RADIX; ++d)
-	{	_Sfcv36[(uchar)_Sfdigits[d]] = (unsigned char)d;
-		_Sfcv64[(uchar)_Sfdigits[d]] = (unsigned char)d;
+	{	_Sfcv36[(uchar)_Sfdigits[d]] = (uchar)d;
+		_Sfcv64[(uchar)_Sfdigits[d]] = (uchar)d;
 	}
 
 	_Sftype['d'] = _Sftype['i'] = SFFMT_INT;

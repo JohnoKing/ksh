@@ -139,7 +139,7 @@ typedef struct
 #define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(size_t)(i)*(v)->siz):(t*)vecseek(&(v),i))
 
 static Vector_t*
-vecopen(ssize_t inc, size_t siz)
+vecopen(ptrdiff_t inc, size_t siz)
 {
 	Vector_t*	v;
 	Stk_t*		sp;
@@ -162,7 +162,7 @@ vecopen(ssize_t inc, size_t siz)
 }
 
 static void*
-vecseek(Vector_t** p, ssize_t index)
+vecseek(Vector_t** p, ptrdiff_t index)
 {
 	Vector_t*	v = *p;
 
@@ -246,7 +246,7 @@ _matchpush(Env_t* env, Rex_t* rex)
 	regmatch_t*	m;
 	regmatch_t*	e;
 	regmatch_t*	s;
-	ssize_t		num;
+	ptrdiff_t	num;
 
 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
 		num = 0;
@@ -574,7 +574,7 @@ parsetrie(Env_t* env, Trie_node_t* x, Rex_t* rex, Rex_t* cont, unsigned char* s)
 }
 
 static int
-collelt(Celt_t* ce, char* key, int c, ssize_t x)
+collelt(Celt_t* ce, char* key, int c, ptrdiff_t x)
 {
 	Ckey_t	elt;
 
@@ -610,7 +610,7 @@ collelt(Celt_t* ce, char* key, int c, ssize_t x)
 }
 
 static int
-collic(Celt_t* ce, char* key, char* nxt, int c, ssize_t x)
+collic(Celt_t* ce, char* key, char* nxt, int c, ptrdiff_t x)
 {
 	if (!x)
 	{
@@ -648,8 +648,8 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 	wchar_t			c;
 	size_t			z;
 	int			r;
-	ssize_t			w;
-	ssize_t			x;
+	ptrdiff_t		w;
+	ptrdiff_t		x;
 	int			ic;
 	Ckey_t			key;
 	Ckey_t			elt;
@@ -796,8 +796,8 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
 	int		d;
 	int		r;
 	ssize_t		i;
-	ssize_t		m;
 	ssize_t		n;
+	ptrdiff_t	m;
 	unsigned char*	p;
 	unsigned char*	t;
 	unsigned char*	b;

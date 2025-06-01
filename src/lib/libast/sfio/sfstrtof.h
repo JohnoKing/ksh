@@ -163,19 +163,19 @@ S2F_function(const char* str, char** end)
 #endif
 {
 #if !S2F_scan
-	unsigned char*	s = (unsigned char*)str;
+	uchar*		s = (uchar*)str;
 #if S2F_size
-	unsigned char*	z = s + size;
+	uchar*		z = s + size;
 	int		back = 1;
 	int		b;
 #endif
-	unsigned char*		t;
+	uchar*		t;
 #endif
 	S2F_batch	n;
 	int		c;
 	int		digits;
 	int		m;
-	unsigned char*	cv;
+	uchar*		cv;
 	int		negative;
 	int		enegative;
 	int		fraction;

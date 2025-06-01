@@ -201,7 +201,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 	char*		s;
 	char*		t;
 	MM_table_t*	p;
-	ssize_t			n;
+	ptrdiff_t		n;
 	int			m;
 	int			r;
 	int			fd;
@@ -245,13 +245,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s:", n, n, s);
 			s = ++t;
-			if ((n = (ssize_t)strlen(t)) > MM_LABEL_2_MAX)
+			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_2_MAX)
 				n = MM_LABEL_2_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}
 		else
 		{
-			if ((n = (ssize_t)strlen(t)) > MM_LABEL_1_MAX)
+			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_1_MAX)
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}

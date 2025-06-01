@@ -1291,7 +1291,7 @@ breakloop:
 	sfputc(sh.stk,0);
 	stkseek(sh.stk,stktell(sh.stk)-1);
 	state = stkptr(sh.stk,ARGVAL);
-	n = stktell(sh.stk)-ARGVAL;
+	n = stktell(sh.stk)-(ptrdiff_t)ARGVAL;
 	lp->lexd.first=0;
 	if(n==1)
 	{

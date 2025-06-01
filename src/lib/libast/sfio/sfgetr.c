@@ -29,7 +29,7 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 	     int	rc,	/* record separator	*/
 	     int	type)
 {
-	ssize_t		n, un;
+	ptrdiff_t	n, un;
 	uchar		*s, *ends, *us;
 	int		found;
 	Sfrsrv_t*	rsrv;

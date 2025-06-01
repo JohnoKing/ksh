@@ -333,11 +333,11 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
  * this is the original interface
  */
 
-ssize_t
+ptrdiff_t
 sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
 {
 	size_t		i;
-	ssize_t		r;
+	ptrdiff_t	r;
 	Fmt_t		fmt;
 
 	memset(&fmt, 0, sizeof(fmt));

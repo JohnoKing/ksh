@@ -48,15 +48,15 @@ fmtfmt(const char* as)
 {
 	char*		s = (char*)as;
 	char*		buf;
-	ssize_t		i;
 	int		c;
 	int		a;
 	int		q;
 	int		x;
 	int		t;
-	ssize_t		m;
 	int		n;
-	ssize_t		z;
+	ptrdiff_t	i;
+	ptrdiff_t	m;
+	ptrdiff_t	z;
 	char		formats[256];
 	unsigned int	extra[elementsof(formats)];
 
@@ -176,7 +176,7 @@ fmtfmt(const char* as)
 				i = a;
 			else
 				i++;
-			if (i < (ssize_t)elementsof(formats))
+			if (i < (ptrdiff_t)elementsof(formats))
 			{
 				formats[i] = (char)t;
 				if (extra[i] = (unsigned)x)

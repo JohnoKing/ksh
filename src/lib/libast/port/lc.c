@@ -169,13 +169,13 @@ lcinfo(int category)
  * if standard!=0 and s[0] is a digit leading non-digits are ignored in p
  */
 
-static int
+static ptrdiff_t
 match(const char* s, const char* p, size_t minimum, int standard)
 {
 	const char*	t;
 	const char*	x;
-	int		w;
-	int		z;
+	ptrdiff_t	w;
+	ptrdiff_t	z;
 
 	z = 0;
 	do
@@ -231,9 +231,9 @@ match(const char* s, const char* p, size_t minimum, int standard)
 				p++;
 			}
 			if ((!*t || *t == ',') && (!*p || *p == '|' || w))
-				return (int)(p - x);
-			if (minimum && z < (p - x) && (p - x) >= (ssize_t)minimum)
-				z = (int)(p - x);
+				return p - x;
+			if (minimum && z < (p - x) && (p - x) >= (ptrdiff_t)minimum)
+				z = p - x;
 		}
 		while (*p && *p != '|')
 			p++;
@@ -245,7 +245,7 @@ match(const char* s, const char* p, size_t minimum, int standard)
  * return 1 if s matches the charset names in cp
  */
 
-static int
+static ptrdiff_t
 match_charset(const char* s, const Lc_charset_t* cp)
 {
 	return match(s, cp->code, 0, 1) || match(s, cp->alternates, 3, 1) || cp->ms && match(s, cp->ms, 0, 1);
@@ -432,7 +432,7 @@ lcmake(const char* name)
 	const Lc_attribute_t*	ap;
 	Lc_attribute_list_t*	ai;
 	Lc_attribute_list_t*	al;
-	int			i;
+	ptrdiff_t		i;
 	size_t			j;
 	size_t			n;
 	size_t			z;
@@ -582,7 +582,7 @@ lcmake(const char* name)
 					z = 0;
 					tpb = 0;
 					for (tp = lc_territories; tp->name; tp++)
-						if ((i = match(s, tp->name, 3, 0)) > (int)z)
+						if ((i = match(s, tp->name, 3, 0)) > (ptrdiff_t)z)
 						{
 							tpb = tp;
 							if ((z = (size_t)i) == n)
@@ -762,7 +762,7 @@ lcmake(const char* name)
 			case '.':
 			case '_':
 			case 0:
-				i = (int)j;
+				i = (ptrdiff_t)j;
 				z += local[!i].size + n;
 				break;
 			}

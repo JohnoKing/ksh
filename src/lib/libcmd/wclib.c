@@ -327,7 +327,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 	}
 	else
 	{
-		int		lineoff=0;
+		ptrdiff_t	lineoff=0;
 		int		skip=0;
 		int		adjust=0;
 		int		state=0;
@@ -476,7 +476,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 				nwords++;
 			}
 		eob:
-			lineoff = (int)(cp-start);
+			lineoff = cp-start;
 			if((cp -= 2) >= buff)
 				c = type[*cp];
 			else

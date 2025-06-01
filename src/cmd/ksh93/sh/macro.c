@@ -97,7 +97,7 @@ typedef struct  _mac_
 #define M_TYPE		8	/* ${@var}	*/
 
 static noreturn void	mac_error(void);
-static ptrdiff_t substring(const char*, size_t, const char*, ssize_t[], int);
+static ptrdiff_t substring(const char*, size_t, const char*, ssize_t[], regflags_t);
 static void	copyto(Mac_t*, int, char);
 static void	comsubst(Mac_t*, Shnode_t*, char);
 static int	varsub(Mac_t*);
@@ -919,11 +919,10 @@ done:
  */
 static void mac_substitute(Mac_t *mp, char *cp,char *str,ssize_t subexp[],ptrdiff_t subsize)
 {
-	ptrdiff_t c;
+	ptrdiff_t c, n = stktell(sh.stk);
 	char	*first=fcseek(0);
 	char	*ptr;
 	Mac_t	savemac;
-	ptrdiff_t n = stktell(sh.stk);
 	savemac = *mp;
 	mp->pattern = 3;
 	mp->split = 0;
@@ -2255,7 +2254,8 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 	int			was_history = sh_isstate(SH_HISTORY);
 	int			was_verbose = sh_isstate(SH_VERBOSE);
 	int			was_interactive = sh_isstate(SH_INTERACTIVE);
-	ptrdiff_t		newlines,bufsize,nextnewlines;
+	ptrdiff_t		newlines,nextnewlines;
+	ssize_t			bufsize;
 	Sfoff_t			foff;
 	Namval_t		*np;
 	savemac.wasexpan = 1;
@@ -2711,11 +2711,12 @@ static void endfield(Mac_t *mp,int split)
  * Finds the right substring of STRING using the expression PAT
  * the longest substring is found when FLAG is set.
  */
-static ptrdiff_t substring(const char *string,size_t len,const char *pat,ssize_t match[], int flag)
+static ptrdiff_t substring(const char *string,size_t len,const char *pat,ssize_t match[], regflags_t flag)
 {
 	const char *sp=string;
 	size_t size;
-	ssize_t smatch[2*(MATCH_MAX+1)], n, nmatch;
+	ssize_t smatch[2*(MATCH_MAX+1)];
+	ptrdiff_t n, nmatch;
 	if(flag)
 	{
 		if(n=strngrpmatch(sp,len,pat,smatch,elementsof(smatch)/2,STR_RIGHT|STR_MAXIMAL))

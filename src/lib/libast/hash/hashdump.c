@@ -65,7 +65,7 @@ dumpbucket(Hash_table_t* tab, int flags)
 				n++;
 		if (n)
 		{
-			sfprintf(sfstderr, "%5d %2zu :", sp - tab->table, n);
+			sfprintf(sfstderr, "%5td %2zu :", sp - tab->table, n);
 			for (b = *sp; b; b = b->next)
 				if (!(b->hash & HASH_DELETED) && (!(tab->flags & HASH_VALUE) || b->value))
 				{
@@ -116,7 +116,7 @@ dumptable(Hash_table_t* tab, int flags)
 	if (tab->frozen) sfprintf(sfstderr, "frozen=%u ", (unsigned int)tab->frozen);
 	dumpflags(tab->flags);
 	sfprintf(sfstderr, "\n");
-	sfprintf(sfstderr, "        size:        %zd\n", tab->size);
+	sfprintf(sfstderr, "        size:        %td\n", tab->size);
 	sfprintf(sfstderr, "        buckets:     %d\n", tab->buckets);
 	sfprintf(sfstderr, "        bucketsize:  %zu\n", (size_t)tab->bucketsize * sizeof(char*));
 	sfprintf(sfstderr, "\n");

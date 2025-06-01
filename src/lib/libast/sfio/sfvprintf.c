@@ -31,7 +31,7 @@
 **	Written by Kiem-Phong Vo.
 */
 
-#define HIGHBITS	(~((~((size_t)0)) >> 1))
+#define HIGHBITS	(~((~((ptrdiff_t)0)) >> 1))
 #define HIGHBITL	(~((~((Sfulong_t)0)) >> 1))
 
 #define SFFMT_PREFIX	(SFFMT_MINUS|SFFMT_SIGN|SFFMT_BLANK)

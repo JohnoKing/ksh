@@ -130,13 +130,13 @@ typedef struct File_s
 	char*		name;
 	char*		recptr;
 	ssize_t		reclen;
-	ssize_t		nfields;
-	ssize_t		field;
-	ssize_t		fieldlen;
-	ssize_t		maxfields;
-	ssize_t		spaces;
-	ssize_t		hit;
-	ssize_t		discard;
+	ptrdiff_t	nfields;
+	ptrdiff_t	field;
+	ptrdiff_t	fieldlen;
+	ptrdiff_t	maxfields;
+	ptrdiff_t	spaces;
+	ptrdiff_t	hit;
+	ptrdiff_t	discard;
 	Field_t*	fields;
 } File_t;
 
@@ -144,18 +144,18 @@ typedef struct Join_s
 {
 	unsigned char	state[1<<CHAR_BIT];
 	Sfio_t*		outfile;
-	ssize_t*	outlist;
-	ssize_t		outmode;
-	ssize_t		ooutmode;
+	ptrdiff_t*	outlist;
+	ptrdiff_t	outmode;
+	ptrdiff_t	ooutmode;
 	char*		nullfield;
 	char*		delimstr;
-	ssize_t		delim;
+	ptrdiff_t	delim;
 	size_t		delimlen;
-	ssize_t		buffered;
-	ssize_t		ignorecase;
-	ssize_t		mb;
+	ptrdiff_t	buffered;
+	ptrdiff_t	ignorecase;
+	ptrdiff_t	mb;
 	char*		same;
-	ssize_t		samesize;
+	ptrdiff_t	samesize;
 	Shbltin_t*	context;
 	File_t		file[2];
 } Join_t;
@@ -212,13 +212,13 @@ getolist(Join_t* jp, const char* first, char** arglist)
 {
 	const char*	cp = first;
 	char**		argv = arglist;
-	ssize_t		c;
-	ssize_t*	outptr;
-	ssize_t*	outmax;
+	ptrdiff_t	c;
+	ptrdiff_t*	outptr;
+	ptrdiff_t*	outmax;
 	size_t		nfield = NFIELD;
 	char*		str;
 
-	outptr = jp->outlist = newof(0, ssize_t, NFIELD + 1, 0);
+	outptr = jp->outlist = newof(0, ptrdiff_t, NFIELD + 1, 0);
 	outmax = outptr + NFIELD;
 	while (c = *cp++)
 	{
@@ -231,7 +231,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 			c = JOINFIELD;
 			goto skip;
 		}
-		if (cp[1]!='.' || (*cp!='1' && *cp!='2') || (c=(ssize_t)strtol(cp+2,&str,10)) <=0)
+		if (cp[1]!='.' || (*cp!='1' && *cp!='2') || (c=(ptrdiff_t)strtol(cp+2,&str,10)) <=0)
 		{
 			error(2,"%s: invalid field list",first);
 			break;
@@ -243,7 +243,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 	skip:
 		if (outptr >= outmax)
 		{
-			jp->outlist = newof(jp->outlist, ssize_t, 2 * nfield + 1, 0);
+			jp->outlist = newof(jp->outlist, ptrdiff_t, 2 * nfield + 1, 0);
 			outptr = jp->outlist + nfield;
 			nfield *= 2;
 			outmax = jp->outlist + nfield;
@@ -264,7 +264,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 			break;
 		}
 		str = (char*)cp;
-		c = (ssize_t)strtol(cp+2, &str,10);
+		c = (ptrdiff_t)strtol(cp+2, &str,10);
 		if (*str || --c<0)
 			break;
 		argv++;
@@ -274,7 +274,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
 	skip2:
 		if (outptr >= outmax)
 		{
-			jp->outlist = newof(jp->outlist, ssize_t, 2 * nfield + 1, 0);
+			jp->outlist = newof(jp->outlist, ptrdiff_t, 2 * nfield + 1, 0);
 			outptr = jp->outlist + nfield;
 			nfield *= 2;
 			outmax = jp->outlist + nfield;
@@ -289,16 +289,16 @@ getolist(Join_t* jp, const char* first, char** arglist)
  * read in a record from file <index> and split into fields
  */
 static unsigned char*
-getrec(Join_t* jp, ssize_t index, ssize_t discard)
+getrec(Join_t* jp, ptrdiff_t index, ptrdiff_t discard)
 {
 	unsigned char*	sp = jp->state;
 	File_t*	fp = &jp->file[index];
 	Field_t*	field = fp->fields;
 	Field_t*	fieldmax = field + fp->maxfields;
 	char*		cp;
-	ssize_t		n;
+	ptrdiff_t	n;
 	char*		tp;
-	ssize_t		j;
+	ptrdiff_t	j;
 
 	if (sh_checksig(jp->context))
 		return NULL;
@@ -454,12 +454,12 @@ static unsigned char* u1;
  * print field <n> from file <index>
  */
 static int
-outfield(Join_t* jp, ssize_t index, ssize_t n, char last)
+outfield(Join_t* jp, ptrdiff_t index, ptrdiff_t n, char last)
 {
 	File_t*		fp = &jp->file[index];
 	char*		cp;
 	char*		cpmax;
-	ssize_t		size;
+	ptrdiff_t	size;
 	Sfio_t*		iop = jp->outfile;
 	char*		tp;
 
@@ -545,14 +545,14 @@ static int i1,i2,i3;
 #endif
 
 static int
-outrec(Join_t* jp, ssize_t mode)
+outrec(Join_t* jp, ptrdiff_t mode)
 {
 	File_t*	fp;
-	ssize_t		i;
-	ssize_t		j;
-	ssize_t		k;
-	ssize_t		n;
-	ssize_t*	out;
+	ptrdiff_t	i;
+	ptrdiff_t	j;
+	ptrdiff_t	k;
+	ptrdiff_t	n;
+	ptrdiff_t*	out;
 
 	if (mode < 0 && jp->file[0].hit++)
 		return 0;
@@ -629,12 +629,12 @@ join(Join_t* jp)
 {
 	unsigned char*	cp1;
 	unsigned char*	cp2;
-	ssize_t		n1;
-	ssize_t		n2;
-	ssize_t		n;
-	ssize_t		cmp;
-	ssize_t		same;
-	ssize_t		o2;
+	ptrdiff_t	n1;
+	ptrdiff_t	n2;
+	ptrdiff_t	n;
+	ptrdiff_t	cmp;
+	ptrdiff_t	same;
+	ptrdiff_t	o2;
 	Sfoff_t		lo = -1;
 	Sfoff_t		hi = -1;
 
@@ -815,7 +815,7 @@ sfprintf(sfstdout, "[X#%d:%d,%p,%p,%d,%02o,%02o%s]", __LINE__, n, cp1, cp2, cmp,
 int
 b_join(int argc, char** argv, Shbltin_t* context)
 {
-	ssize_t		n;
+	ptrdiff_t	n;
 	char*		cp;
 	Join_t*		jp;
 	char*		e;
@@ -841,7 +841,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 			if (opt_info.offset == 0)
 			{
 				cp = argv[opt_info.index - 1];
-				for (n = (ssize_t)strlen(cp) - 1; n > 0 && cp[n] != 'j'; n--);
+				for (n = (ptrdiff_t)strlen(cp) - 1; n > 0 && cp[n] != 'j'; n--);
 				n = cp[n] == 'j';
 			}
 			else
@@ -850,7 +850,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 			{
 				if (opt_info.num!=1 && opt_info.num!=2)
 					error(2,"-jfileno field: fileno must be 1 or 2");
-				n = (ssize_t)('0' + opt_info.num);
+				n = (ptrdiff_t)('0' + opt_info.num);
 				if (!(cp = argv[opt_info.index]))
 				{
 					argc = 0;
@@ -866,7 +866,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 			}
 			else
 			{
-				jp->file[0].field = (ssize_t)(opt_info.num-1);
+				jp->file[0].field = (ptrdiff_t)(opt_info.num-1);
 				n = '2';
 			}
 			/* FALLTHROUGH */
@@ -874,7 +874,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
 		case '2':
 			if (opt_info.num <=0)
 				error(2,"field number must positive");
-			jp->file[n-'1'].field = (ssize_t)(opt_info.num-1);
+			jp->file[n-'1'].field = (ptrdiff_t)(opt_info.num-1);
 			continue;
 		case 'v':
 			jp->outmode &= ~C_COMMON;

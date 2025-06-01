@@ -37,7 +37,7 @@
 	int		echo;		/* just an echo			*/ \
 	uint32_t	flags;		/* CMD_* flags			*/ \
 	size_t		insertlen;	/* strlen(insert)		*/ \
-	ssize_t		offset;		/* post arg offset		*/ \
+	ptrdiff_t	offset;		/* post arg offset		*/ \
 	Cmddisc_t*	disc;		/* discipline			*/ \
 	char**		argv;		/* exec argv			*/ \
 	char**		firstarg;	/* first argv file arg		*/ \

@@ -57,7 +57,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 	Splice_t*	d = (Splice_t*)ad;
 	char*		b;
 	int		c;
-	ssize_t		n;
+	ptrdiff_t	n;
 	int		q;
 	int		j;
 	char*		e;

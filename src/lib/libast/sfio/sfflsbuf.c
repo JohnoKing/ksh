@@ -25,14 +25,14 @@
 **	Written by Kiem-Phong Vo
 */
 
-ssize_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
-		  ssize_t	c)	/* if c>=0, c is also written out */
+ptrdiff_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
+		  ptrdiff_t	c)	/* if c>=0, c is also written out */
 {
 	ssize_t		n, w, written;
 	uchar*		data;
 	uchar		outc;
 	int		local, isall;
-	ssize_t		inpc = c;
+	ptrdiff_t	inpc = c;
 
 	if(!f)
 		return -1;
@@ -66,7 +66,7 @@ ssize_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
 		if(c >= 0)
 		{	/* write into buffer */
 			if(n < (f->endb - (data = f->data)))
-			{	*f->next++ = (unsigned char)c;
+			{	*f->next++ = (uchar)c;
 				if(c == '\n' &&
 				   (f->flags&SFIO_LINE) && !(f->flags&SFIO_STRING))
 				{	c = -1;

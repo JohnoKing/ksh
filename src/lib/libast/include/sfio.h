@@ -73,12 +73,12 @@ struct _sffmt_s
 	int		fmt;	/* format character			*/
 	ssize_t		size;	/* object size				*/
 	int		flags;	/* formatting flags			*/
-	ssize_t		width;	/* width of field			*/
-	ssize_t		precis;	/* precision required			*/
-	ssize_t		base;	/* conversion base			*/
+	ptrdiff_t	width;	/* width of field			*/
+	ptrdiff_t	precis;	/* precision required			*/
+	ptrdiff_t	base;	/* conversion base			*/
 
 	char*		t_str;	/* type string 				*/
-	ssize_t		n_str;	/* length of t_str 			*/
+	ptrdiff_t	n_str;	/* length of t_str 			*/
 
 	void*		mbs;	/* multibyte state for format string	*/
 };
@@ -211,17 +211,17 @@ extern Sfoff_t		sfmove(Sfio_t*, Sfio_t*, Sfoff_t, int);
 extern int		sfclose(Sfio_t*);
 extern Sfoff_t		sftell(Sfio_t*);
 extern Sfoff_t		sfseek(Sfio_t*, Sfoff_t, int);
-extern ssize_t		sfputr(Sfio_t*, const char*, int);
+extern ptrdiff_t	sfputr(Sfio_t*, const char*, int);
 extern char*		sfgetr(Sfio_t*, int, int);
 extern ssize_t		sfnputc(Sfio_t*, int, size_t);
 extern int		sfungetc(Sfio_t*, int);
-extern ssize_t		sfprintf(Sfio_t*, const char*, ...);
+extern ptrdiff_t	sfprintf(Sfio_t*, const char*, ...);
 extern char*		sfprints(const char*, ...);
-extern ssize_t		sfaprints(char**, const char*, ...);
-extern ssize_t		sfsprintf(char*, size_t, const char*, ...);
-extern ssize_t		sfvsprintf(char*, size_t, const char*, va_list);
-extern ssize_t		sfvasprints(char**, const char*, va_list);
-extern ssize_t		sfvprintf(Sfio_t*, const char*, va_list);
+extern ptrdiff_t	sfaprints(char**, const char*, ...);
+extern ptrdiff_t	sfsprintf(char*, size_t, const char*, ...);
+extern ptrdiff_t	sfvsprintf(char*, size_t, const char*, va_list);
+extern ptrdiff_t	sfvasprints(char**, const char*, va_list);
+extern ptrdiff_t	sfvprintf(Sfio_t*, const char*, va_list);
 extern int		sfscanf(Sfio_t*, const char*, ...);
 extern int		sfsscanf(const char*, const char*, ...);
 extern int		sfvsscanf(const char*, const char*, va_list);
@@ -238,11 +238,11 @@ extern int		sfdlen(Sfdouble_t);
 extern int		sfllen(Sflong_t);
 extern int		sfulen(Sfulong_t);
 
-extern ssize_t		sfputd(Sfio_t*, Sfdouble_t);
-extern ssize_t		sfputl(Sfio_t*, Sflong_t);
-extern ssize_t		sfputu(Sfio_t*, Sfulong_t);
-extern ssize_t		sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
-extern ssize_t		sfputc(Sfio_t*, int);
+extern ptrdiff_t	sfputd(Sfio_t*, Sfdouble_t);
+extern ptrdiff_t	sfputl(Sfio_t*, Sflong_t);
+extern ptrdiff_t	sfputu(Sfio_t*, Sfulong_t);
+extern ptrdiff_t	sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
+extern ptrdiff_t	sfputc(Sfio_t*, int);
 
 extern Sfdouble_t	sfgetd(Sfio_t*);
 extern Sflong_t		sfgetl(Sfio_t*);
@@ -250,13 +250,13 @@ extern Sfulong_t	sfgetu(Sfio_t*);
 extern Sfulong_t	sfgetm(Sfio_t*, Sfulong_t);
 extern int		sfgetc(Sfio_t*);
 
-extern ssize_t		_sfputd(Sfio_t*, Sfdouble_t);
-extern ssize_t		_sfputl(Sfio_t*, Sflong_t);
-extern ssize_t		_sfputu(Sfio_t*, Sfulong_t);
-extern ssize_t		_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
+extern ptrdiff_t	_sfputd(Sfio_t*, Sfdouble_t);
+extern ptrdiff_t	_sfputl(Sfio_t*, Sflong_t);
+extern ptrdiff_t	_sfputu(Sfio_t*, Sfulong_t);
+extern ptrdiff_t	_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
 
-extern ssize_t		_sfflsbuf(Sfio_t*, ssize_t);
-extern ssize_t		_sffilbuf(Sfio_t*, ssize_t);
+extern ptrdiff_t	_sfflsbuf(Sfio_t*, ssize_t);
+extern ptrdiff_t	_sffilbuf(Sfio_t*, ssize_t);
 
 extern int		_sfdlen(Sfdouble_t);
 extern int		_sfllen(Sflong_t);

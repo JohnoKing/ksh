@@ -206,7 +206,7 @@ errorcheck(glob_t* gp, const char* path)
  */
 
 static void
-trim(char* sp, char* p1, ssize_t* n1, char* p2, ssize_t* n2)
+trim(char* sp, char* p1, ptrdiff_t* n1, char* p2, ptrdiff_t* n2)
 {
 	char*	dp = sp;
 	char	c;
@@ -310,8 +310,8 @@ glob_dir(glob_t* gp, globlist_t* ap, regflags_t re_flags)
 	regex_t		rec;
 	regex_t		rei;
 	int		notdir;
-	ssize_t		t1;
-	ssize_t		t2;
+	ptrdiff_t	t1;
+	ptrdiff_t	t2;
 	int		bracket;
 
 	int		anymeta = ap->gl_flags & MATCH_META;
@@ -610,9 +610,9 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	regflags_t	re_flags;
 
 	const char*	nocheck = pattern;
-	ssize_t		optlen = 0;
+	ptrdiff_t	optlen = 0;
 	size_t		suflen = 0;
-	ssize_t		extra = 1;
+	ptrdiff_t	extra = 1;
 	unsigned char	intr = 0;
 
 	gp->gl_rescan = 0;

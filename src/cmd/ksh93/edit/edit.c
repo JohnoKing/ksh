@@ -1218,7 +1218,7 @@ int	ed_external(const genchar *src, char *dest)
 	}
 	while((wc = *src++) && dp<dpmax)
 	{
-		ptrdiff_t size;
+		ssize_t size;
 		if((size = mbconv(dp, wc)) < 0)
 		{
 			/* copy the character as is */

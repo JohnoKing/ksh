@@ -54,7 +54,7 @@ prng_open(const Method_t* method, const char* name)
 	const char*	s;
 	const char*	t;
 	const char*	v;
-	ssize_t		i;
+	ptrdiff_t	i;
 
 	if (sum = newof(0, Prng_t, 1, 0))
 	{

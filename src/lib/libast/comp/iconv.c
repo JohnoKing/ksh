@@ -1157,7 +1157,7 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
 error(DEBUG_TRACE, "AHA#%d iconv_write %d", __LINE__, ts - tb);
 #endif
 		sfwrite(op, tb, (size_t)(ts - tb));
-		r += ts - tb;
+		r += (ptrdiff_t)(ts - tb);
 	}
 	if (e)
 		*e = disc->errors;
@@ -1185,7 +1185,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	ssize_t		r = 0;
 	int		ok = 1;
 	int		locked;
-	ssize_t		m;
+	ptrdiff_t	m;
 	Iconv_disc_t	compat;
 
 	/*
@@ -1204,7 +1204,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	fe = OK;
 	ft = 0;
 	fn = n;
-	m = (ssize_t)n;
+	m = (ptrdiff_t)n;
 	do
 	{
 		if (m != SFIO_UNBOUND)
@@ -1265,7 +1265,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 		if (locked)
 			sfread(ip, fb, (size_t)(fs - fb));
 		else
-			for (i = fn; (ssize_t)(--i) >= (fs - fb);)
+			for (i = fn; (ptrdiff_t)(--i) >= (fs - fb);)
 				sfungetc(ip, fb[i]);
 		if (m != SFIO_UNBOUND)
 		{

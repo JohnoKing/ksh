@@ -90,7 +90,7 @@ static int ttyquery(Sfio_t* rp, Sfio_t* wp, const char* label, Sfdisc_t* dp)
 	tty.c_cc[VMIN] = 1;
 	tty.c_lflag &= ~(ICANON|ECHO|ECHOK|ISIG);
 	tcsetattr(rfd, TCSADRAIN, &tty);
-	if (read(rfd, &c, 1) == 1)
+	if ((r = (int)read(rfd, &c, 1)) == 1)
 	{
 		if (c == old.c_cc[VEOF])
 			r = -1;

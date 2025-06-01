@@ -84,7 +84,7 @@ One line screen editor for any program
 #else
 #   define gencpy(a,b)	strcopy((char*)(a),(char*)(b))
 #   define genncpy(a,b,n)	strncopy((char*)(a),(char*)(b),n)
-#   define genlen(str)	((int)strlen(str))
+#   define genlen(str)	strlen(str)
 #   define print(c)	isprint(c)
 #   define isword(c)	(isalnum(out[c]) || (out[c]=='_'))
 #   define digit(c)	isdigit(c)

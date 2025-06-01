@@ -156,13 +156,13 @@ static Sfoff_t
 tailpos(Sfio_t* fp, Sfoff_t number, int delim)
 {
 	ssize_t		n;
-	Sfoff_t	offset;
-	Sfoff_t	first;
-	Sfoff_t	last;
+	Sfoff_t		offset;
+	Sfoff_t		first;
+	Sfoff_t		last;
 	char*		s;
 	char*		t;
-	unsigned char		incomplete;
-	struct stat		st;
+	unsigned char	incomplete;
+	struct stat	st;
 
 	last = sfsize(fp);
 	if ((first = sfseek(fp, 0, SEEK_CUR)) < 0)
@@ -436,8 +436,8 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 	unsigned long	timeout = 0;
 	struct stat	st;
 	const char*	format = header_fmt+1;
+	ptrdiff_t	w;
 	ssize_t		z;
-	ssize_t		w;
 	Sfio_t*		op;
 	Tail_t*		fp;
 	Tail_t*		pp;
@@ -691,7 +691,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 					{
 						z = sfvalue(fp->sp);
 						for (r = s + z; r > s && *(r - 1) != '\n'; r--);
-						if ((w = r - s) || i && (w = z))
+						if ((w = r - s) || i && (w = (ptrdiff_t)z))
 						{
 							if ((flags & (HEADERS|VERBOSE)) && hp != fp)
 							{
