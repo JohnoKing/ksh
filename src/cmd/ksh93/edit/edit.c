@@ -262,7 +262,7 @@ int ed_window(void)
 
 void ed_flush(Edit_t *ep)
 {
-	ssize_t n = ep->e_outptr-ep->e_outbase;
+	ptrdiff_t n = ep->e_outptr-ep->e_outbase;
 	int fd = ERRIO;
 	if(n<=0)
 		return;

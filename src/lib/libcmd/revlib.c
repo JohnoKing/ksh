@@ -30,12 +30,12 @@
  * copy the lines starting at offset <start> from in <in> to <out>
  * in reverse order
  */
-int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
+int rev_line(Sfio_t *in, Sfio_t *out, Sfoff_t start)
 {
 	char *cp, *cpold;
 	ssize_t n, nleft=0;
 	char buff[BUFSIZE];
-	off_t offset;
+	Sfoff_t offset;
 	if(sfseek(in,0,SEEK_CUR) < 0)
 	{
 		Sfio_t *tmp = sftmp(4*SFIO_BUFSIZE);

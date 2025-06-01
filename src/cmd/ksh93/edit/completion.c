@@ -370,11 +370,11 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 	if(mode!='*')
 		sh_onoption(SH_MARKDIRS);
 	{
-		char	**com;
-		char	*cp=begin, *left=0, *saveout=(char*)e_dot;
-		int	nocase=0, narg, cmd_completion=0;
-		int	size='x';
-		ssize_t	sz;
+		char		**com;
+		char		*cp=begin, *left=0, *saveout=(char*)e_dot;
+		int		nocase=0, narg, cmd_completion=0;
+		int		size='x';
+		ptrdiff_t	sz;
 		while(cp>outbuff && ((size=cp[-1])==' ' || size=='\t'))
 			cp--;
 		if(!var && !strchr(ap->argval,'/') && (((cp==outbuff&&sh.nextprompt==1) || (strchr(";&|(",size)) && (cp==outbuff+1||size=='('||cp[-2]!='>') && *begin!='~' )))
@@ -452,7 +452,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			if(dir)
 				*dir = (char)c;
 			/* just expand until name is unique */
-			sz += (ssize_t)strlen(*com);
+			sz += (ptrdiff_t)strlen(*com);
 		}
 		else
 		{
@@ -460,7 +460,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			{
 				char **savcom = com;
 				while (*com)
-					sz += (ssize_t)strlen(cp=fmtx(*com++));
+					sz += (ptrdiff_t)strlen(cp=fmtx(*com++));
 				com = savcom;
 			}
 		}

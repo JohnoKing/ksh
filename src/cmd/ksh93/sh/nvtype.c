@@ -265,7 +265,7 @@ static Namval_t *findref(void *nodes, size_t n)
 	Namval_t	*tp,*np = nv_namptr(nodes,n);
 	char		*name = np->nvname;
 	size_t		i=n;
-	ssize_t		len= strrchr(name,'.')-name;
+	ptrdiff_t	len= strrchr(name,'.')-name;
 	Namtype_t	*pp;
 	while(--i>0)
 	{

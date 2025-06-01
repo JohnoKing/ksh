@@ -1629,7 +1629,7 @@ static Namval_t *create_stat(Namval_t *np,const char *name,int flag,Namfun_t *fp
 	const char		*cp=name;
 	int			i=0;
 	size_t			j;
-	ssize_t			n;
+	ptrdiff_t		n;
 	Namval_t		*nq=0;
 	NOT_USED(flag);
 	if(!name)

@@ -117,7 +117,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	    case 'n': case 'N':
 		flags &= ((1<<D_FLAG)-1);
 		flags |= (r=='n'?N_FLAG:NN_FLAG);
-		len = opt_info.num;
+		len = (ssize_t)opt_info.num;
 		break;
 	    case 'r':
 		flags |= R_FLAG;
@@ -434,7 +434,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 				{
 					if(c > (end-cur))
 					{
-						ssize_t	cx = cur - var, ux = up - var;
+						ptrdiff_t cx = cur - var, ux = up - var;
 						m = (end - var) + (c - (end - cur));
 						if (var == buf)
 						{

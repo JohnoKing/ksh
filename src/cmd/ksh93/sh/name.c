@@ -43,7 +43,7 @@ static Dtdisc_t	_Refdisc =
 
 static void	pushnam(Namval_t*,void*);
 static char	*staknam(Namval_t*, char*);
-static void	rightjust(char*, ssize_t, char);
+static void	rightjust(char*, size_t, char);
 static char	*lastdot(char*, int);
 
 /*
@@ -733,12 +733,12 @@ static char *copystack(const char *prefix, const char *name, const char *sub)
 static char *stack_extend(const char *cname, char *cp, ssize_t n)
 {
 	char *name = (char*)cname;
-	ssize_t offset = name - stkptr(sh.stk,0);
-	ssize_t m = cp-name;
+	ptrdiff_t offset = name - stkptr(sh.stk,0);
+	ptrdiff_t m = cp-name;
 	stkseek(sh.stk,offset + (ptrdiff_t)strlen(name)+n+1);
 	name = stkptr(sh.stk,offset);
 	cp =  name + m;
-	m = (ssize_t)strlen(cp)+1;
+	m = (ptrdiff_t)strlen(cp)+1;
 	while(m-->0)
 		cp[n+m]=cp[m];
 	return (char*)name;
@@ -753,7 +753,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 	long			mode, add=0;
 	int			isref,top=0,noscope=(flags&NV_NOSCOPE);
 	int			nofree=0, level=0;
-	ssize_t			copy=0;
+	ptrdiff_t		copy=0;
 	Namarr_t		*ap;
 	if(root==sh.var_tree)
 	{
@@ -787,7 +787,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 				flags &= ~NV_EXPORT;
 			if(!copy && !(flags&NV_NOREF))
 			{
-				ssize_t z;
+				ptrdiff_t z;
 				z = sp-name;
 				copy = cp-name;
 				dp->nofree |= 1;
@@ -999,8 +999,8 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #if SHOPT_FIXEDARRAY
 					static char null[1] = "";
 #endif /* SHOPT_FIXEDARRAY */
-					ssize_t z = (cp-sp);
-					copy = (ssize_t)strlen(cp=nv_name(np));
+					ptrdiff_t z = (cp-sp);
+					copy = (ptrdiff_t)strlen(cp=nv_name(np));
 					dp->nofree |= 1;
 #if SHOPT_FIXEDARRAY
 					if(*sp==0)
@@ -1105,7 +1105,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 #endif
 					           (flags&NV_ASSIGN)) && (flags&NV_ARRAY)))
 					{
-						ssize_t m = cp-sp;
+						ptrdiff_t m = cp-sp;
 						sub = m?nv_getsub(np):0;
 						if(!sub)
 						{
@@ -1138,7 +1138,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 						}
 						else
 						{
-							ssize_t r = n-m;
+							ptrdiff_t r = n-m;
 							m = sp-name;
 							name = stack_extend(name, cp-1, r);
 							sp = (char*)name + m;
@@ -1991,9 +1991,9 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 			}
 			*vpp = cp;
 			if(nv_isattr(np, NV_RJUST) && nv_isattr(np, NV_ZFILL))
-				rightjust(cp,(ssize_t)size,'0');
+				rightjust(cp,size,'0');
 			else if(nv_isattr(np, NV_LJUST|NV_RJUST)==NV_RJUST)
-				rightjust(cp,(ssize_t)size,' ');
+				rightjust(cp,size,' ');
 			else if(nv_isattr(np, NV_LJUST|NV_RJUST)==NV_LJUST)
 			{
 				char *dp;
@@ -2025,10 +2025,10 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
  *   If the leftmost digit in <str> is not a digit, <fill>
  *   will default to a blank.
  */
-static void rightjust(char *str, ssize_t size, char fill)
+static void rightjust(char *str, size_t size, char fill)
 {
 	char *cp,*sp;
-	ssize_t n = (ssize_t)strlen(str);
+	size_t n = strlen(str);
 
 	/* ignore trailing blanks */
 	for(cp=str+n;n && *--cp == ' ';n--);

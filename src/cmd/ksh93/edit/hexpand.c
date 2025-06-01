@@ -559,11 +559,11 @@ getsel:
 
 			if(c == 'h' || c == 'r') /* head or base */
 			{
-				ssize_t sfloc = -1;
+				Sfoff_t sfloc = -1;
 				while((c = sfgetc(tmp)) > 0)
 				{	/* remember position of / or . */
 					if((c == '/' && *cp == 'h') || (c == '.' && *cp == 'r'))
-						sfloc = (ssize_t)sftell(tmp2);
+						sfloc = sftell(tmp2);
 					sfputc(tmp2, c);
 				}
 				if(sfloc > 0)
@@ -575,11 +575,11 @@ getsel:
 			}
 			else if(c == 't' || c == 'e') /* tail or suffix */
 			{
-				ssize_t sfloc = 0;
+				Sfoff_t sfloc = 0;
 				while((c = sfgetc(tmp)) > 0)
 				{	/* remember position of / or . */
 					if((c == '/' && *cp == 't') || (c == '.' && *cp == 'e'))
-						sfloc = (ssize_t)sftell(tmp);
+						sfloc = sftell(tmp);
 				}
 				/* rewind to last / or . */
 				sfseek(tmp, sfloc, SEEK_SET);

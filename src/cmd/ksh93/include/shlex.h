@@ -179,7 +179,7 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
 	unsigned long	fscript;	/* script file entity number */
 	unsigned long	current;	/* current entity number */
 	unsigned long	unknown;	/* <unknown> entity number */
-	off_t		begin;		/* offset of first entry */
+	Sfoff_t		begin;		/* offset of first entry */
 	char		*scriptname;	/* name of script file */
 	Dt_t		*entity_tree;	/* for entity IDs */
     } Kia_t;

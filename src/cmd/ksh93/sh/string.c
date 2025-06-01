@@ -661,7 +661,7 @@ char	*sh_fmtqf(const char *string, int single, int fold)
  * Find a multi-byte character in a string.
  * NOTE: Unlike strchr(3), the return value is an integer offset or -1 if not found.
  */
-ssize_t sh_strchr(const char *string, const char *dp)
+ptrdiff_t sh_strchr(const char *string, const char *dp)
 {
 	const char *cp;
 	if(mbwide())

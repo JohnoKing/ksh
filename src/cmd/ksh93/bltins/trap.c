@@ -492,7 +492,7 @@ static void sig_list(int flag)
 		}
 		else if(sig&SH_TRAP)
 			traps[sig&~SH_TRAP] = (char*)tp->sh_name;
-		else if(sig-- && sig < (ssize_t)elementsof(names))
+		else if(sig-- && sig < (int)elementsof(names))
 			names[sig] = (char*)tp->sh_name;
 	}
 	if(flag > 0)

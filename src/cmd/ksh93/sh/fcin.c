@@ -109,7 +109,7 @@ int fcfill(void)
 /*
  * Synchronize and close the current stream
  */
-ssize_t fcclose(void)
+int fcclose(void)
 {
 	unsigned char *ptr;
 	if(_Fcin.fclast==0)
@@ -119,7 +119,6 @@ ssize_t fcclose(void)
 	if(_Fcin.fcchar)
 		*_Fcin.fclast = _Fcin.fcchar;
 	_Fcin.fclast = 0;
-	_Fcin.fcleft = 0;
 	return fcfill();
 }
 

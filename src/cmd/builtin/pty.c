@@ -512,7 +512,7 @@ typedef struct Master_s
 	char*		bufunderflow;	/* FIXME: kludge to cope with underflow	*/
 	char*		buf;		/* current buffer			*/
 	char*		prompt;		/* peek prompt				*/
-	ssize_t		cursor;		/* cursor in buf, 0 if fresh line	*/
+	ptrdiff_t	cursor;		/* cursor in buf, 0 if fresh line	*/
 	int		line;		/* prompt line number			*/
 	char		restore;	/* previous line save char		*/
 } Master_t;

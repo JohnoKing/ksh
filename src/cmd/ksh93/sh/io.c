@@ -1979,7 +1979,7 @@ static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
 	if(!(sh.fdstatus[fd]&IOCLEX) && (sfset(iop,0,0)&SFIO_SHARE))
 		ret = (ssize_t)ed_read(sh.ed_context, fd, (char*)buff, (int)size, 0);
 	else
-		ret = (ssize_t)sfrd(iop,buff,size,handle);
+		ret = sfrd(iop,buff,size,handle);
 	sh_offstate(SH_TTYWAIT);
 	return ret;
 }

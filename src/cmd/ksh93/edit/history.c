@@ -558,7 +558,8 @@ void hist_eof(History_t *hp)
 	int incmd = 0;
 	off_t count = hp->histcnt;
 	int oldind=0;
-	ssize_t skip=0,n;
+	ptrdiff_t skip=0;
+	ssize_t n;
 	off_t last = sfseek(hp->histfp,0,SEEK_END);
 	if(last < count)
 	{
@@ -631,7 +632,7 @@ again:
 		}
 	refill:
 		count += (--cp-first);
-		skip = (cp-endbuff);
+		skip = cp-endbuff;
 		if(!incmd && !skip)
 			hp->histcmds[hist_ind(hp,++hp->histind)] = count;
 	}
@@ -741,7 +742,7 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 		return (ssize_t)insize;
 	*bufptr++ = '\n';
 	*bufptr++ = 0;
-	size = bufptr - (char*)buff;
+	size = (ssize_t)(bufptr - (char*)buff);
 #if	 SHOPT_AUDIT
 	if(hp->auditfp)
 	{
@@ -771,7 +772,7 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 		size++;
 		*bufptr++ = 0;
 	}
-	hp->histcnt +=  size;
+	hp->histcnt += size;
 	c = hist_ind(hp,++hp->histind);
 	hp->histcmds[c] = hp->histcnt;
 	if(hp->histflush>HIST_MARKSZ && hp->histcnt > hp->histmarker+HIST_BSIZE/2)
@@ -866,7 +867,7 @@ Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
 {
 	int index2;
 	off_t offset;
-	ssize_t *coffset=0;
+	ptrdiff_t *coffset=0;
 	Histloc_t location;
 	location.hist_command = -1;
 	location.hist_char = 0;
@@ -919,7 +920,7 @@ Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
  * If coffset==0 then line must begin with string
  * returns the line number of the match if successful, otherwise -1
  */
-int hist_match(History_t *hp,off_t offset,char *string,ssize_t *coffset)
+int hist_match(History_t *hp,off_t offset,char *string,ptrdiff_t *coffset)
 {
 	unsigned char *first, *cp;
 	int c=1,line=0;

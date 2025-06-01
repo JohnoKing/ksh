@@ -2081,7 +2081,7 @@ static void kia_add(Namval_t *np, void *data)
 
 int kiaclose(Lex_t *lexp)
 {
-	off_t off1,off2;
+	Sflong_t off1,off2;
 	ssize_t n;
 	if(kia.file)
 	{
@@ -2089,17 +2089,17 @@ int kiaclose(Lex_t *lexp)
 		kiaentity(lexp,kia.scriptname,-1,'p',1,sh.inlineno-1,r,'s',0,"");
 		kiaentity(lexp,kia.scriptname,-1,'f',1,sh.inlineno-1,r,'s',0,"");
 		nv_scan(kia.entity_tree,kia_add,lexp,NV_TAGGED,0);
-		off1 = sfseek(kia.file,0,SEEK_END);
+		off1 = (Sflong_t)sfseek(kia.file,0,SEEK_END);
 		sfseek(kia.tmp,0,SEEK_SET);
 		sfmove(kia.tmp,kia.file,SFIO_UNBOUND,-1);
-		off2 = sfseek(kia.file,0,SEEK_END);
+		off2 = (Sflong_t)sfseek(kia.file,0,SEEK_END);
 		if(off2==off1)
-			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%zu\nDIRECTORY;",(Sflong_t)kia.begin,(size_t)(off1-kia.begin));
+			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin));
 		else
-			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%zu\nRELATIONSHIP;%jd;%zu\nDIRECTORY;",(Sflong_t)kia.begin,(size_t)(off1-kia.begin),(Sflong_t)off1,(size_t)(off2-off1));
+			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nRELATIONSHIP;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin,off1,off2-off1);
 		if(off2 >= INT_MAX)
 			off2 = -(n+12);
-		sfprintf(kia.file,"%010.10jd;%010zd\n",(Sflong_t)off2+10, n+12);
+		sfprintf(kia.file,"%010.10jd;%010zd\n",off2+10, n+12);
 	}
 	return sfclose(kia.file);
 }

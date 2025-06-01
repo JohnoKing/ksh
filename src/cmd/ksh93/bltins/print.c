@@ -589,7 +589,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 {
 	char			*cp;
 	Sfdouble_t		d;
-	ssize_t			size;
+	size_t			size;
 	Namval_t		*np = nv_open(string, NULL, NV_VARNAME|NV_NOADD);
 	Namarr_t		*ap;
 	static union types_t	number;
@@ -641,7 +641,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 				number.i = (int)d;
 			}
 		}
-		return sfwrite(iop, &number, (size_t)size);
+		return sfwrite(iop, &number, size);
 	}
 	if(nv_isattr(np,NV_BINARY))
 	{
@@ -655,7 +655,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 			return (*fp->disc->writef)(np, iop, 0, fp);
 		else
 		{
-			ssize_t n = (ssize_t)nv_size(np);
+			size_t n = nv_size(np);
+			ssize_t ret;
 			if(nv_isarray(np))
 			{
 				nv_onattr(np,NV_RAW);
@@ -665,9 +666,9 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 			else
 				cp = np->nvalue;
 			if((size = n)==0)
-				size = (ssize_t)strlen(cp);
-			size = sfwrite(iop, cp, (size_t)size);
-			return n?n:size;
+				size = strlen(cp);
+			ret = sfwrite(iop, cp, size);
+			return n?(ssize_t)n:ret;
 		}
 	}
 	else if(nv_isarray(np) && (ap=nv_arrayptr(np)) && array_elem(ap) && (ap->nelem&(ARRAY_UNDEF|ARRAY_SCAN)))
@@ -688,8 +689,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 			nv_offattr(np,NV_EXPORT);
 		if(!cp)
 			return 0;
-		size = (ssize_t)strlen(cp);
-		return sfwrite(iop,cp,(size_t)size);
+		size = strlen(cp);
+		return sfwrite(iop,cp,size);
 	}
 }
 
@@ -1122,7 +1123,7 @@ static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
 {
 	struct printf*	pp = (struct printf*)fe;
 	ssize_t		r;
-	ssize_t		n;
+	ptrdiff_t	n;
 	if(fmt == 0)
 	{
 		/* Set nextarg */
@@ -1134,7 +1135,7 @@ static ssize_t reload(ssize_t argn, char fmt, void* v, Sffmt_t* fe)
 			while(argn && *pp->nextarg)
 				argn--, pp->nextarg++;
 		}
-		return n;
+		return (ssize_t)n;
 	}
 	/*
 	 * fmt!=0 ==> Late conversion on type mismatch on fp[x], i.e., %1$s %1$d

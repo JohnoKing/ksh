@@ -36,7 +36,6 @@ typedef struct _fcin
 	ssize_t		fclen;		/* last multibyte char len */
 	void (*fcfun)(Sfio_t*,const char*,ssize_t,void*);	/* advance function */
 	void		*context;	/* context pointer */
-	int		fcleft;		/* for multibyte boundary */
 	Sfoff_t		fcoff;		/* offset for last read */
 } Fcin_t;
 
@@ -60,7 +59,7 @@ typedef struct _fcin
 #define fcrestore(x)	(_Fcin = *(x))
 extern int		fcfill(void);
 extern ssize_t		fcfopen(Sfio_t*);
-extern ssize_t		fcclose(void);
+extern int		fcclose(void);
 void			fcnotify(void(*)(Sfio_t*,const char*,ssize_t,void*),void*);
 
 extern Fcin_t		_Fcin;		/* used by macros */

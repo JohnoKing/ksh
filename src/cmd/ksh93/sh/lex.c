@@ -138,7 +138,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, ssize_t size, void *conte
 		return;
 	if(lp->lexd.dolparen && lp->lexd.docword && lp->lexd.docend)
 	{
-		ssize_t n = size - (lp->lexd.docend-(char*)buff);
+		ssize_t n = size - (ssize_t)(lp->lexd.docend-(char*)buff);
 		sfwrite(sh.strbuf,lp->lexd.docend,(size_t)n);
 		lp->lexd.docextra  += n;
 		if(sffileno(iop)>=0)
@@ -1577,7 +1577,7 @@ static int comsub(Lex_t *lp, int endtok)
 	char *first,*cp=fcseek(0),word[5];
 	int messages=0;
 	char assignok=lp->assignok, csub=lp->comsub;
-	ssize_t off;
+	ptrdiff_t off;
 	struct _shlex_pvt_lexstate_ save = lp->lex;
 	sh_lexopen(lp,1);
 	lp->lexd.dolparen++;
@@ -1799,7 +1799,7 @@ void sh_lexskip(Lex_t *lp, char close, int copy, int state)
 	while(next = (const char*)memchr(next,'\r',(size_t)(ep-next)))
 		if(*++next=='\n')
 		{
-			if(k=next-cp-1)
+			if(k=(ssize_t)(next-cp-1))
 			{
 				if((k=sfwrite(sp,cp,(size_t)k)) < 0)
 					return m>0?m:-1;
