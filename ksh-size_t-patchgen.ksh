@@ -45,7 +45,7 @@ sanity
 git commit -m $'size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
 
 This is the first of a thirteen(!!) part patch series that enables
-ksh93 to operate withing a 64-bit address space (currently dubbed
+ksh93 to operate within a 64-bit address space (currently dubbed
 thickfold). These changes were accomplished by fixing most (but not
 all) of the warnings that materialize during compilation when the
 following clang compiler flags are passed:
@@ -57,25 +57,19 @@ a bad idea because POSIX does not guarantee ssize_t will accept
 any negative value besides -1, despite its signed nature:
     > The type ssize_t shall be capable of storing values at least
     > in the range [-1, {SSIZE_MAX}].
-As such, for correctness and portability this commit will prefer
+As such, for correctness and portability these patches will prefer
 usage of the C89 ptrdiff_t, which is practically guaranteed to
-accept the full range of negative numbers an int can accept. It is
-possible for ptrdiff_t to be larger than size_t (i.e. being 64-bit
-whilst size_t is 32-bit), but that isn\'t really a concern seeing as
-this patch series aims to improve support for platforms with
-64-bit size_t (ksh currently suffers from archaic 32-bit int usage).
+accept the full range of negative numbers an int can accept. In
+practice, ptrdiff_t and size_t will be of the same size, being
+both 32-bit or both 64-bit. There are edge cases where this might
+not be so, but I\'ve chosen to use ptrdiff_t despite that since
+the caveats of such edge cases aren\'t nearly as bad as that of
+a platform\'s ssize_t rejecting values lower than -1.
 
-In any case expanding int to ptrdiff_t should be of relatively low
-risk for the reasons above, but size_t was used in certain locations
-when it was more appropriate (although its unsignedness necessitates
-greater caution because of rollover concerns). Additionally, some
-sections already use the ssize_t type (e.g. strgrpmatch()), so for
-those cases ssize_t usage has been maintained.
-
-Also of note, in some areas ssize_t results from e.g. read(2)
-may end up being used with ptrdiff_t variables. This is not
-pedantically correct, but it\'s certainly better than the prior
-int hell status quo.
+In some areas ssize_t results from e.g. sfvalue() may end up being
+used with ptrdiff_t variables. This is not pedantically correct,
+but it\'s certainly better than the prior int hell status quo,
+wherein ssize_t was usually shortened to int.
 
 Conspicuous changes with noteworthyness:
 - Fixed many, many compiler warnings by adding a considerable
@@ -93,7 +87,7 @@ Conspicuous changes with noteworthyness:
   In fact, stktell() has *always* returned a \'ptrdiff_t\' result.
   The documentation in stk(3) has been incorrectly claiming
   since < 1995 it returns \'int\', which is wrong. That error
-  has been rectified alongside the multitude of updates to stk.
+  has been rectified alongside the other updates to stk.
 
 
 Side note: To re-emphasize, this patch is one part of a whole
@@ -407,7 +401,6 @@ to operate within a 64-bit address space.
 The parts of ksh93 affected by this commit are:
 - The lexing and parsing components in lex.c, parse.c, fcin.c
   and trestore.c.
-  - Removed the set but not used fcleft variable.
 - Minor fixes for the virtual subshell mechanism.
 - The code underlying shcomp(1), aka sh_tdump().
 - A minor fix to a cast in sh_timeradd().
@@ -435,9 +428,9 @@ This covers the rest of ksh93:
 - fault.c
 - io.c
   - In this file ssize_t is preferable because many of the
-    underlying SFIO and POSIX function return values of
+    underlying SFIO and POSIX functions return values of
     that type.
-  - sh_sfeval(): removed the set but not used ep->slen variable.
+  - sh_sfeval(): Removed the set but not used ep->slen variable.
 - jobs.c
   - Get rid of if/else PID botch; a single casted strtoll is fine.
 - main.c

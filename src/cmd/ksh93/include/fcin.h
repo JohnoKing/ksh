@@ -36,6 +36,7 @@ typedef struct _fcin
 	short		fclen;		/* last multibyte char len */
 	void (*fcfun)(Sfio_t*,const char*,ptrdiff_t,void*);	/* advance function */
 	void		*context;	/* context pointer */
+	int		fcleft;		/* for multibyte boundary */
 	Sfoff_t		fcoff;		/* offset for last read */
 } Fcin_t;
 

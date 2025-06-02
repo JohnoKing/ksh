@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *              This file is part of the ksh 93u+m package              *
-*             Copyright (c) 2024 Contributors to ksh 93u+m             *
+*          Copyright (c) 2024-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -10,6 +10,7 @@
 *         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
 *                                                                      *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 

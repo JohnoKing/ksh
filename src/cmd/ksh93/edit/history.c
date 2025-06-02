@@ -756,13 +756,13 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 #if	SHOPT_ACCTFILE
 	if(acctfd)
 	{
-		int timechars;
+		ptrdiff_t timechars;
 		ptrdiff_t offset = stktell(sh.stk);
 		sfputr(sh.stk,buff,-1);
 		stkseek(sh.stk,stktell(sh.stk) - 1);
-		timechars = sfprintf(sh.stk, "\t%s\t%x\n",logname,time(NULL));
+		timechars = sfprintf(sh.stk, "\t%s\t%lx\n",logname,(unsigned long)time(NULL));
 		lseek(acctfd, 0, SEEK_END);
-		write(acctfd, stkptr(sh.stk,offset), size - 2 + timechars);
+		write(acctfd, stkptr(sh.stk,offset), (size_t)(size - 2 + timechars));
 		stkseek(sh.stk,offset);
 
 	}

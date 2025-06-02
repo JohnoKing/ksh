@@ -2094,7 +2094,7 @@ int kiaclose(Lex_t *lexp)
 		sfmove(kia.tmp,kia.file,SFIO_UNBOUND,-1);
 		off2 = (Sflong_t)sfseek(kia.file,0,SEEK_END);
 		if(off2==off1)
-			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin));
+			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin);
 		else
 			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nRELATIONSHIP;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin,off1,off2-off1);
 		if(off2 >= INT_MAX)
