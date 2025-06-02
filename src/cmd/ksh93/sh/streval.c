@@ -224,7 +224,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 			c = *(short*)cp;
 			cp += sizeof(short);
 			lastval = node.value = (char*)dp;
-			if(node.flag = c)
+			if(node.flag = (short)c)
 				lastval = 0;
 			node.isfloat=0;
 			node.level = sh.arithrecursion;
@@ -271,7 +271,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 				c = 0;
 			cp += sizeof(short);
 			node.value = (char*)dp;
-			node.flag = c;
+			node.flag = (short)c;
 			if(lastval)
 				node.isenum = 1;
 			node.enum_p = 0;
@@ -284,7 +284,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 				r =  (*ep->fun)(&ptr,&node,VALUE,num);
 				if(r!=num)
 				{
-					node.flag=c;
+					node.flag=(short)c;
 					node.value = (char*)dp;
 					num = (*ep->fun)(&ptr,&node,ASSIGN,r);
 				}

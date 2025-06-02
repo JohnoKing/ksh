@@ -73,7 +73,7 @@ struct stk
 {
 	_stk_overflow_	stkoverflow;	/* called when malloc fails */
 	unsigned int	stkref;		/* reference count */
-	short		stkflags;	/* stack attributes */
+	int		stkflags;	/* stack attributes */
 	char		*stkbase;	/* beginning of current stack frame */
 	char		*stkend;	/* end of current stack frame */
 };

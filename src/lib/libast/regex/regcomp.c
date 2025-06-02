@@ -30,6 +30,7 @@
 
 #define C_ESC			(-1)
 #define C_MB			(-2)
+#define ZERO			((unsigned char)0)
 
 #if _AST_REGEX_DEBUG
 
@@ -1442,7 +1443,7 @@ bra(Cenv_t* env)
 					dtinsert(dt, cc);
 				}
 				for (i = 0; i < elementsof(cc->key); i++)
-					cc->key[i] = ~0U;
+					cc->key[i] = ~ZERO;
 				dtinsert(dt, cc);
 				LCINFO(AST_LC_COLLATE)->data = dt;
 			}
