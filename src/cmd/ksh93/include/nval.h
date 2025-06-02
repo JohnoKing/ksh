@@ -112,7 +112,7 @@ struct Namval
 	Namfun_t	*nvfun;		/* pointer to trap functions */
 	void		*nvalue;	/* pointer to any kind of value */
 	void		*nvmeta;	/* pointer to any of various kinds of type-dependent data */
-	Sfdouble_t	*pad;
+	intmax_t	*pad;		/* for alignment purposes */
 };
 
 #define NV_CLASS	".sh.type"
