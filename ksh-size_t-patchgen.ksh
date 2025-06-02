@@ -378,7 +378,8 @@ Conspicuous changes of note:
   introduces some inconsequential warnings. Fixing/avoiding those is
   out of the scope of this project; that\'s better suited for a
   future revision of expand-nvflags.
-
+- Removed the unused an inessential attsize and attval struct
+  members.
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -404,7 +405,6 @@ The parts of ksh93 affected by this commit are:
 - Minor fixes for the virtual subshell mechanism.
 - The code underlying shcomp(1), aka sh_tdump().
 - A minor fix to a cast in sh_timeradd().
-
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 

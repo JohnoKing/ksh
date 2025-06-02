@@ -1264,8 +1264,6 @@ struct adata
 	Namval_t	*tp;
 	char		*mapname;
 	char		**argnam;
-	int		attsize;
-	char		*attval;
 };
 
 static void delete_fun(Namval_t *np, void *data)
