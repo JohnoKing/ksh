@@ -112,13 +112,13 @@ struct Namval
 	Namfun_t	*nvfun;		/* pointer to trap functions */
 	void		*nvalue;	/* pointer to any kind of value */
 	void		*nvmeta;	/* pointer to any of various kinds of type-dependent data */
-	intmax_t	*pad;		/* for alignment purposes */
+	Sfdouble_t	*pad;		/* for alignment purposes */
 };
 
 #define NV_CLASS	".sh.type"
 #define NV_DATA		"_"	/* special class or instance variable */
-#define NV_MINSZ	(sizeof(struct Namval)-sizeof(Dtlink_t)-sizeof(char*))
-#define nv_namptr(p,n)	((Namval_t*)((char*)(p)+(n)*NV_MINSZ-sizeof(Dtlink_t)))
+#define NV_MINSZ	(sizeof(struct Namval)-offsetof(struct Namval, nvflag))
+#define nv_namptr(p,n)	((Namval_t*)((char*)(p)+(n)*NV_MINSZ-offsetof(struct Namval, nvname)))
 
 /* The following attributes are for internal use */
 #define NV_NOFREE	0x200	/* don't free the space when releasing value */

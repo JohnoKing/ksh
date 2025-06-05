@@ -406,9 +406,11 @@ The parts of ksh93 affected by this commit are:
 
 Conspicuous changes of note:
 - With the expansion of np->nvsize to a size_t (which can
-  be either 64-bit or 32-bit), the intmax_t* padding
+  be either 64-bit or 32-bit), the Sfdouble_t* padding
   was a necessary addition for alignment purposes, so as to
   silence UBSan errors and prevent untimely memory faults.
+  - The NV_MINSZ and nv_namptr macros now use offsetof()
+    for this purpose as well.
 - An -Wunreachable-code-return warning at the end of nv_create()
   has been fixed.
 - nv_setsize() as exposed in the public nval API now requires
