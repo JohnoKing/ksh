@@ -65,6 +65,7 @@ both 32-bit or both 64-bit. There are edge cases where this might
 not be so, but I\'ve chosen to use ptrdiff_t despite that since
 the caveats of such edge cases aren\'t nearly as bad as that of
 a platform\'s ssize_t rejecting values lower than -1.
+[1]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_types.h.html#tag_14_70
 
 In some areas ssize_t results from e.g. sfvalue() may end up being
 used with ptrdiff_t variables. This is not pedantically correct,
@@ -101,8 +102,9 @@ Side note: To re-emphasize, this patch is one part of a whole
 changes can be found on the thickfold-size_t branch.
 This first part has been submitted severed from the other
 changes to make code review less laborious (I hope).
+The full patch series can be found here:
+https://github.com/JohnoKing/ksh/tree/ad588c003d/patches
 
-[1]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_types.h.html#tag_14_70
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
