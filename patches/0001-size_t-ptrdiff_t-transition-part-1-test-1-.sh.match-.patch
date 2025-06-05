@@ -1,8 +1,7 @@
 From 0ec94e233145671a7dcdcd604b886987202438ca Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
 Date: Wed, 4 Jun 2025 20:48:17 -0700
-Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
- expansion, init and stk(3)
+Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
 
 This is the first of a thirteen(!!) part patch series that enables
 ksh93 to operate within a 64-bit address space (currently dubbed
@@ -31,7 +30,7 @@ used with ptrdiff_t variables. This is not pedantically correct,
 but it's certainly better than the prior int hell status quo,
 wherein ssize_t was usually shortened to int.
 
-Conspicuous changes with noteworthyness:
+Conspicuous changes with noteworthiness:
 - Fixed many, many compiler warnings by adding a considerable
   number of casts and changing the types of more than quite
   a few variables. This is a consequence of using compiler

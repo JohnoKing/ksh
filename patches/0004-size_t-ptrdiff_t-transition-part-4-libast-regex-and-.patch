@@ -1,8 +1,7 @@
 From 003155f0b60be7a7c6affc1c669e84574272587c Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
 Date: Wed, 4 Jun 2025 20:48:18 -0700
-Subject: size_t/ptrdiff_t transition part 4: libast regex and string
- sublibraries
+Subject: size_t/ptrdiff_t transition part 4: libast regex and string sublibraries
 
 This is the fourth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.

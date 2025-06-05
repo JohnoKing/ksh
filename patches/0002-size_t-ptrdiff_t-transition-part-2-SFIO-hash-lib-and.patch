@@ -23,7 +23,7 @@ The parts of ksh93 affected by this commit are:
   - sfseek(): Removed a wasteful double assignment for f->iosz.
     This error was introduced in 2003-06-21 ksh93o+, and likely
     would have gone unnoticed if not for the thickfold project.
-    (In practice this line virtually always optimized out by the
+    (In practice this line was virtually always optimized out by the
     compiler, so it was dead code.)
 - 64-bit modernization for the AST hash library.
 - Transitioned pathgetlink() to return ssize_t.

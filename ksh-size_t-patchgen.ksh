@@ -72,7 +72,7 @@ used with ptrdiff_t variables. This is not pedantically correct,
 but it\'s certainly better than the prior int hell status quo,
 wherein ssize_t was usually shortened to int.
 
-Conspicuous changes with noteworthyness:
+Conspicuous changes with noteworthiness:
 - Fixed many, many compiler warnings by adding a considerable
   number of casts and changing the types of more than quite
   a few variables. This is a consequence of using compiler
@@ -164,7 +164,7 @@ The parts of ksh93 affected by this commit are:
   - sfseek(): Removed a wasteful double assignment for f->iosz.
     This error was introduced in 2003-06-21 ksh93o+, and likely
     would have gone unnoticed if not for the thickfold project.
-    (In practice this line virtually always optimized out by the
+    (In practice this line was virtually always optimized out by the
     compiler, so it was dead code.)
 - 64-bit modernization for the AST hash library.
 - Transitioned pathgetlink() to return ssize_t.
