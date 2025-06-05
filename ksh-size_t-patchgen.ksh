@@ -89,6 +89,12 @@ Conspicuous changes with noteworthyness:
   since < 1995 it returns \'int\', which is wrong. That error
   has been rectified alongside the other updates to stk.
 
+The thickfold patch series was accomplished by fixing compiler warnings,
+so I\'ve decided to provide metrics as to the change in the total number
+of warnings occurring during compilation.
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+4,042 => 3,808 => 248 (progression from cc5e0692 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on it\'s own). The full suite of
@@ -163,6 +169,10 @@ The parts of ksh93 affected by this commit are:
 - Made the snprintf and vsnprintf wrappers standards compliant
   with the C standard.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+3,808 => 3,291 => 248 (progression from part 1 => part 2 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 
@@ -185,6 +195,10 @@ The parts of ksh93 affected by this commit are:
 - The libast CDT library.
 - The libast feature tests.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+3,291 => 3,214 => 248 (progression from part 2 => part 3 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 
@@ -203,6 +217,10 @@ to operate within a 64-bit address space.
 The parts of ksh93 affected by this commit are:
 - The libast string library.
 - The libast regex engine.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+3,214 => 2,617 => 248 (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -241,6 +259,10 @@ Remarks:
     so that has also been rectified.
 - Removed cmdopen_20110505() to avoid bitrot.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+2,617 => 2,131 => 248 (progression from part 4 => part 5 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast
@@ -258,6 +280,10 @@ The parts of ksh93 affected by this commit are:
 - The rest of the libast headers.
 - The vmalloc wrapper\'s header file.
 - The AST dirlib (where ssize_t was more appropriate that ptrdiff_t).
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+2,131 => 1,752 => 248 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -285,6 +311,10 @@ Remarks:
 - Use POSIX tcflag_t, speed_t and cc_t to silence
   warnings in stty.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+1,752 => 1,359 => 248 (progression from part 6 => part 7 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libdll
@@ -307,6 +337,10 @@ The parts of ksh93 affected by this commit are:
 - The pty test utility.
 - The mamake build program.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+1,359 => 1,208 => 248 (progression from part 7 => part 8 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/cmd/ksh93/edit
@@ -326,6 +360,10 @@ The parts of ksh93 affected by this commit are:
   casts to merely fix compiler warnings.
   - Moved a FALLTHROUGH comment to fix a fallthrough warning.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+1,208 => 1,097 => 248 (progression from part 8 => part 9 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/cmd/ksh93/bltins
@@ -342,6 +380,10 @@ The parts of ksh93 affected by this commit are:
     so it doesn\'t need to return nv_size + 1 and thus a warning
     can be quashed.
 
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+1,097 => 990 => 248 (progression from part 9 => part 10 => part 13)
+
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/cmd/ksh93/sh/n*
@@ -351,7 +393,7 @@ fetch src/cmd/ksh93/sh/string.c
 fetch src/cmd/ksh93/sh/waitevent.c
 fetch src/cmd/ksh93/nval.3
 sanity
-git commit -m "size_t/ptrdiff_t transition part 11: ksh93 variables
+git commit -m "size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -364,7 +406,7 @@ The parts of ksh93 affected by this commit are:
 
 Conspicuous changes of note:
 - With the expansion of np->nvsize to a size_t (which can
-  be either 64-bit or 32-bit), the Sfdouble_t* padding
+  be either 64-bit or 32-bit), the intmax_t* padding
   was a necessary addition for alignment purposes, so as to
   silence UBSan errors and prevent untimely memory faults.
 - An -Wunreachable-code-return warning at the end of nv_create()
@@ -378,8 +420,12 @@ Conspicuous changes of note:
   introduces some inconsequential warnings. Fixing/avoiding those is
   out of the scope of this project; that\'s better suited for a
   future revision of expand-nvflags.
-- Removed the unused an inessential attsize and attval struct
-  members.
+- Removed the unused and inessential attsize and attval struct
+  members (this is a remnant of the A__z botch, re: f215b10a).
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+990 => 671 => 248 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -405,6 +451,10 @@ The parts of ksh93 affected by this commit are:
 - Minor fixes for the virtual subshell mechanism.
 - The code underlying shcomp(1), aka sh_tdump().
 - A minor fix to a cast in sh_timeradd().
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+671 => 555 => 248 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -445,6 +495,16 @@ This covers the rest of ksh93:
 Conspicuous change of note:
 - Removed an (unsigned) cast for sizeof because it's already
   unsigned.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+555 => 248 (progression from part 12 => part 13)
+Most of the warnings that remain are mere bitflag issues of tertiary importance.
+Some, like those pertaining to getrlimit(2), are bugs in the underlying operating
+system and cannot be fixed.
+I'll note that I have a patch that expands nvflags to uint64_t which helps
+quash some more warnings. But that patch isn't a part of the thickfold series
+and is intended for submission sometime after this (hopefully) gets merged.
 
 Fixes https://github.com/ksh93/ksh/issues/592"
 
