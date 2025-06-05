@@ -1,0 +1,3349 @@
+From 2fe6c431a1392d130f16d608a7c3ec86bf58131e Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
+
+This is the seventh of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The entirety of the libcmd builtins.
+
+Remarks:
+- Like the previous problematic getfsstat, sethostname also
+  has a platform-dependent second argument that can be
+  either signed or unsigned. This commit leaves the usage
+  of that function (which passes a size_t value) as is.
+- Moved the include directives in chmod and date to
+  silence overlength string warnings.
+- Removed unused macros from the fds code.
+- Marked unused function parameters in grep to silence
+  additional warnings.
+- Use POSIX tcflag_t, speed_t and cc_t to silence
+  warnings in stty.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+1,752 => 1,359 => 248 (progression from part 6 => part 7 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/lib/libcmd/basename.c |   6 +-
+ src/lib/libcmd/cat.c      |  37 +++++-----
+ src/lib/libcmd/chgrp.c    |  57 ++++++++--------
+ src/lib/libcmd/chmod.c    |  25 ++++---
+ src/lib/libcmd/cksum.c    |  28 ++++----
+ src/lib/libcmd/cmp.c      |  14 ++--
+ src/lib/libcmd/comm.c     |  12 ++--
+ src/lib/libcmd/context.c  |  31 +++++----
+ src/lib/libcmd/cp.c       |  58 ++++++++--------
+ src/lib/libcmd/cut.c      | 103 ++++++++++++++--------------
+ src/lib/libcmd/date.c     |  14 ++--
+ src/lib/libcmd/dirname.c  |   2 +-
+ src/lib/libcmd/expr.c     |  21 +++---
+ src/lib/libcmd/fds.c      |  15 ++--
+ src/lib/libcmd/fmt.c      |  28 ++++----
+ src/lib/libcmd/fold.c     |  20 +++---
+ src/lib/libcmd/getconf.c  |   4 +-
+ src/lib/libcmd/grep.c     |  70 ++++++++++---------
+ src/lib/libcmd/id.c       |  18 ++---
+ src/lib/libcmd/join.c     | 140 +++++++++++++++++++-------------------
+ src/lib/libcmd/logname.c  |   2 +-
+ src/lib/libcmd/mkdir.c    |   8 +--
+ src/lib/libcmd/mktemp.c   |   4 +-
+ src/lib/libcmd/paste.c    |  28 ++++----
+ src/lib/libcmd/pathchk.c  |   4 +-
+ src/lib/libcmd/rev.c      |  10 +--
+ src/lib/libcmd/rev.h      |   5 +-
+ src/lib/libcmd/revlib.c   |  15 ++--
+ src/lib/libcmd/rm.c       |  10 +--
+ src/lib/libcmd/stty.c     |  58 ++++++++--------
+ src/lib/libcmd/tail.c     |  38 +++++------
+ src/lib/libcmd/tee.c      |   6 +-
+ src/lib/libcmd/uname.c    |   4 +-
+ src/lib/libcmd/uniq.c     |  37 +++++-----
+ src/lib/libcmd/wclib.c    |  32 ++++-----
+ 35 files changed, 490 insertions(+), 474 deletions(-)
+
+diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
+index 9377f9bdb..91b54cb33 100644
+--- a/src/lib/libcmd/basename.c
++++ b/src/lib/libcmd/basename.c
+@@ -69,7 +69,7 @@ static const char usage[] =
+ static void namebase(Sfio_t *outfile, char *pathname, char *suffix, char termch)
+ {
+ 	char *first, *last;
+-	int n=0;
++	size_t n=0;
+ 	/* go to end of path */
+ 	for(first=last=pathname; *last; last++);
+ 	/* back over trailing '/' */
+@@ -91,14 +91,14 @@ static void namebase(Sfio_t *outfile, char *pathname, char *suffix, char termch)
+ 		if(*first=='/')
+ 			first++;
+ 		/* check for trailing suffix */
+-		if(suffix && (n=strlen(suffix)) && n<(last-first))
++		if(suffix && (n=strlen(suffix)) && (ssize_t)n<(last-first))
+ 		{
+ 			if(memcmp(last-n,suffix,n)==0)
+ 				last -=n;
+ 		}
+ 	}
+ 	if(last>first)
+-		sfwrite(outfile,first,last-first);
++		sfwrite(outfile,first,(size_t)(last-first));
+ 	sfputc(outfile,termch);
+ }
+ 
+diff --git a/src/lib/libcmd/cat.c b/src/lib/libcmd/cat.c
+index ed91813c4..57a59ad1b 100644
+--- a/src/lib/libcmd/cat.c
++++ b/src/lib/libcmd/cat.c
+@@ -126,14 +126,15 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 	unsigned char*	end;
+ 	unsigned char*	buf;
+ 	unsigned char*	nxt;
+-	int		n;
+ 	int		line;
+ 	int		raw;
+ 	int		last;
+-	int		c;
+-	int		m;
++	ptrdiff_t	c;
++	ptrdiff_t	m;
++	ptrdiff_t	n;
+ 	int		any;
+ 	int		header;
++	ssize_t		sz;
+ 
+ 	unsigned char	meta[3];
+ 	unsigned char	tmp[32];
+@@ -167,7 +168,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 						{
+ 							if (last > 0)
+ 							{
+-								*end = last;
++								*end = (unsigned char)last;
+ 								last = -1;
+ 								c = end - pp + 1;
+ 								if ((m = mbsize(pp)) == c)
+@@ -178,21 +179,21 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 										header = 0;
+ 										sfprintf(op, "%6d\t", line);
+ 									}
+-									sfwrite(op, cur, m);
++									sfwrite(op, cur, (size_t)m);
+ 									*(cp = cur = end) = 0;
+ 								}
+ 								else
+ 								{
+-									memcpy(tmp, pp, c);
++									memcpy(tmp, pp, (size_t)c);
+ 									if (!(nxt = (unsigned char*)(*reserve)(ip, SFIO_UNBOUND, 0)))
+ 									{
+ 										states[0] = sfvalue(ip) ? T_ERROR : T_EOF;
+ 										*(cp = end = tmp + sizeof(tmp) - 1) = 0;
+ 										last = -1;
+ 									}
+-									else if ((n = sfvalue(ip)) <= 0)
++									else if ((sz = sfvalue(ip)) <= 0)
+ 									{
+-										states[0] = n ? T_ERROR : T_EOF;
++										states[0] = sz ? T_ERROR : T_EOF;
+ 										*(cp = end = tmp + sizeof(tmp) - 1) = 0;
+ 										last = -1;
+ 									}
+@@ -204,9 +205,9 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 										*end = 0;
+ 									}
+  mb:
+-									if ((n = end - cp + 1) >= (sizeof(tmp) - c))
+-										n = sizeof(tmp) - c - 1;
+-									memcpy(tmp + c, cp, n);
++									if ((n = end - cp + 1) >= ((ptrdiff_t)sizeof(tmp) - c))
++										n = (ptrdiff_t)sizeof(tmp) - c - 1;
++									memcpy(tmp + c, cp, (size_t)n);
+ 									if ((m = mbsize(tmp)) >= c)
+ 									{
+ 										any = 1;
+@@ -215,7 +216,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 											header = 0;
+ 											sfprintf(op, "%6d\t", line);
+ 										}
+-										sfwrite(op, tmp, m);
++										sfwrite(op, tmp, (size_t)m);
+ 										cur = cp += m - c;
+ 									}
+ 								}
+@@ -242,7 +243,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 				sfprintf(op, "%6d\t", line);
+ 			}
+ 			if (m)
+-				sfwrite(op, cur, m);
++				sfwrite(op, cur, (size_t)m);
+ 		}
+  special:
+ 		switch (n)
+@@ -292,7 +293,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 			{
+ 				if (!(n = states[c]))
+ 				{
+-					*(cur = tmp) = c;
++					*(cur = tmp) = (unsigned char)c;
+ 					m = 1;
+ 					goto flush;
+ 				}
+@@ -301,7 +302,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 					cp--;
+ 					goto special;
+ 				}
+-				tmp[0] = c;
++				tmp[0] = (unsigned char)c;
+ 				c = 1;
+ 				goto mb;
+ 			}
+@@ -318,7 +319,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 			do
+ 			{
+ 				n = c & ~0200;
+-				meta[2] = printof(n);
++				meta[2] = (unsigned char)printof(n);
+ 				sfwrite(op, (char*)meta, 3);
+ 			} while (states[c = *++cp] == T_CNTL8BIT && raw);
+ 			break;
+@@ -326,7 +327,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 			meta[1] = '-';
+ 			do
+ 			{
+-				meta[2] = c & ~0200;
++				meta[2] = (unsigned char)(c & ~0200);
+ 				sfwrite(op, (char*)meta, 3);
+ 			} while (states[c = *++cp] == T_EIGHTBIT && raw);
+ 			break;
+@@ -531,7 +532,7 @@ b_cat(int argc, char** argv, Shbltin_t* context)
+ 			continue;
+ 		}
+ 		if (flags&U_FLAG)
+-			sfsetbuf(fp, fp, -1);
++			sfsetbuf(fp, fp, (size_t)SFIO_UNBOUND);
+ 		if (dovcat)
+ 			n = vcat(states, fp, sfstdout, reserve, flags);
+ 		else if (sfmove(fp, sfstdout, SFIO_UNBOUND, -1) >= 0 && sfeof(fp))
+diff --git a/src/lib/libcmd/chgrp.c b/src/lib/libcmd/chgrp.c
+index 30957f958..dbac5303f 100644
+--- a/src/lib/libcmd/chgrp.c
++++ b/src/lib/libcmd/chgrp.c
+@@ -140,61 +140,60 @@ static void
+ getids(char* s, char** e, Key_t* key, int options)
+ {
+ 	char*	t;
+-	int	n;
+-	int	m;
++	ptrdiff_t n;
+ 	char*	z;
+ 	char	buf[64];
+ 
+ 	key->uid = key->gid = -1;
+ 	while (isspace(*s))
+ 		s++;
+-	for (t = s; (n = *t) && n != ':' && n != '.' && !isspace(n); t++);
++	for (t = s; (n = *t) && n != ':' && n != '.' && !isspace((int)n); t++);
+ 	if (n)
+ 	{
+ 		options |= OPT_CHOWN;
+-		if ((n = t++ - s) >= sizeof(buf))
+-			n = sizeof(buf) - 1;
+-		*((s = (char*)memcpy(buf, s, n)) + n) = 0;
++		if ((n = t++ - s) >= (ptrdiff_t)sizeof(buf))
++			n = (ptrdiff_t)sizeof(buf) - 1;
++		*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
+ 	}
+ 	if (options & OPT_CHOWN)
+ 	{
+ 		if (*s)
+ 		{
+-			n = (int)strtol(s, &z, 0);
++			int i, j = (int)strtol(s, &z, 0);
+ 			if (*z || !(options & OPT_NUMERIC))
+ 			{
+-				if ((m = struid(s)) >= 0)
+-					n = m;
++				if ((i = struid(s)) >= 0)
++					j = i;
+ 				else if (*z)
+ 				{
+ 					error(ERROR_exit(1), "%s: unknown user", s);
+ 					UNREACHABLE();
+ 				}
+ 			}
+-			key->uid = n;
++			key->uid = j;
+ 		}
+-		for (s = t; (n = *t) && !isspace(n); t++);
++		for (s = t; (n = *t) && !isspace((int)n); t++);
+ 		if (n)
+ 		{
+-			if ((n = t++ - s) >= sizeof(buf))
+-				n = sizeof(buf) - 1;
+-			*((s = (char*)memcpy(buf, s, n)) + n) = 0;
++			if ((n = t++ - s) >= (ptrdiff_t)sizeof(buf))
++				n = (ptrdiff_t)sizeof(buf) - 1;
++			*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
+ 		}
+ 	}
+ 	if (*s)
+ 	{
+-		n = (int)strtol(s, &z, 0);
++		int i, j = (int)strtol(s, &z, 0);
+ 		if (*z || !(options & OPT_NUMERIC))
+ 		{
+-			if ((m = strgid(s)) >= 0)
+-				n = m;
++			if ((i = strgid(s)) >= 0)
++				j = i;
+ 			else if (*z)
+ 			{
+ 				error(ERROR_exit(1), "%s: unknown group", s);
+ 				UNREACHABLE();
+ 			}
+ 		}
+-		key->gid = n;
++		key->gid = j;
+ 	}
+ 	if (e)
+ 		*e = t;
+@@ -213,7 +212,6 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 	Map_t*		m;
+ 	FTS*		fts;
+ 	FTSENT*		ent;
+-	int		i;
+ 	Dt_t*		map = 0;
+ 	int		logical = 1;
+ 	int		flags;
+@@ -223,7 +221,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 	char*		usage;
+ 	char*		t;
+ 	Sfio_t*		sp;
+-	unsigned long	before;
++	time_t		before;
+ 	Dtdisc_t	mapdisc;
+ 	Key_t		keys[3];
+ 	Key_t		key;
+@@ -301,8 +299,8 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 				error(ERROR_exit(1), "%s: cannot stat", opt_info.arg);
+ 				UNREACHABLE();
+ 			}
+-			uid = st.st_uid;
+-			gid = st.st_gid;
++			uid = (int)st.st_uid;
++			gid = (int)st.st_gid;
+ 			options |= OPT_UID|OPT_GID;
+ 			continue;
+ 		case 'u':
+@@ -437,14 +435,15 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 			chownf = chown;
+ 			op = "chown";
+ 		commit:
+-			if ((unsigned long)ent->fts_statp->st_ctime >= before)
++			if (ent->fts_statp->st_ctime >= before)
+ 				break;
+ 			if (map)
+ 			{
++				size_t i;
+ 				options &= ~(OPT_UID|OPT_GID);
+ 				uid = gid = -1;
+-				keys[0].uid = keys[1].uid = ent->fts_statp->st_uid;
+-				keys[0].gid = keys[2].gid = ent->fts_statp->st_gid;
++				keys[0].uid = keys[1].uid = (int)ent->fts_statp->st_uid;
++				keys[0].gid = keys[2].gid = (int)ent->fts_statp->st_gid;
+ 				i = 0;
+ 				do
+ 				{
+@@ -466,9 +465,9 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 			else
+ 			{
+ 				if (!(options & OPT_UID))
+-					uid = ent->fts_statp->st_uid;
++					uid = (int)ent->fts_statp->st_uid;
+ 				if (!(options & OPT_GID))
+-					gid = ent->fts_statp->st_gid;
++					gid = (int)ent->fts_statp->st_gid;
+ 			}
+ 			if ((options & OPT_UNMAPPED) && (uid < 0 || gid < 0))
+ 			{
+@@ -479,7 +478,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 				else
+ 					error(ERROR_warn(0), "%s: GID not mapped", ent->fts_path);
+ 			}
+-			if (uid != ent->fts_statp->st_uid && uid >= 0 || gid != ent->fts_statp->st_gid && gid >= 0)
++			if (uid != (int)ent->fts_statp->st_uid && uid >= 0 || gid != (int)ent->fts_statp->st_gid && gid >= 0)
+ 			{
+ 				if (options & (OPT_SHOW|OPT_VERBOSE))
+ 				{
+@@ -490,7 +489,7 @@ b_chgrp(int argc, char** argv, Shbltin_t* context)
+ 					}
+ 					sfprintf(sfstdout, "%s uid:%05d->%05d gid:%05d->%05d %s\n", op, ent->fts_statp->st_uid, uid, ent->fts_statp->st_gid, gid, ent->fts_path);
+ 				}
+-				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, uid, gid) && !(options & OPT_FORCE))
++				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, (uid_t)uid, (gid_t)gid) && !(options & OPT_FORCE))
+ 					error(ERROR_system(0), "%s: cannot change%s", ent->fts_path, s);
+ 			}
+ 			break;
+diff --git a/src/lib/libcmd/chmod.c b/src/lib/libcmd/chmod.c
+index 49343b46b..49fa0e5da 100644
+--- a/src/lib/libcmd/chmod.c
++++ b/src/lib/libcmd/chmod.c
+@@ -24,6 +24,16 @@
+  * chmod
+  */
+ 
++#define lchmod		______lchmod
++
++#include <cmd.h>
++#include <ls.h>
++#include <fts.h>
++
++#include "FEATURE/symlink"
++
++#undef	lchmod
++
+ static const char usage[] =
+ "[-?\n@(#)$Id: chmod (ksh 93u+m) 2022-08-30 $\n]"
+ "[--catalog?" ERROR_CATALOG "]"
+@@ -123,17 +133,6 @@ static const char usage[] =
+ 	"\bls\b(1), \bumask\b(2)]"
+ ;
+ 
+-
+-#define lchmod		______lchmod
+-
+-#include <cmd.h>
+-#include <ls.h>
+-#include <fts.h>
+-
+-#include "FEATURE/symlink"
+-
+-#undef	lchmod
+-
+ extern int	lchmod(const char*, mode_t);
+ 
+ /*
+@@ -144,7 +143,7 @@ extern int	lchmod(const char*, mode_t);
+ int
+ b_chmod(int argc, char** argv, Shbltin_t* context)
+ {
+-	int		mode = 0;
++	mode_t		mode = 0;
+ 	int		force = 0;
+ 	int		flags;
+ 	char*		amode = 0;
+@@ -154,7 +153,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
+ 	int		(*chmodf)(const char*, mode_t);
+ 	int		logical = 1;
+ 	int		notify = 0;
+-	int		ignore = 0;
++	mode_t		ignore = 0;
+ 	int		show = 0;
+ 	int		chlink = 0;
+ 	struct stat	st;
+diff --git a/src/lib/libcmd/cksum.c b/src/lib/libcmd/cksum.c
+index 0e71981c7..2dbfbdc46 100644
+--- a/src/lib/libcmd/cksum.c
++++ b/src/lib/libcmd/cksum.c
+@@ -203,7 +203,7 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
+ 				if (*p != '\n')
+ 					sumblock(state->sum, "\r", 1);
+ 			}
+-			while (r = memchr(p, '\r', e - p))
++			while (r = memchr(p, '\r', (size_t)(e - p)))
+ 			{
+ 				if (++r >= e)
+ 				{
+@@ -211,17 +211,17 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
+ 					peek = 1;
+ 					break;
+ 				}
+-				sumblock(state->sum, p, r - p - (*r == '\n'));
++				sumblock(state->sum, p, (size_t)(r - p - (*r == '\n')));
+ 				p = r;
+ 			}
+-			sumblock(state->sum, p, e - p);
++			sumblock(state->sum, p, (size_t)(e - p));
+ 		}
+ 		if (peek)
+ 			sumblock(state->sum, "\r", 1);
+ 	}
+ 	else
+ 		while (p = sfreserve(ip, SFIO_UNBOUND, 0))
+-			sumblock(state->sum, p, sfvalue(ip));
++			sumblock(state->sum, p, (size_t)sfvalue(ip));
+ 	if (sfvalue(ip))
+ 		error(ERROR_SYSTEM|2, "%s: read error", file);
+ 	sumdone(state->sum);
+@@ -237,8 +237,8 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
+ 				else
+ 					sfprintf(sfstdout, " %04o %s %s",
+ 						modex(st->st_mode & S_IPERM),
+-						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid(st->st_uid) : "-",
+-						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid(st->st_gid) : "-");
++						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid((int)st->st_uid) : "-",
++						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid((int)st->st_gid) : "-");
+ 			}
+ 			if (ip != sfstdin)
+ 				sfprintf(op, " %s", file);
+@@ -258,7 +258,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 	char*		e;
+ 	char*		file;
+ 	int		attr;
+-	int		mode;
++	mode_t		mode;
+ 	int		uid = -1;
+ 	int		gid = -1;
+ 	Sfio_t*		sp;
+@@ -272,7 +272,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 			file = t;
+ 		*file++ = 0;
+ 		attr = 0;
+-		if ((mode = strtol(file, &e, 8)) && *e == ' ' && (e - file) == 4)
++		if ((mode = (mode_t)strtoul(file, &e, 8)) && *e == ' ' && (e - file) == 4)
+ 		{
+ 			mode = modei(mode);
+ 			if (t = strchr(++e, ' '))
+@@ -326,7 +326,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 				}
+ 				else
+ 				{
+-					if (uid < 0 || uid == st.st_uid)
++					if (uid < 0 || uid == (int)st.st_uid)
+ 						uid = -1;
+ 					else if (!state->permissions)
+ 					{
+@@ -335,7 +335,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 						else
+ 							error(2, "%s: UID should be %s", file, fmtuid(uid));
+ 					}
+-					if (gid < 0 || gid == st.st_gid)
++					if (gid < 0 || gid == (int)st.st_gid)
+ 						gid = -1;
+ 					else if (!state->permissions)
+ 					{
+@@ -346,7 +346,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 					}
+ 					if (state->permissions && (uid >= 0 || gid >= 0))
+ 					{
+-						if (chown(file, uid, gid) < 0)
++						if (chown(file, (uid_t)uid, (uid_t)gid) < 0)
+ 						{
+ 							if (uid < 0)
+ 								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid(gid));
+@@ -472,7 +472,7 @@ b_cksum(int argc, char** argv, Shbltin_t* context)
+ 			state.text = 0;
+ 			continue;
+ 		case 'B':
+-			state.scale = opt_info.num;
++			state.scale = (size_t)opt_info.num;
+ 			continue;
+ 		case 'c':
+ 			if (!(state.check = sfstropen()))
+@@ -502,13 +502,13 @@ b_cksum(int argc, char** argv, Shbltin_t* context)
+ 			method = "sys5";
+ 			continue;
+ 		case 'S':
+-			state.silent = opt_info.num;
++			state.silent = (int)opt_info.num;
+ 			continue;
+ 		case 't':
+ 			state.total = 1;
+ 			continue;
+ 		case 'w':
+-			state.warn = opt_info.num;
++			state.warn = (int)opt_info.num;
+ 			continue;
+ 		case 'x':
+ 			method = opt_info.arg;
+diff --git a/src/lib/libcmd/cmp.c b/src/lib/libcmd/cmp.c
+index 92018b05b..43ef7c55c 100644
+--- a/src/lib/libcmd/cmp.c
++++ b/src/lib/libcmd/cmp.c
+@@ -124,7 +124,7 @@ pretty(Sfio_t *out, int o, int delim, int flags)
+ 			*s++ = ' ';
+ 			*s++ = ' ';
+ 		}
+-		*s++ = o;
++		*s++ = (char)o;
+ 	}
+ 	*s = 0;
+ 	sfputr(out, buf, delim);
+@@ -137,15 +137,15 @@ pretty(Sfio_t *out, int o, int delim, int flags)
+ static int
+ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfoff_t count, Sfoff_t differences)
+ {
+-	int		c1;
+-	int		c2;
++	ptrdiff_t	c1;
++	ptrdiff_t	c2;
+ 	unsigned char*	p1 = 0;
+ 	unsigned char*	p2 = 0;
+ 	Sfoff_t	lines = 1;
+ 	unsigned char*	e1 = 0;
+ 	unsigned char*	e2 = 0;
+ 	Sfoff_t		pos = 0;
+-	int		n1 = 0;
++	ptrdiff_t	n1 = 0;
+ 	int		ret = 0;
+ 	unsigned char*	last;
+ 
+@@ -179,7 +179,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
+ 				return ret;
+ 			}
+ 			if (count > 0 && c1 > count)
+-				c1 = (int)count;
++				c1 = (ptrdiff_t)count;
+ 			e1 = p1 + c1;
+ 			n1 = c1;
+ 		}
+@@ -206,7 +206,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
+ 		pos += c1;
+ 		if (flags & CMP_SILENT)
+ 		{
+-			if (memcmp(p1, p2, c1))
++			if (memcmp(p1, p2, (size_t)c1))
+ 				return 1;
+ 			p1 += c1;
+ 			p2 += c1;
+@@ -231,7 +231,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
+ 					if (flags & (CMP_BYTES|CMP_CHARS|CMP_VERBOSE))
+ 					{
+ 						sfputc(sfstdout, (flags & CMP_VERBOSE) ? ' ' : ',');
+-						pretty(sfstdout, c1, -1, flags);
++						pretty(sfstdout, (int)c1, -1, flags);
+ 						pretty(sfstdout, *(p2-1), '\n', flags);
+ 					}
+ 					else
+diff --git a/src/lib/libcmd/comm.c b/src/lib/libcmd/comm.c
+index ab3d3e887..292cd42c8 100644
+--- a/src/lib/libcmd/comm.c
++++ b/src/lib/libcmd/comm.c
+@@ -63,7 +63,7 @@ static const char usage[] =
+ static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
+ {
+ 	char *cp1, *cp2;
+-	int n1 = 0, n2 = 0, n, comp;
++	ssize_t n1 = 0, n2 = 0, n, comp;
+ 	if(cp1 = sfgetr(in1,'\n',0))
+ 		n1 = sfvalue(in1);
+ 	if(cp2 = sfgetr(in2,'\n',0))
+@@ -71,7 +71,7 @@ static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
+ 	while(cp1 && cp2)
+ 	{
+ 		n=(n1<n2?n1:n2);
+-		if((comp=memcmp(cp1,cp2,n-1))==0 && (comp=n1-n2)==0)
++		if((comp=memcmp(cp1,cp2,(size_t)n-1))==0 && (comp=n1-n2)==0)
+ 		{
+ 			if(mode&C_COMMON)
+ 			{
+@@ -81,7 +81,7 @@ static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
+ 					if(mode==C_ALL)
+ 						sfputc(out,'\t');
+ 				}
+-				if(sfwrite(out,cp1,n) < 0)
++				if(sfwrite(out,cp1,(size_t)n) < 0)
+ 					return -1;
+ 			}
+ 			if(cp1 = sfgetr(in1,'\n',0))
+@@ -95,7 +95,7 @@ static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
+ 			{
+ 				if(mode&C_FILE1)
+ 					sfputc(out,'\t');
+-				if(sfwrite(out,cp2,n2) < 0)
++				if(sfwrite(out,cp2,(size_t)n2) < 0)
+ 					return -1;
+ 			}
+ 			if(cp2 = sfgetr(in2,'\n',0))
+@@ -103,7 +103,7 @@ static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
+ 		}
+ 		else
+ 		{
+-			if((mode&C_FILE1) && sfwrite(out,cp1,n1) < 0)
++			if((mode&C_FILE1) && sfwrite(out,cp1,(size_t)n1) < 0)
+ 				return -1;
+ 			if(cp1 = sfgetr(in1,'\n',0))
+ 				n1 = sfvalue(in1);
+@@ -132,7 +132,7 @@ static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
+ 	{
+ 		if(n)
+ 			sfputc(out,'\t');
+-		if(sfwrite(out,cp1,n1) < 0)
++		if(sfwrite(out,cp1,(size_t)n1) < 0)
+ 			return -1;
+ 		if(!(cp1 = sfgetr(in1,'\n',0)))
+ 			return 0;
+diff --git a/src/lib/libcmd/context.c b/src/lib/libcmd/context.c
+index 10b4b2c39..579f01b26 100644
+--- a/src/lib/libcmd/context.c
++++ b/src/lib/libcmd/context.c
+@@ -13,10 +13,11 @@
+ *                 Glenn Fowler <gsf@research.att.com>                  *
+ *                  David Korn <dgk@research.att.com>                   *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+-#define CONTEXT_BLOCK		(1024*1024)
+-#define CONTEXT_LINE		(4*1024)
++#define CONTEXT_BLOCK		(1024U*1024U)
++#define CONTEXT_LINE		(4U*1024U)
+ 
+ #define _CONTEXT_LINE_PRIVATE_		\
+ 	unsigned char	show;		\
+@@ -30,10 +31,10 @@
+ 	char*		buf;		\
+ 	char*		cur;		\
+ 	char*		end;		\
+-	unsigned int	before;		\
+-	unsigned int	after;		\
+-	unsigned int	total;		\
+-	unsigned int	curline;	\
++	size_t		before;		\
++	size_t		after;		\
++	size_t		total;		\
++	size_t		curline;	\
+ 	uintmax_t	lineno;		\
+ 	Context_line_t	line[1];
+ 
+@@ -101,11 +102,11 @@ context_line(Context_t* cp)
+ 		lp->span = 0;
+ 		free(lp->data);
+ 	}
+-	n = cp->end - cp->cur;
++	n = (size_t)(cp->end - cp->cur);
+ 	if (s = memchr(cp->cur, '\n', n))
+ 	{
+ 		lp->data = cp->cur;
+-		n = s - cp->cur + 1;
++		n = (size_t)(s - cp->cur + 1);
+ 		cp->cur += n;
+ 		lp->size = n;
+ 	}
+@@ -127,11 +128,11 @@ context_line(Context_t* cp)
+ 			if ((r = sfread(cp->ip, cp->buf, CONTEXT_BLOCK)) <= 0)
+ 				return 0;
+ 			cp->end = cp->buf + r;
+-			n = (s = memchr(cp->buf, '\n', r)) ? (s - cp->buf + 1) : r;
+-			if (n > (e - t))
++			n = (s = memchr(cp->buf, '\n', (size_t)r)) ? (size_t)(s - cp->buf + 1) : (size_t)r;
++			if ((ptrdiff_t)n > (e - t))
+ 			{
+ 				r = t - lp->data;
+-				m = r + (s - cp->buf);
++				m = (size_t)(r + (s - cp->buf));
+ 				m = roundof(m, CONTEXT_LINE);
+ 				if (!(lp->data = oldof(lp->data, char, m, 0)))
+ 					return 0;
+@@ -141,7 +142,7 @@ context_line(Context_t* cp)
+ 			t += n;
+ 			cp->cur = cp->buf + n;
+ 		} while (!s);
+-		lp->size = t - lp->data;
++		lp->size = (size_t)(t - lp->data);
+ 	}
+ 	lp->line = ++cp->lineno;
+ 	return lp;
+@@ -150,8 +151,8 @@ context_line(Context_t* cp)
+ int
+ context_show(Context_t* cp)
+ {
+-	int	i;
+-	int	j;
++	size_t		i;
++	size_t		j;
+ 
+ 	j = cp->curline;
+ 	for (i = 0; i < cp->after; i++)
+@@ -178,7 +179,7 @@ context_show(Context_t* cp)
+ int
+ context_close(Context_t* cp)
+ {
+-	int	j;
++	size_t		j;
+ 
+ 	for (j = 0; j < cp->total; j++)
+ 	{
+diff --git a/src/lib/libcmd/cp.c b/src/lib/libcmd/cp.c
+index 37f6f842c..2087baef4 100644
+--- a/src/lib/libcmd/cp.c
++++ b/src/lib/libcmd/cp.c
+@@ -135,7 +135,7 @@ static const char usage_tail[] =
+ #include <stk.h>
+ #include <tmx.h>
+ 
+-#define PATH_CHUNK	256
++#define PATH_CHUNK	256U
+ 
+ #define CP		1
+ #define LN		2
+@@ -159,17 +159,14 @@ typedef struct State_s			/* program state		*/
+ 	int		force;		/* force approval		*/
+ 	int		hierarchy;	/* preserve hierarchy		*/
+ 	int		interactive;	/* prompt for approval		*/
+-	int		missmode;	/* default missing dir mode	*/
++	mode_t		missmode;	/* default missing dir mode	*/
++	mode_t		perm;		/* permissions to preserve	*/
+ 	int		op;		/* {CP,LN,MV}			*/
+-	int		perm;		/* permissions to preserve	*/
+-	int		postsiz;	/* state.path post index	*/
+-	int		presiz;		/* state.path pre index		*/
+ 	int		preserve;	/* preserve { ids perms times }	*/
+ 	int		recursive;	/* subtrees too			*/
+ 	int		remove;		/* remove destination before op	*/
+-	int		suflen;		/* strlen(state.suffix)		*/
+ 	int		sync;		/* fsync() each file after copy	*/
+-	int		uid;		/* caller UID			*/
++	uid_t		uid;		/* caller UID			*/
+ 	int		update;		/* replace only if newer	*/
+ 	int		verbose;	/* list each file before op	*/
+ 	int		wflags;		/* open() for write flags	*/
+@@ -178,7 +175,10 @@ typedef struct State_s			/* program state		*/
+ 	int		(*stat)(const char*, struct stat*);	/* stat	*/
+ 
+ #define INITSTATE	pathsiz		/* (re)init state before this	*/
+-	int		pathsiz;	/* state.path buffer size	*/
++	size_t		pathsiz;	/* state.path buffer size	*/
++	size_t		postsiz;	/* state.path post index	*/
++	ptrdiff_t	presiz;		/* state.path pre index		*/
++	size_t		suflen;		/* strlen(state.suffix)		*/
+ 
+ 
+ 	char*		path;		/* to pathname buffer		*/
+@@ -210,13 +210,13 @@ preserve(State_t* state, const char* path, struct stat* ns, struct stat* os)
+ 			switch (n)
+ 			{
+ 			case 01:
+-				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid(os->st_gid));
++				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid((int)os->st_gid));
+ 				break;
+ 			case 02:
+-				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid(os->st_uid));
++				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid((int)os->st_uid));
+ 				break;
+ 			case 03:
+-				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid(os->st_uid), fmtgid(os->st_gid));
++				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid((int)os->st_uid), fmtgid((int)os->st_gid));
+ 				break;
+ 			}
+ 	}
+@@ -231,10 +231,11 @@ visit(State_t* state, FTSENT* ent)
+ {
+ 	char*		base;
+ 	int		n;
+-	int		len;
++	ptrdiff_t	len;
+ 	int		rm = state->remove || ent->fts_info == FTS_SL;
+ 	int		m;
+ 	int		v;
++	size_t		length;
+ 	char*		s;
+ 	char*		e;
+ 	char*		protection;
+@@ -253,12 +254,12 @@ visit(State_t* state, FTSENT* ent)
+ 	if (ent->fts_level == 0)
+ 	{
+ 		base = ent->fts_name;
+-		len = ent->fts_namelen;
++		len = (ptrdiff_t)ent->fts_namelen;
+ 		if (state->hierarchy)
+ 			state->presiz = -1;
+ 		else
+ 		{
+-			state->presiz = ent->fts_pathlen;
++			state->presiz = (ptrdiff_t)ent->fts_pathlen;
+ 			while (*base == '.' && *(base + 1) == '/')
+ 				for (base += 2; *base == '/'; base++);
+ 			if (*base == '.' && !*(base + 1))
+@@ -278,12 +279,12 @@ visit(State_t* state, FTSENT* ent)
+ 	else
+ 	{
+ 		base = ent->fts_path + state->presiz + 1;
+-		len = ent->fts_pathlen - state->presiz - 1;
++		len = (ptrdiff_t)ent->fts_pathlen - state->presiz - 1;
+ 	}
+ 	len++;
+ 	if (state->directory)
+ 	{
+-		if ((state->postsiz + len) > state->pathsiz && !(state->path = newof(state->path, char, state->pathsiz = roundof(state->postsiz + len, PATH_CHUNK), 0)))
++		if ((state->postsiz + (size_t)len) > state->pathsiz && !(state->path = newof(state->path, char, state->pathsiz = roundof(state->postsiz + (size_t)len, PATH_CHUNK), 0)))
+ 		{
+ 			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+ 			UNREACHABLE();
+@@ -291,7 +292,7 @@ visit(State_t* state, FTSENT* ent)
+ 		if (state->hierarchy && ent->fts_level == 0 && strchr(base, '/'))
+ 		{
+ 			s = state->path + state->postsiz;
+-			memcpy(s, base, len);
++			memcpy(s, base, (size_t)len);
+ 			while (e = strchr(s, '/'))
+ 			{
+ 				*e = 0;
+@@ -322,7 +323,7 @@ visit(State_t* state, FTSENT* ent)
+ 		if (state->preserve && state->op != LN || ent->fts_level > 0 && (ent->fts_statp->st_mode & S_IRWXU) != S_IRWXU)
+ 		{
+ 			if (len && ent->fts_level > 0)
+-				memcpy(state->path + state->postsiz, base, len);
++				memcpy(state->path + state->postsiz, base, (size_t)len);
+ 			else
+ 				state->path[state->postsiz] = 0;
+ 			if (stat(state->path, &st))
+@@ -362,7 +363,7 @@ visit(State_t* state, FTSENT* ent)
+ 			/* FALLTHROUGH */
+ 		case FTS_D:
+ 			if (state->directory)
+-				memcpy(state->path + state->postsiz, base, len);
++				memcpy(state->path + state->postsiz, base, (size_t)len);
+ 			if (!(*state->stat)(state->path, &st))
+ 			{
+ 				if (!S_ISDIR(st.st_mode))
+@@ -396,7 +397,7 @@ visit(State_t* state, FTSENT* ent)
+ 		break;
+ 	}
+ 	if (state->directory)
+-		memcpy(state->path + state->postsiz, base, len);
++		memcpy(state->path + state->postsiz, base, (size_t)len);
+ 	if ((*state->stat)(state->path, &st))
+ 		st.st_mode = 0;
+ 	else if (state->update && !S_ISDIR(st.st_mode) && (unsigned long)ent->fts_statp->st_mtime < (unsigned long)st.st_mtime)
+@@ -485,12 +486,12 @@ visit(State_t* state, FTSENT* ent)
+ 				e = (char*)dot;
+ 				s = state->path;
+ 			}
+-			n = strlen(s);
++			length = strlen(s);
+ 			if (fts = fts_open((char**)e, FTS_NOCHDIR|FTS_ONEPATH|FTS_PHYSICAL|FTS_NOPOSTORDER|FTS_NOSTAT|FTS_NOSEEDOTDIR, NULL))
+ 			{
+ 				while (sub = fts_read(fts))
+ 				{
+-					if (strneq(s, sub->fts_name, n) && sub->fts_name[n] == '.' && strneq(sub->fts_name + n + 1, state->suffix, state->suflen) && (m = strtol(sub->fts_name + n + state->suflen + 1, &e, 10)) && streq(e, state->suffix) && m > v)
++					if (strneq(s, sub->fts_name, length) && sub->fts_name[length] == '.' && strneq(sub->fts_name + length + 1, state->suffix, state->suflen) && (m = (int)strtol(sub->fts_name + length + state->suflen + 1, &e, 10)) && streq(e, state->suffix) && m > v)
+ 						v = m;
+ 					if (sub->fts_level)
+ 						fts_set(NULL, sub, FTS_SKIP);
+@@ -555,12 +556,13 @@ visit(State_t* state, FTSENT* ent)
+ 	case CP:
+ 		if (S_ISLNK(ent->fts_statp->st_mode))
+ 		{
+-			if ((n = pathgetlink(ent->fts_path, state->text, sizeof(state->text) - 1)) < 0)
++			ssize_t l;
++			if ((l = pathgetlink(ent->fts_path, state->text, sizeof(state->text) - 1)) < 0)
+ 			{
+ 				error(ERROR_SYSTEM|2, "%s: cannot read symbolic link text", ent->fts_path);
+ 				return 0;
+ 			}
+-			state->text[n] = 0;
++			state->text[l] = 0;
+ 			if (pathsetlink(state->text, state->path))
+ 			{
+ 				error(ERROR_SYSTEM|2, "%s: cannot copy symbolic link to %s", ent->fts_path, state->path);
+@@ -585,14 +587,14 @@ visit(State_t* state, FTSENT* ent)
+ 			}
+ 			else if (ent->fts_statp->st_size > 0)
+ 			{
+-				if (!(ip = sfnew(NULL, NULL, SFIO_UNBOUND, rfd, SFIO_READ)))
++				if (!(ip = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, rfd, SFIO_READ)))
+ 				{
+ 					error(ERROR_SYSTEM|2, "%s: %s read stream error", ent->fts_path, state->path);
+ 					close(rfd);
+ 					close(wfd);
+ 					return 0;
+ 				}
+-				if (!(op = sfnew(NULL, NULL, SFIO_UNBOUND, wfd, SFIO_WRITE)))
++				if (!(op = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, wfd, SFIO_WRITE)))
+ 				{
+ 					error(ERROR_SYSTEM|2, "%s: %s write stream error", ent->fts_path, state->path);
+ 					close(wfd);
+@@ -874,12 +876,12 @@ b_cp(int argc, char** argv, Shbltin_t* context)
+ 		argc--;
+ 		argv++;
+ 	}
+-	if (!(v = stkalloc(stkstd, (argc + 2) * sizeof(char*))))
++	if (!(v = stkalloc(stkstd, ((size_t)argc + 2) * sizeof(char*))))
+ 	{
+ 		error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+ 		UNREACHABLE();
+ 	}
+-	memcpy(v, argv, (argc + 1) * sizeof(char*));
++	memcpy(v, argv, ((size_t)argc + 1) * sizeof(char*));
+ 	argv = v;
+ 	if (!standard)
+ 	{
+diff --git a/src/lib/libcmd/cut.c b/src/lib/libcmd/cut.c
+index c5249faa5..40bbffc0c 100644
+--- a/src/lib/libcmd/cut.c
++++ b/src/lib/libcmd/cut.c
+@@ -78,23 +78,23 @@ static const char usage[] =
+ typedef struct Delim_s
+ {
+ 	char*		str;
+-	int		len;
++	ptrdiff_t	len;
+ 	int		chr;
+ } Delim_t;
+ 
+ typedef struct Cut_s
+ {
+ 	int		mb;
+-	int		eob;
+ 	int		cflag;
+ 	int		nosplit;
+ 	int		sflag;
+ 	int		nlflag;
+-	int		reclen;
++	size_t		reclen;
+ 	Delim_t		wdelim;
+ 	Delim_t		ldelim;
+ 	unsigned char	space[UCHAR_MAX+1];
+-	int		list[2];	/* NOTE: must be last member */
++	unsigned char	eob;
++	ptrdiff_t	list[2];	/* NOTE: must be last member */
+ } Cut_t;
+ 
+ #define HUGE		INT_MAX
+@@ -117,9 +117,9 @@ typedef struct Cut_s
+ static int
+ mycomp(const void* a, const void* b)
+ {
+-	if (*((int*)a) < *((int*)b))
++	if (*((ptrdiff_t*)a) < *((ptrdiff_t*)b))
+ 		return -1;
+-	if (*((int*)a) > *((int*)b))
++	if (*((ptrdiff_t*)a) > *((ptrdiff_t*)b))
+ 		return 1;
+ 	return 0;
+ }
+@@ -127,12 +127,12 @@ mycomp(const void* a, const void* b)
+ static Cut_t*
+ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+ {
+-	int*	lp;
+-	int	c;
+-	int	n = 0;
+-	int	range = 0;
+-	char*	cp = str;
+-	Cut_t*	cut;
++	ptrdiff_t*	lp;
++	ptrdiff_t	c;
++	ptrdiff_t	n = 0;
++	ptrdiff_t	range = 0;
++	char*		cp = str;
++	Cut_t*		cut;
+ 
+ 	if (!(cut = stkalloc(stkstd, sizeof(Cut_t) + strlen(cp) * sizeof(int))))
+ 	{
+@@ -150,7 +150,7 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+ 	if (wdelim->len == 1)
+ 		cut->space[wdelim->chr] = SP_WORD;
+ 	cut->ldelim = *ldelim;
+-	cut->eob = (ldelim->len == 1) ? ldelim->chr : 0;
++	cut->eob = (ldelim->len == 1) ? (unsigned char)ldelim->chr : 0;
+ 	cut->space[cut->eob] = SP_LINE;
+ 	cut->cflag = (mode&C_CHARS) && cut->mb;
+ 	cut->nosplit = (mode&(C_BYTES|C_NOSPLIT)) == (C_BYTES|C_NOSPLIT) && cut->mb;
+@@ -186,10 +186,10 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+ 			}
+ 			if(c==0)
+ 			{
+-				int *dp;
++				ptrdiff_t *dp;
+ 				*lp = HUGE;
+ 				n = 1 + (lp-cut->list)/2;
+-				qsort(lp=cut->list,n,2*sizeof(*lp),mycomp);
++				qsort(lp=cut->list,(size_t)n,2*sizeof(*lp),mycomp);
+ 				/* eliminate overlapping regions */
+ 				for(n=0,range= -2,dp=lp; *lp!=HUGE; lp+=2)
+ 				{
+@@ -242,7 +242,7 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+ 			break;
+ 
+ 		default:
+-			if(!isdigit(c))
++			if(!isdigit((int)c))
+ 			{
+ 				error(ERROR_exit(1),"bad list for c/f option");
+ 				UNREACHABLE();
+@@ -260,19 +260,19 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+ static void
+ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ {
+-	int		c;
+-	int		len;
+-	int		ncol = 0;
+-	const int*	lp = cut->list;
+-	char*		bp;
+-	int		skip; /* non-zero for don't copy */
+-	int		must;
+-	const char*	xx;
++	ptrdiff_t		c;
++	ptrdiff_t		len;
++	ptrdiff_t		ncol = 0;
++	const ptrdiff_t*	lp = cut->list;
++	char*			bp;
++	ptrdiff_t		skip; /* non-zero for don't copy */
++	ptrdiff_t		must;
++	const char*		xx;
+ 
+ 	for (;;)
+ 	{
+-		if (len = cut->reclen)
+-			bp = sfreserve(fdin, len, -1);
++		if (len = (ptrdiff_t)cut->reclen)
++			bp = sfreserve(fdin, (ssize_t)len, -1);
+ 		else
+ 			bp = sfgetr(fdin, '\n', 0);
+ 		if (!bp && !(bp = sfgetr(fdin, 0, SFIO_LASTR)))
+@@ -287,14 +287,14 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 			if (cut->nosplit)
+ 			{
+ 				const char*	s = bp;
+-				int		w = len < ncol ? len : ncol;
++				ptrdiff_t	w = len < ncol ? len : ncol;
+ 				int		z;
+ 
+ 				while (w > 0)
+ 				{
+ 					if (!(*s & 0x80))
+ 						z = 1;
+-					else if ((z = mbnsize(s, w)) <= 0)
++					else if ((z = mbnsize(s, (size_t)w)) <= 0)
+ 					{
+ 						if (s == bp && xx)
+ 						{
+@@ -318,13 +318,13 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 			else if (cut->cflag)
+ 			{
+ 				const char*	s = bp;
+-				int		w = len;
++				ptrdiff_t	w = len;
+ 				int		z;
+ 
+ 				while (w > 0 && ncol > 0)
+ 				{
+ 					ncol--;
+-					if (!(*s & 0x80) || (z = mbnsize(s, w)) <= 0)
++					if (!(*s & 0x80) || (z = mbnsize(s, (size_t)w)) <= 0)
+ 						z = 1;
+ 					s += z;
+ 					w -= z;
+@@ -343,7 +343,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 			}
+ 			if (!skip && c)
+ 			{
+-				if (sfwrite(fdout, (char*)bp, c) < 0)
++				if (sfwrite(fdout, (char*)bp, (size_t)c) < 0)
+ 					return;
+ 				must = 0;
+ 			}
+@@ -357,7 +357,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 		if (!cut->nlflag && (skip || must || cut->reclen))
+ 		{
+ 			if (cut->ldelim.len > 1)
+-				sfwrite(fdout, cut->ldelim.str, cut->ldelim.len);
++				sfwrite(fdout, cut->ldelim.str, (size_t)cut->ldelim.len);
+ 			else
+ 				sfputc(fdout, cut->ldelim.chr);
+ 		}
+@@ -375,13 +375,14 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 	unsigned char *sp = cut->space;
+ 	unsigned char *cp;
+ 	unsigned char *wp;
+-	int c, nfields=0;
+-	const int *lp = cut->list;
++	ptrdiff_t c;
++	ptrdiff_t nfields=0;
++	const ptrdiff_t *lp = cut->list;
+ 	unsigned char *copy;
+ 	int nodelim=0, empty=0, inword=0;
+ 	unsigned char *ep;
+ 	unsigned char *bp, *first=NULL;
+-	int lastchar;
++	unsigned char lastchar;
+ 	wchar_t w;
+ 	Sfio_t *fdtmp = 0;
+ 	long offset = 0;
+@@ -421,25 +422,25 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 							continue;
+ 						case SP_WIDE:
+ 							wp = --cp;
+-							while ((c = mb2wc(w, cp, ep - cp)) <= 0)
++							while ((c = mb2wc(w, cp, (size_t)(ep - cp))) <= 0)
+ 							{
+ 								/* mb char possibly spanning buffer boundary -- fun stuff */
+-								if ((ep - cp) < mbmax())
++								if ((ep - cp) < (ptrdiff_t)mbmax())
+ 								{
+-									int	i;
+-									int	j;
+-									int	k;
++									ptrdiff_t i;
++									ptrdiff_t j;
++									ptrdiff_t k;
+ 
+ 									if (lastchar != cut->eob)
+ 									{
+ 										*ep = lastchar;
+-										if ((c = mb2wc(w, cp, ep - cp)) > 0)
++										if ((c = mb2wc(w, cp, (size_t)(ep - cp))) > 0)
+ 											break;
+ 									}
+ 									if (copy)
+ 									{
+ 										empty = 0;
+-										if ((c = cp - copy) > 0 && sfwrite(fdout, (char*)copy, c) < 0)
++										if ((c = cp - copy) > 0 && sfwrite(fdout, (char*)copy, (size_t)c) < 0)
+ 											goto failed;
+ 									}
+ 									for (i = 0; i <= (ep - cp); i++)
+@@ -452,9 +453,9 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 										*ep = cut->eob;
+ 									j = i;
+ 									k = 0;
+-									while (j < mbmax())
++									while (j < (ptrdiff_t)mbmax())
+ 										mb[j++] = cp[k++];
+-									if ((c = mb2wc(w, (char*)mb, j)) <= 0)
++									if ((c = mb2wc(w, (char*)mb, (size_t)j)) <= 0)
+ 									{
+ 										c = i;
+ 										w = 0;
+@@ -464,11 +465,11 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 									{
+ 										copy = bp;
+ 										if (w == cut->ldelim.chr)
+-											lastchar = cut->ldelim.chr;
++											lastchar = (unsigned char)cut->ldelim.chr;
+ 										else if (w != cut->wdelim.chr)
+ 										{
+ 											empty = 0;
+-											if (sfwrite(fdout, (char*)mb, c) < 0)
++											if (sfwrite(fdout, (char*)mb, (size_t)c) < 0)
+ 												goto failed;
+ 										}
+ 									}
+@@ -526,7 +527,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 				if (copy)
+ 				{
+ 					empty = 0;
+-					if ((c = wp - copy) > 0 && sfwrite(fdout, (char*)copy, c) < 0)
++					if ((c = wp - copy) > 0 && sfwrite(fdout, (char*)copy, (size_t)c) < 0)
+ 						goto failed;
+ 					copy = 0;
+ 				}
+@@ -556,7 +557,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 				if (offset)
+ 					sfseek(fdtmp,offset=0,SEEK_SET);
+ 			}
+-			if (copy && (c=cp-copy)>0 && (!nodelim || !cut->sflag) && sfwrite(fdout,(char*)copy,c)< 0)
++			if (copy && (c=cp-copy)>0 && (!nodelim || !cut->sflag) && sfwrite(fdout,(char*)copy,(size_t)c)< 0)
+ 				goto failed;
+ 		}
+ 		/* see whether to save in tmp file */
+@@ -565,7 +566,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 			/* copy line to tmpfile in case no fields */
+ 			if(!fdtmp)
+ 				fdtmp = sftmp(BLOCK);
+-			sfwrite(fdtmp,(char*)first,c);
++			sfwrite(fdtmp,(char*)first,(size_t)c);
+ 			offset +=c;
+ 		}
+ 	}
+@@ -580,7 +581,7 @@ b_cut(int argc, char** argv, Shbltin_t* context)
+ 	char*		cp = 0;
+ 	Sfio_t*		fp;
+ 	char*		s;
+-	int		n;
++	ptrdiff_t	n;
+ 	Cut_t*		cut;
+ 	int		mode = 0;
+ 	Delim_t		wdelim;
+@@ -657,7 +658,7 @@ b_cut(int argc, char** argv, Shbltin_t* context)
+ 			continue;
+ 		case 'R':
+ 			if(opt_info.num>0)
+-				reclen = opt_info.num;
++				reclen = (size_t)opt_info.num;
+ 			continue;
+ 		case 's':
+ 			mode |= C_SUPPRESS;
+diff --git a/src/lib/libcmd/date.c b/src/lib/libcmd/date.c
+index 1acbec5da..6e87c8e9a 100644
+--- a/src/lib/libcmd/date.c
++++ b/src/lib/libcmd/date.c
+@@ -23,6 +23,12 @@
+  * date -- set/display date
+  */
+ 
++#include <cmd.h>
++#include <ls.h>
++#include <proc.h>
++#include <tmx.h>
++#include <times.h>
++
+ static const char usage[] =
+ "[-?\n@(#)$Id: date (AT&T Research) 2011-01-27 $\n]"
+ "[--catalog?" ERROR_CATALOG "]"
+@@ -192,12 +198,6 @@ static const char usage[] =
+ "	\bstrftime\b(3), \bstrptime\b(3), \btm\b(3)]"
+ ;
+ 
+-#include <cmd.h>
+-#include <ls.h>
+-#include <proc.h>
+-#include <tmx.h>
+-#include <times.h>
+-
+ typedef struct Fmt
+ {
+ 	struct Fmt*	next;
+@@ -242,7 +242,7 @@ settime(Shbltin_t* context, Time_t now, int adjust, int network)
+ 	}
+ 	*argv++ = buf;
+ 	*argv = 0;
+-	if (!sh_run(context, argv - args, args))
++	if (!sh_run(context, (int)(argv - args), args))
+ 		return 0;
+ 	return -1;
+ }
+diff --git a/src/lib/libcmd/dirname.c b/src/lib/libcmd/dirname.c
+index b5316af5f..064eb19e9 100644
+--- a/src/lib/libcmd/dirname.c
++++ b/src/lib/libcmd/dirname.c
+@@ -96,7 +96,7 @@ static void l_dirname(Sfio_t *outfile, const char *pathname, char termch)
+ 		if(last!=pathname && pathname[0]=='/' && pathname[1]=='/' && *astconf("PATH_LEADING_SLASHES",NULL,NULL)!='1')
+ 			pathname++;
+ 	}
+-	sfwrite(outfile,pathname,last+1-pathname);
++	sfwrite(outfile,pathname,(size_t)(last+1-pathname));
+ 	sfputc(outfile,termch);
+ }
+ 
+diff --git a/src/lib/libcmd/expr.c b/src/lib/libcmd/expr.c
+index 7c1fcdb9c..d8a2baa13 100644
+--- a/src/lib/libcmd/expr.c
++++ b/src/lib/libcmd/expr.c
+@@ -183,9 +183,10 @@ static int getnode(State_t* state, Node_t *np)
+ {
+ 	char*	sp;
+ 	char*	cp;
+-	int	i;
+-	int	j;
+-	int	k;
++	ptrdiff_t i;
++	ptrdiff_t j;
++	ptrdiff_t k;
++	size_t	l;
+ 	int	tok;
+ 	char*	ep;
+ 
+@@ -223,7 +224,7 @@ static int getnode(State_t* state, Node_t *np)
+ 					error(ERROR_exit(2), "string argument expected");
+ 					UNREACHABLE();
+ 				}
+-				np->num = strlen(cp);
++				np->num = (long)strlen(cp);
+ 				np->type = T_NUM;
+ 				goto next;
+ 			}
+@@ -260,7 +261,7 @@ static int getnode(State_t* state, Node_t *np)
+ 					error(ERROR_exit(2), "position argument expected");
+ 					UNREACHABLE();
+ 				}
+-				i = strtol(cp, &ep, 10);
++				i = (ptrdiff_t)strtol(cp, &ep, 10);
+ 				if (*ep || --i < 0)
+ 					i = -1;
+ 				if (!(cp = *state->arglist++))
+@@ -268,10 +269,10 @@ static int getnode(State_t* state, Node_t *np)
+ 					error(ERROR_exit(2), "length argument expected");
+ 					UNREACHABLE();
+ 				}
+-				j = strtol(cp, &ep, 10);
++				j = (ptrdiff_t)strtol(cp, &ep, 10);
+ 				if (*ep)
+ 					j = -1;
+-				k = strlen(sp);
++				k = (ptrdiff_t)strlen(sp);
+ 				if (i < 0 || i >= k || j < 0)
+ 					sp = "";
+ 				else
+@@ -311,9 +312,9 @@ static int getnode(State_t* state, Node_t *np)
+ 	if (!(cp = *state->arglist))
+ 		return 0;
+ 	state->arglist++;
+-	for (i=0; i < sizeof(optable)/sizeof(*optable); i++)
+-		if (*cp==optable[i].opname[0] && cp[1]==optable[i].opname[1])
+-			return optable[i].op;
++	for (l=0; l < sizeof(optable)/sizeof(*optable); l++)
++		if (*cp==optable[l].opname[0] && cp[1]==optable[l].opname[1])
++			return optable[l].op;
+ 	error(ERROR_exit(2),"%s: unknown operator argument",cp);
+ 	UNREACHABLE();
+ }
+diff --git a/src/lib/libcmd/fds.c b/src/lib/libcmd/fds.c
+index 8b1a17d60..d428705ba 100644
+--- a/src/lib/libcmd/fds.c
++++ b/src/lib/libcmd/fds.c
+@@ -47,13 +47,6 @@ static const char usage[] =
+ #undef	S_IFSOCK
+ #endif
+ 
+-#ifndef minor
+-#define minor(x)	(int)((x)&0xff)
+-#endif
+-#ifndef major
+-#define major(x)	(int)(((unsigned int)(x)>>8)&0xff)
+-#endif
+-
+ #ifdef S_IFSOCK
+ 
+ typedef struct NV_s
+@@ -161,7 +154,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
+ 	char*			m;
+ 	char*			x;
+ 	int			flags;
+-	int			details;
++	int64_t			details;
+ 	int			open_max;
+ 	int			unit;
+ 	Sfio_t*			sp;
+@@ -194,7 +187,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
+ 			details = opt_info.num;
+ 			continue;
+ 		case 'u':
+-			unit = opt_info.num;
++			unit = (int)opt_info.num;
+ 			continue;
+ 		case '?':
+ 			/* self-doc: write to standard output */
+@@ -222,7 +215,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
+ 	}
+ 	if (unit == 1)
+ 		sp = sfstdout;
+-	else if (fstat(unit, &st) || !(sp = sfnew(NULL, NULL, SFIO_UNBOUND, unit, SFIO_WRITE)))
++	else if (fstat(unit, &st) || !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, unit, SFIO_WRITE)))
+ 	{
+ 		error(ERROR_SYSTEM|3, "%d: cannot write to file descriptor");
+ 		UNREACHABLE();
+@@ -350,7 +343,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
+ 				a = fam;
+ 				e = (b = (unsigned char*)&addr) + addrlen;
+ 				while (b < e && a < &fam[sizeof(fam)-1])
+-					a += sfsprintf(a, &fam[sizeof(fam)] - a - 1, ".%d", *b++);
++					a += sfsprintf(a, (size_t)(&fam[sizeof(fam)] - a - 1), ".%d", *b++);
+ 				a = a == fam ? "0" : fam + 1;
+ 			}
+ 			if (port)
+diff --git a/src/lib/libcmd/fmt.c b/src/lib/libcmd/fmt.c
+index 8125fdf94..357d40ebd 100644
+--- a/src/lib/libcmd/fmt.c
++++ b/src/lib/libcmd/fmt.c
+@@ -56,10 +56,10 @@ typedef struct Fmt_s
+ 	char*	endbuf;
+ 	Sfio_t*	in;
+ 	Sfio_t*	out;
++	ptrdiff_t prefix;
+ 	int	indent;
+ 	int	nextdent;
+ 	int	nwords;
+-	int	prefix;
+ 	int	quote;
+ 	int	retain;
+ 	int	section;
+@@ -78,7 +78,7 @@ outline(Fmt_t* fp)
+ 	char*	cp = fp->outbuf;
+ 	int	n = 0;
+ 	int	c;
+-	int	d;
++	ptrdiff_t d;
+ 
+ 	if (!fp->outp)
+ 		return;
+@@ -138,8 +138,8 @@ split(Fmt_t* fp, char* buf, int splice)
+ 	char*	qp;
+ 	int	c = 1;
+ 	int	q = 0;
+-	int	n;
+-	int	prefix;
++	ptrdiff_t n;
++	ptrdiff_t prefix;
+ 
+ 	for (ep = buf; *ep == ' '; ep++);
+ 	prefix = ep - buf;
+@@ -151,7 +151,7 @@ split(Fmt_t* fp, char* buf, int splice)
+ 	if ((*ep == 0 || *buf == '.') && !isoption(fp, 'o'))
+ 	{
+ 		if (*ep)
+-			prefix = strlen(buf);
++			prefix = (ptrdiff_t)strlen(buf);
+ 		outline(fp);
+ 		strcpy(fp->outbuf, buf);
+ 		fp->outp = fp->outbuf+prefix;
+@@ -182,7 +182,7 @@ split(Fmt_t* fp, char* buf, int splice)
+ 			if (c == '\\' && *ep)
+ 				ep++;
+ 		}
+-		n = (ep-cp);
++		n = ep-cp;
+ 		if (n && isoption(fp, 'o'))
+ 		{
+ 			for (qp = cp; qp < ep; qp++)
+@@ -199,13 +199,13 @@ split(Fmt_t* fp, char* buf, int splice)
+ 		if (fp->nwords == 0)
+ 		{
+ 			if (fp->prefix)
+-				memset(fp->outbuf, ' ', fp->prefix);
++				memset(fp->outbuf, ' ', (size_t)fp->prefix);
+ 			fp->outp = &fp->outbuf[fp->prefix];
+ 			while (*cp == ' ')
+ 				cp++;
+-			n = (ep-cp);
++			n = ep-cp;
+ 		}
+-		memcpy(fp->outp, cp, n);
++		memcpy(fp->outp, cp, (size_t)n);
+ 		fp->outp += n;
+ 		fp->nwords++;
+ 	}
+@@ -398,14 +398,14 @@ dofmt(Fmt_t* fp)
+ 					if (cp < lp && *cp == ']')
+ 					{
+ 						cp++;
+-						*dp++ = c;
++						*dp++ = (char)c;
+ 					}
+ 					else
+ 					{
+ 						fp->section = 1;
+ 						fp->retain = 0;
+ 					flush:
+-						*dp++ = c;
++						*dp++ = (char)c;
+ 						*dp = 0;
+ 						split(fp, buf, 0);
+ 						outline(fp);
+@@ -519,7 +519,7 @@ dofmt(Fmt_t* fp)
+ 				if (!ep)
+ 					ep = dp;
+ 				c = isoption(fp, 'o') ? 1 : TABSZ - (dp - buf) % TABSZ;
+-				if (dp >= &buf[sizeof(buf) - c - 3])
++				if (dp >= &buf[sizeof(buf) - (size_t)c - 3])
+ 				{
+ 					cp--;
+ 					break;
+@@ -547,7 +547,7 @@ dofmt(Fmt_t* fp)
+ 				ep = 0;
+ 			else if (!ep)
+ 				ep = dp;
+-			*dp++ = c;
++			*dp++ = (char)c;
+ 		}
+ 		if (ep)
+ 			*ep = 0;
+@@ -590,7 +590,7 @@ b_fmt(int argc, char** argv, Shbltin_t* context)
+ 			setoption(&fmt, n);
+ 			continue;
+ 		case 'w':
+-			if (opt_info.num < TABSZ || opt_info.num>= sizeof(outbuf))
++			if (opt_info.num < TABSZ || opt_info.num >= (ssize_t)sizeof(outbuf))
+ 				error(2, "width out of range");
+ 			fmt.endbuf = &outbuf[opt_info.num];
+ 			continue;
+diff --git a/src/lib/libcmd/fold.c b/src/lib/libcmd/fold.c
+index 49d476fd0..5635b4de6 100644
+--- a/src/lib/libcmd/fold.c
++++ b/src/lib/libcmd/fold.c
+@@ -83,10 +83,11 @@ static const char usage[] =
+ #define T_SP	5
+ #define T_RET	6
+ 
+-static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t contsize, char *cols)
++static void fold(Sfio_t *in, Sfio_t *out, ptrdiff_t width, const char *cont, size_t contsize, char *cols)
+ {
+ 	char *cp, *first;
+-	int n, col=0, x=0;
++	ptrdiff_t n, col=0;
++	char x=0;
+ 	char *last_space=0;
+ 	cols[0] = 0;
+ 	for (;;)
+@@ -101,7 +102,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+ 		/* special case -b since no column adjustment is needed */
+ 		if(cols['\b']==0 && (n=sfvalue(in))<=width)
+ 		{
+-			sfwrite(out,cp,n);
++			sfwrite(out,cp,(size_t)n);
+ 			continue;
+ 		}
+ 		first = cp;
+@@ -116,7 +117,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+ 					col = last_space - first;
+ 				else
+ 					col = width-col;
+-				sfwrite(out,first,col);
++				sfwrite(out,first,(size_t)col);
+ 				first += col;
+ 				col = 0;
+ 				last_space = 0;
+@@ -141,7 +142,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+ 				col +=n;
+ 				if((cp-first) > (width-col))
+ 				{
+-					sfwrite(out,first,(--cp)-first);
++					sfwrite(out,first,(size_t)((--cp)-first));
+ 					sfwrite(out, cont, contsize);
+ 					first = cp;
+ 					col =  TABSIZE-1;
+@@ -159,14 +160,15 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+ 			}
+ 			break;
+ 		}
+-		sfwrite(out,first,cp-first);
++		sfwrite(out,first,(size_t)(cp-first));
+ 	}
+ }
+ 
+ int
+ b_fold(int argc, char** argv, Shbltin_t* context)
+ {
+-	int n, width=WIDTH;
++	int n;
++	ptrdiff_t width=WIDTH;
+ 	Sfio_t *fp;
+ 	char *cp;
+ 	char *cont="\n";
+@@ -188,7 +190,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
+ 			cols['\t'] = cols[' '];
+ 			continue;
+ 		case 'c':
+-			contsize = stresc(cont = strdup(opt_info.arg));
++			contsize = (size_t)stresc(cont = strdup(opt_info.arg));
+ 			continue;
+ 		case 'd':
+ 			if (n = *opt_info.arg)
+@@ -200,7 +202,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
+ 				cols['\t'] = T_SP;
+ 			continue;
+ 		case 'w':
+-			if ((width = opt_info.num) <= 0)
++			if ((width = (ptrdiff_t)opt_info.num) <= 0)
+ 				error(2, "%d: width must be positive", opt_info.num);
+ 			continue;
+ 		case ':':
+diff --git a/src/lib/libcmd/getconf.c b/src/lib/libcmd/getconf.c
+index f762ae7da..8c40ee8ff 100644
+--- a/src/lib/libcmd/getconf.c
++++ b/src/lib/libcmd/getconf.c
+@@ -276,11 +276,11 @@ b_getconf(int argc, char** argv, Shbltin_t* context)
+ 	/*
+ 	 * Run the external getconf command
+ 	 */
+-	new_argv = stkalloc(stkstd, (argc + 3) * sizeof(char*));
++	new_argv = stkalloc(stkstd, ((size_t)argc + 3) * sizeof(char*));
+ 	new_argv[0] = "command";
+ 	new_argv[1] = "-x";
+ 	new_argv[2] = native;
+-	memcpy(new_argv + 3, oargv + 1, argc * sizeof(char*));
++	memcpy(new_argv + 3, oargv + 1, (size_t)argc * sizeof(char*));
+ 	if ((n = sh_run(context, argc + 2, new_argv)) >= EXIT_NOEXEC)
+ 		error(ERROR_SYSTEM|2, "%s: exec error [%d]", native, n);
+ 	return n;
+diff --git a/src/lib/libcmd/grep.c b/src/lib/libcmd/grep.c
+index 3f42fb3a6..e507c3e07 100644
+--- a/src/lib/libcmd/grep.c
++++ b/src/lib/libcmd/grep.c
+@@ -178,11 +178,11 @@ struct State_s				/* program state		*/
+ 
+ 	regmatch_t	posvec[1];	/* match position vector	*/
+ 	regmatch_t*	pos;		/* match position pointer	*/
+-	int		posnum;		/* number of match positions	*/
++	size_t		posnum;		/* number of match positions	*/
+ 
+-	int		after;		/* # lines to list after match	*/
+-	int		before;		/* # lines to list before match	*/
+-	int		list;		/* list files with hits		*/
++	ptrdiff_t	after;		/* # lines to list after match	*/
++	ptrdiff_t	before;		/* # lines to list before match	*/
++	ptrdiff_t	list;		/* list files with hits		*/
+ 	regflags_t	options;	/* regex options		*/
+ 
+ 	unsigned char	any;		/* if any pattern hit		*/
+@@ -205,15 +205,23 @@ labelcomp(const regex_t* re, const char* s, size_t len, regdisc_t* disc)
+ 	const char*	e = s + len;
+ 	uintmax_t	n;
+ 
++	NOT_USED(re);
++	NOT_USED(disc);
+ 	n = 0;
+ 	while (s < e)
+-		n = (n << 3) + (*s++ - '0');
++		n = (n << 3) + (uintmax_t)(*s++ - '0');
+ 	return (void*)((uintptr_t)n);
+ }
+ 
+ static int
+ labelexec(const regex_t* re, void* data, const char* xstr, size_t xlen, const char* sstr, size_t slen, char** snxt, regdisc_t* disc)
+ {
++	NOT_USED(re);
++	NOT_USED(xstr);
++	NOT_USED(xlen);
++	NOT_USED(sstr);
++	NOT_USED(slen);
++	NOT_USED(snxt);
+ 	((State_t*)disc)->hit = (Item_t*)data;
+ 	return 0;
+ }
+@@ -221,7 +229,7 @@ labelexec(const regex_t* re, void* data, const char* xstr, size_t xlen, const ch
+ static int
+ addre(State_t* state, char* s)
+ {
+-	int		c;
++	size_t		c;
+ 	int		r;
+ 	char*		b;
+ 	Item_t*		x;
+@@ -236,7 +244,7 @@ addre(State_t* state, char* s)
+ 			error(2, "%s: label:pattern expected", b);
+ 			goto done;
+ 		}
+-		c = s - b;
++		c = (size_t)(s - b);
+ 		s++;
+ 		if (!(x = vmnewof(state->vm, 0, Item_t, 1, c)))
+ 		{
+@@ -336,7 +344,7 @@ compile(State_t* state)
+ 		error_info.line = 0;
+ 		while (s = (char*)sfreserve(f, SFIO_UNBOUND, SFIO_LOCKR))
+ 		{
+-			if (!(n = sfvalue(f)))
++			if (!(n = (size_t)sfvalue(f)))
+ 				break;
+ 			if (s[n - 1] != '\n')
+ 			{
+@@ -346,7 +354,7 @@ compile(State_t* state)
+ 					sfread(f, s, 0);
+ 					break;
+ 				}
+-				n = t - s + 1;
++				n = (size_t)(t - s + 1);
+ 			}
+ 			s[n - 1] = 0;
+ 			if (addre(state, s))
+@@ -409,7 +417,7 @@ compile(State_t* state)
+ }
+ 
+ static int
+-hit(State_t* state, const char* prefix, int sep, int line, const char* s, size_t len)
++hit(State_t* state, const char* prefix, int sep, uintmax_t line, const char* s, size_t len)
+ {
+ 	regmatch_t*		pos;
+ 
+@@ -431,29 +439,29 @@ hit(State_t* state, const char* prefix, int sep, int line, const char* s, size_t
+ 		if (state->prefix)
+ 			sfprintf(sfstdout, "%s%c", prefix, sep);
+ 		if (state->number && line)
+-			sfprintf(sfstdout, "%d%c", line, sep);
++			sfprintf(sfstdout, "%ju%c", line, sep);
+ 		if (state->label)
+ 			sfprintf(sfstdout, "%s%c", state->hit->string, sep);
+ 		if (!pos)
+ 			sfwrite(sfstdout, s, len + 1);
+ 		else if (state->only)
+ 		{
+-			sfwrite(sfstdout, s + state->pos[0].rm_so, state->pos[0].rm_eo - state->pos[0].rm_so);
++			sfwrite(sfstdout, s + state->pos[0].rm_so, (size_t)(state->pos[0].rm_eo - state->pos[0].rm_so));
+ 			sfputc(sfstdout, '\n');
+ 			s += state->pos[0].rm_eo;
+-			if ((len -= state->pos[0].rm_eo) && !regnexec(&state->re, s, len, state->posnum, state->pos, 0))
++			if ((len -= (size_t)state->pos[0].rm_eo) && !regnexec(&state->re, s, len, state->posnum, state->pos, 0))
+ 				goto another;
+ 		}
+ 		else
+ 		{
+ 			do
+ 			{
+-				sfwrite(sfstdout, s, state->pos[0].rm_so);
++				sfwrite(sfstdout, s, (size_t)state->pos[0].rm_so);
+ 				sfwrite(sfstdout, bold, sizeof(bold));
+-				sfwrite(sfstdout, s + state->pos[0].rm_so, state->pos[0].rm_eo - state->pos[0].rm_so);
++				sfwrite(sfstdout, s + state->pos[0].rm_so, (size_t)(state->pos[0].rm_eo - state->pos[0].rm_so));
+ 				sfwrite(sfstdout, normal, sizeof(normal));
+ 				s += state->pos[0].rm_eo;
+-				if (!(len -= state->pos[0].rm_eo))
++				if (!(len -= (size_t)state->pos[0].rm_eo))
+ 					break;
+ 			} while (!regnexec(&state->re, s, len, state->posnum, state->pos, 0));
+ 			sfwrite(sfstdout, s, len + 1);
+@@ -493,7 +501,7 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
+ 		Context_t*	cp;
+ 		Context_line_t*	lp;
+ 
+-		if (!(cp = context_open(input, state->before, state->after, list, state)))
++		if (!(cp = context_open(input, (size_t)state->before, (size_t)state->after, list, state)))
+ 		{
+ 			error(2, "context_open() failed");
+ 			goto bad;
+@@ -518,10 +526,10 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
+ 				goto bad;
+ 			error_info.line++;
+ 			if (s = sfgetr(input, '\n', 0))
+-				len = sfvalue(input) - 1;
++				len = (size_t)sfvalue(input) - 1;
+ 			else if (s = sfgetr(input, '\n', -1))
+ 			{
+-				len = sfvalue(input);
++				len = (size_t)sfvalue(input);
+ 				s[len] = '\n';
+ 			}
+ 			else if (sferror(input) && errno != EISDIR)
+@@ -536,7 +544,7 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
+ 				regfatal(&state->re, 2, result);
+ 				goto bad;
+ 			}
+-			if ((result == 0) == state->match && hit(state, name, ':', error_info.line, s, len) < 0)
++			if ((result == 0) == state->match && hit(state, name, ':', (uintmax_t)error_info.line, s, len) < 0)
+ 				break;
+ 		}
+ 	}
+@@ -589,7 +597,7 @@ execute(State_t* state, Sfio_t* input, char* name, Shbltin_t* context)
+ }
+ 
+ static int
+-grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
++grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
+ {
+ 	int	c;
+ 	char*	s;
+@@ -669,7 +677,7 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ 	case 'A':
+ 		if (opt_info.arg)
+ 		{
+-			state.after = (int)strtol(opt_info.arg, &s, 0);
++			state.after = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
+ 			if (*s || state.after < 0)
+ 			{
+ 	badafter:
+@@ -683,7 +691,7 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ 	case 'B':
+ 		if (opt_info.arg)
+ 		{
+-			state.before = (int)strtol(opt_info.arg, &s, 0);
++			state.before = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
+ 			if (*s || state.before < 0)
+ 			{
+ 	badbefore:
+@@ -697,10 +705,10 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ 	case 'C':
+ 		if (opt_info.arg)
+ 		{
+-			state.before = (int)strtol(opt_info.arg, &s, 0);
++			state.before = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
+ 			if (state.before < 0 || (*s && *s != ','))
+ 				goto badbefore;
+-			state.after = (*s == ',') ? (int)strtol(s + 1, &s, 0) : state.before;
++			state.after = (*s == ',') ? (ptrdiff_t)strtol(s + 1, &s, 0) : state.before;
+ 			if (*s || state.after < 0)
+ 				goto badafter;
+ 		}
+@@ -708,10 +716,10 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ 			state.before = state.after = 2;
+ 		break;
+ 	case 'H':
+-		state.prefix = opt_info.num;
++		state.prefix = (unsigned char)opt_info.num;
+ 		break;
+ 	case 'L':
+-		state.list = -opt_info.num;
++		state.list = (ptrdiff_t)(-opt_info.num);
+ 		break;
+ 	case 'N':
+ 		h = opt_info.arg;
+@@ -739,7 +747,7 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ 		state.options |= REG_ICASE;
+ 		break;
+ 	case 'l':
+-		state.list = opt_info.num;
++		state.list = (ptrdiff_t)opt_info.num;
+ 		break;
+ 	case 'm':
+ 		state.label = 1;
+@@ -762,7 +770,7 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ 			flags &= ~FTS_TOP;
+ 		break;
+ 	case 's':
+-		state.suppress = opt_info.num;
++		state.suppress = (unsigned char)opt_info.num;
+ 		break;
+ 	case 't':
+ 		state.count |= 2;
+@@ -933,8 +941,8 @@ grep(char* id, int options, int argc, char** argv, Shbltin_t* context)
+ int
+ b_grep(int argc, char** argv, Shbltin_t* context)
+ {
+-	char*	s;
+-	int	options;
++	char*		s;
++	regflags_t	options;
+ 
+ 	NoP(argc);
+ 	options = 0;
+diff --git a/src/lib/libcmd/id.c b/src/lib/libcmd/id.c
+index d11997d5c..b57510c97 100644
+--- a/src/lib/libcmd/id.c
++++ b/src/lib/libcmd/id.c
+@@ -178,11 +178,11 @@ putid(Sfio_t* sp, int flags, const char* label, const char* name, long number)
+ 	if (flags & O_FLAG)
+ 	{
+ 		if (name) sfputr(sp, name, -1);
+-		else sfprintf(sp, "%lu", number);
++		else sfprintf(sp, "%ld", number);
+ 	}
+ 	else
+ 	{
+-		sfprintf(sp, "%u", number);
++		sfprintf(sp, "%ld", number);
+ 		if (name) sfprintf(sp, "(%s)", name);
+ 	}
+ }
+@@ -228,7 +228,7 @@ getids(Sfio_t* sp, const char* name, int flags)
+ 
+ 			if ((maxgroups = getgroups(0, groups)) <= 0)
+ 				maxgroups = (int)astconf_long(CONF_NGROUPS_MAX);
+-			if (!(groups = newof(0, gid_t, maxgroups + 1, 0)))
++			if (!(groups = newof(0, gid_t, (size_t)maxgroups + 1, 0)))
+ 			{
+ 				error(ERROR_SYSTEM|ERROR_PANIC, "out of memory [group array]");
+ 				UNREACHABLE();
+@@ -249,7 +249,7 @@ getids(Sfio_t* sp, const char* name, int flags)
+ 		{
+ 			if (!(pw = getpwnam(name)))
+ 			{
+-				user = strtol(name, &s, 0);
++				user = (uid_t)strtol(name, &s, 0);
+ 				if (*s || !(pw = getpwuid(user)))
+ 				{
+ 					error(ERROR_exit(1), "%s: name not found", name);
+@@ -302,8 +302,8 @@ getids(Sfio_t* sp, const char* name, int flags)
+ #endif
+ 	if ((flags & (U_FLAG|G_FLAG|S_FLAG)) == (U_FLAG|G_FLAG|S_FLAG))
+ 	{
+-		putid(sp, flags, "uid", name, user);
+-		putid(sp, flags, " gid", gname, group);
++		putid(sp, flags, "uid", name, (long)user);
++		putid(sp, flags, " gid", gname, (long)group);
+ 		if ((flags & X_FLAG) && name)
+ 		{
+ #if _lib_getgrent
+@@ -335,9 +335,9 @@ getids(Sfio_t* sp, const char* name, int flags)
+ 		else
+ 		{
+ 			if ((euid = geteuid()) != user)
+-				putid(sp, flags, " euid", (pw = getpwuid(euid)) ? pw->pw_name : NULL, euid);
++				putid(sp, flags, " euid", (pw = getpwuid(euid)) ? pw->pw_name : NULL, (long)euid);
+ 			if ((egid = getegid()) != group)
+-				putid(sp, flags, " egid", (grp = getgrgid(egid)) ? grp->gr_name : NULL, egid);
++				putid(sp, flags, " egid", (grp = getgrgid(egid)) ? grp->gr_name : NULL, (long)egid);
+ 			if (ngroups > 0)
+ 			{
+ 				sfputr(sp, " groups", -1);
+@@ -356,7 +356,7 @@ getids(Sfio_t* sp, const char* name, int flags)
+ 				}
+ 			}
+ #if _lib_fsid
+-			putid(sp, flags, " fsid", fs_name, fs_id);
++			putid(sp, flags, " fsid", fs_name, (long)fs_id);
+ #endif
+ 		}
+ 		sfputc(sp,'\n');
+diff --git a/src/lib/libcmd/join.c b/src/lib/libcmd/join.c
+index 7dd3ad507..7a11772b2 100644
+--- a/src/lib/libcmd/join.c
++++ b/src/lib/libcmd/join.c
+@@ -129,14 +129,14 @@ typedef struct File_s
+ 	Sfio_t*		iop;
+ 	char*		name;
+ 	char*		recptr;
+-	int		reclen;
+-	int		field;
+-	int		fieldlen;
+-	int		nfields;
+-	int		maxfields;
+-	int		spaces;
+-	int		hit;
+-	int		discard;
++	ssize_t		reclen;
++	ptrdiff_t	nfields;
++	ptrdiff_t	field;
++	ptrdiff_t	fieldlen;
++	ptrdiff_t	maxfields;
++	ptrdiff_t	spaces;
++	ptrdiff_t	hit;
++	ptrdiff_t	discard;
+ 	Field_t*	fields;
+ } File_t;
+ 
+@@ -144,18 +144,18 @@ typedef struct Join_s
+ {
+ 	unsigned char	state[1<<CHAR_BIT];
+ 	Sfio_t*		outfile;
+-	int*		outlist;
+-	int		outmode;
+-	int		ooutmode;
++	ptrdiff_t*	outlist;
++	ptrdiff_t	outmode;
++	ptrdiff_t	ooutmode;
+ 	char*		nullfield;
+ 	char*		delimstr;
+-	int		delim;
+-	int		delimlen;
+-	int		buffered;
+-	int		ignorecase;
+-	int		mb;
++	ptrdiff_t	delim;
++	size_t		delimlen;
++	ptrdiff_t	buffered;
++	ptrdiff_t	ignorecase;
++	ptrdiff_t	mb;
+ 	char*		same;
+-	int		samesize;
++	ptrdiff_t	samesize;
+ 	Shbltin_t*	context;
+ 	File_t		file[2];
+ } Join_t;
+@@ -212,13 +212,13 @@ getolist(Join_t* jp, const char* first, char** arglist)
+ {
+ 	const char*	cp = first;
+ 	char**		argv = arglist;
+-	int		c;
+-	int*		outptr;
+-	int*		outmax;
+-	int		nfield = NFIELD;
++	ptrdiff_t	c;
++	ptrdiff_t*	outptr;
++	ptrdiff_t*	outmax;
++	size_t		nfield = NFIELD;
+ 	char*		str;
+ 
+-	outptr = jp->outlist = newof(0, int, NFIELD + 1, 0);
++	outptr = jp->outlist = newof(0, ptrdiff_t, NFIELD + 1, 0);
+ 	outmax = outptr + NFIELD;
+ 	while (c = *cp++)
+ 	{
+@@ -231,7 +231,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
+ 			c = JOINFIELD;
+ 			goto skip;
+ 		}
+-		if (cp[1]!='.' || (*cp!='1' && *cp!='2') || (c=strtol(cp+2,&str,10)) <=0)
++		if (cp[1]!='.' || (*cp!='1' && *cp!='2') || (c=(ptrdiff_t)strtol(cp+2,&str,10)) <=0)
+ 		{
+ 			error(2,"%s: invalid field list",first);
+ 			break;
+@@ -243,7 +243,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
+ 	skip:
+ 		if (outptr >= outmax)
+ 		{
+-			jp->outlist = newof(jp->outlist, int, 2 * nfield + 1, 0);
++			jp->outlist = newof(jp->outlist, ptrdiff_t, 2 * nfield + 1, 0);
+ 			outptr = jp->outlist + nfield;
+ 			nfield *= 2;
+ 			outmax = jp->outlist + nfield;
+@@ -264,7 +264,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
+ 			break;
+ 		}
+ 		str = (char*)cp;
+-		c = strtol(cp+2, &str,10);
++		c = (ptrdiff_t)strtol(cp+2, &str,10);
+ 		if (*str || --c<0)
+ 			break;
+ 		argv++;
+@@ -274,7 +274,7 @@ getolist(Join_t* jp, const char* first, char** arglist)
+ 	skip2:
+ 		if (outptr >= outmax)
+ 		{
+-			jp->outlist = newof(jp->outlist, int, 2 * nfield + 1, 0);
++			jp->outlist = newof(jp->outlist, ptrdiff_t, 2 * nfield + 1, 0);
+ 			outptr = jp->outlist + nfield;
+ 			nfield *= 2;
+ 			outmax = jp->outlist + nfield;
+@@ -282,22 +282,23 @@ getolist(Join_t* jp, const char* first, char** arglist)
+ 		*outptr++ = c;
+ 	}
+ 	*outptr = -1;
+-	return argv-arglist;
++	return (int)(argv-arglist);
+ }
+ 
+ /*
+  * read in a record from file <index> and split into fields
+  */
+ static unsigned char*
+-getrec(Join_t* jp, int index, int discard)
++getrec(Join_t* jp, ptrdiff_t index, ptrdiff_t discard)
+ {
+ 	unsigned char*	sp = jp->state;
+ 	File_t*	fp = &jp->file[index];
+ 	Field_t*	field = fp->fields;
+ 	Field_t*	fieldmax = field + fp->maxfields;
+ 	char*		cp;
+-	int		n;
++	ptrdiff_t	n;
+ 	char*		tp;
++	ptrdiff_t	j;
+ 
+ 	if (sh_checksig(jp->context))
+ 		return NULL;
+@@ -325,7 +326,7 @@ getrec(Join_t* jp, int index, int discard)
+ 			if (field >= fieldmax)
+ 			{
+ 				n = 2 * fp->maxfields;
+-				fp->fields = newof(fp->fields, Field_t, n + 1, 0);
++				fp->fields = newof(fp->fields, Field_t, (size_t)n + 1, 0);
+ 				field = fp->fields + fp->maxfields;
+ 				fp->maxfields = n;
+ 				fieldmax = fp->fields + n;
+@@ -340,7 +341,7 @@ getrec(Join_t* jp, int index, int discard)
+ 					break;
+ 				case S_WIDE:
+ 					tp = cp;
+-					if (iswspace(mbchar(tp)))
++					if (iswspace((wint_t)mbchar(tp)))
+ 					{
+ 						cp = tp;
+ 						break;
+@@ -359,7 +360,7 @@ getrec(Join_t* jp, int index, int discard)
+ 							continue;
+ 						case S_WIDE:
+ 							tp = cp - 1;
+-							if (iswspace(mbchar(tp)))
++							if (iswspace((wint_t)mbchar(tp)))
+ 							{
+ 								cp = tp;
+ 								continue;
+@@ -390,7 +391,7 @@ getrec(Join_t* jp, int index, int discard)
+ 							n = S_DELIM;
+ 							break;
+ 						}
+-						if (jp->delim == -1 && iswspace(n))
++						if (jp->delim == -1 && iswspace((wint_t)n))
+ 						{
+ 							n = S_SPACE;
+ 							break;
+@@ -409,9 +410,9 @@ getrec(Join_t* jp, int index, int discard)
+ 			field++;
+ 		} while (n != S_NL);
+ 	fp->nfields = field - fp->fields;
+-	if ((n = fp->field) < fp->nfields)
++	if ((j = fp->field) < fp->nfields)
+ 	{
+-		cp = fp->fields[n].beg;
++		cp = fp->fields[j].beg;
+ 		/* eliminate leading spaces */
+ 		if (fp->spaces)
+ 		{
+@@ -424,7 +425,7 @@ getrec(Join_t* jp, int index, int discard)
+ 						continue;
+ 					case S_WIDE:
+ 						tp = cp - 1;
+-						if (iswspace(mbchar(tp)))
++						if (iswspace((wint_t)mbchar(tp)))
+ 						{
+ 							cp = tp;
+ 							continue;
+@@ -437,7 +438,7 @@ getrec(Join_t* jp, int index, int discard)
+ 				while (sp[*(unsigned char*)cp++]==S_SPACE);
+ 			cp--;
+ 		}
+-		fp->fieldlen = fp->fields[n].end - cp;
++		fp->fieldlen = fp->fields[j].end - cp;
+ 		return (unsigned char*)cp;
+ 	}
+ 	fp->fieldlen = 0;
+@@ -453,12 +454,12 @@ static unsigned char* u1;
+  * print field <n> from file <index>
+  */
+ static int
+-outfield(Join_t* jp, int index, int n, int last)
++outfield(Join_t* jp, ptrdiff_t index, ptrdiff_t n, char last)
+ {
+ 	File_t*		fp = &jp->file[index];
+ 	char*		cp;
+ 	char*		cpmax;
+-	int		size;
++	ptrdiff_t	size;
+ 	Sfio_t*		iop = jp->outfile;
+ 	char*		tp;
+ 
+@@ -485,7 +486,7 @@ outfield(Join_t* jp, int index, int n, int last)
+ 						continue;
+ 					case S_WIDE:
+ 						tp = cp - 1;
+-						if (iswspace(mbchar(tp)))
++						if (iswspace((wint_t)mbchar(tp)))
+ 						{
+ 							cp = tp;
+ 							continue;
+@@ -515,7 +516,7 @@ outfield(Join_t* jp, int index, int n, int last)
+ 			if (jp->nullfield && sfputr(iop, jp->nullfield, -1) < 0)
+ 				return -1;
+ 		}
+-		else if (sfwrite(iop, cp, size) < 0)
++		else if (sfwrite(iop, cp, (size_t)size) < 0)
+ 			return -1;
+ 		if (sfwrite(iop, jp->delimstr, jp->delimlen) < 0)
+ 			return -1;
+@@ -524,14 +525,14 @@ outfield(Join_t* jp, int index, int n, int last)
+ 	{
+ 		if (!jp->nullfield)
+ 			sfputc(iop, n);
+-		else if (sfputr(iop, jp->nullfield, n) < 0)
++		else if (sfputr(iop, jp->nullfield, (int)n) < 0)
+ 			return -1;
+ 	}
+ 	else
+ 	{
+ 		last = cp[size-1];
+-		cp[size-1] = n;
+-		if (sfwrite(iop, cp, size) < 0)
++		cp[size-1] = (char)n;
++		if (sfwrite(iop, cp, (size_t)size) < 0)
+ 			return -1;
+ 		cp[size-1] = last;
+ 	}
+@@ -544,14 +545,14 @@ static int i1,i2,i3;
+ #endif
+ 
+ static int
+-outrec(Join_t* jp, int mode)
++outrec(Join_t* jp, ptrdiff_t mode)
+ {
+ 	File_t*	fp;
+-	int	i;
+-	int	j;
+-	int	k;
+-	int	n;
+-	int*	out;
++	ptrdiff_t	i;
++	ptrdiff_t	j;
++	ptrdiff_t	k;
++	ptrdiff_t	n;
++	ptrdiff_t*	out;
+ 
+ 	if (mode < 0 && jp->file[0].hit++)
+ 		return 0;
+@@ -628,12 +629,12 @@ join(Join_t* jp)
+ {
+ 	unsigned char*	cp1;
+ 	unsigned char*	cp2;
+-	int		n1;
+-	int		n2;
+-	int		n;
+-	int		cmp;
+-	int		same;
+-	int		o2;
++	ptrdiff_t	n1;
++	ptrdiff_t	n2;
++	ptrdiff_t	n;
++	ptrdiff_t	cmp;
++	ptrdiff_t	same;
++	ptrdiff_t	o2;
+ 	Sfoff_t		lo = -1;
+ 	Sfoff_t		hi = -1;
+ 
+@@ -646,12 +647,12 @@ join(Join_t* jp)
+ 		{
+ 			n = n1 < n2 ? n1 : n2;
+ #if DEBUG_TRACE
+-			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = (int)*cp1 - (int)*cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)))
++			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, (size_t)n) : memcmp(cp1, cp2, (size_t)n)))
+ 				cmp = n1 - n2;
+ sfprintf(sfstdout, "[C#%d:%d(%c-%c),%d,%lld,%lld%s]", __LINE__, cmp, *cp1, *cp2, same, lo, hi, (jp->outmode & C_COMMON) ? ",COMMON" : "");
+ 			if (!cmp)
+ #else
+-			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = (int)*cp1 - (int)*cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)) && !(cmp = n1 - n2))
++			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, (size_t)n) : memcmp(cp1, cp2, (size_t)n)) && !(cmp = n1 - n2))
+ #endif
+ 			{
+ 				if (!(jp->outmode & C_COMMON))
+@@ -699,18 +700,19 @@ sfprintf(sfstdout, "[2#%d:0,%lld,%lld]", __LINE__, lo, hi);
+ 					if (n2 > jp->samesize)
+ 					{
+ 						jp->samesize = roundof(n2, 16);
+-						if (!(jp->same = newof(jp->same, char, jp->samesize, 0)))
++						if (!(jp->same = newof(jp->same, char, (size_t)jp->samesize, 0)))
+ 						{
+ 							done(jp);
+ 							error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+ 							UNREACHABLE();
+ 						}
+ 					}
+-					memcpy(jp->same, cp2, o2 = n2);
++					o2 = n2;
++					memcpy(jp->same, cp2, (size_t)o2);
+ 					if (!(cp2 = getrec(jp, 1, 0)))
+ 						break;
+ 					n2 = jp->file[1].fieldlen;
+-					if (n2 == o2 && *cp2 == *jp->same && !memcmp(cp2, jp->same, n2))
++					if (n2 == o2 && *cp2 == *jp->same && !memcmp(cp2, jp->same, (size_t)n2))
+ 						goto next;
+ 					continue;
+ 				}
+@@ -813,7 +815,7 @@ sfprintf(sfstdout, "[X#%d:%d,%p,%p,%d,%02o,%02o%s]", __LINE__, n, cp1, cp2, cmp,
+ int
+ b_join(int argc, char** argv, Shbltin_t* context)
+ {
+-	int		n;
++	ptrdiff_t	n;
+ 	char*		cp;
+ 	Join_t*		jp;
+ 	char*		e;
+@@ -839,7 +841,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
+ 			if (opt_info.offset == 0)
+ 			{
+ 				cp = argv[opt_info.index - 1];
+-				for (n = strlen(cp) - 1; n > 0 && cp[n] != 'j'; n--);
++				for (n = (ptrdiff_t)strlen(cp) - 1; n > 0 && cp[n] != 'j'; n--);
+ 				n = cp[n] == 'j';
+ 			}
+ 			else
+@@ -848,7 +850,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
+ 			{
+ 				if (opt_info.num!=1 && opt_info.num!=2)
+ 					error(2,"-jfileno field: fileno must be 1 or 2");
+-				n = '0' + opt_info.num;
++				n = (ptrdiff_t)('0' + opt_info.num);
+ 				if (!(cp = argv[opt_info.index]))
+ 				{
+ 					argc = 0;
+@@ -864,7 +866,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
+ 			}
+ 			else
+ 			{
+-				jp->file[0].field = (int)(opt_info.num-1);
++				jp->file[0].field = (ptrdiff_t)(opt_info.num-1);
+ 				n = '2';
+ 			}
+ 			/* FALLTHROUGH */
+@@ -872,7 +874,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
+ 		case '2':
+ 			if (opt_info.num <=0)
+ 				error(2,"field number must positive");
+-			jp->file[n-'1'].field = (int)(opt_info.num-1);
++			jp->file[n-'1'].field = (ptrdiff_t)(opt_info.num-1);
+ 			continue;
+ 		case 'v':
+ 			jp->outmode &= ~C_COMMON;
+@@ -898,7 +900,7 @@ b_join(int argc, char** argv, Shbltin_t* context)
+ 				jp->delim = mbchar(cp);
+ 				if ((n = cp - opt_info.arg) > 1)
+ 				{
+-					jp->delimlen = n;
++					jp->delimlen = (size_t)n;
+ 					jp->delimstr = opt_info.arg;
+ 					continue;
+ 				}
+@@ -971,8 +973,8 @@ b_join(int argc, char** argv, Shbltin_t* context)
+ 	}
+ 	if (jp->buffered)
+ 	{
+-		sfsetbuf(jp->file[0].iop, jp->file[0].iop, SFIO_UNBOUND);
+-		sfsetbuf(jp->file[1].iop, jp->file[1].iop, SFIO_UNBOUND);
++		sfsetbuf(jp->file[0].iop, jp->file[0].iop, (size_t)SFIO_UNBOUND);
++		sfsetbuf(jp->file[1].iop, jp->file[1].iop, (size_t)SFIO_UNBOUND);
+ 	}
+ 	jp->outfile = sfstdout;
+ 	if (!jp->outlist)
+diff --git a/src/lib/libcmd/logname.c b/src/lib/libcmd/logname.c
+index d73cc3809..fad82d829 100644
+--- a/src/lib/libcmd/logname.c
++++ b/src/lib/libcmd/logname.c
+@@ -72,7 +72,7 @@ b_logname(int argc, char** argv, Shbltin_t* context)
+ 		UNREACHABLE();
+ 	}
+ 	if (!(logname = getlogin()))
+-		logname = fmtuid(getuid());
++		logname = fmtuid((int)getuid());
+ 	sfputr(sfstdout, logname, '\n');
+ 	return 0;
+ }
+diff --git a/src/lib/libcmd/mkdir.c b/src/lib/libcmd/mkdir.c
+index f76b3df66..c0ca509a7 100644
+--- a/src/lib/libcmd/mkdir.c
++++ b/src/lib/libcmd/mkdir.c
+@@ -62,7 +62,7 @@ int
+ b_mkdir(int argc, char** argv, Shbltin_t* context)
+ {
+ 	char*		path;
+-	int		n;
++	ptrdiff_t	n;
+ 	mode_t		mode = DIRMODE;
+ 	mode_t		mask = 0;
+ 	int		mflag = 0;
+@@ -143,7 +143,7 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
+ 			 */
+ 
+ 			made = 0;
+-			n = strlen(path);
++			n = (ptrdiff_t)strlen(path);
+ 			while (n > 0 && path[--n] == '/');
+ 			path[n + 1] = 0;
+ 			for (part = path, n = *part; n;)
+@@ -158,12 +158,12 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
+ 				if (mkdir(path, n ? dmode : mode) < 0 && errno != EEXIST && access(path, F_OK) < 0)
+ 				{
+ 					error(ERROR_system(0), "%s: cannot create intermediate directory", path);
+-					*part = n;
++					*part = (char)n;
+ 					break;
+ 				}
+ 				if (vflag)
+ 					error(0, "%s: directory created", path);
+-				if (!(*part = n))
++				if (!(*part = (char)n))
+ 				{
+ 					made = 1;
+ 					break;
+diff --git a/src/lib/libcmd/mktemp.c b/src/lib/libcmd/mktemp.c
+index 95654e7be..9e8f949c8 100644
+--- a/src/lib/libcmd/mktemp.c
++++ b/src/lib/libcmd/mktemp.c
+@@ -66,7 +66,7 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
+ 	mode_t		mode = 0;
+ 	mode_t		mask;
+ 	int		fd;
+-	int		i;
++	size_t		i;
+ 	int		quiet = 0;
+ 	int		unsafe = 0;
+ 	int*		fdp = &fd;
+@@ -136,7 +136,7 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
+ 	}
+ 	if (t = strrchr(pfx, '/'))
+ 	{
+-		i = ++t - pfx;
++		i = (size_t)(++t - pfx);
+ 		dir = fmtbuf(i);
+ 		memcpy(dir, pfx, i);
+ 		dir[i] = 0;
+diff --git a/src/lib/libcmd/paste.c b/src/lib/libcmd/paste.c
+index 35a8475cd..65788b7d6 100644
+--- a/src/lib/libcmd/paste.c
++++ b/src/lib/libcmd/paste.c
+@@ -79,10 +79,10 @@ typedef struct Delim_s
+  * to <out>
+  */
+ 
+-static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, int dsiz, int dlen, Delim_t* mp)
++static int paste(ptrdiff_t nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, ptrdiff_t dsiz, ptrdiff_t dlen, Delim_t* mp)
+ {
+ 	const char *cp;
+-	int d, n, i, z, more=1;
++	ptrdiff_t d, n, i, z, more=1;
+ 	Sfio_t *fp;
+ 	do
+ 	{
+@@ -98,11 +98,11 @@ static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, i
+ 					else if(!more) /* first stream with output */
+ 					{
+ 						if(dsiz == 1)
+-							sfnputc(out, *delim, n);
++							sfnputc(out, *delim, (size_t)n);
+ 						else if(dlen>0)
+ 						{
+ 							for(d=n; d>dlen; d-=dlen)
+-								sfwrite(out,delim,dsiz);
++								sfwrite(out,delim,(size_t)dsiz);
+ 							if(d)
+ 							{
+ 								if(mp)
+@@ -110,12 +110,12 @@ static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, i
+ 										z += mp[i].len;
+ 								else
+ 									z = d;
+-								sfwrite(out,delim,z);
++								sfwrite(out,delim,(size_t)z);
+ 							}
+ 						}
+ 						more = n+1;
+ 					}
+-					if(sfwrite(out,cp,sfvalue(fp)-((n+1)<nstream)) < 0)
++					if(sfwrite(out,cp,(size_t)(sfvalue(fp)-((n+1)<nstream))) < 0)
+ 						return -1;
+ 				}
+ 				else
+@@ -142,11 +142,11 @@ static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, i
+ /*
+  * Handles paste -s, for file <in> to file <out> using delimiters <delim>
+  */
+-static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,int dlen,Delim_t* mp)
++static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,ptrdiff_t dlen,Delim_t* mp)
+ {
+ 	const char *cp;
+-	int d=0;
+-	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,sfvalue(in)-1) < 0)
++	ptrdiff_t d=0;
++	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,(size_t)sfvalue(in)-1) < 0)
+ 		return -1;
+ 	while(cp=sfgetr(in, '\n',0))
+ 	{
+@@ -161,7 +161,7 @@ static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,int dlen,Delim_t* mp)
+ 				sfputc(out,c);
+ 			d++;
+ 		}
+-		if(sfwrite(out,cp,sfvalue(in)-1) < 0)
++		if(sfwrite(out,cp,(size_t)sfvalue(in)-1) < 0)
+ 			return -1;
+ 	}
+ 	sfputc(out,'\n');
+@@ -176,7 +176,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
+ 	char 		*cp, *delim;
+ 	char		*ep;
+ 	Delim_t		*mp;
+-	int		dlen, dsiz;
++	ptrdiff_t	dlen, dsiz;
+ 	char		defdelim[2];
+ 
+ 	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
+@@ -232,7 +232,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
+ 		}
+ 		if(dlen < dsiz)
+ 		{
+-			if (!(mp = newof(0, Delim_t, dlen, 0)))
++			if (!(mp = newof(0, Delim_t, (size_t)dlen, 0)))
+ 			{
+ 				free(delim);
+ 				error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+@@ -244,7 +244,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
+ 			{
+ 				mp[dlen].chr = cp;
+ 				mbchar(cp);
+-				mp[dlen].len = cp - mp[dlen].chr;
++				mp[dlen].len = (size_t)(cp - mp[dlen].chr);
+ 				dlen++;
+ 			}
+ 		}
+@@ -258,7 +258,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
+ 		n = 1;
+ 	if(!sflag)
+ 	{
+-		if (!(streams = stkalloc(stkstd,n*sizeof(Sfio_t*))))
++		if (!(streams = stkalloc(stkstd,(size_t)n*sizeof(Sfio_t*))))
+ 		{
+ 			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+ 			UNREACHABLE();
+diff --git a/src/lib/libcmd/pathchk.c b/src/lib/libcmd/pathchk.c
+index 90a394367..e773da2a5 100644
+--- a/src/lib/libcmd/pathchk.c
++++ b/src/lib/libcmd/pathchk.c
+@@ -179,7 +179,7 @@ static int pathchk(char* path, int mode)
+ 			errno=0;
+ 			cp[-1] = 0;
+ 			r = mypathconf(path, 0);
+-			if((cp[-1]=c)==0)
++			if((cp[-1]=(char)c)==0)
+ 				cp--;
+ 			else while(*cp=='/')
+ 				cp++;
+@@ -208,7 +208,7 @@ static int pathchk(char* path, int mode)
+ 		while((c= *cp++) && c!='/')
+ 			if((mode & COMPONENTS) && !isport(c))
+ 			{
+-				buf[0] = c;
++				buf[0] = (char)c;
+ 				buf[1] = 0;
+ 				error(2,"%s: '%s' not in portable character set",path,fmtquote(buf, NULL, "'", 1, 0));
+ 				return -1;
+diff --git a/src/lib/libcmd/rev.c b/src/lib/libcmd/rev.c
+index bc95f0da2..89f28f3bb 100644
+--- a/src/lib/libcmd/rev.c
++++ b/src/lib/libcmd/rev.c
+@@ -56,7 +56,7 @@ static const char usage[] =
+  */
+ static int rev_char(Sfio_t *in, Sfio_t *out)
+ {
+-	int c;
++	char c;
+ 	char *ep, *bp, *cp;
+ 	wchar_t *wp, *xp;
+ 	size_t n;
+@@ -67,10 +67,10 @@ static int rev_char(Sfio_t *in, Sfio_t *out)
+ 		w = 0;
+ 		while(cp = bp = sfgetr(in,'\n',0))
+ 		{
+-			ep = bp + (n=sfvalue(in)) - 1;
++			ep = bp + (n=(size_t)sfvalue(in)) - 1;
+ 			if (n > w)
+ 			{
+-				w = roundof(n + 1, 1024);
++				w = roundof(n + 1, 1024U);
+ 				if (!(wp = newof(wp, wchar_t, w, 0)))
+ 				{
+ 					error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+@@ -84,7 +84,7 @@ static int rev_char(Sfio_t *in, Sfio_t *out)
+ 			while (xp > wp)
+ 				cp += mbconv(cp, *--xp);
+ 			*cp++ = '\n';
+-			if (sfwrite(out, bp, cp - bp) < 0)
++			if (sfwrite(out, bp, (size_t)(cp - bp)) < 0)
+ 			{
+ 				if (wp)
+ 					free(wp);
+@@ -97,7 +97,7 @@ static int rev_char(Sfio_t *in, Sfio_t *out)
+ 	else
+ 		while(cp = bp = sfgetr(in,'\n',0))
+ 		{
+-			ep = bp + (n=sfvalue(in)) -1;
++			ep = bp + (n=(size_t)sfvalue(in)) -1;
+ 			while(ep > bp)
+ 			{
+ 				c = *--ep;
+diff --git a/src/lib/libcmd/rev.h b/src/lib/libcmd/rev.h
+index acee00226..2489f334e 100644
+--- a/src/lib/libcmd/rev.h
++++ b/src/lib/libcmd/rev.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -13,6 +13,7 @@
+ *                 Glenn Fowler <gsf@research.att.com>                  *
+ *                  David Korn <dgk@research.att.com>                   *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -25,6 +26,6 @@
+ 
+ #define rev_line	_cmd_revline
+ 
+-extern int		rev_line(Sfio_t*, Sfio_t*, off_t);
++extern int		rev_line(Sfio_t*, Sfio_t*, Sfoff_t);
+ 
+ #endif
+diff --git a/src/lib/libcmd/revlib.c b/src/lib/libcmd/revlib.c
+index e79a5c4e2..cdc4b6ede 100644
+--- a/src/lib/libcmd/revlib.c
++++ b/src/lib/libcmd/revlib.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -13,6 +13,7 @@
+ *                 Glenn Fowler <gsf@research.att.com>                  *
+ *                  David Korn <dgk@research.att.com>                   *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -29,12 +30,12 @@
+  * copy the lines starting at offset <start> from in <in> to <out>
+  * in reverse order
+  */
+-int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
++int rev_line(Sfio_t *in, Sfio_t *out, Sfoff_t start)
+ {
+ 	char *cp, *cpold;
+-	int n, nleft=0;
++	ssize_t n, nleft=0;
+ 	char buff[BUFSIZE];
+-	off_t offset;
++	Sfoff_t offset;
+ 	if(sfseek(in,0,SEEK_CUR) < 0)
+ 	{
+ 		Sfio_t *tmp = sftmp(4*SFIO_BUFSIZE);
+@@ -59,7 +60,7 @@ int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
+ 			offset = start;
+ 		}
+ 		sfseek(in, offset, SEEK_SET);
+-		if((n=sfread(in, buff, n)) <=0)
++		if((n=sfread(in, buff, (size_t)n)) <=0)
+ 			break;
+ 		cp = buff+n;
+ 		n = *buff;
+@@ -77,13 +78,13 @@ int rev_line(Sfio_t *in, Sfio_t *out, off_t start)
+ 			while(*--cp != '\n');
+ 			if(cp==buff && n!='\n')
+ 			{
+-				*cp = n;
++				*cp = (char)n;
+ 				nleft += cpold-cp;
+ 				break;
+ 			}
+ 			else
+ 				cp++;
+-			if(sfwrite(out,cp,cpold-cp) < 0)
++			if(sfwrite(out,cp,(size_t)(cpold-cp)) < 0)
+ 				return -1;
+ 			if(nleft)
+ 			{
+diff --git a/src/lib/libcmd/rm.c b/src/lib/libcmd/rm.c
+index 80c73851f..92a5db97d 100644
+--- a/src/lib/libcmd/rm.c
++++ b/src/lib/libcmd/rm.c
+@@ -68,11 +68,11 @@ static const char usage[] =
+ 
+ #define RM_ENTRY	1
+ 
+-#define beenhere(f)	(((f)->fts_number>>1)==(f)->fts_statp->st_nlink)
++#define beenhere(f)	(((f)->fts_number>>1)==((signed)((f)->fts_statp->st_nlink)))
+ #define isempty(f)	(!((f)->fts_number&RM_ENTRY))
+ #define nonempty(f)	((f)->fts_parent->fts_number|=RM_ENTRY)
+ #define pathchunk(n)	roundof(n,1024)
+-#define retry(f)	((f)->fts_number=((f)->fts_statp->st_nlink<<1))
++#define retry(f)	((f)->fts_number=((long)(((f)->fts_statp->st_nlink<<1))))
+ 
+ typedef struct State_s			/* program state		*/
+ {
+@@ -83,7 +83,7 @@ typedef struct State_s			/* program state		*/
+ 	int		interactive;	/* prompt for approval		*/
+ 	int		recursive;	/* remove subtrees too		*/
+ 	int		terminal;	/* attached to terminal		*/
+-	int		uid;		/* caller UID			*/
++	uid_t		uid;		/* caller UID			*/
+ 	int		unconditional;	/* enable dir rwx on preorder	*/
+ 	int		verbose;	/* display each file		*/
+ #if _lib_fsync
+@@ -291,9 +291,9 @@ rm(State_t* state, FTSENT* ent)
+ 						error(ERROR_SYSTEM|2, "%s: data clear error", ent->fts_path);
+ 						break;
+ 					}
+-					if (c <= sizeof(state->buf))
++					if (c <= (ptrdiff_t)sizeof(state->buf))
+ 						break;
+-					c -= sizeof(state->buf);
++					c -= (ptrdiff_t)sizeof(state->buf);
+ 				}
+ 				fsync(n);
+ 				close(n);
+diff --git a/src/lib/libcmd/stty.c b/src/lib/libcmd/stty.c
+index 83699631e..804a09f16 100644
+--- a/src/lib/libcmd/stty.c
++++ b/src/lib/libcmd/stty.c
+@@ -395,38 +395,38 @@ static void sane(struct termios *sp)
+ 
+ static int gin(char *arg,struct termios *sp)
+ {
+-	int i;
++	speed_t i;
+ 	if(*arg++ != ':')
+ 		return 0;
+-	sp->c_iflag = strtol(arg,&arg,16);
++	sp->c_iflag = (tcflag_t)strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+-	sp->c_oflag = strtol(arg,&arg,16);
++	sp->c_oflag = (tcflag_t)strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+-	sp->c_cflag = strtol(arg,&arg,16);
++	sp->c_cflag = (tcflag_t)strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+-	sp->c_lflag = strtol(arg,&arg,16);
++	sp->c_lflag = (tcflag_t)strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+ 	for(i=0;i< NCCS; i++)
+ 	{
+-		sp->c_cc[i] = strtol(arg,&arg,16);
++		sp->c_cc[i] = (cc_t)strtol(arg,&arg,16);
+ 		if(*arg++ != ':')
+ 			return 0;
+ 	}
+ #if _mem_c_line_termios
+-	sp->c_line =
++	sp->c_line = (cc_t)
+ #endif
+ 		strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+-	i = strtol(arg,&arg,16);
++	i = (speed_t)strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+ 	cfsetispeed(sp, i);
+-	i = strtol(arg,&arg,16);
++	i = (speed_t)strtol(arg,&arg,16);
+ 	if(*arg++ != ':')
+ 		return 0;
+ 	cfsetospeed(sp, i);
+@@ -459,7 +459,8 @@ static void output(struct termios *sp, int flags)
+ 	const Tty_t *tp;
+ 	struct termios tty;
+ 	int delim = ' ';
+-	int i,off,off2;
++	int off,off2;
++	size_t i;
+ 	char schar[2];
+ 	unsigned int ispeed = cfgetispeed(sp);
+ 	unsigned int ospeed = cfgetospeed(sp);
+@@ -572,7 +573,7 @@ static void output(struct termios *sp, int flags)
+ 
+ static const Tty_t *lookup(const char *name)
+ {
+-	int i;
++	size_t i;
+ 	for(i=0; i < elementsof(Ttable); i++)
+ 	{
+ 		if(strcmp(Ttable[i].name,name)==0)
+@@ -583,7 +584,7 @@ static const Tty_t *lookup(const char *name)
+ 
+ static const Tty_t *getspeed(unsigned long val)
+ {
+-	int i;
++	size_t i;
+ 	for(i=0; i < elementsof(Ttable); i++)
+ 	{
+ 		if(Ttable[i].type==SPEED && Ttable[i].mask==val)
+@@ -597,7 +598,7 @@ static int gettchar(const char *cp)
+ 	if(*cp==0)
+ 		return -1;
+ 	if(cp[1]==0)
+-		return (unsigned)cp[0];
++		return cp[0];
+ 	if(*cp=='^' && cp[1] && cp[2]==0)
+ 	{
+ 		switch(cp[1])
+@@ -647,7 +648,7 @@ static void set(char *argv[], struct termios *sp)
+ 			}
+ 			c = gettchar(*argv++);
+ 			if(c>=0)
+-				sp->c_cc[tp->mask] = c;
++				sp->c_cc[tp->mask] = (cc_t)c;
+ 			else
+ 				sp->c_cc[tp->mask] = _POSIX_VDISABLE;
+ 			break;
+@@ -717,16 +718,16 @@ static void set(char *argv[], struct termios *sp)
+ 				UNREACHABLE();
+ 			}
+ 			argv++;
+-			n=strtol(cp,&cp,10);
++			n=(int)strtol(cp,&cp,10);
+ 			if(*cp)
+ 			{
+ 				error(ERROR_system(1),"%d: invalid number of %s",argv[-1],tp->name);
+ 				UNREACHABLE();
+ 			}
+ 			if(tp->mask)
+-				win.ws_col = n;
++				win.ws_col = (unsigned short)n;
+ 			else
+-				win.ws_row = n;
++				win.ws_row = (unsigned short)n;
+ 			if(ioctl(0,TIOCSWINSZ,&win)<0)
+ 			{
+ 				error(ERROR_system(1),"cannot set %s",tp->name);
+@@ -759,16 +760,16 @@ static void set(char *argv[], struct termios *sp)
+ 			{
+ #if _mem_c_line_termios
+ 			case C_LINE:
+-				sp->c_line = c;
++				sp->c_line = (cc_t)c;
+ 				break;
+ #endif
+ 			case C_SPEED:
+-				if(getspeed(c))
++				if(getspeed((unsigned long)c))
+ 				{
+ 					if (*tp->name != 'o')
+-						cfsetispeed(sp, c);
++						cfsetispeed(sp, (speed_t)c);
+ 					if (*tp->name != 'i')
+-						cfsetospeed(sp, c);
++						cfsetospeed(sp, (speed_t)c);
+ 				}
+ 				else
+ 				{
+@@ -777,13 +778,13 @@ static void set(char *argv[], struct termios *sp)
+ 				}
+ 				break;
+ 			case T_CHAR:
+-				sp->c_cc[tp->mask] = c;
++				sp->c_cc[tp->mask] = (cc_t)c;
+ 				break;
+ 			}
+ 			break;
+ 		    case SPEED:
+-			cfsetospeed(sp, tp->mask);
+-			cfsetispeed(sp, tp->mask);
++			cfsetospeed(sp, (speed_t)tp->mask);
++			cfsetispeed(sp, (speed_t)tp->mask);
+ 			break;
+ 		    case SIZE:
+ 			sp->c_cflag &= ~CSIZE;
+@@ -813,7 +814,8 @@ static void set(char *argv[], struct termios *sp)
+ 
+ static void listchars(Sfio_t *sp,int type)
+ {
+-	int i,c;
++	size_t i;
++	int c;
+ 	c = (type==CHAR?'c':'n');
+ 	for(i=0; i < elementsof(Ttable); i++)
+ 	{
+@@ -824,7 +826,7 @@ static void listchars(Sfio_t *sp,int type)
+ 
+ static void listgroup(Sfio_t *sp,int type, const char *description)
+ {
+-	int i;
++	size_t i;
+ 	sfprintf(sp,"[+");
+ 	for(i=0; i < elementsof(Ttable); i++)
+ 	{
+@@ -836,7 +838,7 @@ static void listgroup(Sfio_t *sp,int type, const char *description)
+ 
+ static void listmask(Sfio_t *sp,unsigned int mask,const char *description)
+ {
+-	int i;
++	size_t i;
+ 	sfprintf(sp,"[+");
+ 	for(i=0; i < elementsof(Ttable); i++)
+ 	{
+@@ -848,7 +850,7 @@ static void listmask(Sfio_t *sp,unsigned int mask,const char *description)
+ 
+ static void listfields(Sfio_t *sp,int field)
+ {
+-	int i;
++	size_t i;
+ 	for(i=0; i < elementsof(Ttable); i++)
+ 	{
+ 		if(Ttable[i].field==field &&  Ttable[i].type==BIT && *Ttable[i].description)
+diff --git a/src/lib/libcmd/tail.c b/src/lib/libcmd/tail.c
+index 9df44c599..228f7a8bf 100644
+--- a/src/lib/libcmd/tail.c
++++ b/src/lib/libcmd/tail.c
+@@ -140,8 +140,8 @@ struct Tail_s
+ 	Sfoff_t		cur;
+ 	Sfoff_t		end;
+ 	unsigned long	expire;
+-	long		dev;
+-	long		ino;
++	dev_t		dev;
++	ino_t		ino;
+ 	int		fifo;
+ };
+ 
+@@ -155,14 +155,14 @@ static const char	header_fmt[] = "\n==> %s <==\n";
+ static Sfoff_t
+ tailpos(Sfio_t* fp, Sfoff_t number, int delim)
+ {
+-	size_t		n;
+-	Sfoff_t	offset;
+-	Sfoff_t	first;
+-	Sfoff_t	last;
++	ssize_t		n;
++	Sfoff_t		offset;
++	Sfoff_t		first;
++	Sfoff_t		last;
+ 	char*		s;
+ 	char*		t;
+-	unsigned char		incomplete;
+-	struct stat		st;
++	unsigned char	incomplete;
++	struct stat	st;
+ 
+ 	last = sfsize(fp);
+ 	if ((first = sfseek(fp, 0, SEEK_CUR)) < 0)
+@@ -179,7 +179,7 @@ tailpos(Sfio_t* fp, Sfoff_t number, int delim)
+ 		if ((offset = last - SFIO_BUFSIZE) < first)
+ 			offset = first;
+ 		sfseek(fp, offset, SEEK_SET);
+-		n = last - offset;
++		n = (ssize_t)(last - offset);
+ 		if (!(s = sfreserve(fp, n, SFIO_LOCKR)))
+ 			return -1;
+ 		t = s + n;
+@@ -221,8 +221,8 @@ pipetail(Sfio_t* infile, Sfio_t* outfile, Sfoff_t number, int delim)
+ 	Sfoff_t		offset[2];
+ 	Sfio_t*		tmp[2];
+ 
+-	if (delim < 0 && a > number)
+-		a = number;
++	if (delim < 0 && (ssize_t)a > number)
++		a = (size_t)number;
+ 	out = tmp[0] = sftmp(a);
+ 	tmp[1] = sftmp(a);
+ 	offset[0] = offset[1] = 0;
+@@ -436,8 +436,8 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 	unsigned long	timeout = 0;
+ 	struct stat	st;
+ 	const char*	format = header_fmt+1;
++	ptrdiff_t	w;
+ 	ssize_t		z;
+-	ssize_t		w;
+ 	Sfio_t*		op;
+ 	Tail_t*		fp;
+ 	Tail_t*		pp;
+@@ -567,7 +567,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 				{
+ 				case 0:
+ 					if (r)
+-						opt_info.offset = t - r - 1;
++						opt_info.offset = (int)(t - r - 1);
+ 					break;
+ 				case 'c':
+ 					flags &= ~LINES;
+@@ -584,7 +584,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 				default:
+ 					error(2, "%s: invalid suffix", t - 1);
+ 					if (r)
+-						opt_info.offset = strlen(r);
++						opt_info.offset = (int)strlen(r);
+ 					break;
+ 				}
+ 				break;
+@@ -637,7 +637,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 	}
+ 	if (flags & FOLLOW)
+ 	{
+-		if (!(fp = stkalloc(stkstd, argc * sizeof(Tail_t))))
++		if (!(fp = stkalloc(stkstd, (size_t)argc * sizeof(Tail_t))))
+ 		{
+ 			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
+ 			UNREACHABLE();
+@@ -685,13 +685,13 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 					n = 1;
+ 					if (timeout)
+ 						fp->expire = NOW + timeout;
+-					z = fp->fifo ? SFIO_UNBOUND : st.st_size - fp->cur;
++					z = fp->fifo ? SFIO_UNBOUND : (ssize_t)(st.st_size - fp->cur);
+ 					i = 0;
+ 					if ((s = sfreserve(fp->sp, z, SFIO_LOCKR)) || (z = sfvalue(fp->sp)) && (s = sfreserve(fp->sp, z, SFIO_LOCKR)) && (i = 1))
+ 					{
+ 						z = sfvalue(fp->sp);
+ 						for (r = s + z; r > s && *(r - 1) != '\n'; r--);
+-						if ((w = r - s) || i && (w = z))
++						if ((w = r - s) || i && (w = (ptrdiff_t)z))
+ 						{
+ 							if ((flags & (HEADERS|VERBOSE)) && hp != fp)
+ 							{
+@@ -700,11 +700,11 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 								format = header_fmt;
+ 							}
+ 							fp->cur += w;
+-							sfwrite(sfstdout, s, w);
++							sfwrite(sfstdout, s, (size_t)w);
+ 						}
+ 						else
+ 							w = 0;
+-						sfread(fp->sp, s, w);
++						sfread(fp->sp, s, (size_t)w);
+ 						fp->end += w;
+ 					}
+ 					goto next;
+diff --git a/src/lib/libcmd/tee.c b/src/lib/libcmd/tee.c
+index 3333a4301..069c69ee3 100644
+--- a/src/lib/libcmd/tee.c
++++ b/src/lib/libcmd/tee.c
+@@ -79,12 +79,12 @@ tee_write(Sfio_t* fp, const void* buf, size_t n, Sfdisc_t* handle)
+ 		ep = bp + n;
+ 		while (bp < ep)
+ 		{
+-			if ((r = write(fd, bp, ep - bp)) <= 0)
++			if ((r = write(fd, bp, (size_t)(ep - bp))) <= 0)
+ 				return -1;
+ 			bp += r;
+ 		}
+ 	} while ((fd = *hp++) >= 0);
+-	return n;
++	return (ssize_t)n;
+ }
+ 
+ static void
+@@ -160,7 +160,7 @@ b_tee(int argc, char** argv, Shbltin_t* context)
+ 	argc -= opt_info.index;
+ 	if (argc > 0)
+ 	{
+-		if (tp = stkalloc(stkstd, sizeof(Tee_t) + argc * sizeof(int)))
++		if (tp = stkalloc(stkstd, sizeof(Tee_t) + (size_t)argc * sizeof(int)))
+ 		{
+ 			memset(&tp->disc, 0, sizeof(tp->disc));
+ 			tp->disc.writef = tee_write;
+diff --git a/src/lib/libcmd/uname.c b/src/lib/libcmd/uname.c
+index f16a10608..866740c1a 100644
+--- a/src/lib/libcmd/uname.c
++++ b/src/lib/libcmd/uname.c
+@@ -274,7 +274,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
+ 			continue;
+ 		case ':':
+ 			{
+-				char **new_argv = stkalloc(stkstd, (argc + 3) * sizeof(char*));
++				char **new_argv = stkalloc(stkstd, ((size_t)argc + 3) * sizeof(char*));
+ 				new_argv[0] = "command";
+ 				new_argv[1] = "-px";
+ 				for (n = 0; n <= argc; n++)
+@@ -320,7 +320,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
+ 			*t++ = 'S';
+ 			*t++ = '_';
+ 			while (t < e && (n = *s++))
+-				*t++ = islower(n) ? toupper(n) : n;
++				*t++ = (char)(islower(n) ? toupper(n) : n);
+ 			*t = 0;
+ 			sfprintf(sfstdout, "%s%c", *(t = astconf(buf, NULL, NULL)) ? t : *(t = astconf(buf+3, NULL, NULL)) ? t :  "unknown", *argv ? ' ' : '\n');
+ 		}
+diff --git a/src/lib/libcmd/uniq.c b/src/lib/libcmd/uniq.c
+index 17b1679df..f07d00797 100644
+--- a/src/lib/libcmd/uniq.c
++++ b/src/lib/libcmd/uniq.c
+@@ -79,12 +79,14 @@ static const char usage[] =
+ 
+ typedef int (*Compare_f)(const char*, const char*, size_t);
+ 
+-static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, int mode, int* all, Compare_f compare)
++static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, ptrdiff_t width, int mode, int* all, Compare_f compare)
+ {
+-	int n, f, outsize=0, mb = mbwide();
++	ptrdiff_t n, f;
++	ssize_t outsize=0;
++	int mb = mbwide();
+ 	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
+ 	char *orecp=NULL, *sbufp=0, *outbuff;
+-	int reclen,oreclen= -1,count=0,cwidth=0,sep,next;
++	ptrdiff_t reclen,oreclen= -1,count=0,cwidth=0,sep,next;
+ 	if(mode&C_FLAG)
+ 		cwidth = CWIDTH+1;
+ 	while(1)
+@@ -94,7 +96,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
+ 		{
+ 			n = sfvalue(fdin);
+-			bufp = memcpy(fmtbuf(n + 1), bufp, n);
++			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
+ 			bufp[n++] = '\n';
+ 		}
+ 		else
+@@ -143,7 +145,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 		}
+ 		else
+ 			reclen = -2;
+-		if(reclen==oreclen && (!reclen || !(*compare)(cp,orecp,reclen)))
++		if(reclen==oreclen && (!reclen || !(*compare)(cp,orecp,(size_t)reclen)))
+ 		{
+ 			count++;
+ 			if (!all)
+@@ -169,7 +171,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 							f = 0;
+ 							while(f < CWIDTH-1)
+ 								outp[f++] = ' ';
+-							outp[f++] = '0' + count + 1;
++							outp[f++] = (char)('0' + count + 1);
+ 							outp[f] = ' ';
+ 						}
+ 						else if(count<MAXCNT)
+@@ -189,9 +191,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 							outsize -= (CWIDTH+1);
+ 							if(outp!=sbufp)
+ 							{
+-								if(!(sbufp=fmtbuf(outsize)))
++								if(!(sbufp=fmtbuf((size_t)outsize)))
+ 									return 1;
+-								memcpy(sbufp,outp+CWIDTH+1,outsize);
++								memcpy(sbufp,outp+CWIDTH+1,(size_t)outsize);
+ 								sfwrite(fdout,outp,0);
+ 								outp = sbufp;
+ 							}
+@@ -200,7 +202,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 							sfprintf(fdout,"%4d ",count+1);
+ 						}
+ 					}
+-					if(sfwrite(fdout,outp,outsize) != outsize)
++					if(sfwrite(fdout,outp,(size_t)outsize) != outsize)
+ 						return 1;
+ 				}
+ 			}
+@@ -209,7 +211,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 			break;
+ 		if(count = next)
+ 		{
+-			if(sfwrite(fdout,outp,outsize) != outsize)
++			if(sfwrite(fdout,outp,(size_t)outsize) != outsize)
+ 				return 1;
+ 			if(*all >= 0)
+ 				*all = 1;
+@@ -225,12 +227,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 		{
+ 			/* no room in outp, clear lock and use side buffer */
+ 			sfwrite(fdout,outp,0);
+-			if(!(sbufp = outp=fmtbuf(outsize=n+cwidth+sep)))
++			outsize = n + cwidth + sep;
++			if(!(sbufp = outp=fmtbuf((size_t)outsize)))
+ 				return 1;
+ 		}
+ 		else
+ 			outsize = n+cwidth+sep;
+-		memcpy(outp+cwidth+sep,bufp,n);
++		memcpy(outp+cwidth+sep,bufp,(size_t)n);
+ 		if(sep)
+ 			outp[cwidth] = '\n';
+ 		oreclen = reclen;
+@@ -244,7 +247,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
+ {
+ 	int mode=0;
+ 	char *cp;
+-	int fields=0, chars=0, width=-1;
++	ptrdiff_t fields=0, chars=0, width=-1;
+ 	Sfio_t *fpin, *fpout;
+ 	int* all = 0;
+ 	int sep;
+@@ -285,15 +288,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
+ 			continue;
+ 		case 'f':
+ 			if(*opt_info.option=='-')
+-				fields = opt_info.num;
++				fields = (ptrdiff_t)opt_info.num;
+ 			else
+-				chars = opt_info.num;
++				chars = (ptrdiff_t)opt_info.num;
+ 			continue;
+ 		case 's':
+-			chars = opt_info.num;
++			chars = (ptrdiff_t)opt_info.num;
+ 			continue;
+ 		case 'w':
+-			width = opt_info.num;
++			width = (ptrdiff_t)opt_info.num;
+ 			continue;
+ 		case ':':
+ 			error(2, "%s", opt_info.arg);
+diff --git a/src/lib/libcmd/wclib.c b/src/lib/libcmd/wclib.c
+index ea5996b79..ccdfe6f4f 100644
+--- a/src/lib/libcmd/wclib.c
++++ b/src/lib/libcmd/wclib.c
+@@ -108,7 +108,7 @@ static int invalid(const char *file, int nlines)
+  * handle UTF space characters
+  */
+ 
+-static int chkstate(int state, unsigned int c)
++static int chkstate(int state, int c)
+ {
+ 	switch(state)
+ 	{
+@@ -145,7 +145,7 @@ static int chkstate(int state, unsigned int c)
+ 		state = (c==0x9f?10:0);
+ 		break;
+ 	case 8:
+-		return (iswspace(c)?10:0);
++		return (iswspace((wint_t)c)?10:0);
+ 	}
+ 	return state;
+ }
+@@ -164,12 +164,12 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 	Sfoff_t		nlines;
+ 	Sfoff_t		eline = -1;
+ 	Sfoff_t		longest = 0;
+-	ssize_t		c;
++	ptrdiff_t	c;
+ 	unsigned char*	endbuff;
+ 	int		lasttype = WC_SP;
+ 	unsigned int	lastchar;
+-	ssize_t		n;
+-	ssize_t		o;
++	ptrdiff_t	n;
++	ptrdiff_t	o;
+ 	unsigned char*	buff;
+ 	wchar_t		x;
+ 	unsigned char	side[32];
+@@ -182,14 +182,14 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 		cp = buff = endbuff = 0;
+ 		for (;;)
+ 		{
+-			if (cp >= endbuff || (n = mb2wc(x, cp, endbuff-cp)) < 0)
++			if (cp >= endbuff || (n = mb2wc(x, cp, (size_t)(endbuff-cp))) < 0)
+ 			{
+-				if ((o = endbuff-cp) < sizeof(side))
++				if ((o = endbuff-cp) < (ptrdiff_t)sizeof(side))
+ 				{
+ 					if (buff)
+ 					{
+ 						if (o)
+-							memcpy(side, cp, o);
++							memcpy(side, cp, (size_t)o);
+ 					}
+ 					else
+ 						o = 0;
+@@ -201,10 +201,10 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 						break;
+ 					}
+ 					nbytes += n;
+-					if ((c = sizeof(side) - o) > n)
++					if ((c = (ptrdiff_t)sizeof(side) - o) > n)
+ 						c = n;
+ 					if (c)
+-						memcpy(cp, buff, c);
++						memcpy(cp, buff, (size_t)c);
+ 					endbuff = buff + n;
+ 					cp = side;
+ 					x = mbchar(cp);
+@@ -222,7 +222,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 					x = -1;
+ 				}
+ 				if (x == -1 && eline != nlines && !(wp->mode & WC_QUIET))
+-					eline = invalid(file, nlines);
++					eline = invalid(file, (int)nlines);
+ 			}
+ 			else
+ 				cp += n ? n : 1;
+@@ -234,7 +234,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 				nlines++;
+ 				lasttype = 1;
+ 			}
+-			else if (iswspace(x))
++			else if (iswspace((wint_t)x))
+ 				lasttype = 1;
+ 			else if (lasttype)
+ 			{
+@@ -279,7 +279,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 						nlines++;
+ 					if ((c = type[*cp]) && !lasttype)
+ 						nwords++;
+-					lasttype = c;
++					lasttype = (int)c;
+ 					continue;
+ 				}
+ 				if (!lasttype && type[*cp])
+@@ -327,7 +327,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 	}
+ 	else
+ 	{
+-		int		lineoff=0;
++		ptrdiff_t	lineoff=0;
+ 		int		skip=0;
+ 		int		adjust=0;
+ 		int		state=0;
+@@ -352,7 +352,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 					nlines++;
+ 				if((c = type[*cp]) && !lasttype)
+ 					nwords++;
+-				lasttype = c;
++				lasttype = (int)c;
+ 				endbuff = start;
+ 				continue;
+ 			}
+@@ -453,7 +453,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
+ 						skip = 0;
+ 						state = 0;
+ 						if(eline!=nlines && !(wp->mode & WC_QUIET))
+-							eline = invalid(file, nlines);
++							eline = invalid(file, (int)nlines);
+ 						while(mbc(c) && ((c|WC_ERR) || (c&7)==0))
+ 							c=type[*cp++];
+ 						if(eol(c) && (cp > endbuff))
+-- 
+2.49.0
+

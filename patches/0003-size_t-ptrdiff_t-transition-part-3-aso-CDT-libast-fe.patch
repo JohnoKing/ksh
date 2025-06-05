@@ -1,0 +1,1062 @@
+From a9259723f9b08628759439604eebbe8b8c6eda04 Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
+
+This is the third of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The libast aso library.
+- The libast CDT library.
+- The libast feature tests.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+3,291 => 3,214 => 248 (progression from part 2 => part 3 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/lib/libast/aso/aso-fcntl.c   | 33 +++++------
+ src/lib/libast/aso/aso-sem.c     | 20 +++----
+ src/lib/libast/aso/aso.c         | 96 ++++++++++++++++----------------
+ src/lib/libast/aso/asorelax.c    |  5 +-
+ src/lib/libast/cdt/dtclose.c     |  6 +-
+ src/lib/libast/cdt/dthash.c      |  9 +--
+ src/lib/libast/cdt/dtlist.c      |  2 +-
+ src/lib/libast/cdt/dtopen.c      |  6 +-
+ src/lib/libast/cdt/dtstat.c      |  7 ++-
+ src/lib/libast/cdt/dtstrhash.c   |  5 +-
+ src/lib/libast/cdt/dttree.c      |  3 +-
+ src/lib/libast/features/align.c  |  6 +-
+ src/lib/libast/features/api      |  4 --
+ src/lib/libast/features/mode.c   |  4 +-
+ src/lib/libast/features/omitted  |  2 +-
+ src/lib/libast/features/sfio     |  2 +-
+ src/lib/libast/features/signal.c | 10 ++--
+ src/lib/libast/features/sizeof   | 10 ++--
+ src/lib/libast/features/tv       | 24 ++++----
+ src/lib/libast/include/aso.h     |  8 +--
+ src/lib/libast/include/cdt.h     | 10 ++--
+ src/lib/libast/man/aso.3         |  6 +-
+ 22 files changed, 142 insertions(+), 136 deletions(-)
+
+diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
+index abc8227f5..02d6c5ca9 100644
+--- a/src/lib/libast/aso/aso-fcntl.c
++++ b/src/lib/libast/aso/aso-fcntl.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -44,10 +45,9 @@ aso_init_fcntl(void* data, const char* details)
+ 	char*		opt;
+ 	size_t		size;
+ 	size_t		references;
+-	int		n;
+ 	int		fd;
+ 	int		drop;
+-	int		perm;
++	mode_t		perm;
+ 	struct flock	lock;
+ 	char		buf[PATH_MAX];
+ 	char		tmp[64];
+@@ -56,18 +56,18 @@ aso_init_fcntl(void* data, const char* details)
+ 	{
+ 		lock.l_type = F_WRLCK;
+ 		lock.l_whence = SEEK_SET;
+-		lock.l_start = apl->size;
++		lock.l_start = (off_t)apl->size;
+ 		lock.l_len = sizeof(references);
+ 		if (fcntl(apl->fd, F_SETLKW, &lock) >= 0)
+ 		{
+-			if (lseek(apl->fd, apl->size, SEEK_SET) != apl->size)
++			if (lseek(apl->fd, (off_t)apl->size, SEEK_SET) != (ssize_t)apl->size)
+ 				references = 0;
+ 			else if (read(apl->fd, &references, sizeof(references)) != sizeof(references))
+ 				references = 0;
+ 			else if (references > 0)
+ 			{
+ 				references--;
+-				if (lseek(apl->fd, apl->size, SEEK_SET) != apl->size)
++				if (lseek(apl->fd, (off_t)apl->size, SEEK_SET) != (ssize_t)apl->size)
+ 					references = 0;
+ 				else if (write(apl->fd, &references, sizeof(references)) != sizeof(references))
+ 					references = 0;
+@@ -90,9 +90,10 @@ aso_init_fcntl(void* data, const char* details)
+ 		{
+ 			if (strneq(path, "perm=", 5))
+ 			{
+-				if ((n = opt - (path + 5)) >= sizeof(tmp))
+-					n = sizeof(tmp) - 1;
+-				memcpy(tmp, path + 5, n);
++				ptrdiff_t n;
++				if ((n = opt - (path + 5)) >= (ptrdiff_t)sizeof(tmp))
++					n = (ptrdiff_t)sizeof(tmp) - 1;
++				memcpy(tmp, path + 5, (size_t)n);
+ 				tmp[n] = 0;
+ 				perm = strperm(tmp, NULL, perm);
+ 			}
+@@ -115,7 +116,7 @@ aso_init_fcntl(void* data, const char* details)
+ 		goto bad;
+ 	if (fd >= 0 || (fd = open(path, O_RDWR|O_cloexec)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_cloexec, perm)) >= 0)
+ 	{
+-		if (lseek(fd, size, SEEK_SET) != size)
++		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
+ 			goto bad;
+ 		references = 1;
+ 		if (write(fd, &references, sizeof(references)) != sizeof(references))
+@@ -123,7 +124,7 @@ aso_init_fcntl(void* data, const char* details)
+ 	}
+ 	else
+ 	{
+-		if ((size = lseek(fd, 0, SEEK_END)) <= sizeof(references))
++		if ((size = (size_t)lseek(fd, 0, SEEK_END)) <= sizeof(references))
+ 			goto bad;
+ 		size -= sizeof(references);
+ 		lock.l_type = F_WRLCK;
+@@ -132,12 +133,12 @@ aso_init_fcntl(void* data, const char* details)
+ 		lock.l_len = sizeof(references);
+ 		if (fcntl(fd, F_SETLKW, &lock) < 0)
+ 			goto bad;
+-		if (lseek(fd, size, SEEK_SET) != size)
++		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
+ 			goto bad;
+ 		if (read(fd, &references, sizeof(references)) != sizeof(references))
+ 			goto bad;
+ 		references++;
+-		if (lseek(fd, size, SEEK_SET) != size)
++		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
+ 			goto bad;
+ 		if (write(fd, &references, sizeof(references)) != sizeof(references))
+ 			goto bad;
+@@ -158,8 +159,8 @@ aso_init_fcntl(void* data, const char* details)
+ 	return NULL;
+ }
+ 
+-static ssize_t
+-aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
++static ptrdiff_t
++aso_lock_fcntl(void* data, ptrdiff_t k, void volatile* p)
+ {
+ 	APL_t*		apl = (APL_t*)data;
+ 	struct flock	lock;
+@@ -171,7 +172,7 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
+ 	else
+ 	{
+ 		lock.l_type = F_WRLCK;
+-		k = HASH(p, apl->size) + 1;
++		k = HASH(p, (ptrdiff_t)apl->size) + 1;
+ 	}
+ 	lock.l_whence = SEEK_SET;
+ 	lock.l_start = k - 1;
+diff --git a/src/lib/libast/aso/aso-sem.c b/src/lib/libast/aso/aso-sem.c
+index ac6d5478b..ac7208bec 100644
+--- a/src/lib/libast/aso/aso-sem.c
++++ b/src/lib/libast/aso/aso-sem.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -55,7 +55,7 @@ aso_init_semaphore(void* data, const char* details)
+ 	size_t		n;
+ 	int		key;
+ 	int		id;
+-	int		perm;
++	mode_t		perm;
+ 	struct sembuf	sem;
+ 	char		tmp[64];
+ 
+@@ -83,7 +83,7 @@ aso_init_semaphore(void* data, const char* details)
+ 		{
+ 			if (strneq(path, "perm=", 5))
+ 			{
+-				if ((n = opt - (path + 5)) >= sizeof(tmp))
++				if ((n = (size_t)(opt - (path + 5))) >= sizeof(tmp))
+ 					n = sizeof(tmp) - 1;
+ 				memcpy(tmp, path + 5, n);
+ 				tmp[n] = 0;
+@@ -100,7 +100,7 @@ aso_init_semaphore(void* data, const char* details)
+ 	key = (!path || !*path || streq(path, "private")) ? IPC_PRIVATE : (strsum(path, 0) & 0x7fff);
+ 	for (;;)
+ 	{
+-		if ((id = semget(key, size, IPC_CREAT|IPC_EXCL|perm)) >= 0)
++		if ((id = semget(key, (int)size, IPC_CREAT|IPC_EXCL|(int)perm)) >= 0)
+ 		{
+ 			/*
+ 			 * initialize all semaphores to 0
+@@ -121,7 +121,7 @@ aso_init_semaphore(void* data, const char* details)
+ 			size /= 2;
+ 		else if (errno != EEXIST)
+ 			return NULL;
+-		else if ((id = semget(key, size, perm)) >= 0)
++		else if ((id = semget(key, (int)size, (int)perm)) >= 0)
+ 		{
+ 			struct semid_ds	ds;
+ 			Semun_t		arg;
+@@ -134,7 +134,7 @@ aso_init_semaphore(void* data, const char* details)
+ 			arg.ds = &ds;
+ 			for (k = 0; k < SPIN; ASOLOOP(k))
+ 			{
+-				if (semctl(id, size-1, IPC_STAT, arg) < 0)
++				if (semctl(id, (int)size-1, IPC_STAT, arg) < 0)
+ 					return NULL;
+ 				if (ds.sem_otime)
+ 					break;
+@@ -165,8 +165,8 @@ aso_init_semaphore(void* data, const char* details)
+ 	return apl;
+ }
+ 
+-static ssize_t
+-aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
++static ptrdiff_t
++aso_lock_semaphore(void* data, ptrdiff_t k, void volatile* p)
+ {
+ 	APL_t*		apl = (APL_t*)data;
+ 	struct sembuf	sem;
+@@ -178,9 +178,9 @@ aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
+ 	else
+ 	{
+ 		sem.sem_op = -1;
+-		k = HASH(p, apl->size) + 1;
++		k = HASH(p, (ptrdiff_t)apl->size) + 1;
+ 	}
+-	sem.sem_num = k;
++	sem.sem_num = (unsigned short)k;
+ 	sem.sem_flg = 0;
+ 	return semop(apl->id, &sem, 1) < 0 ? -1 : k;
+ }
+diff --git a/src/lib/libast/aso/aso.c b/src/lib/libast/aso/aso.c
+index bac133110..dddfa3b3f 100644
+--- a/src/lib/libast/aso/aso.c
++++ b/src/lib/libast/aso/aso.c
+@@ -97,8 +97,8 @@ typedef struct State_s
+ 
+ static unsigned int		_aso_data_signal;
+ 
+-static ssize_t
+-_aso_lock_signal(void* data, ssize_t k, void volatile* p)
++static ptrdiff_t
++_aso_lock_signal(void* data, ptrdiff_t k, void volatile* p)
+ {
+ 	NOT_USED(data);
+ 	NOT_USED(p);
+@@ -137,7 +137,7 @@ static State_t			state =
+ };
+ 
+ static int
+-asoerror(int type, const char* format, const char* a, const char* b, long n)
++asoerror(int type, const char* format, const char* a, const char* b, unsigned int n)
+ {
+ 	char	buf[128];
+ 
+@@ -165,7 +165,7 @@ Asometh_t*
+ _asometh(int type, void* data)
+ {
+ 	size_t		n;
+-	int		i;
++	size_t		i;
+ 	char*		e;
+ 	Asometh_t*	meth;
+ 	char*		name;
+@@ -191,7 +191,7 @@ _asometh(int type, void* data)
+ 	}
+ 	if (!(name = (char*)data))
+ 		return state.meth;
+-	n = (e = strchr(name, ',')) ? (e - name) : strlen(name);
++	n = (e = strchr(name, ',')) ? (size_t)(e - name) : strlen(name);
+ 	for (i = 0; i < elementsof(method); i++)
+ 		if (strncmp(name, method[i]->name, n) == 0)
+ 		{
+@@ -285,10 +285,10 @@ asoloop(uintmax_t rep)
+  * error checking state.lockf() call
+  */
+ 
+-static ssize_t
+-lock(void* data, ssize_t k, void volatile* p)
++static ptrdiff_t
++lock(void* data, ptrdiff_t k, void volatile* p)
+ {
+-	ssize_t		r;
++	ptrdiff_t	r;
+ 
+ 	if ((r = state.lockf(data, k, p)) < 0 && state.errorf)
+ 		asoerror(ASO_EMETHOD, "%s method lock failed", state.meth->name, 0, 0);
+@@ -302,7 +302,7 @@ lock(void* data, ssize_t k, void volatile* p)
+ uint8_t
+ asoget8(uint8_t volatile* p)
+ {
+-	int	o;
++	uint8_t		o;
+ 
+ 	do
+ 	{
+@@ -314,7 +314,7 @@ asoget8(uint8_t volatile* p)
+ uint16_t
+ asoget16(uint16_t volatile* p)
+ {
+-	int	o;
++	uint16_t	o;
+ 
+ 	do
+ 	{
+@@ -370,8 +370,8 @@ asogetptr(void volatile* p)
+ uint8_t
+ asoinc8(uint8_t volatile* p)
+ {
+-	ssize_t		k;
+-	int		o;
++	ptrdiff_t	k;
++	uint8_t		o;
+ 
+ #if defined(_aso_inc8)
+ 	if (!state.lockf)
+@@ -395,8 +395,8 @@ asoinc8(uint8_t volatile* p)
+ uint16_t
+ asoinc16(uint16_t volatile* p)
+ {
+-	ssize_t		k;
+-	int		o;
++	ptrdiff_t	k;
++	uint16_t	o;
+ 
+ #if defined(_aso_inc16)
+ 	if (!state.lockf)
+@@ -420,8 +420,8 @@ asoinc16(uint16_t volatile* p)
+ uint32_t
+ asoinc32(uint32_t volatile* p)
+ {
+-	ssize_t		k;
+-	int		o;
++	ptrdiff_t	k;
++	uint32_t	o;
+ 
+ #if defined(_aso_inc32)
+ 	if (!state.lockf)
+@@ -447,7 +447,7 @@ asoinc32(uint32_t volatile* p)
+ uint64_t
+ asoinc64(uint64_t volatile* p)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 	uint64_t	o;
+ 
+ #if defined(_aso_inc64)
+@@ -478,8 +478,8 @@ asoinc64(uint64_t volatile* p)
+ uint8_t
+ asodec8(uint8_t volatile* p)
+ {
+-	ssize_t		k;
+-	int		o;
++	ptrdiff_t	k;
++	uint8_t		o;
+ 
+ #if defined(_aso_dec8)
+ 	if (!state.lockf)
+@@ -503,8 +503,8 @@ asodec8(uint8_t volatile* p)
+ uint16_t
+ asodec16(uint16_t volatile* p)
+ {
+-	ssize_t		k;
+-	int		o;
++	ptrdiff_t	k;
++	uint16_t	o;
+ 
+ #if defined(_aso_dec16)
+ 	if (!state.lockf)
+@@ -528,8 +528,8 @@ asodec16(uint16_t volatile* p)
+ uint32_t
+ asodec32(uint32_t volatile* p)
+ {
+-	ssize_t		k;
+-	int		o;
++	ptrdiff_t	k;
++	uint32_t	o;
+ 
+ #if defined(_aso_dec32)
+ 	if (!state.lockf)
+@@ -555,7 +555,7 @@ asodec32(uint32_t volatile* p)
+ uint64_t
+ asodec64(uint64_t volatile* p)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 	uint64_t	o;
+ 
+ #if defined(_aso_dec64)
+@@ -584,9 +584,9 @@ asodec64(uint64_t volatile* p)
+  */
+ 
+ uint8_t
+-asocas8(uint8_t volatile* p, int o, int n)
++asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 
+ #if defined(_aso_cas8)
+ 	if (!state.lockf)
+@@ -597,10 +597,10 @@ asocas8(uint8_t volatile* p, int o, int n)
+ 		U16_8_t		u;
+ 		U16_8_t		v;
+ 		U16_8_t*	a;
+-		int		s;
+-		int		i;
++		ptrdiff_t	s;
++		ptrdiff_t	i;
+ 
+-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
++		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
+ 		a = (U16_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
+ 		for (;;)
+ 		{
+@@ -624,10 +624,10 @@ asocas8(uint8_t volatile* p, int o, int n)
+ 		U32_8_t		u;
+ 		U32_8_t		v;
+ 		U32_8_t*	a;
+-		int		s;
+-		int		i;
++		ptrdiff_t	s;
++		ptrdiff_t	i;
+ 
+-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
++		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
+ 		a = (U32_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
+ 		for (;;)
+ 		{
+@@ -651,10 +651,10 @@ asocas8(uint8_t volatile* p, int o, int n)
+ 		U64_8_t		u;
+ 		U64_8_t		v;
+ 		U64_8_t*	a;
+-		int		s;
+-		int		i;
++		ptrdiff_t	s;
++		ptrdiff_t	i;
+ 
+-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
++		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
+ 		a = (U64_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
+ 		for (;;)
+ 		{
+@@ -685,7 +685,7 @@ asocas8(uint8_t volatile* p, int o, int n)
+ uint16_t
+ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 
+ #if defined(_aso_cas16)
+ 	if (!state.lockf)
+@@ -696,10 +696,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
+ 		U32_16_t	u;
+ 		U32_16_t	v;
+ 		U32_16_t*	a;
+-		int		s;
+-		int		i;
++		ptrdiff_t	s;
++		ptrdiff_t	i;
+ 
+-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
++		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
+ 		a = (U32_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
+ 		for (;;)
+ 		{
+@@ -723,10 +723,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
+ 		U64_16_t	u;
+ 		U64_16_t	v;
+ 		U64_16_t*	a;
+-		int		s;
+-		int		i;
++		ptrdiff_t	s;
++		ptrdiff_t	i;
+ 
+-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
++		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
+ 		a = (U64_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
+ 		for (;;)
+ 		{
+@@ -757,7 +757,7 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
+ uint32_t
+ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 
+ #if defined(_aso_cas32)
+ 	if (!state.lockf)
+@@ -768,10 +768,10 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
+ 		U64_32_t	u;
+ 		U64_32_t	v;
+ 		U64_32_t*	a;
+-		int		s;
+-		int		i;
++		ptrdiff_t	s;
++		ptrdiff_t	i;
+ 
+-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 4;
++		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 4;
+ 		a = (U64_32_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
+ 		for (;;)
+ 		{
+@@ -804,7 +804,7 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
+ uint64_t
+ asocas64(uint64_t volatile* p, uint64_t o, uint64_t n)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 
+ #if defined(_aso_cas64)
+ 	if (!state.lockf)
+@@ -828,7 +828,7 @@ asocas64(uint64_t volatile* p, uint64_t o, uint64_t n)
+ void*
+ asocasptr(void volatile* p, void* o, void* n)
+ {
+-	ssize_t		k;
++	ptrdiff_t	k;
+ 
+ #if defined(_aso_casptr)
+ 	if (!state.lockf)
+diff --git a/src/lib/libast/aso/asorelax.c b/src/lib/libast/aso/asorelax.c
+index 317a5ee75..f76d5db1c 100644
+--- a/src/lib/libast/aso/asorelax.c
++++ b/src/lib/libast/aso/asorelax.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -22,7 +23,7 @@
+ #include <tv.h>
+ 
+ int
+-asorelax(long nsec)
++asorelax(uint32_t nsec)
+ {
+ 	Tv_t		tv;
+ 
+diff --git a/src/lib/libast/cdt/dtclose.c b/src/lib/libast/cdt/dtclose.c
+index 8bd9640ab..853625fbe 100644
+--- a/src/lib/libast/cdt/dtclose.c
++++ b/src/lib/libast/cdt/dtclose.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"dthdr.h"
+@@ -24,7 +25,8 @@
+ */
+ int dtclose(Dt_t* dt)
+ {
+-	int		ev, type;
++	int		ev;
++	unsigned int	type;
+ 	Dt_t		pdt;
+ 	Dtdisc_t	*disc = dt->disc;
+ 
+diff --git a/src/lib/libast/cdt/dthash.c b/src/lib/libast/cdt/dthash.c
+index ce96ad65f..37b88fc89 100644
+--- a/src/lib/libast/cdt/dthash.c
++++ b/src/lib/libast/cdt/dthash.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"dthdr.h"
+@@ -68,11 +69,11 @@ static int htable(Dt_t* dt)
+ 		return 0;
+ 
+ 	/* allocate new table */
+-	if(!(htbl = (Dtlink_t**)(*dt->memoryf)(dt, 0, n*sizeof(Dtlink_t*), disc)) )
++	if(!(htbl = (Dtlink_t**)(*dt->memoryf)(dt, 0, (size_t)n*sizeof(Dtlink_t*), disc)) )
+ 	{	DTERROR(dt, "Error in allocating an extended hash table");
+ 		return -1;
+ 	}
+-	memset(htbl, 0, n*sizeof(Dtlink_t*));
++	memset(htbl, 0, (size_t)n*sizeof(Dtlink_t*));
+ 
+ 	if(hash->htbl)
+ 	{
+@@ -230,8 +231,8 @@ static void* hstat(Dt_t* dt, Dtstat_t* st)
+ 	{	memset(st, 0, sizeof(Dtstat_t));
+ 		st->meth  = dt->meth->type;
+ 		st->size  = hash->data.size;
+-		st->space = sizeof(Dthash_t) + hash->tblz*sizeof(Dtlink_t*) +
+-			    (dt->disc->link >= 0 ? 0 : hash->data.size*sizeof(Dthold_t));
++		st->space = (ssize_t)(sizeof(Dthash_t) + (size_t)hash->tblz*sizeof(Dtlink_t*) +
++			    (dt->disc->link >= 0 ? 0 : (size_t)hash->data.size*sizeof(Dthold_t)));
+ 
+ 		for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
+ 		{	for(n = 0, l = *t; l; l = l->_rght)
+diff --git a/src/lib/libast/cdt/dtlist.c b/src/lib/libast/cdt/dtlist.c
+index f5789e2f5..ee75003b6 100644
+--- a/src/lib/libast/cdt/dtlist.c
++++ b/src/lib/libast/cdt/dtlist.c
+@@ -127,7 +127,7 @@ static void* listat(Dt_t* dt, Dtstat_t* st)
+ 	{	memset(st, 0, sizeof(Dtstat_t));
+ 		st->meth  = dt->meth->type;
+ 		st->size  = dt->data->size;
+-		st->space = sizeof(Dtlist_t) + (dt->disc->link >= 0 ? 0 : dt->data->size*sizeof(Dthold_t));
++		st->space = (ssize_t)sizeof(Dtlist_t) + (dt->disc->link >= 0 ? 0 : dt->data->size*(ssize_t)sizeof(Dthold_t));
+ 	}
+ 
+ 	return (void*)dt->data->size;
+diff --git a/src/lib/libast/cdt/dtopen.c b/src/lib/libast/cdt/dtopen.c
+index 699551584..2b2d8e06f 100644
+--- a/src/lib/libast/cdt/dtopen.c
++++ b/src/lib/libast/cdt/dtopen.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"dthdr.h"
+@@ -35,7 +36,8 @@ Dt_t* _dtopen(Dtdisc_t* disc, Dtmethod_t* meth, unsigned long version)
+ {
+ 	Dtdata_t	*data;
+ 	Dt_t		*dt, pdt;
+-	int		ev, type;
++	int		ev;
++	unsigned int	type;
+ 
+ 	if(!disc || !meth)
+ 		return NULL;
+diff --git a/src/lib/libast/cdt/dtstat.c b/src/lib/libast/cdt/dtstat.c
+index b1db14e6c..31be71a7e 100644
+--- a/src/lib/libast/cdt/dtstat.c
++++ b/src/lib/libast/cdt/dtstat.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"dthdr.h"
+@@ -33,7 +34,7 @@ ssize_t dtstat(Dt_t* dt, Dtstat_t* dtst)
+ 
+ 	str = dtst->mesg;
+ 	end = &dtst->mesg[sizeof(dtst->mesg)] - 1;
+-	str += sfsprintf(str, end - str, "Objects=%d Levels=%d(Largest:", dtst->size, dtst->mlev+1);
++	str += sfsprintf(str, (size_t)(end - str), "Objects=%zd Levels=%zd(Largest:", dtst->size, dtst->mlev+1);
+ 
+ 	/* print top 3 levels */
+ 	for(k = maxk = 0; k <= dtst->mlev; ++k)
+@@ -42,7 +43,7 @@ ssize_t dtstat(Dt_t* dt, Dtstat_t* dtst)
+ 	if(maxk > 0)
+ 		maxk -= 1;
+ 	for(k = 0; k < 3 && maxk <= dtst->mlev; ++k, ++maxk)
+-		str += sfsprintf(str, end - str, " lev[%d]=%d", maxk, dtst->lsize[maxk] );
++		str += sfsprintf(str, (size_t)(end - str), " lev[%zd]=%zd", maxk, dtst->lsize[maxk] );
+ 	if (str < end)
+ 		*str++ = ')';
+ 	*str = 0;
+diff --git a/src/lib/libast/cdt/dtstrhash.c b/src/lib/libast/cdt/dtstrhash.c
+index 60dc98e4b..a7c156cfc 100644
+--- a/src/lib/libast/cdt/dtstrhash.c
++++ b/src/lib/libast/cdt/dtstrhash.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"dthdr.h"
+@@ -34,7 +35,7 @@ uint dtstrhash(uint h, void* args, ssize_t n)
+ #define FNV_PRIME	((1<<24) + (1<<8) + 0x93)
+ #define FNV_OFFSET	2166136261U
+ #endif
+-	h = (h == 0 || h == ~0) ? FNV_OFFSET : h;
++	h = (h == 0 || h == ~0U) ? FNV_OFFSET : h;
+ 	if(n <= 0) /* see discipline key definition for == 0 */
+ 	{	for(; *s != 0; ++s )
+ 			h = (h ^ s[0]) * FNV_PRIME;
+diff --git a/src/lib/libast/cdt/dttree.c b/src/lib/libast/cdt/dttree.c
+index 790d1f28c..6904dd191 100644
+--- a/src/lib/libast/cdt/dttree.c
++++ b/src/lib/libast/cdt/dttree.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"dthdr.h"
+@@ -207,7 +208,7 @@ static void* tstat(Dt_t* dt, Dtstat_t* st)
+ 		/**/DEBUG_ASSERT((dt->data->type&DT_SHARE) || size == dt->data->size);
+ 		st->meth  = dt->meth->type;
+ 		st->size  = size;
+-		st->space = sizeof(Dttree_t) + (dt->disc->link >= 0 ? 0 : size*sizeof(Dthold_t));
++		st->space = (ssize_t)(sizeof(Dttree_t) + (dt->disc->link >= 0 ? 0 : (size_t)size*sizeof(Dthold_t)));
+ 		return (void*)size;
+ 	}
+ }
+diff --git a/src/lib/libast/features/align.c b/src/lib/libast/features/align.c
+index 038814d6a..a5e416b3c 100644
+--- a/src/lib/libast/features/align.c
++++ b/src/lib/libast/features/align.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -40,7 +40,7 @@ union _u_
+ 	uintmax_t		u6;
+ 	_ast_fltmax_t		u7;
+ 	void*			u8;
+-	char*			(*u9)();
++	char*			(*u9)(void);
+ 	jmp_buf			u10;
+ };
+ 
+@@ -112,7 +112,7 @@ main(void)
+ 	printf("#define ALIGN_INTEGRAL		uintptr_t\n");
+ 	printf("#define ALIGN_INTEGER(x)	((intptr_t)(x))\n");
+ 	printf("#define ALIGN_POINTER(x)	((char*)(x))\n");
+-	if (bits2 == (align2 - 1))
++	if ((signed)bits2 == (align2 - 1))
+ 		printf("#define ALIGN_ROUND(x,y)	ALIGN_POINTER(ALIGN_INTEGER((x)+(y)-1)&~((y)-1))\n");
+ 	else
+ 		printf("#define ALIGN_ROUND(x,y)	ALIGN_POINTER(ALIGN_INTEGER(ALIGN_ALIGN(x)+(((y)+%d)/%d)-1)&~((((y)+%d)/%d)-1))\n", align0, align0, align0, align0);
+diff --git a/src/lib/libast/features/api b/src/lib/libast/features/api
+index 830f0f281..5d92a9ae6 100644
+--- a/src/lib/libast/features/api
++++ b/src/lib/libast/features/api
+@@ -6,10 +6,6 @@ api ast 20120528 regexec regnexec regsubexec
+ 
+ api ast 20120411 cmdopen
+ 
+-api ast 20110505 cmdopen
+-
+ api ast 20100601 pathaccess pathcanon pathcat pathpath pathrepl
+ 
+-api ast 20000308 sfkeyprintf
+-
+ print	#define _AST_VERSION	AST_VERSION	/* pre-20100601 compatibility */
+diff --git a/src/lib/libast/features/mode.c b/src/lib/libast/features/mode.c
+index a31b734a0..5b867a24f 100644
+--- a/src/lib/libast/features/mode.c
++++ b/src/lib/libast/features/mode.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -209,7 +209,7 @@ main(void)
+ #endif
+ #endif
+ #endif
+-	printf("#define BUFFERSIZE	%u\n", n);
++	printf("#define BUFFERSIZE	%d\n", n);
+ 	printf("\n");
+ 	return 0;
+ }
+diff --git a/src/lib/libast/features/omitted b/src/lib/libast/features/omitted
+index 6c0d94149..be678b1a4 100644
+--- a/src/lib/libast/features/omitted
++++ b/src/lib/libast/features/omitted
+@@ -33,7 +33,7 @@ tst	note{ check for Win32 .exe botches }end output{
+ 		struct stat	st;
+ 		char		buf[256];
+ 
+-		snprintf(buf, sizeof(buf), "rm -rf .iff-%d", getpid());
++		snprintf(buf, sizeof(buf), "rm -rf .iff-%d", (int)getpid());
+ 		if (_mkdir(buf+7, 0755))
+ 			return 1;
+ 		if (_chdir(buf+7))
+diff --git a/src/lib/libast/features/sfio b/src/lib/libast/features/sfio
+index 89076c35d..7e723a408 100644
+--- a/src/lib/libast/features/sfio
++++ b/src/lib/libast/features/sfio
+@@ -6,7 +6,7 @@ tst	- note{ number of bits in pointer }end output{
+ 	int
+ 	main(void)
+ 	{
+-		printf("#define _ptr_bits	%d\n", sizeof(char*) * 8);
++		printf("#define _ptr_bits	%zu\n", sizeof(char*) * 8);
+ 		return 0;
+ 	}
+ }end fail{
+diff --git a/src/lib/libast/features/signal.c b/src/lib/libast/features/signal.c
+index be5488bb9..43a48fd2a 100644
+--- a/src/lib/libast/features/signal.c
++++ b/src/lib/libast/features/signal.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -311,7 +311,7 @@ main(void)
+ 
+ 	k = 0;
+ 	for (i = 0; map[i].name; i++)
+-		if ((j = map[i].value) > 0 && j < elementsof(mapindex) && !mapindex[j])
++		if ((j = map[i].value) > 0 && j < (ssize_t)elementsof(mapindex) && !mapindex[j])
+ 		{
+ 			if (j > k)
+ 				k = j;
+@@ -325,9 +325,9 @@ main(void)
+ #else
+ 	j = i;
+ #endif
+-	if (j >= elementsof(mapindex))
+-		j = elementsof(mapindex) - 1;
+-	if (i <= j && i > 0 && i < elementsof(mapindex) && j > 0 && j < elementsof(mapindex))
++	if (j >= (ssize_t)elementsof(mapindex))
++		j = (ssize_t)elementsof(mapindex) - 1;
++	if (i <= j && i > 0 && i < (ssize_t)elementsof(mapindex) && j > 0 && j < (ssize_t)elementsof(mapindex))
+ 	{
+ 		if (j > k)
+ 			k = j;
+diff --git a/src/lib/libast/features/sizeof b/src/lib/libast/features/sizeof
+index 3cc5ef1cd..eed7b12e8 100644
+--- a/src/lib/libast/features/sizeof
++++ b/src/lib/libast/features/sizeof
+@@ -3,11 +3,11 @@ tst	- note{ sizeof(integral-type) }end output{
+ 	int
+ 	main(void)
+ 	{
+-		printf("#define _ast_sizeof_char	%d\n", sizeof(char));
+-		printf("#define _ast_sizeof_short	%d\n", sizeof(short));
+-		printf("#define _ast_sizeof_int		%d\n", sizeof(int));
+-		printf("#define _ast_sizeof_long	%d\n", sizeof(long));
+-		printf("#define _ast_sizeof_intmax_t	%d\n", sizeof(_ast_intmax_t));
++		printf("#define _ast_sizeof_char	%zu\n", sizeof(char));
++		printf("#define _ast_sizeof_short	%zu\n", sizeof(short));
++		printf("#define _ast_sizeof_int		%zu\n", sizeof(int));
++		printf("#define _ast_sizeof_long	%zu\n", sizeof(long));
++		printf("#define _ast_sizeof_intmax_t	%zu\n", sizeof(_ast_intmax_t));
+ 		return 0;
+ 	}
+ }end fail{
+diff --git a/src/lib/libast/features/tv b/src/lib/libast/features/tv
+index b63ade820..b483682e6 100644
+--- a/src/lib/libast/features/tv
++++ b/src/lib/libast/features/tv
+@@ -22,24 +22,24 @@ cat{
+ 
+ if mem stat.st_mtim.tv_nsec sys/stat.h {
+ 	/* POSIX-1.2017 */
+-	#define ST_ATIME_NSEC_GET(st)	((st)->st_atim.tv_nsec)
+-	#define ST_CTIME_NSEC_GET(st)	((st)->st_ctim.tv_nsec)
+-	#define ST_MTIME_NSEC_GET(st)	((st)->st_mtim.tv_nsec)
++	#define ST_ATIME_NSEC_GET(st)	((uint32_t)(st)->st_atim.tv_nsec)
++	#define ST_CTIME_NSEC_GET(st)	((uint32_t)(st)->st_ctim.tv_nsec)
++	#define ST_MTIME_NSEC_GET(st)	((uint32_t)(st)->st_mtim.tv_nsec)
+ }
+ elif mem stat.st_mtimespec.tv_nsec sys/stat.h {
+-	#define ST_ATIME_NSEC_GET(st)	((st)->st_atimespec.tv_nsec)
+-	#define ST_CTIME_NSEC_GET(st)	((st)->st_ctimespec.tv_nsec)
+-	#define ST_MTIME_NSEC_GET(st)	((st)->st_mtimespec.tv_nsec)
++	#define ST_ATIME_NSEC_GET(st)	((uint32_t)(st)->st_atimespec.tv_nsec)
++	#define ST_CTIME_NSEC_GET(st)	((uint32_t)(st)->st_ctimespec.tv_nsec)
++	#define ST_MTIME_NSEC_GET(st)	((uint32_t)(st)->st_mtimespec.tv_nsec)
+ }
+ elif mem stat.st_mtim.st__tim.tv_nsec sys/stat.h {
+-	#define ST_ATIME_NSEC_GET(st)	((st)->st_atim.st__tim.tv_nsec)
+-	#define ST_CTIME_NSEC_GET(st)	((st)->st_ctim.st__tim.tv_nsec)
+-	#define ST_MTIME_NSEC_GET(st)	((st)->st_mtim.st__tim.tv_nsec)
++	#define ST_ATIME_NSEC_GET(st)	((uint32_t)(st)->st_atim.st__tim.tv_nsec)
++	#define ST_CTIME_NSEC_GET(st)	((uint32_t)(st)->st_ctim.st__tim.tv_nsec)
++	#define ST_MTIME_NSEC_GET(st)	((uint32_t)(st)->st_mtim.st__tim.tv_nsec)
+ }
+ elif mem stat.st_mtimensec sys/stat.h {
+-	#define ST_ATIME_NSEC_GET(st)	((st)->st_atimensec)
+-	#define ST_CTIME_NSEC_GET(st)	((st)->st_ctimensec)
+-	#define ST_MTIME_NSEC_GET(st)	((st)->st_mtimensec)
++	#define ST_ATIME_NSEC_GET(st)	((uint32_t)(st)->st_atimensec)
++	#define ST_CTIME_NSEC_GET(st)	((uint32_t)(st)->st_ctimensec)
++	#define ST_MTIME_NSEC_GET(st)	((uint32_t)(st)->st_mtimensec)
+ }
+ else pass{ no_stat_nsec=1 }end {
+ 	#define ST_ATIME_NSEC_GET(st)	0
+diff --git a/src/lib/libast/include/aso.h b/src/lib/libast/include/aso.h
+index 9aacfc44b..430d2f7fb 100644
+--- a/src/lib/libast/include/aso.h
++++ b/src/lib/libast/include/aso.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -54,7 +54,7 @@
+ 
+ typedef int (*Asoerror_f)(int, const char*);
+ typedef void* (*Asoinit_f)(void*, const char*);
+-typedef ssize_t (*Asolock_f)(void*, ssize_t, void volatile*);
++typedef ptrdiff_t (*Asolock_f)(void*, ptrdiff_t, void volatile*);
+ 
+ typedef struct Asodisc_s
+ {
+@@ -78,9 +78,9 @@ extern Asometh_t*		_asometh(int, void*);
+ extern int			asoinit(const char*, Asometh_t*, Asodisc_t*);
+ extern int			asolock(unsigned int volatile*, unsigned int, int);
+ extern int			asoloop(uintmax_t);
+-extern int			asorelax(long);
++extern int			asorelax(uint32_t);
+ 
+-extern uint8_t			asocas8(uint8_t volatile*, int, int);
++extern uint8_t			asocas8(uint8_t volatile*, uint8_t, uint8_t);
+ extern uint8_t			asoget8(uint8_t volatile*);
+ extern uint8_t			asoinc8(uint8_t volatile*);
+ extern uint8_t			asodec8(uint8_t volatile*);
+diff --git a/src/lib/libast/include/cdt.h b/src/lib/libast/include/cdt.h
+index f1ae3a241..2368477c8 100644
+--- a/src/lib/libast/include/cdt.h
++++ b/src/lib/libast/include/cdt.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -109,9 +109,9 @@ struct _dtmethod_s
+ 
+ /* structure to hold methods that manipulate an object */
+ struct _dtdisc_s
+-{	int		key;	/* where the key resides 	*/
+-	int		size;	/* key size and type		*/
+-	int		link;	/* offset to Dtlink_t field	*/
++{	ptrdiff_t	key;	/* where the key resides 	*/
++	ptrdiff_t	size;	/* key size and type		*/
++	ptrdiff_t	link;	/* offset to Dtlink_t field	*/
+ 	Dtmake_f	makef;	/* object constructor		*/
+ 	Dtfree_f	freef;	/* object destructor		*/
+ 	Dtcompar_f	comparf;/* to compare two objects	*/
+@@ -274,7 +274,7 @@ extern void*		dllmeth(const char*, const char*, unsigned long);
+ 
+ #define _DTCMP(dt,k1,k2,dc) \
+ 			((dc)->comparf  ? (*(dc)->comparf)((dt), (k1), (k2), (dc)) : \
+-			 (dc)->size > 0 ? memcmp((void*)(k1), ((void*)k2), (dc)->size) : \
++			 (dc)->size > 0 ? memcmp((void*)(k1), ((void*)k2), (size_t)((dc)->size)) : \
+ 					  strcmp((char*)(k1), ((char*)k2)) )
+ 
+ #define _DTHSH(dt,ky,dc) ((dc)->hashf   ? (*(dc)->hashf)((dt), (ky), (dc)) : \
+diff --git a/src/lib/libast/man/aso.3 b/src/lib/libast/man/aso.3
+index c256d6896..1733d2013 100644
+--- a/src/lib/libast/man/aso.3
++++ b/src/lib/libast/man/aso.3
+@@ -29,7 +29,7 @@
+ .Cs
+ typedef int (*Asoerror_f)(int, const char*);
+ typedef void* (*Asoinit_f)(void*, const char*);
+-typedef ssize_t (*Asolock_f)(void*, ssize_t, void volatile*);
++typedef ptrdiff_t (*Asolock_f)(void*, ptrdiff_t, void volatile*);
+ 
+ typedef struct Asodisc_s
+ {
+@@ -102,7 +102,7 @@ Asometh_t*	asometh(int, void*);
+ int		asoinit(const char*, Asometh_t*, Asodisc_t*);
+ int		asolock(unsigned int volatile*, unsigned int, int);
+ int		asoloop(uintmax_t);
+-int		asorelax(long);
++int		asorelax(uint32_t);
+ .Ce
+ .SH DESCRIPTION
+ \fIASO\fP provides functions to perform atomic scalar operations.
+@@ -143,7 +143,7 @@ set to \f3newval\fP.
+ If multiple threads/processes are performing the same operations only one
+ will succeed with a return value of \f3tstval\fP.
+ The return value is the old value in \f3*dest\fP.
+-.Ss "  void asorelax(long nsec)"
++.Ss "  void asorelax(uint32_t nsec)"
+ This function causes the calling process or thread to briefly pause
+ for \f3nsec\fP nanoseconds.
+ It is useful to implement tight loops that occasionally yield control.
+-- 
+2.49.0
+

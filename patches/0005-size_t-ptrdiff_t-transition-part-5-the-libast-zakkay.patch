@@ -1,0 +1,4532 @@
+From db6e13d850611dba5344253d15003d1abf3f4897 Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
+
+This is the fifth of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The libast compatibility functions.
+- The libast miscellaneous functions (e.g. optget and friends).
+- The libast portability functions.
+
+Remarks:
+- The second argument of getfsstat can either be a long (FreeBSD)
+  or a size_t (OpenBSD). This patch opts to cast the second argument
+  as a size_t, which will produce a warning on FreeBSD and no warning
+  on OpenBSD.
+- _ast_assertfail and debug_fatal() end with abort(), so they were
+  marked with the noreturn attribute.
+- error_break() triggered a warning because it's given extern
+  despite being uses as though it were static, so it was
+  marked static to reflect actual usage.
+  - typefix() was not extern, but was missing its static designation,
+    so that has also been rectified.
+- Removed cmdopen_20110505() to avoid bitrot.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+2,617 => 2,131 => 248 (progression from part 4 => part 5 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/lib/libast/comp/arc4random.c  |   5 +-
+ src/lib/libast/comp/assert.c      |   5 +-
+ src/lib/libast/comp/eaccess.c     |   4 +-
+ src/lib/libast/comp/fmtmsglib.c   |  29 ++---
+ src/lib/libast/comp/fnmatch.c     |  22 ++--
+ src/lib/libast/comp/iconv.c       | 132 ++++++++++----------
+ src/lib/libast/comp/mktemp.c      |   5 +-
+ src/lib/libast/comp/nftw.c        |   9 +-
+ src/lib/libast/comp/omitted.c     |   4 +-
+ src/lib/libast/comp/setlocale.c   |  69 ++++++-----
+ src/lib/libast/comp/spawnveg.c    |   5 +-
+ src/lib/libast/comp/strftime.c    |   5 +-
+ src/lib/libast/comp/wordexp.c     |  22 ++--
+ src/lib/libast/include/cmdarg.h   |  33 +++--
+ src/lib/libast/include/debug.h    |   4 +-
+ src/lib/libast/include/glob.h     |   8 +-
+ src/lib/libast/misc/cmdarg.c      |  68 +++++------
+ src/lib/libast/misc/cmdlib.h      |   9 +-
+ src/lib/libast/misc/conformance.c |  17 +--
+ src/lib/libast/misc/debug.c       |   4 +-
+ src/lib/libast/misc/error.c       |  24 ++--
+ src/lib/libast/misc/fastfind.c    |  94 ++++++++-------
+ src/lib/libast/misc/findlib.h     |   4 +-
+ src/lib/libast/misc/fmtrec.c      |  25 ++--
+ src/lib/libast/misc/fts.c         |  22 ++--
+ src/lib/libast/misc/ftwalk.c      |  13 +-
+ src/lib/libast/misc/getcwd.c      |  21 ++--
+ src/lib/libast/misc/glob.c        |  40 +++----
+ src/lib/libast/misc/optesc.c      |  13 +-
+ src/lib/libast/misc/optget.c      | 192 +++++++++++++++---------------
+ src/lib/libast/misc/procopen.c    |  26 ++--
+ src/lib/libast/misc/recfmt.c      |  12 +-
+ src/lib/libast/misc/reclen.c      |   5 +-
+ src/lib/libast/misc/recstr.c      |   8 +-
+ src/lib/libast/misc/setenviron.c  |   9 +-
+ src/lib/libast/misc/sigcrit.c     |   5 +-
+ src/lib/libast/misc/systrace.c    |   7 +-
+ src/lib/libast/misc/translate.c   |   8 +-
+ src/lib/libast/port/astconf.c     |  58 ++++-----
+ src/lib/libast/port/astwinsize.c  |  10 +-
+ src/lib/libast/port/lc.c          |  86 ++++++-------
+ src/lib/libast/port/lcgen.c       |  45 +++----
+ src/lib/libast/port/mc.c          |  42 +++----
+ src/lib/libast/port/mnt.c         |  16 +--
+ src/lib/libast/std/assert.h       |   5 +-
+ 45 files changed, 633 insertions(+), 616 deletions(-)
+
+diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
+index 04cd34bda..903b60d90 100644
+--- a/src/lib/libast/comp/arc4random.c
++++ b/src/lib/libast/comp/arc4random.c
+@@ -1,11 +1,12 @@
+ /***********************************************************************
+ *                                                                      *
+ *              This file is part of the ksh 93u+m package              *
+-*          Copyright (c) 2023-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2023-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 OpenBSD License (reproduced below).                  *
+ *                                                                      *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -173,7 +174,7 @@ _ast_getentropy(void *s, size_t len)
+ 				continue;
+ 			return -1;
+ 		}
+-		o += r;
++		o += (size_t)r;
+ 	}
+ 	close(fd);
+ 	return 0;
+diff --git a/src/lib/libast/comp/assert.c b/src/lib/libast/comp/assert.c
+index d5e924998..5ce20330f 100644
+--- a/src/lib/libast/comp/assert.c
++++ b/src/lib/libast/comp/assert.c
+@@ -1,7 +1,7 @@
+ /***********************************************************************
+ *                                                                      *
+ *              This file is part of the ksh 93u+m package              *
+-*             Copyright (c) 2024 Contributors to ksh 93u+m             *
++*          Copyright (c) 2024-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -10,12 +10,13 @@
+ *         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
+ *                                                                      *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+ #include <ast.h>
+ 
+-void noreturn _ast_assertfail(const char *a, const char *fun, const char *file, int line)
++noreturn void _ast_assertfail(const char *a, const char *fun, const char *file, int line)
+ {
+ #if _has___func__ || _has___FUNCTION__
+ 	sfprintf(sfstderr,"\n*** assertion %s failed in %s(), %s:%d\n", a, fun, file, line);
+diff --git a/src/lib/libast/comp/eaccess.c b/src/lib/libast/comp/eaccess.c
+index 5afd2ecf8..06ba595a9 100644
+--- a/src/lib/libast/comp/eaccess.c
++++ b/src/lib/libast/comp/eaccess.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -42,7 +42,7 @@ eaccess(const char* path, int flags)
+ #if _lib_euidaccess
+ 	return euidaccess(path, flags);
+ #else
+-	int		mode;
++	mode_t		mode;
+ 	struct stat	st;
+ 
+ 	static int	init;
+diff --git a/src/lib/libast/comp/fmtmsglib.c b/src/lib/libast/comp/fmtmsglib.c
+index aab7247d2..7829c2f81 100644
+--- a/src/lib/libast/comp/fmtmsglib.c
++++ b/src/lib/libast/comp/fmtmsglib.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -91,7 +92,7 @@ _mm_severity(void)
+ 	{
+ 		char*		s;
+ 		MM_table_t*	p;
+-		int		n;
++		size_t		n;
+ 		int		c;
+ 		char*			e;
+ 		MM_table_t*		q;
+@@ -134,8 +135,8 @@ _mm_severity(void)
+ 			if (n)
+ 			{
+ 				for (p = (MM_table_t*)mm_severity_init; p->name; p++);
+-				n += p - (MM_table_t*)mm_severity_init + 1;
+-				if (severity = newof(0, MM_table_t, n, s - e))
++				n += (size_t)(p - (MM_table_t*)mm_severity_init + 1);
++				if (severity = newof(0, MM_table_t, n, (size_t)(s - e)))
+ 				{
+ 					s = (char*)severity + n * sizeof(MM_table_t);
+ 					strcpy(s, e);
+@@ -155,7 +156,7 @@ _mm_severity(void)
+ 							{
+ 							case 0:
+ 								*(s - 1) = 0;
+-								p->value = strtol(s, NULL, 0);
++								p->value = (unsigned int)strtoul(s, NULL, 0);
+ 								break;
+ 							case 1:
+ 								p->display = s;
+@@ -182,7 +183,7 @@ _mm_severity(void)
+ }
+ 
+ static char*
+-display(const MM_table_t* tab, int value, int mask)
++display(const MM_table_t* tab, unsigned int value, int mask)
+ {
+ 	while (tab->name)
+ 	{
+@@ -200,7 +201,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
+ 	char*		s;
+ 	char*		t;
+ 	MM_table_t*	p;
+-	int			n;
++	ptrdiff_t		n;
+ 	int			m;
+ 	int			r;
+ 	int			fd;
+@@ -244,13 +245,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
+ 				n = MM_LABEL_1_MAX;
+ 			sfprintf(sp, "%*.*s:", n, n, s);
+ 			s = ++t;
+-			if ((n = strlen(t)) > MM_LABEL_2_MAX)
++			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_2_MAX)
+ 				n = MM_LABEL_2_MAX;
+ 			sfprintf(sp, "%*.*s", n, n, s);
+ 		}
+ 		else
+ 		{
+-			if ((n = strlen(t)) > MM_LABEL_1_MAX)
++			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_1_MAX)
+ 				n = MM_LABEL_1_MAX;
+ 			sfprintf(sp, "%*.*s", n, n, s);
+ 		}
+@@ -287,7 +288,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
+ 		else break;
+ 		if ((mask & MM_label) && label)
+ 			sfprintf(sp, "%s: ", lab);
+-		if ((mask & MM_severity) && (s = display(mm_severity, severity, 0)))
++		if ((mask & MM_severity) && (s = display(mm_severity, (unsigned)severity, 0)))
+ 			sfprintf(sp, "%s: ", s);
+ 		n = sfstrtell(sp);
+ 		if ((mask & MM_text) && text)
+@@ -311,17 +312,17 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
+ 			if (mask & (MM_class|MM_source|MM_status))
+ 			{
+ 				sfputc(sp, ' ');
+-				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, m, 1)))
++				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, (unsigned)m, 1)))
+ 					sfprintf(sp, " %s", s);
+-				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, m, 1)))
++				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, (unsigned)m, 1)))
+ 					sfprintf(sp, " %s", s);
+-				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, m, 1)))
++				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, (unsigned)m, 1)))
+ 					sfprintf(sp, " %s", s);
+ 			}
+ 			sfputc(sp, '\n');
+ 		}
+ 		n = sfstrtell(sp);
+-		if (!(s = sfstruse(sp)) || write(fd, s, n) != n)
++		if (!(s = sfstruse(sp)) || write(fd, s, (size_t)n) != n)
+ 			r |= c;
+ 	}
+ 	sfstrclose(sp);
+diff --git a/src/lib/libast/comp/fnmatch.c b/src/lib/libast/comp/fnmatch.c
+index 7e423478d..6bb153cd2 100644
+--- a/src/lib/libast/comp/fnmatch.c
++++ b/src/lib/libast/comp/fnmatch.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -44,28 +45,29 @@ static const Map_t	map[] =
+ extern int
+ fnmatch(const char* pattern, const char* subject, int flags)
+ {
+-	int			reflags = REG_SHELL|REG_LEFT;
++	regflags_t		reflags = REG_SHELL|REG_LEFT;
+ 	const Map_t*		mp;
+ 	regex_t			re;
+ 	regmatch_t		match;
++	int			ret;
+ 
+ 	for (mp = map; mp < &map[elementsof(map)]; mp++)
+ 		if (flags & mp->fnm)
+-			reflags |= mp->reg;
++			reflags |= (regflags_t)mp->reg;
+ 	if (flags & FNM_LEADING_DIR)
+ 	{
+-		if (!(reflags = regcomp(&re, pattern, reflags)))
++		if (!(ret = regcomp(&re, pattern, reflags)))
+ 		{
+-			reflags = regexec(&re, subject, 1, &match, 0);
++			ret = regexec(&re, subject, 1, &match, 0);
+ 			regfree(&re);
+-			if (!reflags && (reflags = subject[match.rm_eo]))
+-				reflags = reflags == '/' ? 0 : FNM_NOMATCH;
++			if (!ret && (ret = subject[match.rm_eo]))
++				ret = ret == '/' ? 0 : FNM_NOMATCH;
+ 		}
+ 	}
+-	else if (!(reflags = regcomp(&re, pattern, reflags|REG_RIGHT)))
++	else if (!(ret = regcomp(&re, pattern, reflags|REG_RIGHT)))
+ 	{
+-		reflags = regexec(&re, subject, 0, NULL, 0);
++		ret = regexec(&re, subject, 0, NULL, 0);
+ 		regfree(&re);
+ 	}
+-	return reflags;
++	return ret;
+ }
+diff --git a/src/lib/libast/comp/iconv.c b/src/lib/libast/comp/iconv.c
+index df21cef5b..2fe9d9371 100644
+--- a/src/lib/libast/comp/iconv.c
++++ b/src/lib/libast/comp/iconv.c
+@@ -77,7 +77,7 @@ typedef struct Conv_s
+ } Conv_t;
+ 
+ static Conv_t*			freelist[4];
+-static int			freeindex;
++static size_t			freeindex;
+ 
+ static const char		name_local[] = "local";
+ static const char		name_native[] = "native";
+@@ -187,10 +187,10 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
+ 				bp = cp;
+ 				break;
+ 			}
+-			if (sub[1] > n && !isalpha(c))
++			if (sub[1] > (ssize_t)n && !isalpha(c))
+ 			{
+ 				bp = cp;
+-				n = sub[1];
++				n = (size_t)sub[1];
+ 			}
+ 		}
+ 		if (cp->ccode < 0)
+@@ -213,7 +213,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
+ 			}
+ 			else
+ 				m = "1";
+-			b += sfsprintf(b, e - b, cp->canon, m);
++			b += sfsprintf(b, (size_t)(e - b), cp->canon, m);
+ 		}
+ 		else if (cp->ccode == CC_NATIVE)
+ 		{
+@@ -233,7 +233,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
+ 					m = (const char*)"ISO-8859-1";
+ 					break;
+ 				}
+-			b += sfsprintf(b, e - b, "%s", m);
++			b += sfsprintf(b, (size_t)(e - b), "%s", m);
+ 		}
+ 		*b = 0;
+ #if DEBUG_TRACE
+@@ -245,7 +245,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
+ 	{
+ 		if (islower(c))
+ 			c = toupper(c);
+-		*b++ = c;
++		*b++ = (char)c;
+ 	}
+ 	*b = 0;
+ #if DEBUG_TRACE
+@@ -320,11 +320,11 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		}
+ 		else
+ 			w = c;
+-		*t++ = w;
++		*t++ = (unsigned char)w;
+ 	}
+-	*fn -= (char*)f - (*fb);
++	*fn -= (size_t)((char*)f - (*fb));
+ 	*fb = (char*)f;
+-	*tn -= (n = (char*)t - (*tb));
++	*tn -= (n = (size_t)((char*)t - (*tb)));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -358,7 +358,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			c = 1;
+ 			w = *f;
+ 		}
+-		else if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
++		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+ 		{
+ 			e = EINVAL;
+ 			break;
+@@ -366,7 +366,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		else if (!c)
+ 			c = 1;
+ 		if (!(w & ~0x7F))
+-			*t++ = w;
++			*t++ = (unsigned char)w;
+ 		else
+ 		{
+ 			if (!(w & ~0x7FF))
+@@ -376,7 +376,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 					e = E2BIG;
+ 					break;
+ 				}
+-				*t++ = 0xC0 + (w >> 6);
++				*t++ = (unsigned char)(0xC0 + (w >> 6));
+ 			}
+ 			else if (!(w & ~0xffff))
+ 			{
+@@ -385,7 +385,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 					e = E2BIG;
+ 					break;
+ 				}
+-				*t++ = 0xE0 + (w >> 12);
++				*t++ = (unsigned char)(0xE0 + (w >> 12));
+ 				*t++ = 0x80 + ((w >> 6 ) & 0x3F);
+ 			}
+ 			else
+@@ -397,9 +397,9 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		}
+ 		f += c;
+ 	}
+-	*fn -= (n = (char*)f - (*fb));
++	*fn -= (n = (size_t)((char*)f - (*fb)));
+ 	*fb = (char*)f;
+-	*tn -= (char*)t - (*tb);
++	*tn -= (size_t)((char*)t - (*tb));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -425,8 +425,8 @@ static int
+ umeinit(void)
+ {
+ 	const unsigned char*	s;
+-	int			i;
+-	int			c;
++	unsigned char		i;
++	unsigned char		c;
+ 
+ 	if (!ume_d[ume_D[0]])
+ 	{
+@@ -477,7 +477,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			else if ((w = ume_m[c]) == NOE)
+ 			{
+ 				s = 0;
+-				*t++ = c;
++				*t++ = (unsigned char)c;
+ 			}
+ 			else if (f >= (fe - 2))
+ 			{
+@@ -491,7 +491,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 				w = (w << 6) | ume_m[*f++];
+ 				w = (w << 6) | ume_m[*f++];
+ 				if (!(w & ~0xFF))
+-					*t++ = w;
++					*t++ = (unsigned char)w;
+ 				else if (t >= (te - 1))
+ 				{
+ 					f = p;
+@@ -508,11 +508,11 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		else if (c == '+')
+ 			s = 1;
+ 		else
+-			*t++ = c;
++			*t++ = (unsigned char)c;
+ 	}
+-	*fn -= (char*)f - (*fb);
++	*fn -= (size_t)((char*)f - (*fb));
+ 	*fb = (char*)f;
+-	*tn -= (n = (char*)t - (*tb));
++	*tn -= (n = (size_t)((char*)t - (*tb)));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -549,7 +549,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			c = 1;
+ 			w = *f;
+ 		}
+-		else if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
++		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+ 		{
+ 			e = EINVAL;
+ 			break;
+@@ -563,7 +563,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 				s = 0;
+ 				*t++ = '-';
+ 			}
+-			*t++ = w;
++			*t++ = (unsigned char)w;
+ 		}
+ 		else if (t >= (te - (4 + s)))
+ 		{
+@@ -585,9 +585,9 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 	}
+ 	if (s)
+ 		*t++ = '-';
+-	*fn -= (n = (char*)f - (*fb));
++	*fn -= (n = (size_t)((char*)f - (*fb)));
+ 	*fb = (char*)f;
+-	*tn -= (char*)t - (*tb);
++	*tn -= (size_t)((char*)t - (*tb));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -618,7 +618,7 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		w = *f++;
+ 		w = (w << 8) | *f++;
+ 		if (!(w & ~0xFF))
+-			*t++ = w;
++			*t++ = (unsigned char)w;
+ 		else if (t >= (te - 1))
+ 		{
+ 			f -= 2;
+@@ -631,9 +631,9 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			*t++ = w & 0xFF;
+ 		}
+ 	}
+-	*fn -= (char*)f - (*fb);
++	*fn -= (size_t)((char*)f - (*fb));
+ 	*fb = (char*)f;
+-	*tn -= (n = (char*)t - (*tb));
++	*tn -= (n = (size_t)((char*)t - (*tb)));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -667,7 +667,7 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			c = 1;
+ 			w = *f;
+ 		}
+-		if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
++		if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+ 		{
+ 			e = EINVAL;
+ 			break;
+@@ -678,9 +678,9 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		*t++ = w & 0xFF;
+ 		f += c;
+ 	}
+-	*fn -= (n = (char*)f - (*fb));
++	*fn -= (n = (size_t)((char*)f - (*fb)));
+ 	*fb = (char*)f;
+-	*tn -= (char*)t - (*tb);
++	*tn -= (size_t)((char*)t - (*tb));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -711,7 +711,7 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		w = *f++;
+ 		w = w | (*f++ << 8);
+ 		if (!(w & ~0xFF))
+-			*t++ = w;
++			*t++ = (unsigned char)w;
+ 		else if (t >= (te - 1))
+ 		{
+ 			f -= 2;
+@@ -724,9 +724,9 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			*t++ = w & 0xFF;
+ 		}
+ 	}
+-	*fn -= (char*)f - (*fb);
++	*fn -= (size_t)((char*)f - (*fb));
+ 	*fb = (char*)f;
+-	*tn -= (n = (char*)t - (*tb));
++	*tn -= (n = (size_t)((char*)t - (*tb)));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -760,7 +760,7 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			c = 1;
+ 			w = *f;
+ 		}
+-		else if ((c = (*ast.mb.towc)(&w, (char*)f, fe - f)) < 0)
++		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+ 		{
+ 			e = EINVAL;
+ 			break;
+@@ -771,9 +771,9 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 		*t++ = (w >> 8) & 0xFF;
+ 		f += c;
+ 	}
+-	*fn -= (n = (char*)f - (*fb));
++	*fn -= (n = (size_t)((char*)f - (*fb)));
+ 	*fb = (char*)f;
+-	*tn -= (char*)t - (*tb);
++	*tn -= (size_t)((char*)t - (*tb));
+ 	*tb = (char*)t;
+ 	RETURN(e, n, fn);
+ }
+@@ -788,7 +788,7 @@ _ast_iconv_open(const char* t, const char* f)
+ 	Conv_t*	cc;
+ 	int	fc;
+ 	int	tc;
+-	int	i;
++	size_t	i;
+ 
+ 	char	fr[64];
+ 	char	to[64];
+@@ -916,7 +916,7 @@ _ast_iconv_close(_ast_iconv_t cd)
+ {
+ 	Conv_t*	cc;
+ 	Conv_t*	oc;
+-	int	i;
++	size_t	i;
+ 	int	r = 0;
+ 
+ 	if (cd == (_ast_iconv_t)(-1))
+@@ -998,24 +998,24 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 				if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
+ 				{
+ 					errno = ENOMEM;
+-					return -1;
++					return (size_t)-1;
+ 				}
+ 				b = cc->buf;
+ 				i = cc->size;
+ 				tfb = *fb;
+ 				tfn = *fn;
+ 				if ((*cc->from.fun)(cc->cvt, &tfb, &tfn, &b, &i) == (size_t)(-1))
+-					return -1;
+-				tfn = b - cc->buf;
++					return (size_t)-1;
++				tfn = (size_t)(b - cc->buf);
+ 				tfb = cc->buf;
+ 				n = (*cc->to.fun)(cc->cvt, &tfb, &tfn, tb, tn);
+-				i = tfb - cc->buf;
++				i = (size_t)(tfb - cc->buf);
+ 				*fb += i;
+ 				*fn -= i;
+ 				return n;
+ 			}
+ 			if ((*cc->from.fun)(cc->cvt, fb, fn, tb, tn) == (size_t)(-1))
+-				return -1;
++				return (size_t)-1;
+ 			n -= *tn;
+ 			if (m = cc->to.map)
+ 			{
+@@ -1032,7 +1032,7 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+ 			if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
+ 			{
+ 				errno = ENOMEM;
+-				return -1;
++				return (size_t)-1;
+ 			}
+ 			if ((n = *fn) > cc->size)
+ 				n = cc->size;
+@@ -1081,7 +1081,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
+ 	char*		ts;
+ 	size_t*		e;
+ 	size_t		tn;
+-	size_t		r;
++	ssize_t		r;
+ 	int		ok;
+ 	Iconv_disc_t	compat;
+ 
+@@ -1102,7 +1102,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
+ 	ok = 1;
+ 	while (ok && *fn > 0)
+ 	{
+-		if (!(tb = (char*)sfreserve(op, -(tn + 1), SFIO_WRITE|SFIO_LOCKR)) || !(tn = sfvalue(op)))
++		if (!(tb = (char*)sfreserve(op, -((ssize_t)tn + 1), SFIO_WRITE|SFIO_LOCKR)) || !(tn = (size_t)sfvalue(op)))
+ 		{
+ 			if (!r)
+ 				r = -1;
+@@ -1141,7 +1141,7 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
+ 				{
+ 					if (!(disc->flags & ICONV_OMIT) && tn > 0)
+ 					{
+-						*ts++ = (disc->fill >= 0) ? disc->fill : **fb;
++						*ts++ = (disc->fill >= 0) ? (char)disc->fill : **fb;
+ 						tn--;
+ 					}
+ 					(*fb)++;
+@@ -1156,8 +1156,8 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
+ #if DEBUG_TRACE
+ error(DEBUG_TRACE, "AHA#%d iconv_write %d", __LINE__, ts - tb);
+ #endif
+-		sfwrite(op, tb, ts - tb);
+-		r += ts - tb;
++		sfwrite(op, tb, (size_t)(ts - tb));
++		r += (ptrdiff_t)(ts - tb);
+ 	}
+ 	if (e)
+ 		*e = disc->errors;
+@@ -1185,6 +1185,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+ 	ssize_t		r = 0;
+ 	int		ok = 1;
+ 	int		locked;
++	ptrdiff_t	m;
+ 	Iconv_disc_t	compat;
+ 
+ 	/*
+@@ -1203,12 +1204,13 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+ 	fe = OK;
+ 	ft = 0;
+ 	fn = n;
++	m = (ptrdiff_t)n;
+ 	do
+ 	{
+-		if (n != SFIO_UNBOUND)
+-			n = -((ssize_t)(n & (((size_t)(~0))>>1)));
+-		if ((!(fb = (char*)sfreserve(ip, n, locked = SFIO_LOCKR)) || !(fo = sfvalue(ip))) &&
+-		    (!(fb = (char*)sfreserve(ip, n, locked = 0)) || !(fo = sfvalue(ip))))
++		if (m != SFIO_UNBOUND)
++			m = -(m & (((~0))>>1));
++		if ((!(fb = (char*)sfreserve(ip, m, locked = SFIO_LOCKR)) || !(fo = (size_t)sfvalue(ip))) &&
++		    (!(fb = (char*)sfreserve(ip, m, locked = 0)) || !(fo = (size_t)sfvalue(ip))))
+ 			break;
+ 		fs = fb;
+ 		fn = fo;
+@@ -1219,7 +1221,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+ 			break;
+ 		}
+ 		ts = tb;
+-		tn = sfvalue(op);
++		tn = (size_t)sfvalue(op);
+ 		while (fn > 0 && _ast_iconv(cd, &fs, &fn, &ts, &tn) == (size_t)(-1))
+ 		{
+ 			switch (errno)
+@@ -1245,7 +1247,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+ 				{
+ 					if (!(disc->flags & ICONV_OMIT) && tn > 0)
+ 					{
+-						*ts++ = (disc->fill >= 0) ? disc->fill : *fs;
++						*ts++ = (disc->fill >= 0) ? (char)disc->fill : *fs;
+ 						tn--;
+ 					}
+ 					fs++;
+@@ -1257,21 +1259,21 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+ 			}
+ 			break;
+ 		}
+-		sfwrite(op, tb, ts - tb);
++		sfwrite(op, tb, (size_t)(ts - tb));
+ 		r += ts - tb;
+ 		ts = tb;
+ 		if (locked)
+-			sfread(ip, fb, fs - fb);
++			sfread(ip, fb, (size_t)(fs - fb));
+ 		else
+-			for (i = fn; --i >= (fs - fb);)
++			for (i = fn; (ptrdiff_t)(--i) >= (fs - fb);)
+ 				sfungetc(ip, fb[i]);
+-		if (n != SFIO_UNBOUND)
++		if (m != SFIO_UNBOUND)
+ 		{
+-			if (n <= (fs - fb))
++			if (m <= fs - fb)
+ 				break;
+-			n -= fs - fb;
++			m -= fs - fb;
+ 		}
+-		ft += (fs - fb);
++		ft += (size_t)(fs - fb);
+ 		if (fn == fo)
+ 			fn++;
+ 	} while (ok);
+@@ -1282,7 +1284,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+ 		sfwrite(op, tb, 0);
+ 		if (ts > tb)
+ 		{
+-			sfwrite(op, tb, ts - tb);
++			sfwrite(op, tb, (size_t)(ts - tb));
+ 			r += ts - tb;
+ 		}
+ 	}
+diff --git a/src/lib/libast/comp/mktemp.c b/src/lib/libast/comp/mktemp.c
+index 0a572eed4..3b7063f0a 100644
+--- a/src/lib/libast/comp/mktemp.c
++++ b/src/lib/libast/comp/mktemp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -37,7 +38,7 @@ temp(char* buf, int* fdp)
+ {
+ 	char*	s;
+ 	char*	d;
+-	int	n;
++	size_t	n;
+ 	size_t	len;
+ 
+ 	len = strlen(buf);
+diff --git a/src/lib/libast/comp/nftw.c b/src/lib/libast/comp/nftw.c
+index eebdc3b4e..db9d9ca8d 100644
+--- a/src/lib/libast/comp/nftw.c
++++ b/src/lib/libast/comp/nftw.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -37,11 +38,11 @@ nftw_user(Ftw_t* ftw)
+ 		n = FTW_DNR;
+ 	else if ((n & FTW_SL) && (!(nftw_flags & FTW_PHYSICAL) || stat(ftw->path, &st)))
+ 		n = FTW_SLN;
+-	nftw.base = ftw->pathlen - ftw->namelen;
+-	nftw.level = ftw->level;
++	nftw.base = (int)(ftw->pathlen - ftw->namelen);
++	nftw.level = (int)ftw->level;
+ 	nftw.quit = 0;
+ 	n = (*nftw_userf)(ftw->path, &ftw->statb, n, &nftw);
+-	ftw->status = nftw.quit;
++	ftw->status = (short)nftw.quit;
+ 	return n;
+ }
+ 
+diff --git a/src/lib/libast/comp/omitted.c b/src/lib/libast/comp/omitted.c
+index 4c8396676..1c83069c1 100644
+--- a/src/lib/libast/comp/omitted.c
++++ b/src/lib/libast/comp/omitted.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1995-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -357,7 +357,7 @@ convert(const char* d, const char* s)
+ {
+ 	const char*	t;
+ 	const char*	v;
+-	int		i;
++	size_t		i;
+ 
+ 	for (i = 0; i < elementsof(convertvars); i++)
+ 	{
+diff --git a/src/lib/libast/comp/setlocale.c b/src/lib/libast/comp/setlocale.c
+index fab282cf9..3c5607c58 100644
+--- a/src/lib/libast/comp/setlocale.c
++++ b/src/lib/libast/comp/setlocale.c
+@@ -202,7 +202,7 @@ debug_mbtowc(wchar_t* p, const char* s, size_t n)
+ 		return -1;
+ 	if ((w = ((unsigned char*)s)[1]) < '0' || w > ('0' + DX))
+ 		goto single;
+-	if ((w -= '0' - DD) > n)
++	if ((w -= '0' - DD) > (ssize_t)n)
+ 		return -1;
+ 	r = s + w - 1;
+ 	q = s += 2;
+@@ -237,7 +237,7 @@ debug_wctomb(char* s, wchar_t c)
+ 	{
+ 		w++;
+ 		if (s)
+-			*s = c;
++			*s = (char)c;
+ 	}
+ 	else if ((i = c & ((1<<DZ)-1)) > DX)
+ 		return -1;
+@@ -249,12 +249,12 @@ debug_wctomb(char* s, wchar_t c)
+ 		c >>= DZ;
+ 		w++;
+ 		if (s)
+-			*s++ = i + '0';
++			*s++ = (char)(i + '0');
+ 		while (i--)
+ 		{
+ 			w++;
+ 			if (s)
+-				*s++ = (k = c & ((1<<DC)-1)) ? k : '?';
++				*s++ = (k = c & ((1<<DC)-1)) ? (char)k : '?';
+ 			c >>= DC;
+ 		}
+ 		w++;
+@@ -315,7 +315,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
+ 				{
+ 					for (q = s + 2; q < r; q++)
+ 						if (t < e)
+-							*t++ = debug_order[*((unsigned char*)q)];
++							*t++ = (char)debug_order[*((unsigned char*)q)];
+ 					while (w++ < DX)
+ 						if (t < e)
+ 							*t++ = 1;
+@@ -330,9 +330,9 @@ debug_strxfrm(char* t, const char* s, size_t n)
+ 			if (t)
+ 			{
+ 				if (t < e)
+-					*t++ = debug_order[((unsigned char*)s)[0]];
++					*t++ = (char)debug_order[((unsigned char*)s)[0]];
+ 				if (t < e)
+-					*t++ = debug_order[((unsigned char*)s)[1]];
++					*t++ = (char)debug_order[((unsigned char*)s)[1]];
+ 				if (t < e)
+ 					*t++ = 1;
+ 				if (t < e)
+@@ -347,11 +347,11 @@ debug_strxfrm(char* t, const char* s, size_t n)
+ 			if (t)
+ 			{
+ 				if (t < e)
+-					*t++ = debug_order[((unsigned char*)s)[0]];
++					*t++ = (char)debug_order[((unsigned char*)s)[0]];
+ 				if (t < e)
+-					*t++ = debug_order[((unsigned char*)s)[1]];
++					*t++ = (char)debug_order[((unsigned char*)s)[1]];
+ 				if (t < e)
+-					*t++ = debug_order[((unsigned char*)s)[2]];
++					*t++ = (char)debug_order[((unsigned char*)s)[2]];
+ 				if (t < e)
+ 					*t++ = 1;
+ 			}
+@@ -362,7 +362,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
+ 		if (t)
+ 		{
+ 			if (t < e)
+-				*t++ = debug_order[((unsigned char*)s)[0]];
++				*t++ = (char)debug_order[((unsigned char*)s)[0]];
+ 			if (t < e)
+ 				*t++ = 1;
+ 			if (t < e)
+@@ -377,7 +377,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
+ 		return z;
+ 	if (t < e)
+ 		*t = 0;
+-	return t - o;
++	return (size_t)(t - o);
+ }
+ 
+ static int
+@@ -458,7 +458,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
+ 		*p = *s;
+ 		return 1;
+ 	}
+-	return mbrtowc(p, s, n, &sjis_state);
++	return (int)mbrtowc(p, s, n, &sjis_state);
+ }
+ 
+ #else
+@@ -470,7 +470,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
+ static int
+ utf8_wctomb(char* u, wchar_t w)
+ {
+-	return (int)utf32toutf8(u, w);
++	return (int)utf32toutf8(u, (uint32_t)w);
+ }
+ 
+ static const uint32_t		utf8mask[] =
+@@ -509,7 +509,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
+ {
+ 	unsigned char*	sp = (unsigned char*)str;
+ 	size_t		m;
+-	int		i;
++	size_t		i;
+ 	int		c;
+ 	wchar_t		w = 0;
+ 
+@@ -534,17 +534,17 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
+ 					goto invalid;
+ 				w = (w<<6) | (c&0x3f);
+ 			}
+-			if (!(utf8mask[m] & w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
++			if (!(utf8mask[m] & (uint32_t)w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
+ 				goto invalid;
+ 			*wp = w;
+ 		}
+-		return m;
++		return (int)m;
+ 	}
+ 	if (!*sp)
+ 		return ast.mb.sync = 0;
+  invalid:
+ 	errno = EILSEQ;
+-	ast.mb.sync = (const char*)sp - str;
++	ast.mb.sync = (uint32_t)((const char*)sp - str);
+ 	return -1;
+ }
+ 
+@@ -2486,15 +2486,15 @@ single(int category, Lc_t* lc, unsigned int flags)
+  * return <0:composite-error 0:not-composite >0:composite-ok
+  */
+ 
+-static int
++static size_t
+ composite(const char* s, int initialize)
+ {
+ 	const char*	t;
+-	int		i;
+-	int		j;
+-	int		k;
+-	int		n;
+-	int		m;
++	size_t		i;
++	size_t		j;
++	size_t		k;
++	size_t		n;
++	size_t		m;
+ 	const char*	w;
+ 	Lc_t*		p;
+ 	int		cat[AST_LC_COUNT];
+@@ -2514,11 +2514,10 @@ composite(const char* s, int initialize)
+ 			while (*t && *s++ == *t++);
+ 			if (!*t && *s++ == '=')
+ 			{
+-				cat[j++] = i;
++				cat[j++] = (int)i;
+ 				if (s[0] != 'L' || s[1] != 'C' || s[2] != '_')
+ 					break;
+ 				w = s;
+-				i = -1;
+ 			}
+ 		}
+ 		for (s = w; *s && *s != '='; s++);
+@@ -2526,7 +2525,7 @@ composite(const char* s, int initialize)
+ 		{
+ 			for (i = 0; i < k; i++)
+ 				single(stk[i], NULL, 0);
+-			return -1;
++			return (size_t)-1;
+ 		}
+ 		w = ++s;
+ 		for (;;)
+@@ -2538,7 +2537,7 @@ composite(const char* s, int initialize)
+ 			}
+ 			else if (*s++ == ';')
+ 			{
+-				if ((m = s - w - 1) >= sizeof(buf))
++				if ((m = (size_t)(s - w - 1)) >= sizeof(buf))
+ 					m = sizeof(buf) - 1;
+ 				memcpy(buf, w, m);
+ 				buf[m] = 0;
+@@ -2553,7 +2552,7 @@ composite(const char* s, int initialize)
+ 				{
+ 					for (i = 0; i < k; i++)
+ 						single(stk[i], NULL, 0);
+-					return -1;
++					return (size_t)-1;
+ 				}
+ 				stk[k++] = cat[i];
+ 			}
+@@ -2568,7 +2567,7 @@ composite(const char* s, int initialize)
+ 			p = lcmake(w);
+ 		else
+ 		{
+-			if ((j = s - w - 1) >= sizeof(buf))
++			if ((j = (size_t)(s - w - 1)) >= sizeof(buf))
+ 				j = sizeof(buf) - 1;
+ 			memcpy(buf, w, j);
+ 			buf[j] = 0;
+@@ -2576,11 +2575,11 @@ composite(const char* s, int initialize)
+ 		}
+ 		if (!initialize)
+ 		{
+-			if (!single(n, p, 0))
++			if (!single((int)n, p, 0))
+ 			{
+ 				for (i = 1; i < n; i++)
+-					single(i, NULL, 0);
+-				return -1;
++					single((int)i, NULL, 0);
++				return (size_t)-1;
+ 			}
+ 		}
+ 		else if (!lc_categories[n].prev && !(ast.locale.set & AST_LC_internal))
+@@ -2607,7 +2606,7 @@ _ast_setlocale(int category, const char* locale)
+ 	int			i;
+ 	int			j;
+ 	int			k;
+-	int			f;
++	unsigned int		f;
+ 	Lc_t*			p;
+ 	int			cat[AST_LC_COUNT];
+ 
+@@ -2761,7 +2760,7 @@ _ast_setlocale(int category, const char* locale)
+ 			lc_categories[category].prev = p;
+ 		return (char*)locales[category]->name;
+ 	}
+-	else if (composite(locale, 0) < 0)
++	else if (composite(locale, 0) == (size_t)-1)
+ 		return NULL;
+ 	else if (lc_all != p)
+ 	{
+diff --git a/src/lib/libast/comp/spawnveg.c b/src/lib/libast/comp/spawnveg.c
+index f4efe4679..b747e5840 100644
+--- a/src/lib/libast/comp/spawnveg.c
++++ b/src/lib/libast/comp/spawnveg.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -38,7 +38,8 @@
+ pid_t
+ spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid, int tcfd)
+ {
+-	int				err, flags = 0;
++	int				err;
++	short				flags = 0;
+ 	pid_t				pid;
+ 	posix_spawnattr_t		attr;
+ #if _lib_posix_spawn_file_actions_addtcsetpgrp_np
+diff --git a/src/lib/libast/comp/strftime.c b/src/lib/libast/comp/strftime.c
+index 6fba37b7f..cd4d1007f 100644
+--- a/src/lib/libast/comp/strftime.c
++++ b/src/lib/libast/comp/strftime.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -90,7 +91,7 @@ strftime(char* buf, size_t len, const char* format, const struct tm* tm)
+ 	t = tmtime(&tl, TM_LOCALZONE);
+ 	if (!(s = tmfmt(buf, len, format, &t)))
+ 		return 0;
+-	return s - buf;
++	return (size_t)(s - buf);
+ }
+ 
+ #endif
+diff --git a/src/lib/libast/comp/wordexp.c b/src/lib/libast/comp/wordexp.c
+index 8142caff8..0572ec594 100644
+--- a/src/lib/libast/comp/wordexp.c
++++ b/src/lib/libast/comp/wordexp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -38,11 +38,11 @@ struct list
+ static int	sh_unquote(char* string)
+ {
+ 	char *sp=string, *dp;
+-	int c;
++	char c;
+ 	while((c= *sp) && c!='\'')
+ 		sp++;
+ 	if(c==0)
+-		return sp-string;
++		return (int)(sp-string);
+ 	if((dp=sp) > string && sp[-1]=='$')
+ 	{
+ 		int n=stresc(sp+1);
+@@ -56,7 +56,7 @@ static int	sh_unquote(char* string)
+ 			*dp++ = c;
+ 	}
+ 	*dp=0;
+-	return dp-string;
++	return (int)(dp-string);
+ }
+ 
+ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
+@@ -64,7 +64,7 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
+ 	Sfio_t *iop;
+ 	char *cp=(char*)string;
+ 	int c,quoted=0,literal=0,ac=0;
+-	int offset;
++	ptrdiff_t offset;
+ 	char *savebase,**av;
+ 	if(offset=stktell(stkstd))
+ 		savebase = stkfreeze(stkstd,0);
+@@ -150,8 +150,8 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
+ 	if(flags&WRDE_DOOFFS)
+ 		c += wdarg->we_offs;
+ 	if(flags&WRDE_APPEND)
+-		av = (char**)realloc(&wdarg->we_wordv[-1], (wdarg->we_wordc+c)*sizeof(char*));
+-	else if(av = (char**)malloc(c*sizeof(char*)))
++		av = (char**)realloc(&wdarg->we_wordv[-1], (wdarg->we_wordc+(size_t)c)*sizeof(char*));
++	else if(av = (char**)malloc((size_t)c*sizeof(char*)))
+ 	{
+ 		if(flags&WRDE_DOOFFS)
+ 			memset(av,0,(wdarg->we_offs+1)*sizeof(char*));
+@@ -160,8 +160,8 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
+ 	}
+ 	if(!av)
+ 		return WRDE_NOSPACE;
+-	c = stktell(stkstd);
+-	if(!(cp = (char*)malloc(sizeof(char*)+c)))
++	c = (int)stktell(stkstd);
++	if(!(cp = (char*)malloc(sizeof(char*)+(size_t)c)))
+ 	{
+ 		c=WRDE_NOSPACE;
+ 		goto err;
+@@ -172,10 +172,10 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
+ 	wdarg->we_wordv = av;
+ 	if(flags&WRDE_APPEND)
+ 		av += wdarg->we_wordc;
+-	wdarg->we_wordc += ac;
++	wdarg->we_wordc += (size_t)ac;
+ 	if(flags&WRDE_DOOFFS)
+ 		av += wdarg->we_offs;
+-	memcpy(cp,stkptr(stkstd,offset),c);
++	memcpy(cp,stkptr(stkstd,offset),(size_t)c);
+ 	while(ac-- > 0)
+ 	{
+ 		*av++ = cp;
+diff --git a/src/lib/libast/include/cmdarg.h b/src/lib/libast/include/cmdarg.h
+index 8ab85a048..ca2737d4d 100644
+--- a/src/lib/libast/include/cmdarg.h
++++ b/src/lib/libast/include/cmdarg.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -31,20 +31,20 @@
+ 
+ #define CMD_VERSION	20120411L
+ 
+-#define CMD_CHECKED	(1<<9)		/* cmdopen() argv[0] ok		*/
+-#define CMD_EMPTY	(1<<0)		/* run once, even if no args	*/
+-#define CMD_EXACT	(1<<1)		/* last command must have argmax*/
+-#define CMD_EXIT	(1<<11)		/* fatal error_info.exit()	*/
+-#define CMD_IGNORE	(1<<2)		/* ignore EXIT_QUIT exit	*/
+-#define CMD_INSERT	(1<<3)		/* argpat for insertion		*/
+-#define CMD_MINIMUM	(1<<4)		/* argmax is a minimum		*/
+-#define CMD_NEWLINE	(1<<5)		/* echo separator is newline	*/
+-#define CMD_POST	(1<<6)		/* argpat is post arg position	*/
+-#define CMD_QUERY	(1<<7)		/* trace and query each command	*/
+-#define CMD_SILENT	(1<<10)		/* no error messages		*/
+-#define CMD_TRACE	(1<<8)		/* trace each command		*/
++#define CMD_CHECKED	(1U<<9)		/* cmdopen() argv[0] ok		*/
++#define CMD_EMPTY	(1U<<0)		/* run once, even if no args	*/
++#define CMD_EXACT	(1U<<1)		/* last command must have argmax*/
++#define CMD_EXIT	(1U<<11)	/* fatal error_info.exit()	*/
++#define CMD_IGNORE	(1U<<2)		/* ignore EXIT_QUIT exit	*/
++#define CMD_INSERT	(1U<<3)		/* argpat for insertion		*/
++#define CMD_MINIMUM	(1U<<4)		/* argmax is a minimum		*/
++#define CMD_NEWLINE	(1U<<5)		/* echo separator is newline	*/
++#define CMD_POST	(1U<<6)		/* argpat is post arg position	*/
++#define CMD_QUERY	(1U<<7)		/* trace and query each command	*/
++#define CMD_SILENT	(1U<<10)	/* no error messages		*/
++#define CMD_TRACE	(1U<<8)		/* trace each command		*/
+ 
+-#define CMD_USER	(1<<12)
++#define CMD_USER	(1U<<12)
+ 
+ #define CMDDISC(d,f,e)	(memset(d,0,sizeof(*(d))),(d)->version=CMD_VERSION,(d)->flags=(f),(d)->errorf=(e))
+ 
+@@ -72,10 +72,9 @@ typedef struct Cmdarg_s			/* cmdopen() handle		*/
+ } Cmdarg_t;
+ 
+ #ifndef cmdopen
+-extern Cmdarg_t*	cmdopen(char**, int, int, const char*, int);
++extern Cmdarg_t*	cmdopen(char**, int, ptrdiff_t, const char*, uint32_t);
+ #endif
+-extern Cmdarg_t*	cmdopen_20110505(char**, int, int, const char*, int, Error_f);
+-extern Cmdarg_t*	cmdopen_20120411(char**, int, int, const char*, Cmddisc_t*);
++extern Cmdarg_t*	cmdopen_20120411(char**, int, ptrdiff_t, const char*, Cmddisc_t*);
+ extern int		cmdflush(Cmdarg_t*);
+ extern int		cmdarg(Cmdarg_t*, const char*, int);
+ extern int		cmdclose(Cmdarg_t*);
+diff --git a/src/lib/libast/include/debug.h b/src/lib/libast/include/debug.h
+index 01fdbee63..f549f2efa 100644
+--- a/src/lib/libast/include/debug.h
++++ b/src/lib/libast/include/debug.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -94,7 +94,7 @@
+ #endif
+ 
+ extern double		debug_elapsed(int);
+-extern void		debug_fatal(const char*, int);
++extern noreturn void	debug_fatal(const char*, int);
+ extern void		systrace(const char*);
+ 
+ #endif
+diff --git a/src/lib/libast/include/glob.h b/src/lib/libast/include/glob.h
+index 247c519b5..ae652f465 100644
+--- a/src/lib/libast/include/glob.h
++++ b/src/lib/libast/include/glob.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -59,7 +59,7 @@ struct _glob_
+ 	const char*	gl_suffix;
+ 	unsigned char*	gl_intr;
+ 
+-	int		gl_delim;
++	char		gl_delim;
+ 
+ 	void*		gl_handle;
+ 	void*		(*gl_diropen)(glob_t*, const char*);
+@@ -79,9 +79,9 @@ struct _glob_
+ 	/* AST additions */
+ 
+ 	char*		(*gl_nextdir)(glob_t*, char*);
+-	unsigned long	gl_status;
++	int		gl_status;
+ 	unsigned long	gl_version;
+-	unsigned short	gl_extra;
++	size_t		gl_extra;
+ 
+ #ifdef _GLOB_PRIVATE_
+ 	_GLOB_PRIVATE_
+diff --git a/src/lib/libast/misc/cmdarg.c b/src/lib/libast/misc/cmdarg.c
+index 2a54a5e1b..1bd65031b 100644
+--- a/src/lib/libast/misc/cmdarg.c
++++ b/src/lib/libast/misc/cmdarg.c
+@@ -41,7 +41,7 @@ cmdrun(int argc, char** argv, Cmddisc_t* disc)
+ }
+ 
+ Cmdarg_t*
+-cmdopen(char** argv, int argmax, int size, const char* argpat, int flags)
++cmdopen(char** argv, int argmax, ptrdiff_t size, const char* argpat, uint32_t flags)
+ {
+ 	Cmddisc_t	disc;
+ 
+@@ -72,18 +72,6 @@ cmdopen(char** argv, int argmax, int size, const char* argpat, int flags)
+ 
+ static const char*	echo[] = { "echo", 0 };
+ 
+-Cmdarg_t*
+-cmdopen_20110505(char** argv, int argmax, int size, const char* argpat, int flags, Error_f errorf)
+-{
+-	Cmddisc_t	disc;
+-
+-	memset(&disc, 0, sizeof(disc));
+-	disc.version = CMD_VERSION;
+-	disc.flags = flags;
+-	disc.errorf = errorf;
+-	return cmdopen_20120411(argv, argmax, size, argpat, &disc);
+-}
+-
+ /*
+  * open a cmdarg stream
+  * initialize the command for execution
+@@ -91,22 +79,22 @@ cmdopen_20110505(char** argv, int argmax, int size, const char* argpat, int flag
+  */
+ 
+ Cmdarg_t*
+-cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_t* disc)
++cmdopen_20120411(char** argv, int argmax, ptrdiff_t size, const char* argpat, Cmddisc_t* disc)
+ {
+ 	Cmdarg_t*	cmd;
+-	int		n;
++	ptrdiff_t	n;
+ 	char**		p;
+ 	char*		s;
+ 	char*		sh;
+ 	char*		exe;
+-	int		c;
+-	int		m;
++	ptrdiff_t	c;
++	ptrdiff_t	m;
+ 	int		argc;
+-	long		x;
++	ptrdiff_t	x;
+ 
+ 	char**		post = 0;
+ 
+-	n = sizeof(char**);
++	n = (ptrdiff_t)sizeof(char**);
+ 	if (*argv)
+ 	{
+ 		for (p = argv + 1; *p; p++)
+@@ -120,23 +108,23 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
+ 			else
+ 				n += strlen(*p) + 1;
+ 		}
+-		argc = p - argv;
++		argc = (int)(p - argv);
+ 	}
+ 	else
+ 		argc = 0;
+ 	for (p = environ; *p; p++)
+-		n += sizeof(char**) + strlen(*p) + 1;
+-	if ((x = astconf_long(CONF_ARG_MAX)) <= 0)
++		n += (ptrdiff_t)(sizeof(char**) + strlen(*p) + 1);
++	if ((x = (ptrdiff_t)astconf_long(CONF_ARG_MAX)) <= 0)
+ 		x = ARG_MAX;
+ 	if (size <= 0 || size > x)
+ 		size = x;
+ 	sh = pathshell();
+-	m = n + (argc + 4) * sizeof(char**) + strlen(sh) + 1;
+-	m = roundof(m, sizeof(char**));
++	m = n + (argc + 4) * (ptrdiff_t)sizeof(char**) + (ptrdiff_t)strlen(sh) + 1;
++	m = (ptrdiff_t)roundof((size_t)m, sizeof(char**));
+ 	if (size < m)
+ 	{
+ 		if (disc->errorf)
+-			(*disc->errorf)(NULL, sh, 2, "size must be at least %d", m);
++			(*disc->errorf)(NULL, sh, 2, "size must be at least %td", m);
+ 		return NULL;
+ 	}
+ 	if ((m = x / 10) > 2048)
+@@ -144,8 +132,8 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
+ 	if (size > (x - m))
+ 		size = x - m;
+ 	n = size - n;
+-	m = ((disc->flags & CMD_INSERT) && argpat) ? (strlen(argpat) + 1) : 0;
+-	if (!(cmd = newof(0, Cmdarg_t, 1, n + m)))
++	m = ((disc->flags & CMD_INSERT) && argpat) ? ((ptrdiff_t)strlen(argpat) + 1) : 0;
++	if (!(cmd = newof(0, Cmdarg_t, 1, (size_t)(n + m))))
+ 	{
+ 		if (disc->errorf)
+ 			(*disc->errorf)(NULL, sh, ERROR_SYSTEM|2, "out of memory");
+@@ -156,9 +144,9 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
+ 	cmd->errorf = disc->errorf;
+ 	if (!(cmd->runf = disc->runf))
+ 		cmd->runf = cmdrun;
+-	c = n / sizeof(char**);
++	c = n / (ptrdiff_t)sizeof(char**);
+ 	if (argmax <= 0 || argmax > c)
+-		argmax = c;
++		argmax = (int)c;
+ 	s = cmd->buf;
+ 	if (!(exe = argv[0]))
+ 	{
+@@ -172,13 +160,13 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
+ 	}
+ 	else if (!(disc->flags & CMD_CHECKED))
+ 	{
+-		if (!pathpath(exe, NULL, PATH_REGULAR|PATH_EXECUTE, s, n + m))
++		if (!pathpath(exe, NULL, PATH_REGULAR|PATH_EXECUTE, s, (size_t)(n + m)))
+ 		{
+-			n = EXIT_NOTFOUND;
++			int ret = EXIT_NOTFOUND;
+ 			if (cmd->errorf)
+ 				(*cmd->errorf)(NULL, cmd, ERROR_SYSTEM|2, "%s: command not found", exe);
+ 			if (disc->flags & CMD_EXIT)
+-				(*error_info.exit)(n);
++				(*error_info.exit)(ret);
+ 			free(cmd);
+ 			return NULL;
+ 		}
+@@ -188,10 +176,10 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
+ 	if (m)
+ 	{
+ 		cmd->insert = strcpy(s, argpat);
+-		cmd->insertlen = m - 1;
++		cmd->insertlen = (size_t)m - 1;
+ 		s += m;
+ 	}
+-	s += sizeof(char**) - (s - cmd->buf) % sizeof(char**);
++	s += sizeof(char**) - (size_t)(s - cmd->buf) % sizeof(char**);
+ 	p = (char**)s;
+ 	n -= strlen(*p++ = sh) + 1;
+ 	cmd->argv = p;
+@@ -207,7 +195,7 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
+ 		c = *cmd->insert;
+ 		while (s = *argv)
+ 		{
+-			while ((s = strchr(s, c)) && strncmp(cmd->insert, s, cmd->insertlen))
++			while ((s = strchr(s, (int)c)) && strncmp(cmd->insert, s, cmd->insertlen))
+ 				s++;
+ 			*p++ = s ? *argv : NULL;
+ 			argv++;
+@@ -243,7 +231,7 @@ cmdflush(Cmdarg_t* cmd)
+ 			(*cmd->errorf)(NULL, cmd, 2, "%d arg command would be too long", cmd->argcount);
+ 		return -1;
+ 	}
+-	cmd->total.args += cmd->argcount;
++	cmd->total.args += (size_t)cmd->argcount;
+ 	cmd->total.commands++;
+ 	cmd->argcount = 0;
+ 	if (p = cmd->postarg)
+@@ -258,7 +246,7 @@ cmdflush(Cmdarg_t* cmd)
+ 		char*	t;
+ 		char*	u;
+ 		int	c;
+-		int	m;
++		size_t	m;
+ 
+ 		a = cmd->firstarg[0];
+ 		b = (char*)&cmd->nextarg[1];
+@@ -273,12 +261,12 @@ cmdflush(Cmdarg_t* cmd)
+ 				{
+ 					if (!(u = strchr(t, c)))
+ 					{
+-						b += sfsprintf(b, e - b, "%s", t);
++						b += sfsprintf(b, (size_t)(e - b), "%s", t);
+ 						break;
+ 					}
+ 					if (!strncmp(s, u, m))
+ 					{
+-						b += sfsprintf(b, e - b, "%-.*s%s", u - t, t, a);
++						b += sfsprintf(b, (size_t)(e - b), "%-.*s%s", u - t, t, a);
+ 						t = u + m;
+ 					}
+ 					else if (b >= e)
+@@ -375,7 +363,7 @@ cmdarg(Cmdarg_t* cmd, const char* file, int len)
+ 			}
+ 		}
+ 		*cmd->nextarg++ = cmd->nextstr;
+-		memcpy(cmd->nextstr, file, len);
++		memcpy(cmd->nextstr, file, (size_t)len);
+ 		cmd->nextstr[len] = 0;
+ 		cmd->argcount++;
+ 		if (cmd->argcount >= cmd->argmax && (i = cmdflush(cmd)) > r)
+diff --git a/src/lib/libast/misc/cmdlib.h b/src/lib/libast/misc/cmdlib.h
+index 405e829fa..d52183244 100644
+--- a/src/lib/libast/misc/cmdlib.h
++++ b/src/lib/libast/misc/cmdlib.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -34,9 +35,9 @@
+ 	int		argcount;	/* current arg count		*/ \
+ 	int		argmax;		/* max # args			*/ \
+ 	int		echo;		/* just an echo			*/ \
+-	int		flags;		/* CMD_* flags			*/ \
+-	int		insertlen;	/* strlen(insert)		*/ \
+-	int		offset;		/* post arg offset		*/ \
++	uint32_t	flags;		/* CMD_* flags			*/ \
++	size_t		insertlen;	/* strlen(insert)		*/ \
++	ptrdiff_t	offset;		/* post arg offset		*/ \
+ 	Cmddisc_t*	disc;		/* discipline			*/ \
+ 	char**		argv;		/* exec argv			*/ \
+ 	char**		firstarg;	/* first argv file arg		*/ \
+diff --git a/src/lib/libast/misc/conformance.c b/src/lib/libast/misc/conformance.c
+index 37a42fa1e..0a649b648 100644
+--- a/src/lib/libast/misc/conformance.c
++++ b/src/lib/libast/misc/conformance.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -35,9 +35,10 @@ initconformance(void)
+ 	char*			m;
+ 	char**			p;
+ 	char*			t;
+-	int			h;
+-	int			i;
+-	int			j;
++	size_t			h;
++	size_t			i;
++	size_t			j;
++	ptrdiff_t		d;
+ 	int			c;
+ 	Sfio_t*			sp;
+ 
+@@ -58,12 +59,12 @@ initconformance(void)
+ 				}
+ 				sfputc(sp, 0);
+ 				j++;
+-				if ((c = (m - t)) == 6 && strneq(t, "linux", 5))
++				if ((d = (m - t)) == 6 && strneq(t, "linux", 5))
+ 				{
+ 					sfputr(sp, "gnu", 0);
+ 					j++;
+ 				}
+-				else if (c > 3 && strneq(t, "bsd", 3) || c == 7 && strneq(t, "debian", 7))
++				else if (d > 3 && strneq(t, "bsd", 3) || d == 7 && strneq(t, "debian", 7))
+ 				{
+ 					sfputr(sp, "bsd", 0);
+ 					j++;
+@@ -71,7 +72,7 @@ initconformance(void)
+ 				if (h & 1)
+ 					break;
+ 			}
+-		i = sfstrtell(sp);
++		i = (size_t)sfstrtell(sp);
+ 		sfstrseek(sp, 0, SEEK_SET);
+ 		if (p = newof(0, char*, j, i))
+ 		{
+@@ -139,7 +140,7 @@ conformance(const char* s, size_t n)
+ 			break;
+ 		q = p;
+ 		while (m = *q++)
+-			if (strneq(t, m, s - t))
++			if (strneq(t, m, (size_t)(s - t)))
+ 				return m;
+ 		if (s < e)
+ 			s++;
+diff --git a/src/lib/libast/misc/debug.c b/src/lib/libast/misc/debug.c
+index 4620cf128..c46a77981 100644
+--- a/src/lib/libast/misc/debug.c
++++ b/src/lib/libast/misc/debug.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -26,7 +26,7 @@
+ #include <debug.h>
+ #include "FEATURE/time"
+ 
+-void
++noreturn void
+ debug_fatal(const char* file, int line)
+ {
+ 	error(2, "%s:%d: debug error", file, line);
+diff --git a/src/lib/libast/misc/error.c b/src/lib/libast/misc/error.c
+index 211d925a3..b56ef8bbe 100644
+--- a/src/lib/libast/misc/error.c
++++ b/src/lib/libast/misc/error.c
+@@ -136,7 +136,7 @@ setopt(void* a, const void* p, int n, const char* v)
+ 					error_state.breakpoint = ERROR_PANIC;
+ 					break;
+ 				default:
+-					error_state.breakpoint = strtol(v, NULL, 0);
++					error_state.breakpoint = (int)strtol(v, NULL, 0);
+ 					break;
+ 				}
+ 			else
+@@ -152,12 +152,12 @@ setopt(void* a, const void* p, int n, const char* v)
+ 			break;
+ 		case OPT_COUNT:
+ 			if (n)
+-				error_state.count = strtol(v, NULL, 0);
++				error_state.count = strtoul(v, NULL, 0);
+ 			else
+ 				error_state.count = 0;
+ 			break;
+ 		case OPT_FD:
+-			error_info.fd = n ? strtol(v, NULL, 0) : -1;
++			error_info.fd = n ? (int)strtol(v, NULL, 0) : -1;
+ 			break;
+ 		case OPT_LIBRARY:
+ 			if (n)
+@@ -167,7 +167,7 @@ setopt(void* a, const void* p, int n, const char* v)
+ 			break;
+ 		case OPT_MASK:
+ 			if (n)
+-				error_info.mask = strtol(v, NULL, 0);
++				error_info.mask = (int)strtol(v, NULL, 0);
+ 			else
+ 				error_info.mask = 0;
+ 			break;
+@@ -208,7 +208,7 @@ setopt(void* a, const void* p, int n, const char* v)
+ 			break;
+ 		case OPT_TRACE:
+ 			if (n)
+-				error_info.trace = -strtol(v, NULL, 0);
++				error_info.trace = -((int)strtol(v, NULL, 0));
+ 			else
+ 				error_info.trace = 0;
+ 			break;
+@@ -307,7 +307,7 @@ context(Sfio_t* sp, Error_context_t* cp)
+  * debugging breakpoint
+  */
+ 
+-extern void
++static void
+ error_break(void)
+ {
+ 	char*	s;
+@@ -337,7 +337,7 @@ error(int level, ...)
+ void
+ errorv(const char* id, int level, va_list ap)
+ {
+-	int		n;
++	ptrdiff_t	n;
+ 	int		fd;
+ 	int		flags;
+ 	char*		s;
+@@ -409,7 +409,7 @@ errorv(const char* id, int level, va_list ap)
+ 	fd = (flags & ERROR_OUTPUT) ? va_arg(ap, int) : error_info.fd;
+ 	if (error_info.write)
+ 	{
+-		long	off;
++		ptrdiff_t off;
+ 		char*	bas;
+ 
+ 		bas = stkptr(stkstd, 0);
+@@ -459,7 +459,7 @@ errorv(const char* id, int level, va_list ap)
+ 		}
+ 		if (error_info.time)
+ 		{
+-			if ((d = times(&us)) < error_info.time || error_info.time == 1)
++			if ((d = (unsigned long)times(&us)) < error_info.time || error_info.time == 1)
+ 				error_info.time = d;
+ 			sfprintf(stkstd, " %05lu.%05lu.%05lu ", d - error_info.time, (unsigned long)us.tms_utime, (unsigned long)us.tms_stime);
+ 		}
+@@ -539,7 +539,7 @@ errorv(const char* id, int level, va_list ap)
+ 		{
+ 			n = stktell(stkstd);
+ 			s = stkptr(stkstd, 0);
+-			if (t = memchr(s, '\f', n))
++			if (t = memchr(s, '\f', (size_t)n))
+ 			{
+ 				n -= ++t - s;
+ 				s = t;
+@@ -551,11 +551,11 @@ errorv(const char* id, int level, va_list ap)
+ 			sfsync(sfstderr);
+ 			if (fd == sffileno(sfstderr) && error_info.write == write)
+ 			{
+-				sfwrite(sfstderr, s, n);
++				sfwrite(sfstderr, s, (size_t)n);
+ 				sfsync(sfstderr);
+ 			}
+ 			else
+-				(*error_info.write)(fd, s, n);
++				(*error_info.write)(fd, s, (size_t)n);
+ 		}
+ 		else
+ 		{
+diff --git a/src/lib/libast/misc/fastfind.c b/src/lib/libast/misc/fastfind.c
+index 31713ca6e..9c74019ec 100644
+--- a/src/lib/libast/misc/fastfind.c
++++ b/src/lib/libast/misc/fastfind.c
+@@ -111,7 +111,7 @@ static char*		findnames[] =
+  * converted value copied to b of size n
+  */
+ 
+-char*
++static char*
+ typefix(char* buf, const char* t)
+ {
+ 	int	c;
+@@ -123,7 +123,7 @@ typefix(char* buf, const char* t)
+ 	{
+ 		if (isupper(c))
+ 			c = tolower(c);
+-		if ((*b++ = c) == '/' && (*t == 'x' || *t == 'X') && *(t + 1) == '-')
++		if ((*b++ = (char)c) == '/' && (*t == 'x' || *t == 'X') && *(t + 1) == '-')
+ 			t += 2;
+ 	}
+ 	*b = 0;
+@@ -141,15 +141,15 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 	char*		p;
+ 	char*		s;
+ 	char*		b;
+-	int		i;
+-	int		j;
++	ptrdiff_t	i;
++	ptrdiff_t	j;
+ 	char*		path;
+ 	int		brace = 0;
+ 	int		paren = 0;
+-	int		k;
++	size_t		k;
+ 	int		q;
+ 	int		fd;
+-	int		uid;
++	uid_t		uid;
+ 	Vmalloc_t*	vm;
+ 	Type_t*		tp;
+ 	struct stat	st;
+@@ -178,7 +178,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 		if (file && (!*file || streq(file, "-")))
+ 			file = 0;
+ 		uid = geteuid();
+-		j = (findcodes[0] = (char*)file) && *file == '/' ? 1 : elementsof(findcodes);
++		j = (findcodes[0] = (char*)file) && *file == '/' ? 1 : (ptrdiff_t)elementsof(findcodes);
+ 
+ 		/*
+ 		 * look for the codes file, but since it may not exist yet,
+@@ -352,8 +352,8 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 		i = sizeof(Decode_t) + sizeof(Code_t);
+ 		if (!pattern || !*pattern)
+ 			pattern = "*";
+-		i += (j = 2 * (strlen(pattern) + 1));
+-		if (!(fp = vmnewof(vm, 0, Find_t, 1, i)))
++		i += (j = 2 * ((ptrdiff_t)strlen(pattern) + 1));
++		if (!(fp = vmnewof(vm, 0, Find_t, 1, (size_t)i)))
+ 		{
+ 			vmclose(vm);
+ 			return NULL;
+@@ -408,18 +408,18 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 			setgid(getgid());
+ 		fp->stamp = st.st_mtime;
+ 		b = (s = fp->decode.temp) + 1;
+-		for (i = 0; i < elementsof(fp->decode.bigram1); i++)
++		for (i = 0; i < (ptrdiff_t)elementsof(fp->decode.bigram1); i++)
+ 		{
+ 			if ((j = sfgetc(fp->fp)) == EOF)
+ 				goto invalid;
+-			if (!(*s++ = fp->decode.bigram1[i] = j) && i)
++			if (!(*s++ = fp->decode.bigram1[i] = (char)j) && i)
+ 			{
+ 				i = -i;
+ 				break;
+ 			}
+ 			if ((j = sfgetc(fp->fp)) == EOF)
+ 				goto invalid;
+-			if (!(*s++ = fp->decode.bigram2[i] = j) && (i || fp->decode.bigram1[0] >= '0' && fp->decode.bigram1[0] <= '1'))
++			if (!(*s++ = fp->decode.bigram2[i] = (char)j) && (i || fp->decode.bigram1[0] >= '0' && fp->decode.bigram1[0] <= '1'))
+ 				break;
+ 		}
+ 		if (streq(b, FF_typ_magic))
+@@ -444,7 +444,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 			}
+ 			if (type && !j)
+ 				goto drop;
+-			fp->types = j;
++			fp->types = (unsigned long)j;
+ 		}
+ 		else if (streq(b, FF_dir_magic))
+ 			fp->method = FF_dir;
+@@ -455,9 +455,9 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 			fp->method = FF_gnu;
+ 			while (j = sfgetc(fp->fp))
+ 			{
+-				if (j == EOF || fp->decode.count >= sizeof(fp->decode.path))
++				if (j == EOF || fp->decode.count >= (ptrdiff_t)sizeof(fp->decode.path))
+ 					goto invalid;
+-				fp->decode.path[fp->decode.count++] = j;
++				fp->decode.path[fp->decode.count++] = (char)j;
+ 			}
+ 		}
+ 		else
+@@ -467,16 +467,16 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 			{
+ 				if ((j = sfgetc(fp->fp)) == EOF)
+ 					goto invalid;
+-				fp->decode.bigram2[i = -i] = j;
++				fp->decode.bigram2[i = -i] = (char)j;
+ 			}
+-			while (++i < elementsof(fp->decode.bigram1))
++			while (++i < (ptrdiff_t)elementsof(fp->decode.bigram1))
+ 			{
+ 				if ((j = sfgetc(fp->fp)) == EOF)
+ 					goto invalid;
+-				fp->decode.bigram1[i] = j;
++				fp->decode.bigram1[i] = (char)j;
+ 				if ((j = sfgetc(fp->fp)) == EOF)
+ 					goto invalid;
+-				fp->decode.bigram2[i] = j;
++				fp->decode.bigram2[i] = (char)j;
+ 			}
+ 			if ((fp->decode.peek = sfgetc(fp->fp)) != FF_OFF)
+ 				goto invalid;
+@@ -498,7 +498,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 				{
+ 					if (!(fp->dirs = vmnewof(fp->vm, 0, char*, 2 * k + 1, 0)))
+ 						goto drop;
+-					if (!(fp->lens = vmnewof(fp->vm, 0, int, 2 * k, 0)))
++					if (!(fp->lens = vmnewof(fp->vm, 0, ptrdiff_t, 2 * k, 0)))
+ 						goto drop;
+ 					p = 0;
+ 					b = fp->decode.temp;
+@@ -511,7 +511,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 					 * could be *both* ways)
+ 					 */
+ 
+-					for (i = q = 0; i < k; i++)
++					for (i = q = 0; i < (ptrdiff_t)k; i++)
+ 					{
+ 						if (*(s = disc->dirs[i]) == '/')
+ 							sfsprintf(b, sizeof(fp->decode.temp) - 1, "%s", s);
+@@ -531,7 +531,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 						s = pathcanon(b, sizeof(fp->decode.temp), PATH_PHYSICAL);
+ 						*s = '/';
+ 						*(s + 1) = 0;
+-						if (!strneq(b, fp->dirs[q - 1], s - b))
++						if (!strneq(b, fp->dirs[q - 1], (size_t)(s - b)))
+ 						{
+ 							if (!(fp->dirs[q] = vmstrdup(fp->vm, b)))
+ 								goto nomemory;
+@@ -542,7 +542,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 					}
+ 					strsort(fp->dirs, q, strcasecmp);
+ 					for (i = 0; i < q; i++)
+-						fp->lens[i] = strlen(fp->dirs[i]);
++						fp->lens[i] = (ptrdiff_t)strlen(fp->dirs[i]);
+ 				}
+ 			}
+ 		}
+@@ -618,12 +618,13 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 			}
+ 			if (s != pattern && !streq(pattern, "*"))
+ 			{
++				int r;
+ 				fp->decode.match = 1;
+-				if (i = regcomp(&fp->decode.re, pattern, REG_SHELL|REG_AUGMENTED|(fp->decode.ignorecase?REG_ICASE:0)))
++				if (r = regcomp(&fp->decode.re, pattern, REG_SHELL|REG_AUGMENTED|(fp->decode.ignorecase?REG_ICASE:0)))
+ 				{
+ 					if (disc->errorf)
+ 					{
+-						regerror(i, &fp->decode.re, fp->decode.temp, sizeof(fp->decode.temp));
++						regerror(r, &fp->decode.re, fp->decode.temp, sizeof(fp->decode.temp));
+ 						(*fp->disc->errorf)(fp, fp->disc, 2, "%s: %s", pattern, fp->decode.temp);
+ 					}
+ 					goto drop;
+@@ -631,15 +632,16 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
+ 			}
+ 			if (*s)
+ 			{
++				int r;
+ 				*b++ = 0;
+-				while (i = *s++)
+-					*b++ = i;
++				while (r = *s++)
++					*b++ = (char)r;
+ 				*b-- = 0;
+ 				fp->decode.end = b;
+ 				if (fp->decode.ignorecase)
+ 					for (s = fp->decode.pattern; s <= b; s++)
+ 						if (isupper(*s))
+-							*s = tolower(*s);
++							*s = (char)tolower(*s);
+ 			}
+ 		}
+ 	}
+@@ -681,10 +683,10 @@ findread(Find_t* fp)
+ 	char*		b;
+ 	char*		e;
+ 	int		c;
+-	int		n;
+-	int		m;
+-	int		ignorecase;
+-	int		t = 0;
++	ptrdiff_t	n;
++	ptrdiff_t	m;
++	unsigned int	ignorecase;
++	Sfulong_t	t = 0;
+ 	unsigned char	w[4];
+ 	struct stat	st;
+ 
+@@ -704,7 +706,7 @@ findread(Find_t* fp)
+ 		{
+ 		case FF_dir:
+ 			t = 0;
+-			n = sfgetl(fp->fp);
++			n = (ptrdiff_t)sfgetl(fp->fp);
+ 			goto grab;
+ 		case FF_gnu:
+ 			if ((c = sfgetc(fp->fp)) == EOF)
+@@ -726,14 +728,14 @@ findread(Find_t* fp)
+ 			goto grab;
+ 		case FF_typ:
+ 			t = sfgetu(fp->fp);
+-			n = sfgetl(fp->fp);
++			n = (ptrdiff_t)sfgetl(fp->fp);
+ 		grab:
+ 			p = fp->decode.path + (fp->decode.count += n);
+ 			do
+ 			{
+ 				if ((c = sfgetc(fp->fp)) == EOF)
+ 					return NULL;
+-			} while (*p++ = c);
++			} while (*p++ = (char)c);
+ 			p -= 2;
+ 			break;
+ 		case FF_old:
+@@ -787,7 +789,7 @@ findread(Find_t* fp)
+ 					*p++ = fp->decode.bigram2[c & ((1<<(CHAR_BIT-1))-1)];
+ 				}
+ 				else
+-					*p++ = c;
++					*p++ = (char)c;
+ 			*p-- = 0;
+ 			t = 0;
+ 			break;
+@@ -814,7 +816,7 @@ findread(Find_t* fp)
+ 				{
+ 					if (!(*fp->dirs)[m])
+ 						goto next;
+-					if (!strncasecmp(*fp->dirs, fp->decode.path, m))
++					if (!strncasecmp(*fp->dirs, fp->decode.path, (size_t)m))
+ 						break;
+ 				}
+ 				else if (n == m)
+@@ -847,10 +849,10 @@ findread(Find_t* fp)
+ 			else
+ 				n = 1;
+ 			if (fp->verifyf)
+-				n = (*fp->verifyf)(fp, fp->decode.path, n, fp->disc);
++				n = (*fp->verifyf)(fp, fp->decode.path, (size_t)n, fp->disc);
+ 			else if (stat(fp->decode.path, &st))
+ 				n = -1;
+-			else if ((unsigned long)st.st_mtime > fp->stamp)
++			else if (st.st_mtime > fp->stamp)
+ 				n = 1;
+ 			else
+ 				n = 0;
+@@ -906,7 +908,7 @@ findread(Find_t* fp)
+ 			{
+ 				if (fp->disc->errorf)
+ 				{
+-					regerror(n, &fp->decode.re, fp->decode.temp, sizeof(fp->decode.temp));
++					regerror((int)n, &fp->decode.re, fp->decode.temp, sizeof(fp->decode.temp));
+ 					(*fp->disc->errorf)(fp, fp->disc, 2, "%s: %s", fp->decode.pattern, fp->decode.temp);
+ 				}
+ 				return NULL;
+@@ -935,7 +937,7 @@ findwrite(Find_t* fp, const char* path, size_t len, const char* type)
+ 		return -1;
+ 	if (type && fp->method == FF_dir)
+ 	{
+-		len = sfsprintf(fp->encode.mark, sizeof(fp->encode.mark), "%-.*s/", len, path);
++		len = (size_t)sfsprintf(fp->encode.mark, sizeof(fp->encode.mark), "%-.*s/", len, path);
+ 		path = fp->encode.mark;
+ 	}
+ 	s = (unsigned char*)path;
+@@ -955,7 +957,7 @@ findwrite(Find_t* fp, const char* path, size_t len, const char* type)
+ 			break;
+ 		s++;
+ 	}
+-	n = s - (unsigned char*)path;
++	n = (int)(s - (unsigned char*)path);
+ 	switch (fp->method)
+ 	{
+ 	case FF_gnu:
+@@ -1103,7 +1105,7 @@ findsync(Find_t* fp)
+ 		for (n = USHRT_MAX; n >= 0; n--)
+ 			if (d = fp->encode.hits[n])
+ 			{
+-				fp->encode.hits[n] = m;
++				fp->encode.hits[n] = (unsigned short)m;
+ 				if ((m += d) > FF_MAX)
+ 					break;
+ 			}
+@@ -1115,11 +1117,11 @@ findsync(Find_t* fp)
+ 				{
+ 					d = fp->encode.code[n][m];
+ 					b = fp->encode.hits[d] - 1;
+-					fp->encode.code[n][m] = b + FF_MAX;
++					fp->encode.code[n][m] = (unsigned short)(b + FF_MAX);
+ 					if (fp->encode.hits[d]++ >= FF_MAX)
+ 						fp->encode.hits[d] = 0;
+-					fp->encode.bigram[b *= 2] = n;
+-					fp->encode.bigram[b + 1] = m;
++					fp->encode.bigram[b *= 2] = (unsigned char)n;
++					fp->encode.bigram[b + 1] = (unsigned char)m;
+ 				}
+ 				else
+ 					fp->encode.code[n][m] = 0;
+diff --git a/src/lib/libast/misc/findlib.h b/src/lib/libast/misc/findlib.h
+index 44f570e82..099afa104 100644
+--- a/src/lib/libast/misc/findlib.h
++++ b/src/lib/libast/misc/findlib.h
+@@ -102,13 +102,13 @@ typedef struct
+ 	Finddisc_t*	disc;		\
+ 	Vmalloc_t*	vm;		\
+ 	char**		dirs;		\
+-	int*		lens;		\
++	ptrdiff_t*	lens;		\
+ 	Sfio_t*		fp;		\
+ 	Findverify_f	verifyf;	\
+ 	int		generate;	\
+ 	int		method;		\
+ 	int		secure;		\
+-	int		types;		\
++	unsigned long	types;		\
+ 	int		verify;		\
+ 	Code_t		code;
+ 
+diff --git a/src/lib/libast/misc/fmtrec.c b/src/lib/libast/misc/fmtrec.c
+index cb597d25d..c0e2bf299 100644
+--- a/src/lib/libast/misc/fmtrec.c
++++ b/src/lib/libast/misc/fmtrec.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -43,9 +44,9 @@ fmtrec(Recfmt_t f, int fs)
+ 		{
+ 			del[1] = 0;
+ 			if (fs)
+-				sfsprintf(s, e - s, "0x%02x", *(unsigned char*)del);
++				sfsprintf(s, (size_t)(e - s), "0x%02x", *(unsigned char*)del);
+ 			else
+-				sfsprintf(s, e - s, "%s", fmtquote(del, NULL, NULL, 1, 0));
++				sfsprintf(s, (size_t)(e - s), "%s", fmtquote(del, NULL, NULL, 1, 0));
+ 		}
+ 		else
+ 			*s = 0;
+@@ -53,18 +54,18 @@ fmtrec(Recfmt_t f, int fs)
+ 	case REC_fixed:
+ 		if (!fs)
+ 			*s++ = 'f';
+-		sfsprintf(s, e - s, "%lu", REC_F_SIZE(f));
++		sfsprintf(s, (size_t)(e - s), "%lu", REC_F_SIZE(f));
+ 		break;
+ 	case REC_variable:
+ 		*s++ = 'v';
+ 		if (n = REC_V_SIZE(f))
+-			s += sfsprintf(s, e - s, "%lu", n);
++			s += sfsprintf(s, (size_t)(e - s), "%lu", n);
+ 		if (REC_V_HEADER(f) != 4)
+-			s += sfsprintf(s, e - s, "h%u", REC_V_HEADER(f));
++			s += sfsprintf(s, (size_t)(e - s), "h%u", REC_V_HEADER(f));
+ 		if (REC_V_OFFSET(f) != 0)
+-			s += sfsprintf(s, e - s, "o%u", REC_V_OFFSET(f));
++			s += sfsprintf(s, (size_t)(e - s), "o%u", REC_V_OFFSET(f));
+ 		if (REC_V_LENGTH(f) != 2)
+-			s += sfsprintf(s, e - s, "z%u", REC_V_LENGTH(f));
++			s += sfsprintf(s, (size_t)(e - s), "z%u", REC_V_LENGTH(f));
+ 		if (REC_V_LITTLE(f) != 0)
+ 			*s++ = 'l';
+ 		if (REC_V_INCLUSIVE(f) == 0)
+@@ -76,13 +77,13 @@ fmtrec(Recfmt_t f, int fs)
+ 		switch (n = REC_M_INDEX(f))
+ 		{
+ 		case REC_M_data:
+-			sfsprintf(s, e - s, "data");
++			sfsprintf(s, (size_t)(e - s), "data");
+ 			break;
+ 		case REC_M_path:
+-			sfsprintf(s, e - s, "path");
++			sfsprintf(s, (size_t)(e - s), "path");
+ 			break;
+ 		default:
+-			sfsprintf(s, e - s, "%lu", n);
++			sfsprintf(s, (size_t)(e - s), "%lu", n);
+ 			break;
+ 		}
+ 		break;
+@@ -91,7 +92,7 @@ fmtrec(Recfmt_t f, int fs)
+ 		*s = 0;
+ 		break;
+ 	default:
+-		sfsprintf(s, e - s, "u%u.0x%07x", RECTYPE(f), REC_U_ATTRIBUTES(f));
++		sfsprintf(s, (size_t)(e - s), "u%u.0x%07x", RECTYPE(f), REC_U_ATTRIBUTES(f));
+ 		break;
+ 	}
+ 	return b;
+diff --git a/src/lib/libast/misc/fts.c b/src/lib/libast/misc/fts.c
+index 20f3ba8ed..a32dadef4 100644
+--- a/src/lib/libast/misc/fts.c
++++ b/src/lib/libast/misc/fts.c
+@@ -81,7 +81,7 @@ typedef int (*Stat_f)(const char*, struct stat*);
+ 	FTSENT*		right;			/* right child		*/ \
+ 	FTSENT*		pwd;			/* pwd parent		*/ \
+ 	FTSENT*		stack;			/* getlist() stack	*/ \
+-	long		nlink;			/* FTS_D link count	*/ \
++	nlink_t		nlink;			/* FTS_D link count	*/ \
+ 	unsigned char	must;			/* must stat		*/ \
+ 	unsigned char	type;			/* DT_* type		*/ \
+ 	unsigned char	symlink;		/* originally a symlink	*/ \
+@@ -422,7 +422,7 @@ setdir(char* home, char* path)
+ static int
+ setpdir(char* home, char* path, char* base)
+ {
+-	int	c;
++	char	c;
+ 	int	cdrv;
+ 
+ 	if (base > path)
+@@ -597,7 +597,7 @@ toplist(FTS* fts, char* const* pathnames)
+ 			break;
+ 		path = f->fts_name;
+ 		if (!physical)
+-			f->fts_namelen = (fts->flags & FTS_SEEDOTDIR) ? strlen(path) : (pathcanon(path, strlen(path) + 1, 0) - path);
++			f->fts_namelen = (fts->flags & FTS_SEEDOTDIR) ? strlen(path) : (size_t)(pathcanon(path, strlen(path) + 1, 0) - path);
+ 		else if (*path != '.')
+ 		{
+ 			f->fts_namelen = strlen(path);
+@@ -624,7 +624,7 @@ toplist(FTS* fts, char* const* pathnames)
+ 				fts->flags |= FTS_SEEDOTDIR;
+ 			for (s = path + strlen(path); s > path && *(s - 1) == '/'; s--);
+ 			*s = 0;
+-			f->fts_namelen = s - path;
++			f->fts_namelen = (size_t)(s - path);
+ 		}
+ 		if (!*path)
+ 		{
+@@ -896,7 +896,7 @@ fts_read(FTS* fts)
+ 			 * add object's name to the path
+ 			 */
+ 
+-			if ((fts->baselen = f->fts_namelen) >= (fts->endbuf - fts->base) && resize(fts, fts->baselen))
++			if ((ptrdiff_t)(fts->baselen = f->fts_namelen) >= fts->endbuf - fts->base && resize(fts, fts->baselen))
+ 				return NULL;
+ 			memcpy(fts->base, f->name, fts->baselen + 1);
+ 			fts->name = fts->cd ? fts->path : fts->base;
+@@ -937,7 +937,7 @@ fts_read(FTS* fts)
+ 				fts->link = f->fts_link;
+ 				f->fts_link = 0;
+ 				f->fts_path = PATH(fts, fts->path, f->fts_level);
+-				f->fts_pathlen = (fts->base - f->fts_path) + fts->baselen;
++				f->fts_pathlen = (size_t)(fts->base - f->fts_path) + fts->baselen;
+ 				f->fts_accpath = ACCESS(fts, f);
+ 				fts->state = FTS_preorder_return;
+ 				goto note;
+@@ -1027,7 +1027,7 @@ fts_read(FTS* fts)
+ 				 * check for space
+ 				 */
+ 
+-				if (i >= fts->endbuf - fts->endbase)
++				if ((ptrdiff_t)i >= fts->endbuf - fts->endbase)
+ 				{
+ 		   	   		if (resize(fts, i))
+ 						return NULL;
+@@ -1081,7 +1081,7 @@ fts_read(FTS* fts)
+ 					 */
+ 
+ 					f->fts_path = PATH(fts, fts->path, 1);
+-					f->fts_pathlen = fts->endbase - f->fts_path + f->fts_namelen;
++					f->fts_pathlen = (size_t)(fts->endbase - f->fts_path) + f->fts_namelen;
+ 					f->fts_accpath = ACCESS(fts, f);
+ 					fts->previous = fts->current;
+ 					fts->current = f;
+@@ -1128,7 +1128,7 @@ fts_read(FTS* fts)
+ 				fts->link = f->fts_link;
+ 				f->fts_link = fts->top;
+ 				f->fts_path = PATH(fts, fts->path, f->fts_level);
+-				f->fts_pathlen = (fts->base - f->fts_path) + f->fts_namelen;
++				f->fts_pathlen = (size_t)(fts->base - f->fts_path) + f->fts_namelen;
+ 				f->fts_accpath = ACCESS(fts, f);
+ 				fts->state = FTS_children_return;
+ 				goto note;
+@@ -1195,7 +1195,7 @@ fts_read(FTS* fts)
+ 						fts->curdir = fts->cd ? 0 : t;
+ 						f->fts_info = FTS_DP;
+ 						f->fts_path = PATH(fts, fts->path, f->fts_level);
+-						f->fts_pathlen = (fts->base - f->fts_path) + f->fts_namelen;
++						f->fts_pathlen = (size_t)(fts->base - f->fts_path) + f->fts_namelen;
+ 						f->fts_accpath = ACCESS(fts, f);
+ 
+ 						/*
+@@ -1438,7 +1438,7 @@ fts_set(FTS* fts, FTSENT* f, int status)
+ 	default:
+ 		return -1;
+ 	}
+-	f->status = status;
++	f->status = (short)status;
+ 	return 0;
+ }
+ 
+diff --git a/src/lib/libast/misc/ftwalk.c b/src/lib/libast/misc/ftwalk.c
+index 6175ed3e7..d58e0db71 100644
+--- a/src/lib/libast/misc/ftwalk.c
++++ b/src/lib/libast/misc/ftwalk.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -52,10 +53,10 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
+ 	FTSENT*		e;
+ 	int		children;
+ 	int		rv;
+-	int		oi;
+-	int		ns;
+-	int		os;
+-	int		nd;
++	unsigned short	oi;
++	short		os;
++	size_t		ns;
++	size_t		nd;
+ 	FTSENT*		x;
+ 	FTSENT*		dd[2];
+ 
+@@ -142,7 +143,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
+ 		}
+ 		rv = (*userf)((Ftw_t*)e);
+ 		e->info = oi;
+-		if (e->status == ns)
++		if (e->status == (ssize_t)ns)
+ 			e->status = os;
+ 		while (nd > 0)
+ 			dd[--nd]->info |= FTS_DD;
+diff --git a/src/lib/libast/misc/getcwd.c b/src/lib/libast/misc/getcwd.c
+index aa3af5cb5..bef547d9f 100644
+--- a/src/lib/libast/misc/getcwd.c
++++ b/src/lib/libast/misc/getcwd.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -81,7 +82,7 @@ getcwd(char* buf, size_t len)
+ struct dirlist				/* long path chdir(2) component	*/
+ {
+ 	struct dirlist*	next;		/* next component		*/
+-	int		index;		/* index from end of buf	*/
++	ptrdiff_t	index;		/* index from end of buf	*/
+ };
+ 
+ /*
+@@ -147,8 +148,8 @@ getcwd(char* buf, size_t len)
+ 	char*		p;
+ 	char*		s;
+ 	DIR*		dirp = 0;
+-	int		n;
+-	int		x;
++	size_t		n;
++	ptrdiff_t	x;
+ 	size_t		namlen;
+ 	ssize_t		extra = -1;
+ 	struct dirent*	entry;
+@@ -200,9 +201,9 @@ getcwd(char* buf, size_t len)
+ 	}
+ 	if (!buf)
+ 	{
+-		extra = len;
++		extra = (ssize_t)len;
+ 		len = PATH_MAX;
+-		if (!(buf = newof(0, char, len, extra))) ERROR(ENOMEM);
++		if (!(buf = newof(0, char, len, (size_t)extra))) ERROR(ENOMEM);
+ 	}
+ 	d = dots;
+ 	p = buf + len - 1;
+@@ -239,8 +240,8 @@ getcwd(char* buf, size_t len)
+ 				{
+ 					d = buf;
+ 					while (*d++ = *p++);
+-					len = d - buf;
+-					if (extra >= 0 && !(buf = newof(buf, char, len, extra))) ERROR(ENOMEM);
++					len = (size_t)(d - buf);
++					if (extra >= 0 && !(buf = newof(buf, char, len, (size_t)extra))) ERROR(ENOMEM);
+ 				}
+ 				if (dirstk && popdir(dirstk, buf + len - 1))
+ 				{
+@@ -271,7 +272,7 @@ getcwd(char* buf, size_t len)
+ 		{
+ 			if (!(entry = readdir(dirp))) ERROR(ENOENT);
+ 			namlen = D_NAMLEN(entry);
+-			if ((d - dots) > (PATH_MAX - 1 - namlen))
++			if ((d - dots) > (ptrdiff_t)(PATH_MAX - 1 - namlen))
+ 			{
+ 				*d = 0;
+ 				if (namlen >= PATH_MAX || !(dirstk = pushdir(dirstk, dots + 3, p, buf + len - 1))) ERROR(ERANGE);
+@@ -285,7 +286,7 @@ getcwd(char* buf, size_t len)
+ 		{
+ 			x = (buf + len - 1) - (p += namlen);
+ 			s = buf + len;
+-			if (extra < 0 || !(buf = newof(buf, char, len += PATH_MAX, extra))) ERROR(ERANGE);
++			if (extra < 0 || !(buf = newof(buf, char, len += PATH_MAX, (size_t)extra))) ERROR(ERANGE);
+ 			p = buf + len;
+ 			while (p > buf + len - 1 - x) *--p = *--s;
+ 		}
+diff --git a/src/lib/libast/misc/glob.c b/src/lib/libast/misc/glob.c
+index 88a8523f9..6ddfbd9c3 100644
+--- a/src/lib/libast/misc/glob.c
++++ b/src/lib/libast/misc/glob.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -60,7 +60,7 @@ typedef int (*GL_stat_f)(const char*, struct stat*);
+ 	globlist_t*	gl_rescan; \
+ 	globlist_t*	gl_match; \
+ 	Stk_t*		gl_stak; \
+-	int		re_flags; \
++	regflags_t	re_flags; \
+ 	int		re_first; \
+ 	regex_t*	gl_ignore; \
+ 	regex_t*	gl_ignorei; \
+@@ -206,10 +206,10 @@ errorcheck(glob_t* gp, const char* path)
+  */
+ 
+ static void
+-trim(char* sp, char* p1, int* n1, char* p2, int* n2)
++trim(char* sp, char* p1, ptrdiff_t* n1, char* p2, ptrdiff_t* n2)
+ {
+ 	char*	dp = sp;
+-	int	c;
++	char	c;
+ 
+ 	if (p1)
+ 		*n1 = 0;
+@@ -236,10 +236,10 @@ static void
+ addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, int meta)
+ {
+ 	globlist_t*	ap;
+-	int		offset;
++	ptrdiff_t	offset;
+ 	int		type;
+ 
+-	stkseek(globstk,MATCHPATH(gp));
++	stkseek(globstk,(ptrdiff_t)MATCHPATH(gp));
+ 	if (dir)
+ 	{
+ 		sfputr(globstk,dir,-1);
+@@ -295,7 +295,7 @@ addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char*
+  */
+ 
+ static void
+-glob_dir(glob_t* gp, globlist_t* ap, int re_flags)
++glob_dir(glob_t* gp, globlist_t* ap, regflags_t re_flags)
+ {
+ 	char*		rescan;
+ 	char*		prefix;
+@@ -310,8 +310,8 @@ glob_dir(glob_t* gp, globlist_t* ap, int re_flags)
+ 	regex_t		rec;
+ 	regex_t		rei;
+ 	int		notdir;
+-	int		t1;
+-	int		t2;
++	ptrdiff_t	t1;
++	ptrdiff_t	t2;
+ 	int		bracket;
+ 
+ 	int		anymeta = ap->gl_flags & MATCH_META;
+@@ -604,15 +604,15 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
+ 	char**		argv;
+ 	char**		av;
+ 	size_t		skip;
+-	unsigned long	f;
++	int		f;
+ 	int		n;
+ 	int		x;
+-	int		re_flags;
++	regflags_t	re_flags;
+ 
+ 	const char*	nocheck = pattern;
+-	int		optlen = 0;
+-	int		suflen = 0;
+-	int		extra = 1;
++	ptrdiff_t	optlen = 0;
++	size_t		suflen = 0;
++	ptrdiff_t	extra = 1;
+ 	unsigned char	intr = 0;
+ 
+ 	gp->gl_rescan = 0;
+@@ -767,11 +767,11 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
+ 	ap->gl_next = 0;
+ 	ap->gl_flags = 0;
+ 	ap->gl_begin = ap->gl_path + gp->gl_extra;
+-	pat = strcopy(ap->gl_begin, pattern + optlen);
++	pat = strcopy(ap->gl_begin, pattern + (size_t)optlen);
+ 	if (suflen)
+ 		pat = strcopy(pat, gp->gl_suffix);
+ 	if (optlen)
+-		strlcpy(gp->gl_pat = gp->gl_opt = pat + 1, pattern, optlen);
++		strlcpy(gp->gl_pat = gp->gl_opt = pat + 1, pattern, (size_t)optlen);
+ 	else
+ 		gp->gl_pat = 0;
+ 	suflen = 0;
+@@ -801,10 +801,10 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
+ 		gp->gl_list = gp->gl_match;
+ 	else
+ 	{
+-		argv = stkalloc(globstk,(gp->gl_pathc + extra) * sizeof(char*));
++		argv = stkalloc(globstk,(gp->gl_pathc + (size_t)extra) * sizeof(char*));
+ 		if (gp->gl_flags & GLOB_APPEND)
+ 		{
+-			skip += --extra;
++			skip += (size_t)--extra;
+ 			memcpy(argv, gp->gl_pathv, skip * sizeof(char*));
+ 			av = argv + skip;
+ 		}
+@@ -825,9 +825,9 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
+ 		*argv = 0;
+ 		if (!(flags & GLOB_NOSORT) && (argv - av) > 1)
+ 		{
+-			strsort(av, argv - av, strcoll);
++			strsort(av, (int)(argv - av), strcoll);
+ 			if (gp->gl_starstar > 1)
+-				av[gp->gl_pathc = struniq(av, argv - av)] = 0;
++				av[gp->gl_pathc = (size_t)struniq(av, (int)(argv - av))] = 0;
+ 			gp->gl_starstar = 0;
+ 		}
+ 	}
+diff --git a/src/lib/libast/misc/optesc.c b/src/lib/libast/misc/optesc.c
+index a8abe4989..6b51bbc0a 100644
+--- a/src/lib/libast/misc/optesc.c
++++ b/src/lib/libast/misc/optesc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -35,7 +36,7 @@ optesc(Sfio_t* sp, const char* s, int esc)
+ 
+ 	if (*s == '[' && *(s + 1) == '+' && *(s + 2) == '?')
+ 	{
+-		c = strlen(s);
++		c = (int)strlen(s);
+ 		if (s[c - 1] == ']')
+ 		{
+ 			sfprintf(sp, "%-.*s", c - 4, s + 3);
+@@ -52,13 +53,13 @@ optesc(Sfio_t* sp, const char* s, int esc)
+ 			if (isalpha(c) && *s == '(' && isdigit(*(s + 1)) && *(s + 2) == ')')
+ 			{
+ 				sfputc(sp, '\b');
+-				sfwrite(sp, m, s - m);
++				sfwrite(sp, m, (size_t)(s - m));
+ 				sfputc(sp, '\b');
+ 				sfwrite(sp, s, 3);
+ 				s += 3;
+ 			}
+ 			else
+-				sfwrite(sp, m, s - m);
++				sfwrite(sp, m, (size_t)(s - m));
+ 		}
+ 		else if (c == '-' && *s == '-' || c == '<')
+ 		{
+@@ -72,11 +73,11 @@ optesc(Sfio_t* sp, const char* s, int esc)
+ 			if (c == '<' && *s == '>' || isspace(*s) || *s == 0 || *s == '=' || *s == ':' || *s == ';' || *s == '.' || *s == ',')
+ 			{
+ 				sfputc(sp, '\b');
+-				sfwrite(sp, m, s - m);
++				sfwrite(sp, m, (size_t)(s - m));
+ 				sfputc(sp, '\b');
+ 			}
+ 			else
+-				sfwrite(sp, m, s - m);
++				sfwrite(sp, m, (size_t)(s - m));
+ 		}
+ 		else
+ 		{
+diff --git a/src/lib/libast/misc/optget.c b/src/lib/libast/misc/optget.c
+index 27930fedc..b950fa4f7 100644
+--- a/src/lib/libast/misc/optget.c
++++ b/src/lib/libast/misc/optget.c
+@@ -434,7 +434,7 @@ static const Section_t	sections[] =
+ static char*
+ secname(char* section)
+ {
+-	int		i;
++	size_t		i;
+ 	char*		b;
+ 	char*		t;
+ 	const char*	s;
+@@ -816,7 +816,7 @@ save(const char* ap, size_t az, const char* bp, size_t bz, const char* cp, size_
+ 	*b = 0;
+ 	if (!(p = (Save_t*)dtmatch(dict, buf)))
+ 	{
+-		if (!(p = newof(0, Save_t, 1, b - buf)))
++		if (!(p = newof(0, Save_t, 1, (size_t)(b - buf))))
+ 			return (char*)ap;
+ 		strcpy(p->text, buf);
+ 		dtinsert(dict, p);
+@@ -835,12 +835,12 @@ expand(char* s, char* e, char** p, Sfio_t* ip, char* id)
+ {
+ 	int	c;
+ 	char*	b = s;
+-	int	n;
++	ptrdiff_t n;
+ 
+ 	n = sfstrtell(ip);
+ 	c = 1;
+ 	while ((!e || s < e) && (c = *s++) && c != '\f');
+-	sfwrite(ip, b, s - b - 1);
++	sfwrite(ip, b, (size_t)(s - b - 1));
+ 	sfputc(ip, 0);
+ 	b = sfstrbase(ip) + n;
+ 	n = sfstrtell(ip);
+@@ -876,7 +876,7 @@ expand(char* s, char* e, char** p, Sfio_t* ip, char* id)
+ static void
+ initdict(void)
+ {
+-	int	n;
++	size_t	n;
+ 
+ 	state.vp = sfstropen();
+ 	state.msgdisc.key = offsetof(Msg_t, text);
+@@ -898,7 +898,7 @@ init(char* s, Optpass_t* p)
+ 	char*	u;
+ 	int	c;
+ 	int	a;
+-	int	n;
++	ptrdiff_t n;
+ 	char*	e;
+ 	int	l;
+ 
+@@ -912,7 +912,7 @@ init(char* s, Optpass_t* p)
+ 		state.xp = sfstropen();
+ 		if (!map[opts[0]])
+ 			for (n = 0, o = opts; *o; o++)
+-				map[*o] = ++n;
++				map[*o] = (unsigned char)++n;
+ 	}
+ #if _BLD_DEBUG
+ 	error(-2, "optget debug");
+@@ -945,7 +945,7 @@ init(char* s, Optpass_t* p)
+ 					p->version = 1;
+ 				else
+ 					while (isdigit(*s))
+-						p->version = p->version * 10 + (*s++ - '0');
++						p->version = p->version * 10 + (unsigned char)(*s++ - '0');
+ 				while (*s && *s != ']')
+ 				{
+ 					if ((c = *s++) == '?')
+@@ -991,7 +991,7 @@ init(char* s, Optpass_t* p)
+ 						p->flags |= OPT_old;
+ 						break;
+ 					case 'p':
+-						p->prefix = n;
++						p->prefix = (unsigned char)n;
+ 						break;
+ 					case 's':
+ 						if (n > 1 && n < 5)
+@@ -1043,9 +1043,9 @@ init(char* s, Optpass_t* p)
+ 									if (*u == '-' || *u == ']')
+ 									{
+ 										if (!l)
+-											p->id = save(s, t - s, 0, 0, 0, 0);
+-										else if ((a = strlen(p->id)) <= (n = t - s) || strncmp(p->id + a - n, s, n) || *(p->id + a - n - 1) != ':')
+-											p->id = save(p->id, strlen(p->id), "::", 2, s, t - s);
++											p->id = save(s, (size_t)(t - s), 0, 0, 0, 0);
++										else if ((a = (int)strlen(p->id)) <= (n = t - s) || strncmp(p->id + a - n, s, (size_t)n) || *(p->id + a - n - 1) != ':')
++											p->id = save(p->id, strlen(p->id), "::", 2, s, (size_t)(t - s));
+ 									}
+ 								}
+ 							}
+@@ -1067,7 +1067,7 @@ init(char* s, Optpass_t* p)
+ 	else if (p->id == error_info.id)
+ 		p->id = save(p->id, strlen(p->id), 0, 0, 0, 0);
+ 	if (s = p->catalog)
+-		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != strlen(p->id) || !strneq(s, p->id, t - s))) ? save(s, t - s, 0, 0, 0, 0) : NULL;
++		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ptrdiff_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
+ 	if (!p->catalog)
+ 	{
+ 		if (opt_info.disc && opt_info.disc->catalog && (!p->id || !streq(opt_info.disc->catalog, p->id)))
+@@ -1178,7 +1178,7 @@ static Push_t*
+ info(Push_t* psp, char* s, char* e, Sfio_t* ip, char* id)
+ {
+ 	char*	b;
+-	int	n;
++	size_t	n;
+ 	Push_t*	tsp;
+ 
+ 	static Push_t	push;
+@@ -1210,6 +1210,7 @@ localize(Push_t* psp, char* s, char* e, int term, int n, Sfio_t* ip, int version
+ 	char*		u;
+ 	Push_t*		tsp;
+ 	int		c;
++	size_t		len;
+ 
+ 	t = skip(s, term, 0, 0, n, 0, 0, version);
+ 	if (e && t > e)
+@@ -1232,11 +1233,11 @@ localize(Push_t* psp, char* s, char* e, int term, int n, Sfio_t* ip, int version
+ 	}
+ 	if (!(s = sfstruse(ip)) || (u = T(id, catalog, s)) == s)
+ 		return NULL;
+-	n = strlen(u);
+-	if (tsp = newof(0, Push_t, 1, n + 1))
++	len = strlen(u);
++	if (tsp = newof(0, Push_t, 1, len + 1))
+ 	{
+ 		tsp->nb = (char*)(tsp + 1);
+-		tsp->ne = tsp->nb + n;
++		tsp->ne = tsp->nb + len;
+ 		strcpy(tsp->nb, u);
+ 		tsp->ob = t;
+ 		tsp->oe = e;
+@@ -1582,9 +1583,9 @@ label(Sfio_t* sp, int sep, char* s, int about, int z, int level, int style, int
+  */
+ 
+ static void
+-args(Sfio_t* sp, char* p, int n, int flags, int style, Sfio_t* ip, int version, char* id, char* catalog)
++args(Sfio_t* sp, char* p, size_t n, int flags, int style, Sfio_t* ip, int version, char* id, char* catalog)
+ {
+-	int	i;
++	size_t	i;
+ 	char*	t;
+ 	char*	o;
+ 	char*	a = 0;
+@@ -1629,7 +1630,7 @@ args(Sfio_t* sp, char* p, int n, int flags, int style, Sfio_t* ip, int version,
+ 			}
+ 			if (!t)
+ 				break;
+-			i = ++t - p;
++			i = (size_t)(++t - p);
+ 			if (i)
+ 			{
+ 				/* Print options for usage line */
+@@ -1664,7 +1665,7 @@ args(Sfio_t* sp, char* p, int n, int flags, int style, Sfio_t* ip, int version,
+ 	}
+ 	/* Print options for the last usage line */
+ 	if (n)
+-		label(sp, sep, p, 0, n, 0, style, 0, ip, version, id, catalog);
++		label(sp, sep, p, 0, (int)n, 0, style, 0, ip, version, id, catalog);
+ 	/* In usage/--help messages, tell the user how to get more help */
+ 	if (style < STYLE_man)
+ 	{
+@@ -1791,10 +1792,10 @@ item(Sfio_t* sp, char* s, int about, int level, int style, Sfio_t* ip, int versi
+ 
+ #if _BLD_DEBUG
+ 
+-static char*	textout(Sfio_t*, char*, char*, int, int, int, int, Sfio_t*, int, char*, char*, int*);
++static char*	textout(Sfio_t*, char*, char*, ptrdiff_t, int, int, int, Sfio_t*, int, char*, char*, int*);
+ 
+ static char*
+-trace_textout(Sfio_t* sp, char* p, char* conform, int conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags, int line)
++trace_textout(Sfio_t* sp, char* p, char* conform, ptrdiff_t conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags, int line)
+ {
+ 	static int	depth = 0;
+ 
+@@ -1807,7 +1808,7 @@ trace_textout(Sfio_t* sp, char* p, char* conform, int conformlen, int style, int
+ #endif
+ 
+ static char*
+-textout(Sfio_t* sp, char* s, char* conform, int conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags)
++textout(Sfio_t* sp, char* s, char* conform, ptrdiff_t conformlen, int style, int level, int bump, Sfio_t* ip, int version, char* id, char* catalog, int* hflags)
+ {
+ #if _BLD_DEBUG
+ #define textout(sp,s,conform,conformlen,style,level,bump,ip,version,id,catalog,hflags)	trace_textout(sp,s,conform,conformlen,style,level,bump,ip,version,id,catalog,hflags,__LINE__)
+@@ -2021,10 +2022,10 @@ textout(Sfio_t* sp, char* s, char* conform, int conformlen, int style, int level
+ 						{
+ 							char*	o;
+ 							char*	v;
+-							int	j;
+-							int	m;
+-							int	ol;
+-							int	vl;
++							size_t	j;
++							ptrdiff_t m;
++							ptrdiff_t ol;
++							ptrdiff_t vl;
+ 
+ 							a = 0;
+ 							o = 0;
+@@ -2055,7 +2056,7 @@ textout(Sfio_t* sp, char* s, char* conform, int conformlen, int style, int level
+ 									{
+ 										for (j = 0; j < elementsof(attrs); j++)
+ 										{
+-											if (strneq(t, attrs[j].name, m))
++											if (strneq(t, attrs[j].name, (size_t)m))
+ 											{
+ 												a |= attrs[j].flag;
+ 												break;
+@@ -2365,23 +2366,24 @@ opthelp(const char* oopts, const char* what)
+ 	char*		re;
+ 	int		f;
+ 	int		i;
+-	int		j;
+-	int		m;
+ 	int		n;
+ 	int		a;
+-	int		cl;
+-	int		sl;
+-	int		vl;
+-	int		ol;
+-	int		wl;
+-	int		xl;
+-	int		rm;
+-	int		ts;
+-	int		co;
++	size_t		j;
++	size_t		xl;
++	ptrdiff_t	jj;
++	ptrdiff_t	m;
++	ptrdiff_t	cl;
++	ptrdiff_t	sl;
++	ptrdiff_t	vl;
++	ptrdiff_t	ol;
++	ptrdiff_t	wl;
++	ptrdiff_t	rm;
++	ptrdiff_t	ts;
++	ptrdiff_t	co;
++	ptrdiff_t	margin;
+ 	int		z;
+ 	int		style;
+ 	int		head;
+-	int		margin;
+ 	int		mode;
+ 	int		mutex;
+ 	int		prefix;
+@@ -2439,12 +2441,12 @@ opthelp(const char* oopts, const char* what)
+ 			style = STYLE_man;
+ 		if (!(sp_help = sfstropen()))
+ 			goto outofmemory;
+-		for (i = 0; i < elementsof(help_head); i++)
+-			list(sp_help, &help_head[i]);
+-		for (i = 0; i < elementsof(styles); i++)
+-			sfprintf(sp_help, "[:%s?%s]", styles[i].match, styles[i].text);
+-		for (i = 0; i < elementsof(help_tail); i++)
+-			list(sp_help, &help_tail[i]);
++		for (j = 0; j < elementsof(help_head); j++)
++			list(sp_help, &help_head[j]);
++		for (j = 0; j < elementsof(styles); j++)
++			sfprintf(sp_help, "[:%s?%s]", styles[j].match, styles[j].text);
++		for (j = 0; j < elementsof(help_tail); j++)
++			list(sp_help, &help_tail[j]);
+ 		if (!(opts = sfstruse(sp_help)))
+ 			goto outofmemory;
+ 	}
+@@ -2942,7 +2944,7 @@ opthelp(const char* oopts, const char* what)
+ 							if (*p == '\n')
+ 								break;
+ 						}
+-				xl = p - x;
++				xl = (size_t)(p - x);
+ 				if (!*p)
+ 					break;
+ 				continue;
+@@ -3111,7 +3113,7 @@ opthelp(const char* oopts, const char* what)
+ 						{
+ 							if (wl && !match((char*)what, w, version, id, catalog))
+ 								wl = 0;
+-							if ((!wl || *w == ':' || *w == '?') && (what[1] || sl && !memchr(s, what[0], sl) || !sl && what[0] != f))
++							if ((!wl || *w == ':' || *w == '?') && (what[1] || sl && !memchr(s, what[0], (size_t)sl) || !sl && what[0] != f))
+ 							{
+ 								w = 0;
+ 								if (!z)
+@@ -3218,7 +3220,7 @@ opthelp(const char* oopts, const char* what)
+ 							{
+ 								for (j = 0; j < elementsof(attrs); j++)
+ 								{
+-									if (strneq(t, attrs[j].name, m))
++									if (strneq(t, attrs[j].name, (size_t)m))
+ 									{
+ 										a |= attrs[j].flag;
+ 										break;
+@@ -3305,7 +3307,7 @@ opthelp(const char* oopts, const char* what)
+ 						{
+ 							sfputr(sp_body, ".FN", ' ');
+ 							if (re > rb)
+-								sfwrite(sp_body, rb, re - rb);
++								sfwrite(sp_body, rb, (size_t)(re - rb));
+ 							else
+ 								sfputr(sp, "void", -1);
+ 							if (w)
+@@ -3315,7 +3317,7 @@ opthelp(const char* oopts, const char* what)
+ 						{
+ 							sfputr(sp_body, ".OP", ' ');
+ 							if (sl)
+-								sfwrite(sp_body, s, sl);
++								sfwrite(sp_body, s, (size_t)sl);
+ 							else
+ 								sfputc(sp_body, f ? f : '-');
+ 							sfputc(sp_body, ' ');
+@@ -3377,7 +3379,7 @@ opthelp(const char* oopts, const char* what)
+ 								}
+ 							}
+ 							else
+-								sfwrite(sp_body, s, sl);
++								sfwrite(sp_body, s, (size_t)sl);
+ 							sfputr(sp_body, font(FONT_BOLD, style, 0), -1);
+ 							if (w)
+ 							{
+@@ -3387,7 +3389,7 @@ opthelp(const char* oopts, const char* what)
+ 						}
+ 						else if ((flags & OPT_functions) && re > rb)
+ 						{
+-							sfwrite(sp_body, rb, re - rb);
++							sfwrite(sp_body, rb, (size_t)(re - rb));
+ 							sfputc(sp_body, ' ');
+ 						}
+ 						if (w)
+@@ -3538,7 +3540,7 @@ opthelp(const char* oopts, const char* what)
+ 		{
+ 			if (islower(c))
+ 				c = toupper(c);
+-			*t++ = c;
++			*t++ = (char)c;
+ 		}
+ 		*t = 0;
+ 		t = rd;
+@@ -3546,7 +3548,7 @@ opthelp(const char* oopts, const char* what)
+ 		{
+ 			*t++ = ' ';
+ 			while (t < &rd[sizeof(rd)-2] && (c = *s++) && c != ']')
+-				*t++ = c;
++				*t++ = (char)c;
+ 		}
+ 		*t = 0;
+ 		sfprintf(sp, "\
+@@ -3681,7 +3683,7 @@ opthelp(const char* oopts, const char* what)
+ 	if (x)
+ 	{
+ 		for (t = x + xl; t > x && (*(t - 1) == '\n' || *(t - 1) == '\r'); t--);
+-		xl = t - x;
++		xl = (size_t)(t - x);
+ 		if (style >= STYLE_match)
+ 		{
+ 			u = id;
+@@ -3735,7 +3737,7 @@ opthelp(const char* oopts, const char* what)
+ 	astwinsize(1, NULL, &state.width);
+ 	if (state.width < 20)
+ 		state.width = OPT_WIDTH;
+-	m = strlen((style <= STYLE_long && error_info.id && !strchr(error_info.id, '/')) ? error_info.id : id) + 1;
++	m = (ptrdiff_t)strlen((style <= STYLE_long && error_info.id && !strchr(error_info.id, '/')) ? error_info.id : id) + 1;
+ 	margin = style == STYLE_api ? (8 * 1024) : (state.width - 1);
+ 	if (!(state.flags & OPT_preformat))
+ 	{
+@@ -3756,7 +3758,7 @@ opthelp(const char* oopts, const char* what)
+ 			{
+ 				if (islower(c))
+ 					c = toupper(c);
+-				*t++ = c;
++				*t++ = (char)c;
+ 			}
+ 			*t = 0;
+ 			sfprintf(mp, "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML//EN\">\n<HTML>\n<HEAD>\n<META name=\"generator\" content=\"" OPTGET_VERSION "\">\n%s<TITLE>%s man document</TITLE>\n<STYLE type=\"text/css\">\ndiv.SH { padding-left:2em; text-indent:0em; }\ndiv.SY { padding-left:4em; text-indent:-2em; }\ndt { float:left; clear:both; }\ndd { margin-left:3em; }\n</STYLE>\n</HEAD>\n<BODY bgcolor=white>\n", (state.flags & OPT_proprietary) ? "<!--INTERNAL-->\n" : "", id);
+@@ -3807,11 +3809,11 @@ opthelp(const char* oopts, const char* what)
+ 						p++;
+ 					if (*p == '\n')
+ 						continue;
+-					j = p - y;
+-					if (j > pt->level)
++					jj = p - y;
++					if (jj > pt->level)
+ 					{
+ 						pt++;
+-						pt->level = j;
++						pt->level = (unsigned char)jj;
+ 						pt->id = TAG_NONE;
+ 						for (y = p; *y && *y != '\n'; y++)
+ 						{
+@@ -3824,7 +3826,7 @@ opthelp(const char* oopts, const char* what)
+ 						}
+ 					}
+ 					else
+-						while (j < pt->level && pt > ptstk)
++						while (jj < pt->level && pt > ptstk)
+ 						{
+ 							sfprintf(mp, "%s", end[pt->id]);
+ 							pt--;
+@@ -4352,8 +4354,8 @@ optget(char** argv, const char* oopts)
+ 				n = m;
+ 			else
+ 			{
+-				if (n >= elementsof(state.pass))
+-					n = elementsof(state.pass) - 1;
++				if (n >= (int)elementsof(state.pass))
++					n = (int)elementsof(state.pass) - 1;
+ 				init((char*)oopts, &state.pass[n]);
+ 				if (state.npass <= n)
+ 					state.npass = n + 1;
+@@ -4497,7 +4499,7 @@ optget(char** argv, const char* oopts)
+ 			{
+ 				x = 0;
+ 				state.style = STYLE_long;
+-				opt_info.option[0] = opt_info.name[0] = opt_info.name[1] = c;
++				opt_info.option[0] = opt_info.name[0] = opt_info.name[1] = (char)c;
+ 				w = &opt_info.name[prefix];
+ 				if ((*s == 'n' || *s == 'N') && (*(s + 1) == 'o' || *(s + 1) == 'O') && *(s + 2) && *(s + 2) != '=')
+ 					no = *(s + 2) == '-' ? 3 : 2;
+@@ -4509,7 +4511,7 @@ optget(char** argv, const char* oopts)
+ 					{
+ 						if (*(s + 1) == '=')
+ 							s++;
+-						if (!isalnum(*(s - 1)) && *(w - 1) == (opt_info.assignment = *(s - 1)))
++						if (!isalnum(*(s - 1)) && *(w - 1) == (opt_info.assignment = (unsigned char)*(s - 1)))
+ 							w--;
+ 						v = ++s;
+ 						break;
+@@ -4532,8 +4534,8 @@ optget(char** argv, const char* oopts)
+ 		{
+ 			if ((k = argv[opt_info.index][0]) != '-' && k != '+')
+ 				k = '-';
+-			opt_info.option[0] = opt_info.name[0] = k;
+-			opt_info.option[1] = opt_info.name[1] = c;
++			opt_info.option[0] = opt_info.name[0] = (char)k;
++			opt_info.option[1] = opt_info.name[1] = (char)c;
+ 			opt_info.option[2] = opt_info.name[2] = 0;
+ 			break;
+ 		}
+@@ -4568,11 +4570,11 @@ optget(char** argv, const char* oopts)
+ 				v = s + 1;
+ 			}
+ 		}
+-		opt_info.option[1] = c;
++		opt_info.option[1] = (char)c;
+ 		opt_info.option[2] = 0;
+ 		if (!w)
+ 		{
+-			opt_info.name[1] = c;
++			opt_info.name[1] = (char)c;
+ 			opt_info.name[2] = 0;
+ 		}
+ 		goto help;
+@@ -4599,7 +4601,7 @@ optget(char** argv, const char* oopts)
+ 		{
+ 			if (cache)
+ 			{
+-				if (c >= 0 && c < sizeof(map) && map[c] && cache->equiv[map[c]])
++				if (c >= 0 && c < (ptrdiff_t)sizeof(map) && map[c] && cache->equiv[map[c]])
+ 					c = cache->equiv[map[c]];
+ 				if (k = cache->flags[map[c]])
+ 				{
+@@ -4764,7 +4766,7 @@ optget(char** argv, const char* oopts)
+ 				if (*s == '(')
+ 				{
+ 					s = nest(f = s);
+-					if (!conformance(f, s - f))
++					if (!conformance(f, (size_t)(s - f)))
+ 						goto disable;
+ 				}
+ 				if (k == '+' || k == '-')
+@@ -4779,7 +4781,7 @@ optget(char** argv, const char* oopts)
+ 						sfputc(vp, k);
+ 						s = expand(s + 2, NULL, &t, vp, id);
+ 						if (*s)
+-							*(f = s - 1) = k;
++							*(f = s - 1) = (char)k;
+ 						else
+ 						{
+ 							f = sfstrbase(vp);
+@@ -4947,7 +4949,7 @@ optget(char** argv, const char* oopts)
+ 							}
+ 							else if (*(f + 1) == ':' || *(f + 1) == '!' && *(f + 2) == ':')
+ 							{
+-								opt_info.option[1] = x;
++								opt_info.option[1] = (char)x;
+ 								opt_info.option[2] = 0;
+ 							}
+ 							else
+@@ -4962,10 +4964,10 @@ optget(char** argv, const char* oopts)
+ 									if (*(a + 1) == '=')
+ 										a += 2;
+ 								}
+-								x = -strtol(a, &b, 0);
+-								if ((b - a) > sizeof(opt_info.option) - 2)
+-									b = a + sizeof(opt_info.option) - 2;
+-								memcpy(&opt_info.option[1], a, b - a);
++								x = -((int)strtol(a, &b, 0));
++								if ((b - a) > (ptrdiff_t)sizeof(opt_info.option) - 2)
++									b = a + (ptrdiff_t)sizeof(opt_info.option) - 2;
++								memcpy(&opt_info.option[1], a, (size_t)(b - a));
+ 								opt_info.option[b - a + 1] = 0;
+ 							}
+ 							b = e;
+@@ -4986,7 +4988,7 @@ optget(char** argv, const char* oopts)
+ 					else if (k == c && prefix == 1)
+ 					{
+ 						w = 0;
+-						opt_info.name[1] = c;
++						opt_info.name[1] = (char)c;
+ 						opt_info.name[2] = 0;
+ 						opt_info.offset = 2;
+ 						opt_info.index--;
+@@ -5038,7 +5040,7 @@ optget(char** argv, const char* oopts)
+ 							else if (*(f + 1) == '=')
+ 								break;
+ 							else
+-								cache->flags[map[*((unsigned char*)f)]] = m;
++								cache->flags[map[*((unsigned char*)f)]] = (unsigned char)m;
+ 							j = 0;
+ 							/*
+ 							 * parse and cache short option equivalents,
+@@ -5092,10 +5094,10 @@ optget(char** argv, const char* oopts)
+ 						}
+ 						if (*f == '=')
+ 						{
+-							c = -strtol(++f, &b, 0);
+-							if ((b - f) > sizeof(opt_info.option) - 2)
+-								b = f + sizeof(opt_info.option) - 2;
+-							memcpy(&opt_info.option[1], f, b - f);
++							c = -((int)strtol(++f, &b, 0));
++							if ((b - f) > (ptrdiff_t)sizeof(opt_info.option) - 2)
++								b = f + (ptrdiff_t)sizeof(opt_info.option) - 2;
++							memcpy(&opt_info.option[1], f, (size_t)(b - f));
+ 							opt_info.option[b - f + 1] = 0;
+ 						}
+ 						else
+@@ -5123,7 +5125,7 @@ optget(char** argv, const char* oopts)
+ 								if (*(a + 1) == '=')
+ 									a += 2;
+ 							}
+-							numchr = -strtol(a, NULL, 0);
++							numchr = -((int)strtol(a, NULL, 0));
+ 						}
+ 					}
+ 				}
+@@ -5157,7 +5159,7 @@ optget(char** argv, const char* oopts)
+ 						if (*(s + 2) == '?')
+ 							m |= OPT_cache_optional;
+ 					}
+-					cache->flags[map[*((unsigned char*)s)]] = m;
++					cache->flags[map[*((unsigned char*)s)]] = (unsigned char)m;
+ 				}
+ 				s++;
+ 				continue;
+@@ -5182,8 +5184,8 @@ optget(char** argv, const char* oopts)
+ 					num = !num;
+ 				v = 0;
+ 			}
+-			if ((s - b) >= elementsof(opt_info.name))
+-				s = b + elementsof(opt_info.name) - 1;
++			if ((s - b) >= (ptrdiff_t)elementsof(opt_info.name))
++				s = b + (ptrdiff_t)elementsof(opt_info.name) - 1;
+ 			for (;;)
+ 			{
+ 				if (b >= s)
+@@ -5224,7 +5226,7 @@ optget(char** argv, const char* oopts)
+ 			return opterror("", 0, version, id, catalog);
+ 		}
+ 		s = numopt;
+-		c = opt_info.option[1] = numchr;
++		c = opt_info.option[1] = (char)numchr;
+ 		opt_info.offset--;
+ 	}
+ 	opt_info.arg = 0;
+@@ -5488,7 +5490,7 @@ optget(char** argv, const char* oopts)
+ 										if (*(a + 1) == '=')
+ 											a += 2;
+ 									}
+-									x = -strtol(a, &b, 0);
++									x = -((int)strtol(a, &b, 0));
+ 								}
+ 								b = e;
+ 								a = s = skip(s, 0, 0, 0, 1, 0, 0, version);
+@@ -5653,11 +5655,11 @@ optstr(const char* str, const char* opts)
+ 			sfputc(mp, '-');
+ 			sfputc(mp, '-');
+ 		}
+-		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= strlen(s) && (s[v] == 0 || s[v] == '\n'))
++		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (ptrdiff_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
+ 		{
+ 			s += v;
+ 			while (isspace(*++e));
+-			sfwrite(mp, e, s - e);
++			sfwrite(mp, e, (size_t)(s - e));
+ 		}
+ 		else
+ 		{
+@@ -5666,7 +5668,7 @@ optstr(const char* str, const char* opts)
+ 			if ((c = *s) == ':' && *(s + 1) != '=')
+ 			{
+ 				opt_info.index = 1;
+-				opt_info.offset = ++s - (char*)str;
++				opt_info.offset = (int)(++s - (char*)str);
+ 				if (!(s = sfstruse(mp)))
+ 					goto outofmemory;
+ 				s += 2;
+@@ -5736,7 +5738,7 @@ optstr(const char* str, const char* opts)
+ 		if (!(state.strv[1] = sfstruse(mp)))
+ 			goto outofmemory;
+ 		state.strv[2] = 0;
+-		opt_info.offset = s - (char*)str;
++		opt_info.offset = (int)(s - (char*)str);
+ 	}
+ 	if (opts)
+ 	{
+diff --git a/src/lib/libast/misc/procopen.c b/src/lib/libast/misc/procopen.c
+index b8b0b6bd9..bbf5b74e6 100644
+--- a/src/lib/libast/misc/procopen.c
++++ b/src/lib/libast/misc/procopen.c
+@@ -175,12 +175,12 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
+ 			{
+ 				if (arg2 != PROC_ARG_NULL)
+ 				{
+-					close(arg2);
+-					if (fcntl(arg1, F_DUPFD, arg2) != arg2)
++					close((int)arg2);
++					if (fcntl((int)arg1, F_DUPFD, arg2) != arg2)
+ 						return -1;
+ 				}
+ 				if (op & PROC_FD_CHILD)
+-					close(arg1);
++					close((int)arg1);
+ 			}
+ 			break;
+ 		case PROC_fd_ctty:
+@@ -190,7 +190,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
+ 					close(i);
+ 			arg2 = -1;
+ #ifdef TIOCSCTTY
+-			if (ioctl(arg1, TIOCSCTTY, NULL) < 0)
++			if (ioctl((int)arg1, TIOCSCTTY, NULL) < 0)
+ 				return -1;
+ #else
+ 			if (!(s = ttyname(arg1)))
+@@ -199,18 +199,18 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
+ 				return -1;
+ #endif /* TIOCSCTTY */
+ 			for (i = 0; i <= 2; i++)
+-				if (arg1 != i && arg2 != i && fcntl(arg1, F_DUPFD, i) != i)
++				if (arg1 != i && (int)arg2 != i && fcntl((int)arg1, F_DUPFD, i) != i)
+ 					return -1;
+ 			if (arg1 > 2)
+-				close(arg1);
++				close((int)arg1);
+ 			if (arg2 > 2)
+-				close(arg2);
++				close((int)arg2);
+ 			break;
+ 		case PROC_sig_dfl:
+-			signal(arg1, SIG_DFL);
++			signal((int)arg1, SIG_DFL);
+ 			break;
+ 		case PROC_sig_ign:
+-			signal(arg1, SIG_IGN);
++			signal((int)arg1, SIG_IGN);
+ 			break;
+ 		case PROC_sys_pgrp:
+ 			if (arg1 < 0)
+@@ -219,12 +219,12 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
+ 			{
+ 				if (arg1 == 1)
+ 					arg1 = 0;
+-				if (setpgid(0, arg1) < 0 && arg1 && errno == EPERM)
++				if (setpgid(0, (int)arg1) < 0 && arg1 && errno == EPERM)
+ 					setpgid(0, 0);
+ 			}
+ 			break;
+ 		case PROC_sys_umask:
+-			umask(arg1);
++			umask((mode_t)arg1);
+ 			break;
+ 		default:
+ 			return -1;
+@@ -551,7 +551,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
+ 		{
+ 			if (!fork())
+ 			{
+-				sfsprintf(path, sizeof(path), "%d", getppid());
++				sfsprintf(path, sizeof(path), "%d", (int)getppid());
+ 				execlp("trace", "trace", "-p", path, NULL);
+ 				_exit(EXIT_NOTFOUND);
+ 			}
+@@ -692,7 +692,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
+ 			if (!(flags & PROC_ARGMOD))
+ 			{
+ 				while (*p++);
+-				if (!(v = newof(0, char*, p - argv + 2, 0)))
++				if (!(v = newof(0, char*, (size_t)(p - argv + 2), 0)))
+ 					goto cleanup;
+ 				p = v + 2;
+ 				if (*argv)
+diff --git a/src/lib/libast/misc/recfmt.c b/src/lib/libast/misc/recfmt.c
+index 648ba7018..60aef2451 100644
+--- a/src/lib/libast/misc/recfmt.c
++++ b/src/lib/libast/misc/recfmt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -60,9 +60,9 @@ recfmt(const void* buf, size_t size, off_t total)
+ 
+ 	s = (unsigned char*)buf;
+ 	t = s + size;
+-	while ((k = (t - s)) >= 4 && !s[2] && !s[3])
++	while ((k = (unsigned int)(t - s)) >= 4 && !s[2] && !s[3])
+ 	{
+-		if ((i = (s[0]<<8)|s[1]) > k)
++		if ((i = (unsigned)((s[0]<<8)|s[1])) > k)
+ 			break;
+ 		s += i;
+ 	}
+@@ -75,7 +75,7 @@ recfmt(const void* buf, size_t size, off_t total)
+ 	 */
+ 
+ 	for (i = 0; i < elementsof(terminators); i++)
+-		if ((t = (unsigned char*)memchr(s, k = terminators[i], size / 2)) && (n = t - s + 1) > 1 && (total <= 0 || !(total % n)))
++		if ((t = (unsigned char*)memchr(s, k = terminators[i], size / 2)) && (n = (unsigned int)(t - s + 1)) > 1 && (total <= 0 || !(total % n)))
+ 		{
+ 			for (j = n - 1; j < size; j += n)
+ 				if (s[j] != k)
+@@ -108,7 +108,7 @@ recfmt(const void* buf, size_t size, off_t total)
+ 	}
+ 	n = 0;
+ 	m = 0;
+-	f = ~0;
++	f = ~0UL;
+ 	for (i = x; i > 1; i--)
+ 	{
+ 		if ((total <= 0 || !(total % i)) && q->rep[i] > q->rep[n])
+@@ -134,7 +134,7 @@ recfmt(const void* buf, size_t size, off_t total)
+ 			for (j = 0; j < elementsof(terminators); j++)
+ 				if (s[i] == terminators[j])
+ 					n++;
+-		n = n ? 0 : total;
++		n = n ? 0 : (unsigned int)total;
+ 	}
+ 	free(q);
+ 	return n ? REC_F_TYPE(n) : REC_N_TYPE();
+diff --git a/src/lib/libast/misc/reclen.c b/src/lib/libast/misc/reclen.c
+index d21b1b9db..9d0df32f9 100644
+--- a/src/lib/libast/misc/reclen.c
++++ b/src/lib/libast/misc/reclen.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -59,7 +60,7 @@ reclen(Recfmt_t f, const void* b, size_t n)
+ 			z += h;
+ 		else if (z < h)
+ 			z = h;
+-		return z;
++		return (ssize_t)z;
+ 	case REC_method:
+ 		return -1;
+ 	}
+diff --git a/src/lib/libast/misc/recstr.c b/src/lib/libast/misc/recstr.c
+index 255f5c7ac..dfa39cccd 100644
+--- a/src/lib/libast/misc/recstr.c
++++ b/src/lib/libast/misc/recstr.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -70,7 +70,7 @@ recstr(const char* s, char** e)
+ 	case '+':
+ 	case '0': case '1': case '2': case '3': case '4':
+ 	case '5': case '6': case '7': case '8': case '9':
+-		n = strton(s, &t, NULL, 0);
++		n = (int)strton(s, &t, NULL, 0);
+ 		if (n > 0 && t > (char*)s)
+ 		{
+ 			if (e)
+@@ -107,7 +107,7 @@ recstr(const char* s, char** e)
+ 	case 'u':
+ 	case 'U':
+ 		while (*++s == ' ' || *s == '\t' || *s == ',');
+-		n = strtol(s, &t, 0);
++		n = (int)strtol(s, &t, 0);
+ 		if (n < 0 || n > 15 || *t++ != '.')
+ 			break;
+ 		v = strtol(t, &t, 0);
+@@ -176,7 +176,7 @@ recstr(const char* s, char** e)
+ 			case '0': case '1': case '2': case '3': case '4':
+ 			case '5': case '6': case '7': case '8': case '9':
+ 				v = 0;
+-				a[n++] = strtol(s, &t, 0);
++				a[n++] = (int)strtol(s, &t, 0);
+ 				s = (const char*)t - 1;
+ 				continue;
+ 			}
+diff --git a/src/lib/libast/misc/setenviron.c b/src/lib/libast/misc/setenviron.c
+index 5799c6270..530d6a3e4 100644
+--- a/src/lib/libast/misc/setenviron.c
++++ b/src/lib/libast/misc/setenviron.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -47,7 +48,7 @@ setenviron(const char* akey)
+ 	char**		p = envv;
+ 	char*		s;
+ 	char*		t;
+-	int		n;
++	ptrdiff_t	n;
+ 
+ 	ast.env_serial++;
+ 	if (intercepts.intercept_setenviron)
+@@ -69,7 +70,7 @@ setenviron(const char* akey)
+ 			n = INCREMENT;
+ 		if (!p || (last - p + 1) < n)
+ 		{
+-			if (!(p = newof(p, char*, n, 0)))
++			if (!(p = newof(p, char*, (size_t)n, 0)))
+ 				return NULL;
+ 			last = p + n - 1;
+ 		}
+@@ -92,7 +93,7 @@ setenviron(const char* akey)
+ 	else if (next == last)
+ 	{
+ 		n = last - v + INCREMENT + 1;
+-		if (!(p = newof(p, char*, n, 0)))
++		if (!(p = newof(p, char*, (size_t)n, 0)))
+ 			return NULL;
+ 		last = p + n - 1;
+ 		next = last - INCREMENT;
+diff --git a/src/lib/libast/misc/sigcrit.c b/src/lib/libast/misc/sigcrit.c
+index 6dc2227d1..5ad71a248 100644
+--- a/src/lib/libast/misc/sigcrit.c
++++ b/src/lib/libast/misc/sigcrit.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -56,7 +57,7 @@ signals[] =		/* held inside critical region	*/
+ int
+ sigcritical(int op)
+ {
+-	int			i;
++	size_t			i;
+ 	static int		region;
+ 	static int		level;
+ 	static sigset_t		mask;
+diff --git a/src/lib/libast/misc/systrace.c b/src/lib/libast/misc/systrace.c
+index 66093d421..fddf13601 100644
+--- a/src/lib/libast/misc/systrace.c
++++ b/src/lib/libast/misc/systrace.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -29,7 +30,7 @@
+ void
+ systrace(const char* id)
+ {
+-	int		n;
++	size_t		n;
+ 	char*		out;
+ 	char*		s;
+ 	char		buf[PATH_MAX];
+@@ -54,7 +55,7 @@ systrace(const char* id)
+ 	av[6] = 0;
+ 	ov[0] = PROC_FD_DUP(open("/dev/null", O_WRONLY), 2, PROC_FD_PARENT|PROC_FD_CHILD);
+ 	ov[1] = 0;
+-	sfsprintf(out, &buf[sizeof(buf)] - out, ".%d", getpid());
++	sfsprintf(out, (size_t)(&buf[sizeof(buf)] - out), ".%d", (int)getpid());
+ 	for (n = 0; n < elementsof(trace); n++)
+ 		if (!procfree(procopen(trace[n], av + 1, NULL, ov, PROC_ARGMOD|PROC_GID|PROC_UID|(n == (elementsof(trace) - 1) ? PROC_CLEANUP : 0))))
+ 		{
+diff --git a/src/lib/libast/misc/translate.c b/src/lib/libast/misc/translate.c
+index 04540f5af..1f75b1382 100644
+--- a/src/lib/libast/misc/translate.c
++++ b/src/lib/libast/misc/translate.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -79,7 +79,7 @@ static State_t	state =
+ 	{	offsetof(Catalog_t, name),	0,	0	},
+ };
+ 
+-static int
++static ptrdiff_t
+ tempget(Sfio_t* sp)
+ {
+ 	if (sfstrtell(sp) > sfstrsize(sp) / 2)
+@@ -88,7 +88,7 @@ tempget(Sfio_t* sp)
+ }
+ 
+ static char*
+-tempuse(Sfio_t* sp, int off)
++tempuse(Sfio_t* sp, ptrdiff_t off)
+ {
+ 	sfputc(sp, 0);
+ 	return sfstrbase(sp) + off;
+@@ -293,7 +293,7 @@ translate(const char* loc, const char* cmd, const char* cat, const char* msg)
+ {
+ 	char*		r;
+ 	char*		t;
+-	int		p;
++	ptrdiff_t	p;
+ 	int		oerrno;
+ 	Catalog_t*	cp = NULL;
+ 	Message_t*	mp;
+diff --git a/src/lib/libast/port/astconf.c b/src/lib/libast/port/astconf.c
+index 89001b87f..cf0a2f236 100644
+--- a/src/lib/libast/port/astconf.c
++++ b/src/lib/libast/port/astconf.c
+@@ -94,7 +94,7 @@ typedef struct Feature_s
+ 	char*		value;
+ 	char*		std;
+ 	char*		ast;
+-	short		length;
++	ptrdiff_t	length;
+ 	short		standard;
+ 	unsigned int	flags;
+ 	short		op;
+@@ -307,7 +307,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 	char*		v;
+ 	char*		p;
+ 	char*		newvalue;
+-	int		n;
++	ptrdiff_t	n;
+ 
+ #if DEBUG_astconf
+ 	if (fp)
+@@ -321,12 +321,12 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 		char*		de;
+ 		char*		ve;
+ 
+-		state.prefix = strlen(state.name) + 1;
++		state.prefix = (int)strlen(state.name) + 1;
+ 		n = state.prefix + 3 * MAXVAL;
+ 		if ((s = getenv(state.name)) || getenv(state.strict) && (s = (char*)state.standard))
+ 			n += strlen(s) + 1;
+ 		n = roundof(n, 32);
+-		if (!(state.data = newof(0, char, n, 0)))
++		if (!(state.data = newof(0, char, (size_t)n, 0)))
+ 		{
+ 			if (conferror)
+ 				(*conferror)(&state, &state, 2, "synthesize(): out of memory");
+@@ -371,7 +371,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 	{
+ 		if (!value)
+ 			return NULL;
+-		n = strlen(value);
++		n = (ptrdiff_t)strlen(value);
+ 		goto ok;
+ 	}
+ 	s = (char*)fp->name;
+@@ -383,7 +383,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 			d++;
+ 		if (!*d)
+ 			break;
+-		if (strneq(d, s, n) && isspace(d[n]))
++		if (strneq(d, s, (size_t)n) && isspace(d[n]))
+ 		{
+ 			if (!value)
+ 			{
+@@ -398,7 +398,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 			for (; isspace(*s); s++);
+ 			for (v = s; *s && !isspace(*s); s++);
+ 			n = s - v;
+-			if ((!path || *path == *p && strlen(path) == (v - p - 1) && !memcmp(path, p, v - p - 1)) && strneq(v, value, n))
++			if ((!path || *path == *p && (ptrdiff_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
+ 				goto ok;
+ 			for (; isspace(*s); s++);
+ 			if (*s)
+@@ -428,17 +428,17 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 		value = "0";
+ 	if (!path || !path[0] || path[0] == '/' && !path[1])
+ 		path = "-";
+-	n += strlen(path) + strlen(value) + 3;
++	n += (ptrdiff_t)(strlen(path) + strlen(value) + 3);
+ 	if (d + n >= state.last)
+ 	{
+-		int	c;
+-		int	i;
++		ptrdiff_t c;
++		ptrdiff_t i;
+ 
+ 		i = d - state.data;
+ 		state.data -= state.prefix;
+ 		c = n + state.last - state.data + 3 * MAXVAL;
+ 		c = roundof(c, 32);
+-		if (!(state.data = newof(state.data, char, c, 0)))
++		if (!(state.data = newof(state.data, char, (size_t)c, 0)))
+ 		{
+ 			if (conferror)
+ 				(*conferror)(&state, &state, 2, "synthesize(): out of memory");
+@@ -467,7 +467,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 		fp->value = 0;
+ 	if (n == 1 && (*value == '0' || *value == '-'))
+ 		n = 0;
+-	if(!(newvalue = malloc(n + 1)))
++	if(!(newvalue = malloc((size_t)n + 1)))
+ 	{
+ 		if(fp->value && fp->value != null)
+ 			free(fp->value);
+@@ -477,7 +477,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 		return NULL;
+ 	}
+ 	/* memcpy comes before free because fp->value and value might share memory */
+-	memcpy(newvalue, value, n);
++	memcpy(newvalue, value, (size_t)n);
+ 	newvalue[n] = 0;
+ 	if(fp->value && fp->value != null)
+ 		free(fp->value);
+@@ -524,7 +524,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
+ 	default:
+ 		if (p = getenv("PATH"))
+ 		{
+-			int		r = 1;
++			ptrdiff_t	r = 1;
+ 			char*		d = p;
+ 			Sfio_t*		tmp;
+ 
+@@ -544,7 +544,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
+ 						{
+ 							if (r = p - d - 1)
+ 							{
+-								sfwrite(tmp, d, r);
++								sfwrite(tmp, d, (size_t)r);
+ 								sfputc(tmp, '/');
+ 								sfputr(tmp, command, 0);
+ 								if ((d = sfstruse(tmp)) && !eaccess(d, X_OK))
+@@ -712,10 +712,11 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 		{
+ 			if (state.synthesizing)
+ 			{
++				size_t len;
+ 				if (!(fp->flags & CONF_ALLOC))
+ 					fp->value = 0;
+-				n = strlen(value);
+-				if (!(fp->value = newof(fp->value, char, n, 1)))
++				len = strlen(value);
++				if (!(fp->value = newof(fp->value, char, len, 1)))
+ 				{
+ 					if (conferror)
+ 						(*conferror)(&state, &state, 2, "%s: out of memory", value);
+@@ -724,8 +725,8 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 				else
+ 				{
+ 					fp->flags |= CONF_ALLOC;
+-					memcpy(fp->value, value, n);
+-					fp->value[n] = 0;
++					memcpy(fp->value, value, len);
++					fp->value[len] = 0;
+ 				}
+ 			}
+ 			else
+@@ -759,7 +760,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ static char*
+ feature(Feature_t* fp, const char* name, const char* path, const char* value, unsigned int flags, Error_f conferror)
+ {
+-	int		n;
++	size_t		n;
+ 
+ 	if (value && (streq(value, "-") || streq(value, "0")))
+ 		value = null;
+@@ -784,7 +785,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
+ 		fp->op = -1;
+ 		fp->name = (const char*)fp + sizeof(Feature_t);
+ 		strcpy((char*)fp->name, name);
+-		fp->length = n;
++		fp->length = (ptrdiff_t)n;
+ 		fp->std = &null[0];
+ 		fp->next = state.features;
+ 		state.features = fp;
+@@ -830,7 +831,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
+ 		name++;
+  again:
+ 	for (p = prefix; p < &prefix[prefix_elements]; p++)
+-		if (strneq(name, p->name, p->length) && ((c = name[p->length] == '_' || name[p->length] == '(' || name[p->length] == '#') || (v = isdigit(name[p->length]) && name[p->length + 1] == '_')))
++		if (strneq(name, p->name, (size_t)p->length) && ((c = name[p->length] == '_' || name[p->length] == '(' || name[p->length] == '#') || (v = isdigit(name[p->length]) && name[p->length + 1] == '_')))
+ 		{
+ 			if (p->call < 0)
+ 			{
+@@ -934,7 +935,7 @@ fmtlower(const char* s)
+ 	{
+ 		if (isupper(c))
+ 			c = tolower(c);
+-		*t++ = c;
++		*t++ = (char)c;
+ 	}
+ 	*t = 0;
+ 	return b;
+@@ -956,7 +957,6 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+ 	char*		f;
+ 	const char*	s;
+ 	int		i;
+-	int		n;
+ 	int		olderrno;
+ 	int		drop;
+ 	int		defined;
+@@ -1040,7 +1040,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+ 	case CONF_confstr:
+ 		call = "confstr";
+ #if _lib_confstr
+-		if (!(v = confstr(p->op, buf, sizeof(buf))))
++		if (!(v = (Sflong_t)confstr(p->op, buf, sizeof(buf))))
+ 		{
+ 			defined = 0;
+ 			v = -1;
+@@ -1101,7 +1101,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+ 		{
+ 			if (streq(p->name, "RELEASE") && (i = open("/proc/version", O_RDONLY|O_cloexec)) >= 0)
+ 			{
+-				n = read(i, buf, sizeof(buf) - 1);
++				ssize_t n = read(i, buf, sizeof(buf) - 1);
+ 				close(i);
+ 				if (n > 0 && buf[n - 1] == '\n')
+ 					n--;
+@@ -1336,7 +1336,7 @@ nativeconf(Proc_t** pp, const char* operand)
+ 	ops[1] = 0;
+ 	if (*pp = procopen(_pth_getconf, cmd, environ, ops, PROC_READ))
+ 	{
+-		if (sp = sfnew(NULL, NULL, SFIO_UNBOUND, (*pp)->rfd, SFIO_READ))
++		if (sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, (*pp)->rfd, SFIO_READ))
+ 		{
+ 			sfdisc(sp, SFIO_POPDISC);
+ 			return sp;
+@@ -1371,7 +1371,7 @@ char*
+ astgetconf(const char* name, const char* path, const char* value, int flags, Error_f conferror)
+ {
+ 	char*		s;
+-	int		n;
++	size_t		n;
+ 	Lookup_t	look;
+ 	Sfio_t*		tmp;
+ 
+@@ -1457,7 +1457,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+ 			}
+ 			for (s = altname; *s; s++)
+ 				if (isupper(*s))
+-					*s = tolower(*s);
++					*s = (char)tolower(*s);
+ 			if (tmp = sfstropen())
+ 			{
+ 				for (n = 0; n < elementsof(dirs); n++)
+diff --git a/src/lib/libast/port/astwinsize.c b/src/lib/libast/port/astwinsize.c
+index f1eae238b..bd3d4d04f 100644
+--- a/src/lib/libast/port/astwinsize.c
++++ b/src/lib/libast/port/astwinsize.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -58,7 +58,7 @@
+ #undef	ioctl
+ #undef	sleep
+ 
+-static int		ttctl(int, int, void*);
++static int		ttctl(int, unsigned long, void*);
+ 
+ void
+ astwinsize(int fd, int* rows, int* cols)
+@@ -101,8 +101,8 @@ astwinsize(int fd, int* rows, int* cols)
+ 	{
+ 		char*		s;
+ 
+-		if (rows) *rows = (s = getenv("LINES")) ? strtol(s, NULL, 0) : 0;
+-		if (cols) *cols = (s = getenv("COLUMNS")) ? strtol(s, NULL, 0) : 0;
++		if (rows) *rows = (s = getenv("LINES")) ? (int)strtol(s, NULL, 0) : 0;
++		if (cols) *cols = (s = getenv("COLUMNS")) ? (int)strtol(s, NULL, 0) : 0;
+ 	}
+ }
+ 
+@@ -113,7 +113,7 @@ astwinsize(int fd, int* rows, int* cols)
+  */
+ 
+ static int
+-ttctl(int fd, int op, void* tt)
++ttctl(int fd, unsigned long op, void* tt)
+ {
+ 	int	v;
+ 
+diff --git a/src/lib/libast/port/lc.c b/src/lib/libast/port/lc.c
+index 826ae6860..256303264 100644
+--- a/src/lib/libast/port/lc.c
++++ b/src/lib/libast/port/lc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -30,7 +31,7 @@
+ typedef struct Local_s
+ {
+ 	const char*	name;
+-	int		size;
++	size_t		size;
+ } Local_t;
+ 
+ #undef	setlocale	/* this file deals with the system locale */
+@@ -168,13 +169,13 @@ lcinfo(int category)
+  * if standard!=0 and s[0] is a digit leading non-digits are ignored in p
+  */
+ 
+-static int
+-match(const char* s, const char* p, int minimum, int standard)
++static ptrdiff_t
++match(const char* s, const char* p, size_t minimum, int standard)
+ {
+ 	const char*	t;
+ 	const char*	x;
+-	int		w;
+-	int		z;
++	ptrdiff_t	w;
++	ptrdiff_t	z;
+ 
+ 	z = 0;
+ 	do
+@@ -231,7 +232,7 @@ match(const char* s, const char* p, int minimum, int standard)
+ 			}
+ 			if ((!*t || *t == ',') && (!*p || *p == '|' || w))
+ 				return p - x;
+-			if (minimum && z < (p - x) && (p - x) >= minimum)
++			if (minimum && z < (p - x) && (p - x) >= (ptrdiff_t)minimum)
+ 				z = p - x;
+ 		}
+ 		while (*p && *p != '|')
+@@ -244,7 +245,7 @@ match(const char* s, const char* p, int minimum, int standard)
+  * return 1 if s matches the charset names in cp
+  */
+ 
+-static int
++static ptrdiff_t
+ match_charset(const char* s, const Lc_charset_t* cp)
+ {
+ 	return match(s, cp->code, 0, 1) || match(s, cp->alternates, 3, 1) || cp->ms && match(s, cp->ms, 0, 1);
+@@ -275,7 +276,7 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
+ 		{
+ 			for (t = lp->code; s < e && (*s = *t++); s++);
+ 			*s++ = 0;
+-			return s - buf;
++			return (size_t)(s - buf);
+ 		}
+ 		if (flags & LC_verbose)
+ 		{
+@@ -290,7 +291,7 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
+ 				}
+ 				else if (!isalnum(c))
+ 					u = 1;
+-				*s++ = c;
++				*s++ = (char)c;
+ 			}
+ 		}
+ 		else
+@@ -320,11 +321,11 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
+ 					}
+ 					else if (!isalnum(c))
+ 						u = 1;
+-					*s++ = c;
++					*s++ = (char)c;
+ 				}
+ 			}
+ 			else
+-				for (t = tp->code; s < e && (*s = toupper(*t++)); s++);
++				for (t = tp->code; s < e && (*s = (char)toupper(*t++)); s++);
+ 			if (r)
+ 			{
+ 				*s = 0;
+@@ -347,25 +348,25 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
+ 			t = cp->code;
+ 			if (streq(cp->code, "utf8") && (t = _locale_utf8_str))
+ 				for (; s < e && (c = *t++); s++)
+-					*s = c;
++					*s = (char)c;
+ 			else
+ 				for (t = cp->code; s < e && (c = *t++); s++)
+ 				{
+ 					if (islower(c))
+ 						c = toupper(c);
+-					*s = c;
++					*s = (char)c;
+ 				}
+ 		}
+ 		for (c = '@'; ap && s < e; ap = ap->next)
+ 			if (!(flags & (LC_abbreviated|LC_default|LC_verbose)) || !(ap->attribute->flags & LC_default))
+ 			{
+-				*s++ = c;
++				*s++ = (char)c;
+ 				c = ',';
+ 				for (t = ap->attribute->name; s < e && (*s = *t++); s++);
+ 			}
+ 	}
+ 	*s++ = 0;
+-	return s - buf;
++	return (size_t)(s - buf);
+ }
+ 
+ /*
+@@ -431,9 +432,10 @@ lcmake(const char* name)
+ 	const Lc_attribute_t*	ap;
+ 	Lc_attribute_list_t*	ai;
+ 	Lc_attribute_list_t*	al;
+-	int			i;
+-	int			n;
+-	int			z;
++	ptrdiff_t		i;
++	size_t			j;
++	size_t			n;
++	size_t			z;
+ 	char			buf[PATH_MAX / 2];
+ 	char			tmp[PATH_MAX / 2];
+ 	Local_t			local[2];
+@@ -502,7 +504,7 @@ lcmake(const char* name)
+ 		{
+ 			if (isupper(c))
+ 				c = tolower(c);
+-			*s++ = c;
++			*s++ = (char)c;
+ 		}
+ 	}
+ 	if ((t = a) && s < e)
+@@ -530,7 +532,7 @@ lcmake(const char* name)
+ 				break;
+ 			if (isupper(c))
+ 				c = tolower(c);
+-			*s++ = c;
++			*s++ = (char)c;
+ 		}
+ 	}
+ 	*s = 0;
+@@ -557,7 +559,7 @@ lcmake(const char* name)
+ 			c = s[2];
+ 			s[2] = 0;
+ 			for (lp = lc_languages; lp->code && !streq(s, lp->code); lp++);
+-			s[2] = c;
++			s[2] = (char)c;
+ 			if (lp->code)
+ 				n = 1;
+ 		}
+@@ -580,10 +582,10 @@ lcmake(const char* name)
+ 					z = 0;
+ 					tpb = 0;
+ 					for (tp = lc_territories; tp->name; tp++)
+-						if ((i = match(s, tp->name, 3, 0)) > z)
++						if ((i = match(s, tp->name, 3, 0)) > (ptrdiff_t)z)
+ 						{
+ 							tpb = tp;
+-							if ((z = i) == n)
++							if ((z = (size_t)i) == n)
+ 								break;
+ 						}
+ 					if (tpb)
+@@ -658,8 +660,8 @@ lcmake(const char* name)
+ 					{
+ 						if (lp != &lc_languages[0])
+ 						{
+-							for (i = 0; i < elementsof(tp->languages) && lp != tp->languages[i]; i++);
+-							if (i >= elementsof(tp->languages))
++							for (j = 0; j < elementsof(tp->languages) && lp != tp->languages[j]; j++);
++							if (j >= elementsof(tp->languages))
+ 								tp = 0;
+ 						}
+ 						break;
+@@ -670,8 +672,8 @@ lcmake(const char* name)
+ 				for (tp = lc_territories; tp->code; tp++)
+ 					if (match(s, tp->name, 3, 0))
+ 					{
+-						for (i = 0; i < elementsof(tp->languages) && lp != tp->languages[i]; i++);
+-						if (i < elementsof(tp->languages))
++						for (j = 0; j < elementsof(tp->languages) && lp != tp->languages[j]; j++);
++						if (j < elementsof(tp->languages))
+ 							break;
+ 					}
+ 			}
+@@ -700,7 +702,7 @@ lcmake(const char* name)
+ 					}
+ 			if (!cp->code)
+ 			{
+-				for (i = 0; i < elementsof(lp->attributes) && (ap = lp->attributes[i]); i++)
++				for (j = 0; j < elementsof(lp->attributes) && (ap = lp->attributes[j]); j++)
+ 					if (match(w, ap->name, 5, 0))
+ 					{
+ 						if (ai = newof(0, Lc_attribute_list_t, 1, 0))
+@@ -711,7 +713,7 @@ lcmake(const char* name)
+ 						}
+ 						break;
+ 					}
+-				if (i >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + s - w + 1)))
++				if (j >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + (size_t)(s - w + 1))))
+ 				{
+ 					ai = (Lc_attribute_list_t*)(ap + 1);
+ 					strcpy((char*)(((Lc_attribute_t*)ap)->name = (const char*)(ai + 1)), w);
+@@ -720,7 +722,7 @@ lcmake(const char* name)
+ 					al = ai;
+ 				}
+ 			}
+-			*s = c;
++			*s = (char)c;
+ 		} while (*s++);
+ 	}
+ 
+@@ -752,15 +754,15 @@ lcmake(const char* name)
+ 	local[1].name = default_lc.code;
+ 	local[1].size = strlen(local[1].name);
+ 	i = -1;
+-	for (c = 0; c < elementsof(local); ++c)
+-		if (strneq(name, local[c].name, local[c].size))
++	for (j = 0; j < elementsof(local); ++j)
++		if (strneq(name, local[j].name, local[j].size))
+ 		{
+-			switch (name[local[c].size])
++			switch (name[local[j].size])
+ 			{
+ 			case '.':
+ 			case '_':
+ 			case 0:
+-				i = c;
++				i = (ptrdiff_t)j;
+ 				z += local[!i].size + n;
+ 				break;
+ 			}
+@@ -784,15 +786,15 @@ lcmake(const char* name)
+ 	if (streq(lc->charset->code, "utf8"))
+ 		lc->flags |= LC_utf8;
+ 	lc->attributes = al;
+-	for (i = 0; i < elementsof(lc->info); i++)
+-		lc->info[i].lc = lc;
++	for (j = 0; j < elementsof(lc->info); j++)
++		lc->info[j].lc = lc;
+ #if _WINIX
+ 	n = SUBLANG_DEFAULT;
+ 	if (tp)
+-		for (i = 0; i < elementsof(tp->languages); i++)
+-			if (lp == tp->languages[i])
++		for (j = 0; j < elementsof(tp->languages); j++)
++			if (lp == tp->languages[j])
+ 			{
+-				n = tp->indices[i];
++				n = tp->indices[j];
+ 				break;
+ 			}
+ 	lc->index = MAKELCID(MAKELANGID(lp->index, n), SORT_DEFAULT);
+@@ -835,9 +837,9 @@ lcscan(Lc_t* lc)
+ 		ls->language = elementsof(ls->lc.territory->languages);
+ 		ls->attribute = elementsof(ls->lc.language->attributes);
+ 	}
+-	if (++ls->attribute >= elementsof(ls->lc.language->attributes) || !(ls->list.attribute = ls->lc.language->attributes[ls->attribute]))
++	if (++ls->attribute >= (ssize_t)elementsof(ls->lc.language->attributes) || !(ls->list.attribute = ls->lc.language->attributes[ls->attribute]))
+ 	{
+-		if (++ls->language >= elementsof(ls->lc.territory->languages) || !(ls->lc.language = ls->lc.territory->languages[ls->language]))
++		if (++ls->language >= (ssize_t)elementsof(ls->lc.territory->languages) || !(ls->lc.language = ls->lc.territory->languages[ls->language]))
+ 		{
+ 			if (!lc_territories[++ls->territory].code)
+ 			{
+diff --git a/src/lib/libast/port/lcgen.c b/src/lib/libast/port/lcgen.c
+index a2e39601d..a61c54a48 100644
+--- a/src/lib/libast/port/lcgen.c
++++ b/src/lib/libast/port/lcgen.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -131,6 +131,8 @@ static struct State_s
+ #define elementsof(x)	(sizeof(x)/sizeof(x[0]))
+ #define newof(p,t,n,x)	((t*)calloc(1,sizeof(t)*(n)+(x)))
+ 
++#define NOT_USED(x)	do (void)(x); while(0)
++
+ static Link_t*
+ enter(Table_t* tab, Link_t* v)
+ {
+@@ -216,7 +218,7 @@ macro(FILE* f, char* p1, char* p2, char* p3)
+ 					c = toupper(c);
+ 				else if (!isalnum(c))
+ 					c = '_';
+-				*b++ = c;
++				*b++ = (char)c;
+ 			}
+ 		}
+ 		*b = 0;
+@@ -259,6 +261,7 @@ main(int argc, char** argv)
+ 	char*			arg[5];
+ 	char			buf[1024];
+ 
++	NOT_USED(argc);
+ 	command = *argv++;
+ 	line = 0;
+ 	if (!(hdr = *argv++) || !(lib = *argv++) || *argv)
+@@ -289,21 +292,21 @@ main(int argc, char** argv)
+ 	fprintf(hf, "\n");
+ 	fprintf(hf, "#include <ast.h>\n");
+ 	fprintf(hf, "\n");
+-	fprintf(hf, "#define LC_abbreviated\t\t0x00001\n");
+-	fprintf(hf, "#define LC_checked\t\t0x00002\n");
+-	fprintf(hf, "#define LC_debug\t\t0x00004\n");
+-	fprintf(hf, "#define LC_default\t\t0x00008\n");
+-	fprintf(hf, "#define LC_defined\t\t0x00010\n");
+-	fprintf(hf, "#define LC_local\t\t0x00020\n");
+-	fprintf(hf, "#define LC_primary\t\t0x00040\n");
+-	fprintf(hf, "#define LC_qualified\t\t0x00080\n");
+-	fprintf(hf, "#define LC_undefined\t\t0x00100\n");
+-	fprintf(hf, "#define LC_utf8\t\t\t0x00200\n");
+-	fprintf(hf, "#define LC_verbose\t\t0x00400\n");
+-	fprintf(hf, "#define LC_setlocale\t\t0x10000\n");
+-	fprintf(hf, "#define LC_setenv\t\t0x20000\n");
+-	fprintf(hf, "#define LC_user\t\t\t0x40000\n");
+-	fprintf(lf, "/* : : generated by %s : : */\n", command);
++	fprintf(hf, "#define LC_abbreviated\t\t0x00001U\n");
++	fprintf(hf, "#define LC_checked\t\t0x00002U\n");
++	fprintf(hf, "#define LC_debug\t\t0x00004U\n");
++	fprintf(hf, "#define LC_default\t\t0x00008U\n");
++	fprintf(hf, "#define LC_defined\t\t0x00010U\n");
++	fprintf(hf, "#define LC_local\t\t0x00020U\n");
++	fprintf(hf, "#define LC_primary\t\t0x00040U\n");
++	fprintf(hf, "#define LC_qualified\t\t0x00080U\n");
++	fprintf(hf, "#define LC_undefined\t\t0x00100U\n");
++	fprintf(hf, "#define LC_utf8\t\t\t0x00200U\n");
++	fprintf(hf, "#define LC_verbose\t\t0x00400U\n");
++	fprintf(hf, "#define LC_setlocale\t\t0x10000U\n");
++	fprintf(hf, "#define LC_setenv\t\t0x20000U\n");
++	fprintf(hf, "#define LC_user\t\t\t0x40000U\n");
++	fprintf(lf, "/* : : generated by %s : : */\n",command);
+ 	fprintf(lf, "\n");
+ 	fprintf(lf, "#include \"lclib.h\"\n");
+ 	fprintf(lf, "#include \"lclang.h\"\n");
+@@ -386,7 +389,7 @@ main(int argc, char** argv)
+ 		switch (type)
+ 		{
+ 		case CHARSET:
+-			if (!(cp = newof(0, Charset_t, 1, s - b + 1)))
++			if (!(cp = newof(0, Charset_t, 1, (size_t)(s - b + 1))))
+ 			{
+ 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
+ 				return 1;
+@@ -402,7 +405,7 @@ main(int argc, char** argv)
+ 			}
+ 			break;
+ 		case TERRITORY:
+-			if (!(tp = newof(0, Territory_t, 1, s - b + 1)))
++			if (!(tp = newof(0, Territory_t, 1, (size_t)(s - b + 1))))
+ 			{
+ 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
+ 				return 1;
+@@ -456,7 +459,7 @@ main(int argc, char** argv)
+ 			}
+ 			break;
+ 		case LANGUAGE:
+-			if (!(lp = newof(0, Language_t, 1, s - b + 1)))
++			if (!(lp = newof(0, Language_t, 1, (size_t)(s - b + 1))))
+ 			{
+ 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
+ 				return 1;
+@@ -525,7 +528,7 @@ main(int argc, char** argv)
+ 			}
+ 			break;
+ 		case MAP:
+-			if (!(mp = newof(0, Map_t, 1, s - b + 1)))
++			if (!(mp = newof(0, Map_t, 1, (size_t)(s - b + 1))))
+ 			{
+ 				fprintf(stderr, "%s: %d: out of memory\n", command, line);
+ 				return 1;
+diff --git a/src/lib/libast/port/mc.c b/src/lib/libast/port/mc.c
+index 3b5a7aa89..7ce881d62 100644
+--- a/src/lib/libast/port/mc.c
++++ b/src/lib/libast/port/mc.c
+@@ -153,7 +153,7 @@ mcfind(const char* locale, const char* catalog, int category, int nls, char* pat
+ 							v = lc_categories[category].name;
+ 							break;
+ 						default:
+-							*s++ = c;
++							*s++ = (char)c;
+ 							continue;
+ 						}
+ 						if (v)
+@@ -172,7 +172,7 @@ mcfind(const char* locale, const char* catalog, int category, int nls, char* pat
+ 					/* FALLTHROUGH */
+ 				default:
+ 					if (s < e)
+-						*s++ = c;
++						*s++ = (char)c;
+ 					continue;
+ 				}
+ 				break;
+@@ -268,9 +268,9 @@ mcopen(Sfio_t* ip)
+ 		 * get the component dimensions
+ 		 */
+ 
+-		mc->nstrs = sfgetu(ip);
+-		mc->nmsgs = sfgetu(ip);
+-		mc->num = sfgetu(ip);
++		mc->nstrs = (size_t)sfgetu(ip);
++		mc->nmsgs = (size_t)sfgetu(ip);
++		mc->num = (int)sfgetu(ip);
+ 		if (sfeof(ip))
+ 			goto bad;
+ 	}
+@@ -281,11 +281,11 @@ mcopen(Sfio_t* ip)
+ 	 * allocate the remaining space
+ 	 */
+ 
+-	if (!(mc->set = vmnewof(vm, 0, Mcset_t, mc->num + 1, 0)))
++	if (!(mc->set = vmnewof(vm, 0, Mcset_t, (size_t)mc->num + 1, 0)))
+ 		goto bad;
+ 	if (!ip)
+ 		return mc;
+-	if (!(mp = vmnewof(vm, 0, char*, mc->nmsgs + mc->num + 1, 0)))
++	if (!(mp = vmnewof(vm, 0, char*, mc->nmsgs + (size_t)mc->num + 1, 0)))
+ 		goto bad;
+ 	if (!(rp = sp = vmalloc(vm, mc->nstrs + 1)))
+ 		goto bad;
+@@ -294,12 +294,12 @@ mcopen(Sfio_t* ip)
+ 	 * get the set dimensions and initialize the msg pointers
+ 	 */
+ 
+-	while (i = sfgetu(ip))
++	while (i = (int)sfgetu(ip))
+ 	{
+ 		if (i > mc->num)
+ 			goto bad;
+-		n = sfgetu(ip);
+-		mc->set[i].num = n;
++		n = (size_t)sfgetu(ip);
++		mc->set[i].num = (int)n;
+ 		mc->set[i].msg = mp;
+ 		mp += n + 1;
+ 	}
+@@ -310,7 +310,7 @@ mcopen(Sfio_t* ip)
+ 
+ 	for (i = 1; i <= mc->num; i++)
+ 		for (j = 1; j <= mc->set[i].num; j++)
+-			if (n = sfgetu(ip))
++			if (n = (size_t)sfgetu(ip))
+ 			{
+ 				mc->set[i].msg[j] = sp;
+ 				sp += n;
+@@ -320,7 +320,7 @@ mcopen(Sfio_t* ip)
+ 	 * read the string table
+ 	 */
+ 
+-	if (sfread(ip, rp, mc->nstrs) != mc->nstrs || sfgetc(ip) != EOF)
++	if (sfread(ip, rp, mc->nstrs) != (ssize_t)mc->nstrs || sfgetc(ip) != EOF)
+ 		goto bad;
+ 	if (!(mc->tmp = sfstropen()))
+ 		goto bad;
+@@ -344,7 +344,7 @@ mcget(Mc_t* mc, int set, int num, const char* msg)
+ {
+ 	char*		s;
+ 	size_t		n;
+-	int		p;
++	ptrdiff_t	p;
+ 
+ 	if (!mc || set < 0 || set > mc->num || num < 1 || num > mc->set[set].num || !(s = mc->set[set].msg[num]))
+ 		return (char*)msg;
+@@ -404,7 +404,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
+ 
+ 				mp = mc->set[set].msg + num;
+ 				while (num && !mp[--num]);
+-				mc->nmsgs -= mc->set[set].num - num;
++				mc->nmsgs -= (size_t)(mc->set[set].num - num);
+ 				if (!(mc->set[set].num = num) && mc->num == set)
+ 				{
+ 					/*
+@@ -428,7 +428,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
+ 		if (set > mc->gen)
+ 		{
+ 			i = MC_SET_MAX;
+-			if (!(sp = vmnewof(mc->vm, 0, Mcset_t, i + 1, 0)))
++			if (!(sp = vmnewof(mc->vm, 0, Mcset_t, (size_t)i + 1, 0)))
+ 				return -1;
+ 			mc->gen = i;
+ 			for (i = 1; i <= mc->num; i++)
+@@ -454,7 +454,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
+ 					i = 2 * num;
+ 				if (i > MC_NUM_MAX)
+ 					i = MC_NUM_MAX;
+-				if (!(mp = vmnewof(mc->vm, 0, char*, i + 1, 0)))
++				if (!(mp = vmnewof(mc->vm, 0, char*, (size_t)i + 1, 0)))
+ 					return -1;
+ 				mc->gen = i;
+ 				sp->msg = mp;
+@@ -466,13 +466,13 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
+ 				i = 2 * mc->gen;
+ 				if (i > MC_NUM_MAX)
+ 					i = MC_NUM_MAX;
+-				if (!(mp = vmnewof(mc->vm, sp->msg, char*, i + 1, 0)))
++				if (!(mp = vmnewof(mc->vm, sp->msg, char*, (size_t)i + 1, 0)))
+ 					return -1;
+ 				sp->gen = i;
+ 				sp->msg = mp;
+ 			}
+ 		}
+-		mc->nmsgs += num - sp->num;
++		mc->nmsgs += (size_t)(num - sp->num);
+ 		sp->num = num;
+ 	}
+ 
+@@ -512,7 +512,7 @@ mcdump(Mc_t* mc, Sfio_t* op)
+ {
+ 	int		i;
+ 	int		j;
+-	int		n;
++	size_t		n;
+ 	char*		s;
+ 	Mcset_t*	sp;
+ 
+@@ -618,7 +618,7 @@ mcindex(const char* s, char** e, int* set, int* msg)
+ 	char*		t;
+ 
+ 	m = 0;
+-	n = strtol(s, &t, 0);
++	n = (int)strtol(s, &t, 0);
+ 	if (t == (char*)s)
+ 	{
+ 		SFCVINIT();
+@@ -635,7 +635,7 @@ mcindex(const char* s, char** e, int* set, int* msg)
+ 		s = (const char*)t;
+ 	r = n;
+ 	if (*s)
+-		m = strtol(s + 1, e, 0);
++		m = (int)strtol(s + 1, e, 0);
+ 	else
+ 	{
+ 		if (e)
+diff --git a/src/lib/libast/port/mnt.c b/src/lib/libast/port/mnt.c
+index 4a0886bf9..76f8f48b6 100644
+--- a/src/lib/libast/port/mnt.c
++++ b/src/lib/libast/port/mnt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -260,14 +260,14 @@ mntopen(const char* path, const char* mode)
+ #if _lib_getfsstat
+ 	if ((n = getfsstat(NULL, 0, MNT_WAIT)) <= 0)
+ 		return NULL;
+-	n = (n - 1) * sizeof(struct statfs);
++	n = (n - 1) * (int)sizeof(struct statfs);
+ #else
+ 	n = 0;
+ #endif
+-	if (!(mp = newof(0, Handle_t, 1, n)))
++	if (!(mp = newof(0, Handle_t, 1, (size_t)n)))
+ 		return NULL;
+ #if _lib_getfsstat
+-	n = getfsstat(mp->next = mp->buf, n + sizeof(struct statfs), MNT_WAIT);
++	n = getfsstat(mp->next = mp->buf, (size_t)n + sizeof(struct statfs), MNT_WAIT);
+ #else
+ 	n = getmntinfo(&mp->next, 0);
+ #endif
+@@ -284,8 +284,8 @@ Mnt_t*
+ mntread(void* handle)
+ {
+ 	Handle_t*	mp = (Handle_t*)handle;
+-	int		i;
+-	int		n;
++	size_t		i;
++	ptrdiff_t	n;
+ 	unsigned long	flags;
+ 
+ 	if (mp->next < mp->last)
+@@ -294,7 +294,7 @@ mntread(void* handle)
+ 		n = 0;
+ 		for (i = 0; i < elementsof(options); i++)
+ 			if (flags & options[i].flag)
+-				n += sfsprintf(mp->opt + n, sizeof(mp->opt) - n - 1, ",%s", options[i].name);
++				n += sfsprintf(mp->opt + n, sizeof(mp->opt) - (size_t)n - 1, ",%s", options[i].name);
+ 		set(&mp->hdr, mp->next->f_mntfromname, mp->next->f_mntonname, TYPE(mp->next), n ? (mp->opt + 1) : NULL);
+ 		mp->next++;
+ 		return &mp->hdr.mnt;
+@@ -749,7 +749,7 @@ mntread(void* handle)
+ 		goto again;
+ 	default:
+ 		if (s < m)
+-			*s++ = c;
++			*s++ = (char)c;
+ 		break;
+ 	}
+ 
+diff --git a/src/lib/libast/std/assert.h b/src/lib/libast/std/assert.h
+index 5715b4948..aabf2931f 100644
+--- a/src/lib/libast/std/assert.h
++++ b/src/lib/libast/std/assert.h
+@@ -1,7 +1,7 @@
+ /***********************************************************************
+ *                                                                      *
+ *              This file is part of the ksh 93u+m package              *
+-*             Copyright (c) 2024 Contributors to ksh 93u+m             *
++*          Copyright (c) 2024-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -10,6 +10,7 @@
+ *         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
+ *                                                                      *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -38,7 +39,7 @@
+ 
+ #ifndef _ASSERT_H
+ #  define _ASSERT_H
+-extern void _ast_assertfail(const char*, const char*, const char*, int);
++extern noreturn void _ast_assertfail(const char*, const char*, const char*, int);
+ #  if _has__Static_assert && !defined(static_assert)
+ #    define static_assert	_Static_assert
+ #  endif
+-- 
+2.49.0
+

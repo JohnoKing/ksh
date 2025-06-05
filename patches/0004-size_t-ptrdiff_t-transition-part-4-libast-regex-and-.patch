@@ -1,0 +1,4093 @@
+From 003155f0b60be7a7c6affc1c669e84574272587c Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 4: libast regex and string
+ sublibraries
+
+This is the fourth of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The libast string library.
+- The libast regex engine.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+3,214 => 2,617 => 248 (progression from part 3 => part 4 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/lib/libast/include/swap.h       |   9 +-
+ src/lib/libast/man/regex.3          |   2 +-
+ src/lib/libast/man/swap.3           |   6 +-
+ src/lib/libast/regex/regcache.c     |  39 +++---
+ src/lib/libast/regex/regclass.c     |  66 ++++-----
+ src/lib/libast/regex/regcoll.c      |  20 +--
+ src/lib/libast/regex/regcomp.c      | 205 ++++++++++++++--------------
+ src/lib/libast/regex/regerror.c     |   2 +-
+ src/lib/libast/regex/regexec.c      |  10 +-
+ src/lib/libast/regex/reglib.h       |  28 ++--
+ src/lib/libast/regex/regnexec.c     | 119 ++++++++--------
+ src/lib/libast/regex/regsubcomp.c   |  37 ++---
+ src/lib/libast/regex/regsubexec.c   |  38 +++---
+ src/lib/libast/string/base64.c      |  45 +++---
+ src/lib/libast/string/ccmap.c       |   6 +-
+ src/lib/libast/string/ccmapid.c     |   4 +-
+ src/lib/libast/string/chresc.c      |  11 +-
+ src/lib/libast/string/fmtbuf.c      |   4 +-
+ src/lib/libast/string/fmtclock.c    |  14 +-
+ src/lib/libast/string/fmtdev.c      |  16 +--
+ src/lib/libast/string/fmtesc.c      |  12 +-
+ src/lib/libast/string/fmtfmt.c      |  17 +--
+ src/lib/libast/string/fmtgid.c      |   6 +-
+ src/lib/libast/string/fmtident.c    |   7 +-
+ src/lib/libast/string/fmtint.c      |  13 +-
+ src/lib/libast/string/fmtip4.c      |   9 +-
+ src/lib/libast/string/fmtip6.c      |   4 +-
+ src/lib/libast/string/fmtls.c       |   7 +-
+ src/lib/libast/string/fmtmatch.c    |  35 +++--
+ src/lib/libast/string/fmtnum.c      |   7 +-
+ src/lib/libast/string/fmtre.c       |  20 +--
+ src/lib/libast/string/fmtscale.c    |   7 +-
+ src/lib/libast/string/fmtsignal.c   |   5 +-
+ src/lib/libast/string/fmttime.c     |   5 +-
+ src/lib/libast/string/fmttmx.c      |   5 +-
+ src/lib/libast/string/fmttv.c       |   5 +-
+ src/lib/libast/string/fmtuid.c      |   6 +-
+ src/lib/libast/string/fmtversion.c  |  11 +-
+ src/lib/libast/string/strelapsed.c  |  14 +-
+ src/lib/libast/string/stresc.c      |   5 +-
+ src/lib/libast/string/strgid.c      |  12 +-
+ src/lib/libast/string/strlcat.c     |   4 +-
+ src/lib/libast/string/strlcpy.c     |   4 +-
+ src/lib/libast/string/strnvcmp.c    |   7 +-
+ src/lib/libast/string/stropt.c      |  15 +-
+ src/lib/libast/string/strpsearch.c  |   5 +-
+ src/lib/libast/string/strsearch.c   |   5 +-
+ src/lib/libast/string/strtoi.h      |  38 +++---
+ src/lib/libast/string/strtoip4.c    |  11 +-
+ src/lib/libast/string/strtoip6.c    |  30 ++--
+ src/lib/libast/string/struid.c      |  10 +-
+ src/lib/libast/string/struniq.c     |   7 +-
+ src/lib/libast/string/strvcmp.c     |   7 +-
+ src/lib/libast/string/swapget.c     |   5 +-
+ src/lib/libast/string/swapmem.c     |   7 +-
+ src/lib/libast/string/swapop.c      |  13 +-
+ src/lib/libast/string/swapput.c     |   7 +-
+ src/lib/libast/string/tokline.c     |   8 +-
+ src/lib/libast/string/tokscan.c     |   7 +-
+ src/lib/libast/string/utf32toutf8.c |  16 +--
+ 60 files changed, 568 insertions(+), 531 deletions(-)
+
+diff --git a/src/lib/libast/include/swap.h b/src/lib/libast/include/swap.h
+index e7b054b41..fb7e1cdd4 100644
+--- a/src/lib/libast/include/swap.h
++++ b/src/lib/libast/include/swap.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -36,8 +37,8 @@
+ #define SWAPOP(n)	(((n)&int_swap)^(n))
+ 
+ extern void*		swapmem(int, const void*, void*, size_t);
+-extern intmax_t		swapget(int, const void*, int);
+-extern void*		swapput(int, void*, int, intmax_t);
+-extern int		swapop(const void*, const void*, int);
++extern intmax_t		swapget(int, const void*, size_t);
++extern void*		swapput(int, void*, size_t, intmax_t);
++extern ptrdiff_t	swapop(const void*, const void*, ptrdiff_t);
+ 
+ #endif
+diff --git a/src/lib/libast/man/regex.3 b/src/lib/libast/man/regex.3
+index ea8907f70..d1663e41b 100644
+--- a/src/lib/libast/man/regex.3
++++ b/src/lib/libast/man/regex.3
+@@ -50,7 +50,7 @@ void       regfree(regex_t* \fIre\fP);
+ 
+ regclass_t regclass(const char* \fIstr\fP, char** \fIend\fP);
+ int        regaddclass(const char* \fIname\fP, regclass_t \fIclassf\fP);
+-int        regcollate(const char* \fIstr\fP, char** \fIend\fP, char* \fIbuf\fP, int \fIsize\fP);
++int        regcollate(const char* \fIstr\fP, char** \fIend\fP, char* \fIbuf\fP, size_t \fIsize\fP, wchar_t* \fIwchar\fP);
+ 
+ regstat_t* regstat(const regex_t* \fIre\fP);
+ 
+diff --git a/src/lib/libast/man/swap.3 b/src/lib/libast/man/swap.3
+index 28db4c2bc..7bc12c9c1 100644
+--- a/src/lib/libast/man/swap.3
++++ b/src/lib/libast/man/swap.3
+@@ -42,11 +42,11 @@ swap \- integral representation conversion routines
+ .SH SYNOPSIS
+ .L "#include <swap.h>"
+ .sp
+-.L "int swapop(const void* internal, const void* external, int width);
++.L "ptrdiff_t swapop(const void* internal, const void* external, ptrdiff_t width);
+ .br
+-.L "int_max swapget(int op, const void* from, int width);"
++.L "intmax_t swapget(int op, const void* from, size_t width);"
+ .br
+-.L "void* swapput(int op, void* to, int width, int_max value);"
++.L "void* swapput(int op, void* to, size_t width, intmax_t value);"
+ .br
+ .L "void* swapmem(int op, const void* from, void* to, size_t n);"
+ .SH DESCRIPTION
+diff --git a/src/lib/libast/regex/regcache.c b/src/lib/libast/regex/regcache.c
+index 8b251cfc9..52dfcb8a6 100644
+--- a/src/lib/libast/regex/regcache.c
++++ b/src/lib/libast/regex/regcache.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -38,12 +38,12 @@ typedef struct Cache_s
+ 	unsigned long	serial;
+ 	regflags_t	reflags;
+ 	int		keep;
+-	int		size;
++	size_t		size;
+ } Cache_t;
+ 
+ typedef struct State_s
+ {
+-	unsigned int	size;
++	size_t		size;
+ 	unsigned long	serial;
+ 	char*		locale;
+ 	Cache_t**	cache;
+@@ -58,7 +58,7 @@ static State_t	matchstate;
+ static void
+ flushcache(void)
+ {
+-	int		i;
++	size_t		i;
+ 
+ 	for (i = matchstate.size; i--;)
+ 		if (matchstate.cache[i] && matchstate.cache[i]->keep)
+@@ -76,11 +76,12 @@ regex_t*
+ regcache(const char* pattern, regflags_t reflags, int* status)
+ {
+ 	Cache_t*	cp;
+-	int		i;
++	long		i;
++	int		j;
+ 	char*		s;
+-	int		empty;
+-	int		unused;
+-	int		old;
++	long		empty;
++	long		unused;
++	long		old;
+ 	Key_t		key;
+ 
+ 	/*
+@@ -90,7 +91,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
+ 	if (!pattern)
+ 	{
+ 		flushcache();
+-		i = 0;
++		j = 0;
+ 		if (reflags > matchstate.size)
+ 		{
+ 			if (matchstate.cache = newof(matchstate.cache, Cache_t*, reflags, 0))
+@@ -98,11 +99,11 @@ regcache(const char* pattern, regflags_t reflags, int* status)
+ 			else
+ 			{
+ 				matchstate.size = 0;
+-				i = 1;
++				j = 1;
+ 			}
+ 		}
+ 		if (status)
+-			*status = i;
++			*status = j;
+ 		return NULL;
+ 	}
+ 	if (!matchstate.cache)
+@@ -128,13 +129,13 @@ regcache(const char* pattern, regflags_t reflags, int* status)
+ 	 * check if the pattern is in the cache
+ 	 */
+ 
+-	for (i = 0; i < sizeof(key) && pattern[i]; i++)
++	for (i = 0; i < (ptrdiff_t)sizeof(key) && pattern[i]; i++)
+ 		((char*)&key)[i] = pattern[i];
+-	for (; i < sizeof(key); i++)
++	for (; i < (ptrdiff_t)sizeof(key); i++)
+ 		((char*)&key)[i] = 0;
+ 	empty = unused = -1;
+ 	old = 0;
+-	for (i = matchstate.size; i--;)
++	for (i = (long)matchstate.size; i--;)
+ 		if (!matchstate.cache[i])
+ 			empty = i;
+ 		else if (!matchstate.cache[i]->keep)
+@@ -163,9 +164,9 @@ regcache(const char* pattern, regflags_t reflags, int* status)
+ 			cp->keep = 0;
+ 			regfree(&cp->re);
+ 		}
+-		if ((i = strlen(pattern) + 1) > cp->size)
++		if ((i = (long)strlen(pattern) + 1) > (long)cp->size)
+ 		{
+-			cp->size = roundof(i, ROUND);
++			cp->size = (size_t)roundof(i, ROUND);
+ 			if (!(cp->pattern = newof(cp->pattern, char, cp->size, 0)))
+ 			{
+ 				if (status)
+@@ -174,13 +175,13 @@ regcache(const char* pattern, regflags_t reflags, int* status)
+ 			}
+ 		}
+ 		strcpy(cp->pattern, pattern);
+-		while (++i < sizeof(Key_t))
++		while (++i < (ptrdiff_t)sizeof(Key_t))
+ 			cp->pattern[i] = 0;
+ 		pattern = (const char*)cp->pattern;
+-		if (i = regcomp(&cp->re, pattern, reflags))
++		if (j = regcomp(&cp->re, pattern, reflags))
+ 		{
+ 			if (status)
+-				*status = i;
++				*status = j;
+ 			return NULL;
+ 		}
+ 		cp->keep = 1;
+diff --git a/src/lib/libast/regex/regclass.c b/src/lib/libast/regex/regclass.c
+index 04885549d..a0b9f92ae 100644
+--- a/src/lib/libast/regex/regclass.c
++++ b/src/lib/libast/regex/regclass.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -62,29 +62,29 @@ _reg_iswblank(wint_t wc)
+ 
+ #endif
+ 
+-static int  Isalnum(int c) { return  iswalnum(c); }
++static int  Isalnum(int c) { return  iswalnum((wint_t)c); }
+ static int  Isalpha(int c) { return  iswalpha(c); }
+-static int  Isblank(int c) { return  iswblank(c); }
+-static int  Iscntrl(int c) { return  iswcntrl(c); }
+-static int  Isdigit(int c) { return  iswdigit(c); }
+-static int Notdigit(int c) { return !iswdigit(c); }
+-static int  Isgraph(int c) { return  iswgraph(c); }
+-static int  Islower(int c) { return  iswlower(c); }
+-static int  Isprint(int c) { return  iswprint(c); }
++static int  Isblank(int c) { return  iswblank((wint_t)c); }
++static int  Iscntrl(int c) { return  iswcntrl((wint_t)c); }
++static int  Isdigit(int c) { return  iswdigit((wint_t)c); }
++static int Notdigit(int c) { return !iswdigit((wint_t)c); }
++static int  Isgraph(int c) { return  iswgraph((wint_t)c); }
++static int  Islower(int c) { return  iswlower((wint_t)c); }
++static int  Isprint(int c) { return  iswprint((wint_t)c); }
+ static int  Ispunct(int c)
+ {
+ #if _iswpunct_broken && CC_NATIVE == CC_ASCII
+ 	if (c < 128)
+ 		return ispunct(c);
+ #endif
+-	return iswpunct(c);
++	return iswpunct((wint_t)c);
+ }
+-static int  Isspace(int c) { return  iswspace(c); }
+-static int Notspace(int c) { return !iswspace(c); }
+-static int  Isupper(int c) { return  iswupper(c); }
+-static int   Isword(int c) { return  iswalnum(c) || c == '_'; }
+-static int  Notword(int c) { return !iswalnum(c) && c != '_'; }
+-static int Isxdigit(int c) { return  iswxdigit(c);}
++static int  Isspace(int c) { return  iswspace((wint_t)c); }
++static int Notspace(int c) { return !iswspace((wint_t)c); }
++static int  Isupper(int c) { return  iswupper((wint_t)c); }
++static int   Isword(int c) { return  iswalnum((wint_t)c) || c == '_'; }
++static int  Notword(int c) { return !iswalnum((wint_t)c) && c != '_'; }
++static int Isxdigit(int c) { return  iswxdigit((wint_t)c);}
+ 
+ #if _lib_wctype
+ 
+@@ -156,22 +156,22 @@ static Ctype_t ctype[] =
+ 
+ #if _lib_wctype
+ 
+-static int Is_wc_1(int c) { return iswctype(c, ctype[CTYPES+0].wtype); }
+-static int Is_wc_2(int c) { return iswctype(c, ctype[CTYPES+1].wtype); }
+-static int Is_wc_3(int c) { return iswctype(c, ctype[CTYPES+2].wtype); }
+-static int Is_wc_4(int c) { return iswctype(c, ctype[CTYPES+3].wtype); }
+-static int Is_wc_5(int c) { return iswctype(c, ctype[CTYPES+4].wtype); }
+-static int Is_wc_6(int c) { return iswctype(c, ctype[CTYPES+5].wtype); }
+-static int Is_wc_7(int c) { return iswctype(c, ctype[CTYPES+6].wtype); }
+-static int Is_wc_8(int c) { return iswctype(c, ctype[CTYPES+7].wtype); }
+-static int Is_wc_9(int c) { return iswctype(c, ctype[CTYPES+8].wtype); }
+-static int Is_wc_10(int c) { return iswctype(c, ctype[CTYPES+9].wtype); }
+-static int Is_wc_11(int c) { return iswctype(c, ctype[CTYPES+10].wtype); }
+-static int Is_wc_12(int c) { return iswctype(c, ctype[CTYPES+11].wtype); }
+-static int Is_wc_13(int c) { return iswctype(c, ctype[CTYPES+12].wtype); }
+-static int Is_wc_14(int c) { return iswctype(c, ctype[CTYPES+13].wtype); }
+-static int Is_wc_15(int c) { return iswctype(c, ctype[CTYPES+14].wtype); }
+-static int Is_wc_16(int c) { return iswctype(c, ctype[CTYPES+15].wtype); }
++static int Is_wc_1(int c) { return iswctype((wint_t)c, ctype[CTYPES+0].wtype); }
++static int Is_wc_2(int c) { return iswctype((wint_t)c, ctype[CTYPES+1].wtype); }
++static int Is_wc_3(int c) { return iswctype((wint_t)c, ctype[CTYPES+2].wtype); }
++static int Is_wc_4(int c) { return iswctype((wint_t)c, ctype[CTYPES+3].wtype); }
++static int Is_wc_5(int c) { return iswctype((wint_t)c, ctype[CTYPES+4].wtype); }
++static int Is_wc_6(int c) { return iswctype((wint_t)c, ctype[CTYPES+5].wtype); }
++static int Is_wc_7(int c) { return iswctype((wint_t)c, ctype[CTYPES+6].wtype); }
++static int Is_wc_8(int c) { return iswctype((wint_t)c, ctype[CTYPES+7].wtype); }
++static int Is_wc_9(int c) { return iswctype((wint_t)c, ctype[CTYPES+8].wtype); }
++static int Is_wc_10(int c) { return iswctype((wint_t)c, ctype[CTYPES+9].wtype); }
++static int Is_wc_11(int c) { return iswctype((wint_t)c, ctype[CTYPES+10].wtype); }
++static int Is_wc_12(int c) { return iswctype((wint_t)c, ctype[CTYPES+11].wtype); }
++static int Is_wc_13(int c) { return iswctype((wint_t)c, ctype[CTYPES+12].wtype); }
++static int Is_wc_14(int c) { return iswctype((wint_t)c, ctype[CTYPES+13].wtype); }
++static int Is_wc_15(int c) { return iswctype((wint_t)c, ctype[CTYPES+14].wtype); }
++static int Is_wc_16(int c) { return iswctype((wint_t)c, ctype[CTYPES+15].wtype); }
+ 
+ #endif
+ 
+@@ -199,7 +199,7 @@ regclass(const char* s, char** e)
+ 	if (!(c = *s++))
+ 		return NULL;
+ 	for (t = s; *t && (*t != c || *(t + 1) != ']'); t++);
+-	if (*t != c || !(n = t - s))
++	if (*t != c || !(n = (size_t)(t - s)))
+ 		return NULL;
+ 	for (cp = ctypes; cp; cp = cp->next)
+ 		if (n == cp->size && strneq(s, cp->name, n))
+diff --git a/src/lib/libast/regex/regcoll.c b/src/lib/libast/regex/regcoll.c
+index 078255be8..1109f0beb 100644
+--- a/src/lib/libast/regex/regcoll.c
++++ b/src/lib/libast/regex/regcoll.c
+@@ -38,13 +38,13 @@
+ int
+ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
+ {
+-	int			c;
++	char			c;
++	char			term;
+ 	char*			b;
+ 	char*			x;
+ 	const char*		t;
+-	int			i;
+-	int			r;
+-	int			term;
++	ptrdiff_t		i;
++	ptrdiff_t		r;
+ 	wchar_t			w;
+ 	char			xfm[256];
+ 	char			tmp[sizeof(xfm)];
+@@ -53,7 +53,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
+ 		goto nope;
+ 	t = s;
+ 	w = mbchar(s);
+-	if ((r = (s - t)) > 1)
++	if ((r = s - t) > 1)
+ 	{
+ 		if (*s++ != term || *s++ != ']')
+ 			goto oops;
+@@ -90,24 +90,24 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
+ 	if (b >= x)
+ 		goto done;
+ 	*b = 0;
+-	for (i = 0; i < r && i < sizeof(tmp) - 1; i++)
++	for (i = 0; i < r && i < (ptrdiff_t)sizeof(tmp) - 1; i++)
+ 		tmp[i] = '0';
+ 	tmp[i] = 0;
+ 	if (mbxfrm(xfm, buf, sizeof(xfm)) >= mbxfrm(xfm, tmp, sizeof(xfm)))
+ 		goto nope;
+ 	t = (const char*)buf;
+  done:
+-	if (r <= size && (char*)t != buf)
++	if (r <= (ptrdiff_t)size && (char*)t != buf)
+ 	{
+-		memcpy(buf, t, r);
+-		if (r < size)
++		memcpy(buf, t, (size_t)r);
++		if (r < (ptrdiff_t)size)
+ 			buf[r] = 0;
+ 	}
+ 	if (wc)
+ 		*wc = w;
+ 	if (e)
+ 		*e = (char*)s;
+-	return r;
++	return (int)r;
+  oops:
+  	s--;
+  nope:
+diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
+index 09997ecda..f13f90f01 100644
+--- a/src/lib/libast/regex/regcomp.c
++++ b/src/lib/libast/regex/regcomp.c
+@@ -30,6 +30,7 @@
+ 
+ #define C_ESC			(-1)
+ #define C_MB			(-2)
++#define ZERO			((unsigned char)0)
+ 
+ #if _AST_REGEX_DEBUG
+ 
+@@ -73,6 +74,7 @@ typedef struct Stats_s
+ 	unsigned long	k;	/* min length to left of y		*/
+ 	unsigned long	m;	/* min length				*/
+ 	unsigned long	n;	/* max length				*/
++	unsigned long	t;	/* number of tries			*/
+ 	unsigned short	a;	/* number of alternations		*/
+ 	unsigned short	b;	/* number of backrefs			*/
+ 	unsigned short	c;	/* number of closures			*/
+@@ -80,7 +82,6 @@ typedef struct Stats_s
+ 	unsigned short	i;	/* number of negations			*/
+ 	unsigned short	p;	/* number of named subexpressions	*/
+ 	unsigned short	s;	/* number of simple closures		*/
+-	unsigned short	t;	/* number of tries			*/
+ 	unsigned short	u;	/* number of unnamed subexpressions	*/
+ 	Rex_t*		x;	/* max length REX_STRING		*/
+ 	Rex_t*		y;	/* max length REX_TRIE			*/
+@@ -90,9 +91,9 @@ typedef struct Token_s
+ {
+ 	unsigned long	min;
+ 	unsigned long	max;
++	ptrdiff_t	len;
++	ptrdiff_t	esc;
+ 	short		lex;
+-	short		len;
+-	short		esc;
+ 	short		att;
+ 	short		push;
+ } Token_t;
+@@ -133,11 +134,11 @@ typedef struct Cenv_s
+ #endif
+ 
+ static Rex_t*
+-node(Cenv_t* env, int type, int lo, int hi, size_t extra)
++node(Cenv_t* env, int type, ptrdiff_t lo, ptrdiff_t hi, size_t extra)
+ {
+ 	Rex_t*	e;
+ 
+-	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%d,%d,%u)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
++	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%td,%td,%zu)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
+ 	if (e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra))
+ 	{
+ 		memset(e, 0, sizeof(Rex_t) + extra);
+@@ -321,8 +322,8 @@ cat(Cenv_t* env, Rex_t* e, Rex_t* f)
+ 	}
+ 	else if (e->type == REX_DOT && f->type == REX_DOT)
+ 	{
+-		unsigned int	m = e->lo + f->lo;
+-		unsigned int	n = e->hi + f->hi;
++		ptrdiff_t	m = e->lo + f->lo;
++		ptrdiff_t	n = e->hi + f->hi;
+ 
+ 		if (m <= RE_DUP_MAX)
+ 		{
+@@ -366,8 +367,8 @@ stats(Cenv_t* env, Rex_t* e)
+ 	Rex_t*			q;
+ 	Rex_t*			x;
+ 	Rex_t*			y;
+-	unsigned char		c;
+-	unsigned char		b;
++	unsigned short		c;
++	unsigned short		b;
+ 
+ 	do
+ 	{
+@@ -420,12 +421,12 @@ stats(Cenv_t* env, Rex_t* e)
+ 		case REX_DOT:
+ 		case REX_ONECHAR:
+ 			n = env->stats.m;
+-			if ((env->stats.m += e->lo) < n)
++			if ((env->stats.m += (size_t)e->lo) < n)
+ 				return 1;
+ 			if (e->hi != RE_DUP_INF)
+ 			{
+ 				n = env->stats.n;
+-				if ((env->stats.n += e->hi) < n)
++				if ((env->stats.n += (size_t)e->hi) < n)
+ 					return 1;
+ 			}
+ 			if (e->lo != e->hi)
+@@ -579,7 +580,7 @@ stats(Cenv_t* env, Rex_t* e)
+ 			else
+ 			{
+ 				m = env->stats.m;
+-				if ((env->stats.m *= e->lo) > 0 && env->stats.m < m)
++				if ((env->stats.m *= (size_t)e->lo) > 0 && env->stats.m < m)
+ 					return 1;
+ 				m = env->stats.m;
+ 				if ((env->stats.m += cm) < m)
+@@ -610,10 +611,10 @@ stats(Cenv_t* env, Rex_t* e)
+ 			if (++env->stats.s <= 0)
+ 				return 1;
+ 			cm = env->stats.m;
+-			if ((env->stats.m += e->re.trie.min) < cm)
++			if ((env->stats.m += (size_t)e->re.trie.min) < cm)
+ 				return 1;
+ 			cn = env->stats.n;
+-			if ((env->stats.n += e->re.trie.max) < cn)
++			if ((env->stats.n += (size_t)e->re.trie.max) < cn)
+ 				return 1;
+ 			env->stats.t++;
+ 			if (!env->stats.y || env->stats.y->re.trie.min < e->re.trie.min)
+@@ -636,7 +637,7 @@ magic(Cenv_t* env, int c, int escaped)
+ 	int	n;
+ 	int	o = c;
+ 	int	e = env->error;
+-	int	l = env->token.len;
++	ptrdiff_t l = env->token.len;
+ 	short*	mp;
+ 	char*	ep;
+ 
+@@ -673,7 +674,7 @@ magic(Cenv_t* env, int c, int escaped)
+ 					env->error = REG_BADBR;
+ 					goto bad;
+ 				}
+-				env->token.min = n;
++				env->token.min = (unsigned long)n;
+ 				if (*sp == ',')
+ 				{
+ 					n = 0;
+@@ -689,13 +690,13 @@ magic(Cenv_t* env, int c, int escaped)
+ 					}
+ 					if (sp == ep)
+ 						n = RE_DUP_INF;
+-					else if (n < env->token.min)
++					else if ((unsigned)n < env->token.min)
+ 					{
+ 						env->error = REG_BADBR;
+ 						goto bad;
+ 					}
+ 				}
+-				env->token.max = n;
++				env->token.max = (unsigned long)n;
+ 				switch (*sp)
+ 				{
+ 				case 0:
+@@ -748,7 +749,7 @@ magic(Cenv_t* env, int c, int escaped)
+ 				env->token.len += ep - sp;
+ 				if (c >= T_META)
+ 				{
+-					env->token.lex = c;
++					env->token.lex = (short)c;
+ 					c = C_ESC;
+ 				}
+ 				return c;
+@@ -810,13 +811,13 @@ magic(Cenv_t* env, int c, int escaped)
+ 						case T_AT:
+ 							break;
+ 						case T_PERCENT:
+-							env->token.lex = c;
++							env->token.lex = (short)c;
+ 							goto group;
+ 						case T_TILDE:
+ 							env->token.lex = 0;
+ 							goto group;
+ 						default:
+-							env->token.lex = c;
++							env->token.lex = (short)c;
+ 							break;
+ 						}
+ 						c = T_OPEN;
+@@ -1051,7 +1052,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 					cc = -1;
+ 				}
+ 			}
+-			*k++ = c;
++			*k++ = (unsigned char)c;
+ 		}
+ 		else if (bw < COLL_KEY_MAX)
+ 		{
+@@ -1059,14 +1060,14 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 			if (ic)
+ 			{
+ 				c = mbchar(s);
+-				if (iswupper(c))
++				if (iswupper((wint_t)c))
+ 				{
+-					c = towlower(c);
++					c = (int)towlower((wint_t)c);
+ 					cc = 1;
+ 				}
+-				else if (iswlower(c))
++				else if (iswlower((wint_t)c))
+ 				{
+-					c = towupper(c);
++					c = (int)towupper((wint_t)c);
+ 					cc = 1;
+ 				}
+ 			}
+@@ -1076,7 +1077,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 				k += mbconv((char*)k, c);
+ 			}
+ 			else
+-				for (e = k + bw; k < e; *k++ = *s++);
++				for (e = k + bw; k < e; *k++ = (unsigned char)*s++);
+ 		}
+ 		*k = 0;
+ 		mbxfrm(ce->beg, key, COLL_KEY_MAX);
+@@ -1084,9 +1085,9 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 		{
+ 			k = key;
+ 			c = mbchar(k);
+-			if (iswupper(c))
++			if (iswupper((wint_t)c))
+ 				bt = COLL_range_uc;
+-			else if (iswlower(c))
++			else if (iswlower((wint_t)c))
+ 				bt = COLL_range_lc;
+ 			else
+ 				bt = COLL_range;
+@@ -1107,7 +1108,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 						cc = -1;
+ 					}
+ 				}
+-				*k++ = c;
++				*k++ = (unsigned char)c;
+ 			}
+ 			else if (ew < COLL_KEY_MAX)
+ 			{
+@@ -1115,14 +1116,14 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 				if (ic)
+ 				{
+ 					c = mbchar(s);
+-					if (iswupper(c))
++					if (iswupper((wint_t)c))
+ 					{
+-						c = towlower(c);
++						c = (int)towlower((wint_t)c);
+ 						cc = 1;
+ 					}
+-					else if (iswlower(c))
++					else if (iswlower((wint_t)c))
+ 					{
+-						c = towupper(c);
++						c = (int)towupper((wint_t)c);
+ 						cc = 1;
+ 					}
+ 				}
+@@ -1132,19 +1133,19 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 					k += mbconv((char*)k, c);
+ 				}
+ 				else
+-					for (e = k + ew; k < e; *k++ = *s++);
++					for (e = k + ew; k < e; *k++ = (unsigned char)*s++);
+ 			}
+ 			*k = 0;
+ 			mbxfrm(ce->end, key, COLL_KEY_MAX);
+ 			k = key;
+ 			c = mbchar(k);
+-			if (iswupper(c))
++			if (iswupper((wint_t)c))
+ 				et = COLL_range_uc;
+-			else if (iswlower(c))
++			else if (iswlower((wint_t)c))
+ 				et = COLL_range_lc;
+ 			else
+ 				et = COLL_range;
+-			ce->typ = bt == et ? bt : COLL_range;
++			ce->typ = bt == et ? (short)bt : COLL_range;
+ 		}
+ 		else
+ 			ce->typ = COLL_char;
+@@ -1161,14 +1162,15 @@ bra(Cenv_t* env)
+ {
+ 	Rex_t*		e;
+ 	int		c;
+-	int		i;
++	size_t		i;
++	int		j;
+ 	int		w;
+ 	int		neg;
+ 	int		last;
+ 	int		inrange;
+ 	int		complicated;
+ 	int		collate;
+-	int		elements;
++	size_t		elements;
+ 	unsigned char*	first;
+ 	unsigned char*	start;
+ 	unsigned char*	begin;
+@@ -1307,25 +1309,25 @@ bra(Cenv_t* env)
+ 						while (*++s && *s != ':');
+ 						if (*s == ':' && *(s + 1) == ']' && *(s + 2) == ']')
+ 						{
+-							if ((i = (s - start)) == 1)
++							if ((j = (int)(s - start)) == 1)
+ 							{
+ 								switch (c)
+ 								{
+ 								case '<':
+-									i = REX_WBEG;
++									j = REX_WBEG;
+ 									break;
+ 								case '>':
+-									i = REX_WEND;
++									j = REX_WEND;
+ 									break;
+ 								default:
+-									i = 0;
++									j = 0;
+ 									break;
+ 								}
+-								if (i)
++								if (j)
+ 								{
+ 									env->cursor = s + 3;
+ 									drop(env->disc, e);
+-									return node(env, i, 0, 0, 0);
++									return node(env, j, 0, 0, 0);
+ 								}
+ 							}
+ 						}
+@@ -1384,8 +1386,8 @@ bra(Cenv_t* env)
+ 		{
+ 			if (last <= c)
+ 			{
+-				for (i = last; i <= c; i++)
+-					setadd(e->re.charclass, i);
++				for (j = last; j <= c; j++)
++					setadd(e->re.charclass, j);
+ 				inrange = env->type >= SRE || (env->flags & (REG_LENIENT|REG_REGEXP));
+ 				elements += 2;
+ 			}
+@@ -1436,12 +1438,12 @@ bra(Cenv_t* env)
+ 			{
+ 				for (i = 0; i < elementsof(primary) - 1; i++, cc++)
+ 				{
+-					cc->nam[0] = primary[i];
++					cc->nam[0] = (unsigned char)primary[i];
+ 					mbxfrm(cc->key, cc->nam, COLL_KEY_MAX);
+ 					dtinsert(dt, cc);
+ 				}
+ 				for (i = 0; i < elementsof(cc->key); i++)
+-					cc->key[i] = ~0;
++					cc->key[i] = ~ZERO;
+ 				dtinsert(dt, cc);
+ 				LCINFO(AST_LC_COLLATE)->data = dt;
+ 			}
+@@ -1573,7 +1575,7 @@ bra(Cenv_t* env)
+ 								{
+ 									env->cursor += 5;
+ 									drop(env->disc, e);
+-									return node(env, i, 0, 0, 0);
++									return node(env, (int)i, 0, 0, 0);
+ 								}
+ 							}
+ 							env->error = REG_ECTYPE;
+@@ -1598,13 +1600,13 @@ bra(Cenv_t* env)
+ 						c = 0;
+ 						if (ic)
+ 						{
+-							if (iswupper(wc))
++							if (iswupper((wint_t)wc))
+ 							{
+-								wc = towlower(wc);
++								wc = (wchar_t)towlower((wint_t)wc);
+ 								rw = mbconv((char*)pp, wc);
+ 								c = 'u';
+ 							}
+-							else if (iswlower(wc))
++							else if (iswlower((wint_t)wc))
+ 								c = 'l';
+ 						}
+ 						i = 1;
+@@ -1646,12 +1648,12 @@ bra(Cenv_t* env)
+ 								break;
+ 							if (c == 'u')
+ 							{
+-								wc = towlower(wc);
++								wc = (wchar_t)towlower((wint_t)wc);
+ 								c = 'L';
+ 							}
+ 							else
+ 							{
+-								wc = towupper(wc);
++								wc = (wchar_t)towupper((wint_t)wc);
+ 								c = 'U';
+ 							}
+ 							rw = mbconv((char*)pp, wc);
+@@ -1708,10 +1710,10 @@ bra(Cenv_t* env)
+ 		for (i = 0; i <= UCHAR_MAX; i++)
+ 			if (settst(e->re.charclass, i))
+ 			{
+-				if (isupper(i))
+-					c = tolower(i);
+-				else if (islower(i))
+-					c = toupper(i);
++				if (isupper((int)i))
++					c = tolower((int)i);
++				else if (islower((int)i))
++					c = toupper((int)i);
+ 				else
+ 					continue;
+ 				setadd(e->re.charclass, c);
+@@ -1788,7 +1790,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+ 	{
+ 	case T_BANG:
+ 		eat(env);
+-		if (!(f = node(env, REX_NEG, m, n, 0)))
++		if (!(f = node(env, REX_NEG, (ptrdiff_t)m, (ptrdiff_t)n, 0)))
+ 		{
+ 			drop(env->disc, e);
+ 			return NULL;
+@@ -1834,8 +1836,8 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+ 	case REX_CLASS:
+ 	case REX_COLL_CLASS:
+ 	case REX_ONECHAR:
+-		e->lo = m;
+-		e->hi = n;
++		e->lo = (ptrdiff_t)m;
++		e->hi = (ptrdiff_t)n;
+ 		if (minimal >= 0)
+ 			mark(e, minimal);
+ 		return e;
+@@ -1856,7 +1858,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+ 			mark(e, minimal);
+ 		return e;
+ 	}
+-	if (!(f = node(env, REX_REP, m, n, 0)))
++	if (!(f = node(env, REX_REP, (ptrdiff_t)m, (ptrdiff_t)n, 0)))
+ 	{
+ 		drop(env->disc, e);
+ 		return NULL;
+@@ -1889,7 +1891,7 @@ isstring(Rex_t* e)
+ }
+ 
+ static Trie_node_t*
+-trienode(Cenv_t* env, int c)
++trienode(Cenv_t* env, unsigned char c)
+ {
+ 	Trie_node_t*	t;
+ 
+@@ -1907,7 +1909,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
+ 	unsigned char*	s;
+ 	unsigned char*	e;
+ 	Trie_node_t*	t;
+-	int		len;
++	ptrdiff_t	len;
+ 	unsigned char	tmp[2];
+ 
+ 	switch (f->type)
+@@ -1989,7 +1991,7 @@ trie(Cenv_t* env, Rex_t* e, Rex_t* f)
+ static Rex_t*		alt(Cenv_t*, int, int);
+ 
+ static int
+-chr(Cenv_t* env, int* escaped)
++chr(Cenv_t* env, ptrdiff_t* escaped)
+ {
+ 	unsigned char*	p;
+ 	int		c;
+@@ -2026,13 +2028,13 @@ grp(Cenv_t* env, int parno)
+ 	Rex_t*		e;
+ 	Rex_t*		f;
+ 	int		c;
+-	int		g;
++	regflags_t	g;
+ 	int		i;
+ 	int		n;
+ 	int		x;
+-	int		esc;
+ 	int		typ;
+ 	int		beg;
++	ptrdiff_t	esc;
+ 	unsigned char*	p;
+ 
+ 	g = env->flags;
+@@ -2357,7 +2359,7 @@ grp(Cenv_t* env, int parno)
+ 					drop(env->disc, e);
+ 					return NULL;
+ 				}
+-				if (parno < elementsof(env->paren))
++				if (parno < (ptrdiff_t)elementsof(env->paren))
+ 					env->paren[parno] = f;
+ 				f->re.group.back = 0;
+ 				f->re.group.number = parno;
+@@ -2464,7 +2466,7 @@ grp(Cenv_t* env, int parno)
+ 		if (!(e = node(env, REX_EXEC, 0, 0, 0)))
+ 			return NULL;
+ 		e->re.exec.text = (const char*)p;
+-		e->re.exec.size = env->cursor - p - 2;
++		e->re.exec.size = (size_t)(env->cursor - p - 2);
+ 		if (!env->disc->re_compf)
+ 			e->re.exec.data = 0;
+ 		else
+@@ -2543,7 +2545,7 @@ grp(Cenv_t* env, int parno)
+ 				env->error = REG_ECOUNT;
+ 			goto nope;
+ 		}
+-		f->re.group.size = env->stats.m;
++		f->re.group.size = (ptrdiff_t)env->stats.m;
+ 		memset(&env->stats, 0, sizeof(env->stats));
+ 	}
+ 	switch (x)
+@@ -2568,10 +2570,10 @@ seq(Cenv_t* env)
+ 	Rex_t*		e;
+ 	Rex_t*		f;
+ 	Token_t		tok;
+-	int		c;
+-	int		i;
+-	int		n = 1;
+-	int		x = 0;
++	ptrdiff_t	c;
++	ptrdiff_t	i;
++	ptrdiff_t	n = 1;
++	ptrdiff_t	x = 0;
+ 	int		parno;
+ 	int		type;
+ 	regflags_t	flags;
+@@ -2584,24 +2586,24 @@ seq(Cenv_t* env)
+ 	for (;;)
+ 	{
+ 		s = buf;
+-		while ((c = token(env)) < T_META && s < &buf[sizeof(buf) - env->token.len])
++		while ((c = token(env)) < T_META && s < &buf[sizeof(buf) - (size_t)env->token.len])
+ 		{
+ 			x = c;
+ 			p = env->cursor;
+ 			if (c >= 0)
+ 			{
+ 				n = 1;
+-				*s++ = (env->flags & REG_ICASE) ? toupper(c) : c;
++				*s++ = (unsigned char)((env->flags & REG_ICASE) ? toupper((int)c) : c);
+ 			}
+ 			else if (c == C_ESC || (env->flags & REG_ICASE))
+ 			{
+ 				c = (c == C_ESC) ? env->token.lex : mbchar(p);
+ 				if (env->flags & REG_ICASE)
+-					c = towupper(c);
+-				if ((&buf[sizeof(buf)] - s) < MB_CUR_MAX)
++					c = (ptrdiff_t)towupper((wint_t)c);
++				if ((size_t)(&buf[sizeof(buf)] - s) < MB_CUR_MAX)
+ 					break;
+-				if ((n = mbconv((char*)s, c)) < 0)
+-					*s++ = c;
++				if ((n = mbconv((char*)s, (wchar_t)c)) < 0)
++					*s++ = (unsigned char)c;
+ 				else if (n)
+ 					s += n;
+ 				else
+@@ -2632,10 +2634,10 @@ seq(Cenv_t* env)
+ 				else
+ 				{
+ 					i = s - buf;
+-					if (!(e = node(env, REX_STRING, 0, 0, i)))
++					if (!(e = node(env, REX_STRING, 0, 0, (size_t)i)))
+ 						return NULL;
+-					memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, i);
+-					e->re.string.size = i;
++					memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, (size_t)i);
++					e->re.string.size = (size_t)i;
+ 				}
+ 				if (x >= 0)
+ 				{
+@@ -2644,14 +2646,14 @@ seq(Cenv_t* env)
+ 						drop(env->disc, e);
+ 						return NULL;
+ 					}
+-					f->re.onechar = (env->flags & REG_ICASE) ? toupper(x) : x;
++					f->re.onechar = (unsigned char)((env->flags & REG_ICASE) ? toupper((int)x) : x);
+ 				}
+ 				else
+ 				{
+-					if (!(f = node(env, REX_STRING, 0, 0, n)))
++					if (!(f = node(env, REX_STRING, 0, 0, (size_t)n)))
+ 						return NULL;
+-					memcpy((char*)(f->re.string.base = (unsigned char*)f->re.data), (char*)p, n);
+-					f->re.string.size = n;
++					memcpy((char*)(f->re.string.base = (unsigned char*)f->re.data), (char*)p, (size_t)n);
++					f->re.string.size = (size_t)n;
+ 				}
+ 				if (!(f = rep(env, f, 0, 0)) || !(f = cat(env, f, seq(env))))
+ 				{
+@@ -2663,10 +2665,10 @@ seq(Cenv_t* env)
+ 				return f;
+ 			default:
+ 				c = s - buf;
+-				if (!(e = node(env, REX_STRING, 0, 0, c)))
++				if (!(e = node(env, REX_STRING, 0, 0, (size_t)c)))
+ 					return NULL;
+-				memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, c);
+-				e->re.string.size = c;
++				memcpy((char*)(e->re.string.base = (unsigned char*)e->re.data), (char*)buf, (size_t)c);
++				e->re.string.size = (size_t)c;
+ 				return cat(env, e, seq(env));
+ 			}
+ 		else if (c > T_BACK)
+@@ -2730,7 +2732,7 @@ seq(Cenv_t* env)
+ 					drop(env->disc, e);
+ 					return NULL;
+ 				}
+-				if (parno < elementsof(env->paren))
++				if (parno < (ptrdiff_t)elementsof(env->paren))
+ 					env->paren[parno] = f;
+ 				f->re.group.back = 0;
+ 				f->re.group.number = parno;
+@@ -2749,7 +2751,7 @@ seq(Cenv_t* env)
+ 						drop(env->disc, e);
+ 						return NULL;
+ 					}
+-					if (--parno < elementsof(env->paren))
++					if (--parno < (ptrdiff_t)elementsof(env->paren))
+ 						env->paren[parno] = f;
+ 					f->re.group.back = 0;
+ 					f->re.group.number = parno;
+@@ -2787,7 +2789,7 @@ seq(Cenv_t* env)
+ 			case T_SPACE:
+ 			case T_SPACE_NOT:
+ 				eat(env);
+-				if (e = ccl(env, c))
++				if (e = ccl(env, (int)c))
+ 					e = rep(env, e, 0, 0);
+ 				break;
+ 			case T_LT:
+@@ -2930,6 +2932,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+ 	regdisc_t*		disc;
+ 	unsigned char*		fold;
+ 	int			i;
++	size_t			j;
+ 	Cenv_t			env;
+ 
+ 	if (!p)
+@@ -2949,15 +2952,15 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+ 	if (!state.initialized)
+ 	{
+ 		state.initialized = 1;
+-		for (i = 0; i < elementsof(state.escape); i++)
+-			state.magic[state.escape[i].key] = state.escape[i].val;
++		for (j = 0; j < elementsof(state.escape); j++)
++			state.magic[state.escape[j].key] = state.escape[j].val;
+ 	}
+ 	if (!(fold = (unsigned char*)LCINFO(AST_LC_CTYPE)->data))
+ 	{
+ 		if (!(fold = newof(0, unsigned char, UCHAR_MAX, 1)))
+ 			return fatal(disc, REG_ESPACE, pattern);
+ 		for (i = 0; i <= UCHAR_MAX; i++)
+-			fold[i] = toupper(i);
++			fold[i] = (unsigned char)toupper(i);
+ 		LCINFO(AST_LC_CTYPE)->data = fold;
+ 	}
+  again:
+@@ -3075,9 +3078,9 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+ 		p->env->stats.re_min = p->env->stats.re_max = -1;
+ 	else
+ 	{
+-		if (!(p->env->stats.re_min = env.stats.m))
++		if (!(p->env->stats.re_min = (ptrdiff_t)env.stats.m))
+ 			p->env->stats.re_min = -1;
+-		if (!(p->env->stats.re_max = env.stats.n))
++		if (!(p->env->stats.re_max = (ptrdiff_t)env.stats.n))
+ 			p->env->stats.re_max = -1;
+ 	}
+ 	serialize(&env, p->env->rex, 1);
+@@ -3086,7 +3089,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+ 		p->re_nsub /= 2;
+ 	if (env.flags & REG_DELIMITED)
+ 	{
+-		p->re_npat = env.cursor - (unsigned char*)pattern + 1;
++		p->re_npat = (size_t)(env.cursor - (unsigned char*)pattern + 1);
+ 		if (*env.cursor == env.delimiter)
+ 			p->re_npat++;
+ 		else if (env.flags & REG_MUSTDELIM)
+diff --git a/src/lib/libast/regex/regerror.c b/src/lib/libast/regex/regerror.c
+index bb055b688..706f0e852 100644
+--- a/src/lib/libast/regex/regerror.c
++++ b/src/lib/libast/regex/regerror.c
+@@ -60,7 +60,7 @@ regerror(int code, const regex_t* p, char* buf, size_t size)
+ 	NoP(p);
+ 	if (code++ == REG_VERSIONID)
+ 		s = (const char*)fmtident(&id[1]);
+-	else if (code >= 0 && code < elementsof(reg_error))
++	else if (code >= 0 && code < (ssize_t)elementsof(reg_error))
+ 		s = reg_error[code];
+ 	else
+ 		s = (const char*)"unknown error";
+diff --git a/src/lib/libast/regex/regexec.c b/src/lib/libast/regex/regexec.c
+index 2a9280c13..be8f12991 100644
+--- a/src/lib/libast/regex/regexec.c
++++ b/src/lib/libast/regex/regexec.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -35,10 +35,10 @@ regexec_20120528(const regex_t* p, const char* s, size_t nmatch, regmatch_t* mat
+ 	if (flags & REG_STARTEND)
+ 	{
+ 		int		r;
+-		int		m = match->rm_so;
++		regoff_t	m = match->rm_so;
+ 		regmatch_t*	e;
+ 
+-		if (!(r = regnexec(p, s + m, match->rm_eo - m, nmatch, match, flags)) && m > 0)
++		if (!(r = regnexec(p, s + m, (size_t)(match->rm_eo - m), nmatch, match, flags)) && m > 0)
+ 			for (e = match + nmatch; match < e; match++)
+ 				if (match->rm_so >= 0)
+ 				{
+@@ -71,8 +71,8 @@ regexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmatch,
+ 		if (!(r = regexec_20120528(p, s, nmatch, match, flags)))
+ 			for (i = 0; i < nmatch; i++)
+ 			{
+-				oldmatch[i].rm_so = match[i].rm_so;
+-				oldmatch[i].rm_eo = match[i].rm_eo;
++				oldmatch[i].rm_so = (int)match[i].rm_so;
++				oldmatch[i].rm_eo = (int)match[i].rm_eo;
+ 			}
+ 		free(match);
+ 		return r;
+diff --git a/src/lib/libast/regex/reglib.h b/src/lib/libast/regex/reglib.h
+index 67388c9ac..378ae8499 100644
+--- a/src/lib/libast/regex/reglib.h
++++ b/src/lib/libast/regex/reglib.h
+@@ -38,11 +38,15 @@
+ #define fatal		_reg_fatal
+ #define state		_reg_state
+ 
++#include <ast.h>
++#include <cdt.h>
++#include <stk.h>
++
+ typedef struct regsubop_s
+ {
+ 	int		op;		/* REG_SUB_LOWER,REG_SUB_UPPER	*/
+-	int		off;		/* re_rhs or match[] offset	*/
+-	int		len;		/* re_rhs len or len==0 match[]	*/
++	ptrdiff_t	off;		/* re_rhs or match[] offset	*/
++	ptrdiff_t	len;		/* re_rhs len or len==0 match[]	*/
+ } regsubop_t;
+ 
+ #define _REG_SUB_PRIVATE_ \
+@@ -51,10 +55,6 @@ typedef struct regsubop_s
+ 	regsubop_t*	re_ops;		/* rhs ops			*/ \
+ 	char		re_rhs[1];	/* substitution rhs		*/
+ 
+-#include <ast.h>
+-#include <cdt.h>
+-#include <stk.h>
+-
+ #include "regex.h"
+ 
+ #include <ctype.h>
+@@ -296,8 +296,8 @@ typedef struct Vector_s
+ {
+ 	Stk_t*		stk;		/* stack pointer		*/
+ 	char*		vec;		/* the data			*/
+-	int		inc;		/* growth increment		*/
+-	int		siz;		/* element size			*/
++	ptrdiff_t	inc;		/* growth increment		*/
++	size_t		siz;		/* element size			*/
+ 	ssize_t		max;		/* max index			*/
+ 	ssize_t		cur;		/* current index -- user domain	*/
+ } Vector_t;
+@@ -356,7 +356,7 @@ typedef struct Group_s
+ {
+ 	int		number;		/* group number			*/
+ 	int		last;		/* last contained group number	*/
+-	int		size;		/* lookbehind size		*/
++	ptrdiff_t	size;		/* lookbehind size		*/
+ 	int		back;		/* backreferenced		*/
+ 	regflags_t	flags;		/* group flags			*/
+ 	union
+@@ -462,8 +462,8 @@ typedef struct Trie_node_s
+ typedef struct Trie_s
+ {
+ 	Trie_node_t**	root;
+-	int		min;
+-	int		max;
++	ptrdiff_t	min;
++	ptrdiff_t	max;
+ } Trie_t;
+ 
+ /*
+@@ -474,12 +474,12 @@ typedef struct Rex_s
+ {
+ 	unsigned char	type;			/* node type		*/
+ 	unsigned char	marked;			/* already marked	*/
+-	short		serial;			/* subpattern number	*/
++	int		serial;			/* subpattern number	*/
+ 	regflags_t	flags;			/* scoped flags		*/
+ 	int		explicit;		/* scoped explicit match*/
+ 	struct Rex_s*	next;			/* remaining parts	*/
+-	int		lo;			/* lo dup count		*/
+-	int		hi;			/* hi dup count		*/
++	ptrdiff_t	lo;			/* lo dup count		*/
++	ptrdiff_t	hi;			/* hi dup count		*/
+ 	unsigned char*	map;			/* fold and/or ccode map*/
+ 	union
+ 	{
+diff --git a/src/lib/libast/regex/regnexec.c b/src/lib/libast/regex/regnexec.c
+index d19b15398..fe92d8996 100644
+--- a/src/lib/libast/regex/regnexec.c
++++ b/src/lib/libast/regex/regnexec.c
+@@ -130,16 +130,16 @@ typedef struct
+ {
+ 	unsigned char*	p;		/* where in string		*/
+ 	size_t		length;		/* length in string		*/
+-	short		serial;		/* preorder subpattern number	*/
++	int		serial;		/* preorder subpattern number	*/
+ 	short		be;		/* which end of pair		*/
+ } Pos_t;
+ 
+ /* ===== begin library support ===== */
+ 
+-#define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(i)*(v)->siz):(t*)vecseek(&(v),i))
++#define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(size_t)(i)*(v)->siz):(t*)vecseek(&(v),i))
+ 
+ static Vector_t*
+-vecopen(int inc, int siz)
++vecopen(ptrdiff_t inc, size_t siz)
+ {
+ 	Vector_t*	v;
+ 	Stk_t*		sp;
+@@ -148,7 +148,7 @@ vecopen(int inc, int siz)
+ 		inc = 16;
+ 	if (!(sp = stkopen(STK_SMALL|STK_NULL)))
+ 		return NULL;
+-	if (!(v = stkseek(sp, sizeof(Vector_t) + inc * siz)))
++	if (!(v = stkseek(sp, (ptrdiff_t)(sizeof(Vector_t) + (size_t)inc * siz))))
+ 	{
+ 		stkclose(sp);
+ 		return NULL;
+@@ -162,19 +162,19 @@ vecopen(int inc, int siz)
+ }
+ 
+ static void*
+-vecseek(Vector_t** p, int index)
++vecseek(Vector_t** p, ptrdiff_t index)
+ {
+ 	Vector_t*	v = *p;
+ 
+ 	if (index >= v->max)
+ 	{
+ 		while ((v->max += v->inc) <= index);
+-		if (!(v = stkseek(v->stk, sizeof(Vector_t) + v->max * v->siz)))
++		if (!(v = stkseek(v->stk, (ptrdiff_t)(sizeof(Vector_t) + (size_t)v->max * v->siz))))
+ 			return NULL;
+ 		*p = v;
+ 		v->vec = (char*)v + sizeof(Vector_t);
+ 	}
+-	return v->vec + index * v->siz;
++	return v->vec + (size_t)index * v->siz;
+ }
+ 
+ static void
+@@ -190,8 +190,8 @@ typedef struct
+ 	char		data[1];
+ } Stk_frame_t;
+ 
+-#define stknew(s,p)	((p)->offset=stktell(s),(p)->base=stkfreeze(s,0))
+-#define stkold(s,p)	stkset(s,(p)->base,(p)->offset)
++#define stknew(s,p)	((p)->offset=(off_t)stktell(s),(p)->base=stkfreeze(s,0))
++#define stkold(s,p)	stkset(s,(p)->base,(ptrdiff_t)(p)->offset)
+ 
+ #define stkframe(s)	(*((Stk_frame_t**)stktop(s)-1))
+ #define stkdata(s,t)	((t*)stkframe(s)->data)
+@@ -246,16 +246,16 @@ _matchpush(Env_t* env, Rex_t* rex)
+ 	regmatch_t*	m;
+ 	regmatch_t*	e;
+ 	regmatch_t*	s;
+-	int		num;
++	ptrdiff_t	num;
+ 
+ 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
+ 		num = 0;
+-	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + (num - 1) * sizeof(regmatch_t))))
++	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + ((size_t)num - 1) * sizeof(regmatch_t))))
+ 	{
+ 		env->error = REG_ESPACE;
+ 		return 1;
+ 	}
+-	f->size = num * sizeof(regmatch_t);
++	f->size = (size_t)num * sizeof(regmatch_t);
+ 	f->match = m = env->match + rex->re.group.number;
+ 	e = m + num;
+ 	s = f->save;
+@@ -272,7 +272,7 @@ _matchpush(Env_t* env, Rex_t* rex)
+  */
+ 
+ static int
+-pospush(Env_t* env, Rex_t* rex, unsigned char* p, int be)
++pospush(Env_t* env, Rex_t* rex, unsigned char* p, short be)
+ {
+ 	Pos_t*	pos;
+ 
+@@ -574,7 +574,7 @@ parsetrie(Env_t* env, Trie_node_t* x, Rex_t* rex, Rex_t* cont, unsigned char* s)
+ }
+ 
+ static int
+-collelt(Celt_t* ce, char* key, int c, int x)
++collelt(Celt_t* ce, char* key, int c, ptrdiff_t x)
+ {
+ 	Ckey_t	elt;
+ 
+@@ -596,11 +596,11 @@ collelt(Celt_t* ce, char* key, int c, int x)
+ 				return 1;
+ 			continue;
+ 		case COLL_range_lc:
+-			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswlower(c) || !iswupper(c)))
++			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswlower((wint_t)c) || !iswupper((wint_t)c)))
+ 				return 1;
+ 			continue;
+ 		case COLL_range_uc:
+-			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswupper(c) || !iswlower(c)))
++			if (strcmp((char*)ce->beg, (char*)elt) <= ce->min && strcmp((char*)elt, (char*)ce->end) <= ce->max && (iswupper((wint_t)c) || !iswlower((wint_t)c)))
+ 				return 1;
+ 			continue;
+ 		}
+@@ -610,16 +610,16 @@ collelt(Celt_t* ce, char* key, int c, int x)
+ }
+ 
+ static int
+-collic(Celt_t* ce, char* key, char* nxt, int c, int x)
++collic(Celt_t* ce, char* key, char* nxt, int c, ptrdiff_t x)
+ {
+ 	if (!x)
+ 	{
+ 		if (collelt(ce, key, c, x))
+ 			return 1;
+-		if (iswlower(c))
+-			c = towupper(c);
+-		else if (iswupper(c))
+-			c = towlower(c);
++		if (iswlower((wint_t)c))
++			c = (int)towupper((wint_t)c);
++		else if (iswupper((wint_t)c))
++			c = (int)towlower((wint_t)c);
+ 		else
+ 			return 0;
+ 		x = mbconv(key, c);
+@@ -631,9 +631,9 @@ collic(Celt_t* ce, char* key, char* nxt, int c, int x)
+ 		if (collic(ce, key, nxt + 1, c, x))
+ 			return 1;
+ 		if (islower(*nxt))
+-			*nxt = toupper(*nxt);
++			*nxt = (char)toupper(*nxt);
+ 		else if (isupper(*nxt))
+-			*nxt = tolower(*nxt);
++			*nxt = (char)tolower(*nxt);
+ 		else
+ 			return 0;
+ 		nxt++;
+@@ -646,9 +646,10 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+ {
+ 	unsigned char*		t;
+ 	wchar_t			c;
+-	int			w;
++	size_t			z;
+ 	int			r;
+-	int			x;
++	ptrdiff_t		w;
++	ptrdiff_t		x;
+ 	int			ic;
+ 	Ckey_t			key;
+ 	Ckey_t			elt;
+@@ -656,7 +657,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+ 	ic = (rex->flags & REG_ICASE);
+ 	if ((w = MBSIZE(s)) > 1)
+ 	{
+-		memcpy((char*)key, (char*)s, w);
++		memcpy((char*)key, (char*)s, (size_t)w);
+ 		key[w] = 0;
+ 		t = s;
+ 		c = mbchar(t);
+@@ -670,7 +671,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+ 		c = s[0];
+ 		if (ic && isupper(c))
+ 			c = tolower(c);
+-		key[0] = c;
++		key[0] = (unsigned char)c;
+ 		key[1] = 0;
+ 		if (isalpha(c))
+ 		{
+@@ -682,12 +683,12 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+ 				c = s[w];
+ 				if (!isalpha(c))
+ 					break;
+-				r = mbxfrm(elt, key, COLL_KEY_MAX);
++				z = mbxfrm(elt, key, COLL_KEY_MAX);
+ 				if (ic && isupper(c))
+ 					c = tolower(c);
+-				key[w] = c;
++				key[w] = (unsigned char)c;
+ 				key[w + 1] = 0;
+-				if (mbxfrm(elt, key, COLL_KEY_MAX) != r)
++				if (mbxfrm(elt, key, COLL_KEY_MAX) != z)
+ 					break;
+ 				w++;
+ 			}
+@@ -793,10 +794,10 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
+ {
+ 	int		c;
+ 	int		d;
+-	int		m;
+ 	int		r;
+ 	ssize_t		i;
+ 	ssize_t		n;
++	ptrdiff_t	m;
+ 	unsigned char*	p;
+ 	unsigned char*	t;
+ 	unsigned char*	b;
+@@ -831,7 +832,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 					((Pos_t*)env->pos->vec + env->pos->cur - 1)->serial = catcher.serial = rex->re.group.expr.binary.serial;
+ 					n = parse(env, rex->re.group.expr.binary.right, &catcher, s);
+ 					if (n != NONE)
+-						r = n;
++						r = (int)n;
+ 				}
+ 				pospop(env);
+ 				matchpop(env, rex);
+@@ -877,7 +878,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 				{
+ 					c = mbchar(s);
+ 					d = mbchar(t);
+-					if (towupper(c) != towupper(d))
++					if (towupper((wint_t)c) != towupper((wint_t)d))
+ 						return NONE;
+ 				}
+ 			}
+@@ -955,14 +956,14 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 			e = env->end;
+ 			if (!(rex->flags & REG_MINIMAL))
+ 			{
+-				if (!(b = stkpush(env->mst, n)))
++				if (!(b = stkpush(env->mst, (size_t)n)))
+ 				{
+ 					env->error = REG_ESPACE;
+ 					return BAD;
+ 				}
+ 				for (i = 0; s < e && i < n && collmatch(rex, s, e, &t); i++)
+ 				{
+-					b[i] = t - s;
++					b[i] = (unsigned char)(t - s);
+ 					s = t;
+ 				}
+ 				for (; i-- >= rex->lo; s -= b[i])
+@@ -1032,7 +1033,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 			if (!env->stack)
+ 				return BEST;
+ 			n = s - env->beg;
+-			r = env->nsub;
++			r = (int)env->nsub;
+ 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
+ 			if ((i = env->best[0].rm_eo) >= 0)
+ 			{
+@@ -1055,7 +1056,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 					return GOOD;
+ 			}
+ 			env->best[0].rm_eo = n;
+-			memcpy(&env->best[1], &env->match[1], r * sizeof(regmatch_t));
++			memcpy(&env->best[1], &env->match[1], (size_t)r * sizeof(regmatch_t));
+ 			n = env->pos->cur;
+ 			pos = vector(Pos_t, env->bestpos, n);
+ 			if (!pos)
+@@ -1064,7 +1065,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 				return BAD;
+ 			}
+ 			env->bestpos->cur = n;
+-			memcpy(env->bestpos->vec, env->pos->vec, n * sizeof(Pos_t));
++			memcpy(env->bestpos->vec, env->pos->vec, (size_t)n * sizeof(Pos_t));
+ 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
+ 			return GOOD;
+ 		}
+@@ -1105,14 +1106,14 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+ 				}
+ 				else
+ 				{
+-					if (!(b = stkpush(env->mst, n)))
++					if (!(b = stkpush(env->mst, (size_t)n)))
+ 					{
+ 						env->error = REG_ESPACE;
+ 						return BAD;
+ 					}
+ 					e = env->end;
+ 					for (i = 0; s < e && i < n && *s != c; i++)
+-						s += b[i] = MBSIZE(s);
++						s += b[i] = (unsigned char)MBSIZE(s);
+ 					for (; i-- >= m; s -= b[i])
+ 						switch (follow(env, rex, cont, s))
+ 						{
+@@ -1348,9 +1349,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+ 			n = ((i + 7) >> 3) + 1;
+ 			catcher.type = REX_NEG_CATCH;
+ 			catcher.re.neg_catch.beg = s;
+-			if (!(p = stkpush(env->mst, n)))
++			if (!(p = stkpush(env->mst, (size_t)n)))
+ 				return BAD;
+-			memset(catcher.re.neg_catch.index = p, 0, n);
++			memset(catcher.re.neg_catch.index = p, 0, (size_t)n);
+ 			catcher.next = rex->next;
+ 			if (parse(env, rex->re.group.expr.rex, &catcher, s) == BAD)
+ 				r = BAD;
+@@ -1447,7 +1448,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+ 				}
+ 				else
+ 				{
+-					if (!(b = stkpush(env->mst, n)))
++					if (!(b = stkpush(env->mst, (size_t)n)))
+ 					{
+ 						env->error = REG_ESPACE;
+ 						return BAD;
+@@ -1460,7 +1461,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+ 							t = s;
+ 							if (mbchar(t) != c)
+ 								break;
+-							b[i] = t - s;
++							b[i] = (unsigned char)(t - s);
+ 						}
+ 					}
+ 					else
+@@ -1468,9 +1469,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+ 						for (i = 0; s < e && i < n; i++, s = t)
+ 						{
+ 							t = s;
+-							if (towupper(mbchar(t)) != c)
++							if (towupper((wint_t)mbchar(t)) != (wint_t)c)
+ 								break;
+-							b[i] = t - s;
++							b[i] = (unsigned char)(t - s);
+ 						}
+ 					}
+ 					for (; i-- >= m; s -= b[i])
+@@ -1576,7 +1577,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+ 						for (i = 0; i < m && s < e; i++, s = t)
+ 						{
+ 							t = s;
+-							if (towupper(mbchar(t)) != c)
++							if (towupper((wint_t)mbchar(t)) != (wint_t)c)
+ 								return r;
+ 						}
+ 						while (i++ <= n)
+@@ -1593,7 +1594,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+ 							}
+ 							if (s >= e)
+ 								break;
+-							if (towupper(mbchar(s)) != c)
++							if (towupper((wint_t)mbchar(s)) != (wint_t)c)
+ 								break;
+ 						}
+ 					}
+@@ -1635,7 +1636,7 @@ DEBUG_TEST(0x0002,(sfprintf(sfstdout, "AHA#%04d %p re.group.back=%d re.group.exp
+ 			return r;
+ 		case REX_STRING:
+ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'\n", __LINE__, debug_flag, rexname(rex), rex->re.string.size, rex->re.string.base, env->end - s, s)),(0));
+-			if (rex->re.string.size > (env->end - s))
++			if (rex->re.string.size > (size_t)(env->end - s))
+ 				return NONE;
+ 			t = rex->re.string.base;
+ 			e = t + rex->re.string.size;
+@@ -1657,7 +1658,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
+ 				{
+ 					c = mbchar(s);
+ 					d = mbchar(t);
+-					if (towupper(c) != d)
++					if (towupper((wint_t)c) != (wint_t)d)
+ 						return NONE;
+ 				}
+ 			}
+@@ -1668,7 +1669,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
+ 			return parsetrie(env, x, rex, cont, s);
+ 		case REX_EXEC:
+ 			u = 0;
+-			r = (*env->disc->re_execf)(env->regex, rex->re.exec.data, rex->re.exec.text, rex->re.exec.size, (const char*)s, env->end - s, &u, env->disc);
++			r = (*env->disc->re_execf)(env->regex, rex->re.exec.data, rex->re.exec.text, rex->re.exec.size, (const char*)s, (size_t)(env->end - s), &u, env->disc);
+ 			e = (unsigned char*)u;
+ 			if (e >= s && e <= env->end)
+ 				s = e;
+@@ -1780,9 +1781,9 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
+ {
+ 	ssize_t		n = 0;
+ 	int		i;
+-	int		j;
++	size_t		j;
+ 	int		k;
+-	int		m;
++	size_t		m;
+ 	int		advance;
+ 	Env_t*		env;
+ 
+@@ -1806,8 +1807,8 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
+ 	stknew(env->mst, &env->stk);
+ 	if (env->stack = env->hard || !(env->flags & REG_NOSUB) && nmatch)
+ 	{
+-		n = env->nsub;
+-		if (!(env->match = stkpush(env->mst, 2 * (n + 1) * sizeof(regmatch_t))) ||
++		n = (ssize_t)env->nsub;
++		if (!(env->match = stkpush(env->mst, 2 * ((size_t)n + 1) * sizeof(regmatch_t))) ||
+ 		    !env->pos && !(env->pos = vecopen(16, sizeof(Pos_t))) ||
+ 		    !env->bestpos && !(env->bestpos = vecopen(16, sizeof(Pos_t))))
+ 		{
+@@ -1826,7 +1827,7 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
+ 	DEBUG_TEST(0x1000,(list(env,env->rex)),(0));
+ 	k = REG_NOMATCH;
+ 	j = env->once || (flags & REG_LEFT);
+-	DEBUG_TEST(0x0080,(sfprintf(sfstdout, "AHA#%04d parse once=%d\n", __LINE__, j)),(0));
++	DEBUG_TEST(0x0080,(sfprintf(sfstdout, "AHA#%04d parse once=%zu\n", __LINE__, j)),(0));
+ 	while ((i = parse(env, env->rex, &env->done, (unsigned char*)s)) == NONE || advance && !env->best[0].rm_eo && !(advance = 0))
+ 	{
+ 		if (j)
+@@ -1917,7 +1918,7 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
+ 	if (oldmatch)
+ 	{
+ 		regmatch_t*	match;
+-		ssize_t		i;
++		size_t		i;
+ 		int		r;
+ 
+ 		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
+@@ -1925,8 +1926,8 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
+ 		if (!(r = regnexec_20120528(p, s, len, nmatch, match, flags)))
+ 			for (i = 0; i < nmatch; i++)
+ 			{
+-				oldmatch[i].rm_so = match[i].rm_so;
+-				oldmatch[i].rm_eo = match[i].rm_eo;
++				oldmatch[i].rm_so = (int)match[i].rm_so;
++				oldmatch[i].rm_eo = (int)match[i].rm_eo;
+ 			}
+ 		free(match);
+ 		return r;
+diff --git a/src/lib/libast/regex/regsubcomp.c b/src/lib/libast/regex/regsubcomp.c
+index cdb7312dd..190631c16 100644
+--- a/src/lib/libast/regex/regsubcomp.c
++++ b/src/lib/libast/regex/regsubcomp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -71,7 +71,7 @@ regsubflags(regex_t* p, const char* s, char** e, int delim, const regflags_t* ma
+ 		else
+ 		{
+ 			for (m = map; *m; m++)
+-				if (*m++ == c)
++				if ((signed)*m++ == c)
+ 				{
+ 					if (flags & *m)
+ 					{
+@@ -115,8 +115,8 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 	int		sre;
+ 	int		f;
+ 	int		g;
+-	int		n;
+-	int		nops;
++	ptrdiff_t	n;
++	size_t		nops;
+ 	const char*	o;
+ 	regdisc_t*	disc;
+ 
+@@ -179,11 +179,12 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 		}
+ 		if (*s)
+ 		{
+-			if (n = regsubflags(p, s, &e, d, map, &minmatch, &flags))
+-				return n;
++			int ret;
++			if (ret = regsubflags(p, s, &e, d, map, &minmatch, &flags))
++				return ret;
+ 			s = (const char*)e;
+ 		}
+-		p->re_npat = s - o;
++		p->re_npat = (size_t)(s - o);
+ 		s = r;
+ 	}
+ 	else
+@@ -195,7 +196,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 	again:
+ 		if (!c)
+ 		{
+-			p->re_npat = s - o - 1;
++			p->re_npat = (size_t)(s - o - 1);
+ 			break;
+ 		}
+ 		else if (c == '\\')
+@@ -214,7 +215,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 			}
+ 			if (c == '&')
+ 			{
+-				*t++ = c;
++				*t++ = (char)c;
+ 				continue;
+ 			}
+ 		}
+@@ -222,7 +223,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 		{
+ 			if (sre)
+ 			{
+-				*t++ = c;
++				*t++ = (char)c;
+ 				continue;
+ 			}
+ 		}
+@@ -245,7 +246,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 					c = toupper(c);
+ 				break;
+ 			}
+-			*t++ = c;
++			*t++ = (char)c;
+ 			continue;
+ 		}
+ 		switch (c)
+@@ -268,7 +269,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 				s++;
+ 				if (isupper(c))
+ 					c = tolower(c);
+-				*t++ = c;
++				*t++ = (char)c;
+ 			}
+ 			continue;
+ 		case 'u':
+@@ -277,13 +278,13 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 				s++;
+ 				if (islower(c))
+ 					c = toupper(c);
+-				*t++ = c;
++				*t++ = (char)c;
+ 			}
+ 			continue;
+ 		case 'E':
+ 			f = g;
+ 		set:
+-			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
++			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (ptrdiff_t)nops)
+ 			{
+ 				if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
+ 				{
+@@ -306,7 +307,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 		default:
+ 			if (!sre)
+ 			{
+-				*t++ = chresc(s - 2, &e);
++				*t++ = (char)chresc(s - 2, &e);
+ 				s = (const char*)e;
+ 				continue;
+ 			}
+@@ -314,12 +315,12 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 			c = -1;
+ 			break;
+ 		}
+-		if (c > p->re_nsub)
++		if (c > (ptrdiff_t)p->re_nsub)
+ 		{
+ 			regfree(p);
+ 			return fatal(disc, REG_ESUBREG, s - 1);
+ 		}
+-		if ((n = op - sub->re_ops) >= (nops - 2))
++		if ((n = op - sub->re_ops) >= ((ptrdiff_t)nops - 2))
+ 		{
+ 			if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
+ 			{
+@@ -337,7 +338,7 @@ regsubcomp(regex_t* p, const char* s, const regflags_t* map, int minmatch, regfl
+ 		op->op = f;
+ 		op->off = t - sub->re_rhs;
+ 	}
+-	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
++	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (ptrdiff_t)nops)
+ 	{
+ 		if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
+ 		{
+diff --git a/src/lib/libast/regex/regsubexec.c b/src/lib/libast/regex/regsubexec.c
+index 0d8c1dc5a..df83dddcc 100644
+--- a/src/lib/libast/regex/regsubexec.c
++++ b/src/lib/libast/regex/regsubexec.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -29,10 +29,10 @@
+ 	{ \
+ 		if (((b)->re_end - (b)->re_cur) < (n)) \
+ 		{ \
+-			size_t	o = (b)->re_cur - (b)->re_buf; \
+-			size_t	a = ((b)->re_end - (b)->re_buf); \
+-			if (a < n) \
+-				a = roundof(n, 128); \
++			size_t	o = ((size_t)((b)->re_cur - (b)->re_buf)); \
++			size_t	a = ((size_t)((b)->re_end - (b)->re_buf)); \
++			if (a < (size_t)(n)) \
++				a = (size_t)roundof(n, 128); \
+ 			a *= 2; \
+ 			if (!((b)->re_buf = alloc(p->env->disc, (b)->re_buf, a))) \
+ 			{ \
+@@ -56,7 +56,7 @@
+ 	do if (z) \
+ 	{ \
+ 		NEED(p, b, z, r); \
+-		memcpy((b)->re_cur, x, z); \
++		memcpy((b)->re_cur, x, (size_t)(z)); \
+ 		(b)->re_cur += (z); \
+ 	} while (0)
+ 
+@@ -78,12 +78,12 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
+ 		case -1:
+ 			break;
+ 		case 0:
+-			if (op->off >= nmatch)
++			if ((size_t)op->off >= nmatch)
+ 				return REG_ESUBREG;
+-			if ((c = match[op->off].rm_so) < 0)
++			if ((c = (int)match[op->off].rm_so) < 0)
+ 				continue;
+ 			s = (char*)ss + c;
+-			if ((c = match[op->off].rm_eo) < 0)
++			if ((c = (int)match[op->off].rm_eo) < 0)
+ 				continue;
+ 			e = (char*)ss + c;
+ 			NEED(p, b, e - s, return c);
+@@ -95,7 +95,7 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
+ 					c = *s++;
+ 					if (islower(c))
+ 						c = toupper(c);
+-					*b->re_cur++ = c;
++					*b->re_cur++ = (char)c;
+ 				}
+ 				break;
+ 			case REG_SUB_LOWER:
+@@ -104,7 +104,7 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
+ 					c = *s++;
+ 					if (isupper(c))
+ 						c = tolower(c);
+-					*b->re_cur++ = c;
++					*b->re_cur++ = (char)c;
+ 				}
+ 				break;
+ 			case REG_SUB_UPPER|REG_SUB_LOWER:
+@@ -115,7 +115,7 @@ sub(const regex_t* p, regsub_t* b, const char* ss, regsubop_t* op, size_t nmatch
+ 						c = tolower(c);
+ 					else if (islower(c))
+ 						c = toupper(c);
+-					*b->re_cur++ = c;
++					*b->re_cur++ = (char)c;
+ 				}
+ 				break;
+ 			default:
+@@ -147,7 +147,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
+ 	int		c;
+ 	regsub_t*	b;
+ 	const char*	e;
+-	int		m;
++	ptrdiff_t	m;
+ 
+ 	if (!p->env->sub || (p->env->flags & REG_NOSUB) || !nmatch)
+ 		return fatal(p->env->disc, REG_BADPAT, NULL);
+@@ -169,7 +169,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
+ 		s += match->rm_eo;
+ 		if (m <= 0 && !(b->re_flags & REG_SUB_ALL) || !*s)
+ 			break;
+-		if (c = regnexec(p, s, e - s, nmatch, match, p->env->flags|(match->rm_so == match->rm_eo ? REG_ADVANCE : 0)))
++		if (c = regnexec(p, s, (size_t)(e - s), nmatch, match, p->env->flags|(match->rm_so == match->rm_eo ? REG_ADVANCE : 0)))
+ 		{
+ 			if (c != REG_NOMATCH)
+ 				return fatal(p->env->disc, c, NULL);
+@@ -184,11 +184,11 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
+ 	while (s < e)
+ 	{
+ 		c = *s++;
+-		PUTC(p, b, c, return fatal(p->env->disc, c, NULL));
++		PUTC(p, b, (char)c, return fatal(p->env->disc, c, NULL));
+ 	}
+ 	NEED(p, b, 1, return fatal(p->env->disc, c, NULL));
+ 	*b->re_cur = 0;
+-	b->re_len = b->re_cur - b->re_buf;
++	b->re_len = (size_t)(b->re_cur - b->re_buf);
+ 	return 0;
+ }
+ 
+@@ -205,7 +205,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmat
+ 	if (oldmatch)
+ 	{
+ 		regmatch_t*	match;
+-		ssize_t		i;
++		size_t		i;
+ 		int		r;
+ 
+ 		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
+@@ -218,8 +218,8 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmat
+ 		if (!(r = regsubexec_20120528(p, s, nmatch, match)))
+ 			for (i = 0; i < nmatch; i++)
+ 			{
+-				oldmatch[i].rm_so = match[i].rm_so;
+-				oldmatch[i].rm_eo = match[i].rm_eo;
++				oldmatch[i].rm_so = (int)match[i].rm_so;
++				oldmatch[i].rm_eo = (int)match[i].rm_eo;
+ 			}
+ 		free(match);
+ 		return r;
+diff --git a/src/lib/libast/string/base64.c b/src/lib/libast/string/base64.c
+index 66dfe7414..7038daef0 100644
+--- a/src/lib/libast/string/base64.c
++++ b/src/lib/libast/string/base64.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -92,12 +93,12 @@ base64encode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 					*fn = fp;
+ 				if (tn)
+ 					*tn = tp;
+-				n = tp - (unsigned char*)tb + 1;
++				n = (size_t)(tp - (unsigned char*)tb + 1);
+ 				tp = tmp;
+ 				te = tp + sizeof(tmp) - B64_EC + 1;
+ 			}
+-			b = *fp++ << 16;
+-			b |= *fp++ << 8;
++			b = (unsigned long)(*fp++ << 16);
++			b |= (unsigned long)(*fp++ << 8);
+ 			b |= *fp++;
+ 			*tp++ = m[b >> 18];
+ 			*tp++ = m[(b >> 12) & 077];
+@@ -106,7 +107,7 @@ base64encode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 		} while (tp < tc);
+ 		if (n)
+ 		{
+-			n += tp - tmp + (fp < fe);
++			n += (size_t)(tp - tmp + (fp < fe));
+ 			tp = tmp;
+ 		}
+ 		else
+@@ -121,33 +122,33 @@ base64encode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 				*fn = fp;
+ 			if (tn)
+ 				*tn = tp;
+-			n = tp - (unsigned char*)tb + 1;
++			n = (size_t)(tp - (unsigned char*)tb + 1);
+ 			tp = tmp;
+ 			te = tp + sizeof(tmp) - B64_EC + 1;
+ 		}
+-		b = *fp++ << 16;
++		b = (unsigned long)(*fp++ << 16);
+ 		if (fz == 2)
+-			b |= *fp++ << 8;
++			b |= (unsigned long)(*fp++ << 8);
+ 		*tp++ = m[b >> 18];
+ 		*tp++ = m[(b >> 12) & 077];
+ 		*tp++ = (fz == 2) ? m[(b >> 6) & 077] : PAD;
+ 		*tp++ = PAD;
+ 	}
+ 	if (n)
+-		n += (tp - tmp) - 1;
++		n += (size_t)(tp - tmp) - 1;
+ 	else
+ 	{
+ 		if (tp > (unsigned char*)tb && *(tp - 1) == '\n')
+ 			tp--;
+ 		if (tp < te)
+ 			*tp = 0;
+-		n = tp - (unsigned char*)tb;
++		n = (size_t)(tp - (unsigned char*)tb);
+ 		if (tn)
+ 			*tn = tp;
+ 		if (fn)
+ 			*fn = fp;
+ 	}
+-	return n;
++	return (ssize_t)n;
+ }
+ 
+ /*
+@@ -173,7 +174,7 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 	{
+ 		memset(m, B64_IGN, sizeof(map));
+ 		for (tp = (unsigned char*)alp; c = *tp; tp++)
+-			m[c] =  tp - (unsigned char*)alp;
++			m[c] = (unsigned char)(tp - (unsigned char*)alp);
+ 		m[PAD] = B64_PAD;
+ 		m[' '] = m['\t'] = m['\n'] = B64_SPC;
+ 	}
+@@ -201,7 +202,7 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 		{
+ 			if ((c = m[*fp++]) < 64)
+ 			{
+-				v = (v << 6) | c;
++				v = (v << 6) | (unsigned long)c;
+ 				if (++state == 4)
+ 				{
+ 					if (tp >= tx)
+@@ -213,12 +214,12 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 							n = tp - (unsigned char*)tb + 4;
+ 							if (tp < te)
+ 							{
+-								*tp++ = (v >> 16);
++								*tp++ = (unsigned char)(v >> 16);
+ 								if (tp < te)
+ 								{
+-									*tp++ = (v >> 8);
++									*tp++ = (unsigned char)(v >> 8);
+ 									if (tp < te)
+-										*tp++ = (v);
++										*tp++ = (unsigned char)(v);
+ 								}
+ 							}
+ 							if (tn)
+@@ -229,9 +230,9 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 					}
+ 					else
+ 					{
+-						*tp++ = (v >> 16);
+-						*tp++ = (v >> 8);
+-						*tp++ = (v);
++						*tp++ = (unsigned char)(v >> 16);
++						*tp++ = (unsigned char)(v >> 8);
++						*tp++ = (unsigned char)(v);
+ 					}
+ 					fc = fp;
+ 					state = 0;
+@@ -247,7 +248,7 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 			goto done;
+ 		case 2:
+ 			if (tp < te)
+-				*tp++ = v >> 4;
++				*tp++ = (unsigned char)(v >> 4);
+ 			else if (n)
+ 				n++;
+ 			else
+@@ -262,9 +263,9 @@ base64decode(const void* fb, size_t fz, void** fn, void* tb, size_t tz, void** t
+ 		case 3:
+ 			if (tp < te)
+ 			{
+-				*tp++ = v >> 10;
++				*tp++ = (unsigned char)(v >> 10);
+ 				if (tp < te)
+-					*tp++ = v >> 2;
++					*tp++ = (unsigned char)(v >> 2);
+ 				else
+ 				{
+ 					n = tp - (unsigned char*)tb + 2;
+diff --git a/src/lib/libast/string/ccmap.c b/src/lib/libast/string/ccmap.c
+index 785fcd9fa..41f2dd78d 100644
+--- a/src/lib/libast/string/ccmap.c
++++ b/src/lib/libast/string/ccmap.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -603,7 +603,7 @@ static const unsigned char tab[] =
+ };
+ 
+ #define MAP	256
+-#define MAPS	(sizeof(tab)/MAP)
++#define MAPS	((int)sizeof(tab)/MAP)
+ 
+ struct Map_s; typedef struct Map_s Map_t;
+ 
+@@ -666,7 +666,7 @@ _ccmap(int i, int o)
+ 	z = (unsigned char*)tab + MAP * (2 * (i - 1) + 1);
+ 	m = map->map;
+ 	for (n = 0; n < MAP; n++)
+-		m[n] = n;
++		m[n] = (unsigned char)n;
+ 	for (n = MAP - 1; n >= 0; n--)
+ 		m[n] = a[z[n]];
+ 	map->next = maps;
+diff --git a/src/lib/libast/string/ccmapid.c b/src/lib/libast/string/ccmapid.c
+index c5773ca18..fc5f5b3c9 100644
+--- a/src/lib/libast/string/ccmapid.c
++++ b/src/lib/libast/string/ccmapid.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -135,7 +135,7 @@ ccmapid(const char* name)
+ 	const Ccmap_t*	mp;
+ 	int		c;
+ 	const Ccmap_t*	bp;
+-	int		n;
++	ptrdiff_t	n;
+ 	ssize_t		sub[2];
+ 
+ 	bp = 0;
+diff --git a/src/lib/libast/string/chresc.c b/src/lib/libast/string/chresc.c
+index 7d7bf97cc..0ad0cca38 100644
+--- a/src/lib/libast/string/chresc.c
++++ b/src/lib/libast/string/chresc.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -44,7 +45,7 @@ utf32towc(uint32_t utf32)
+ 
+ 	/* in ASCII range: no conversion needed (we only support supersets of ASCII) */
+ 	if (utf32 <= 0x7F)
+-		return utf32;
++		return (int)utf32;
+ 	/* in ASCII-only locales, only ASCII (0 - 0x7F) is valid */
+ 	if (!mbwide() && utf32 > 0x7F && (ast.locale.set & AST_LC_7bit))
+ 		return -1;
+@@ -53,7 +54,7 @@ utf32towc(uint32_t utf32)
+ 		return -1;
+ 	/* in UTF-8 locale: no conversion needed */
+ 	if (ast.locale.set & AST_LC_utf8)
+-		return utf32;
++		return (int)utf32;
+ 	/* open an iconv descriptor for converting from UTF-8 to the current locale --
+ 	 * remember it across invocations; setlocale will close/reset it upon changing locale */
+ 	if (ast.locale.uc2wc == (void*)(-1) && (ast.locale.uc2wc = iconv_open(getcodeset(), "UTF-8")) == (void*)(-1))
+@@ -65,11 +66,11 @@ utf32towc(uint32_t utf32)
+ 	inbuf = tmp_in;
+ 	outbuf = tmp_out;
+ 	outbytesleft = sizeof(tmp_out);
+-	if (iconv(ast.locale.uc2wc, &inbuf, &inbytesleft, &outbuf, &outbytesleft) < 0 || inbytesleft)
++	if (iconv(ast.locale.uc2wc, &inbuf, &inbytesleft, &outbuf, &outbytesleft) == (size_t)-1 || inbytesleft)
+ 		return -1;
+ 	if (!mbwide())
+ 		return *(unsigned char*)tmp_out;
+-	if (mb2wc(wchar, tmp_out, outbuf - tmp_out) <= 0)
++	if (mb2wc(wchar, tmp_out, (size_t)(outbuf - tmp_out)) <= 0)
+ 		return -1;
+ 	return wchar;
+ }
+@@ -249,7 +250,7 @@ chrexp(const char* s, char** p, int* m, int flags)
+ 					w = 1;
+ 				if (n <= 2 && !(flags & FMT_EXP_CHAR) ||
+ 					n > 2 && !(flags & FMT_EXP_WIDE) ||
+-					convert && (c = utf32towc(c)) <= 0)
++					convert && (c = utf32towc((uint32_t)c)) <= 0)
+ 				{
+ 					s = b;
+ 					goto noexpand;
+diff --git a/src/lib/libast/string/fmtbuf.c b/src/lib/libast/string/fmtbuf.c
+index 5827f7f82..20e65a309 100644
+--- a/src/lib/libast/string/fmtbuf.c
++++ b/src/lib/libast/string/fmtbuf.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -43,7 +43,7 @@ fmtbuf(size_t n)
+ 		{
+ 			if (n > bigsiz)
+ 			{
+-				bigsiz = roundof(n, 8 * 1024);
++				bigsiz = roundof(n, (size_t)(8 * 1024));
+ 				if (!(big = newof(big, char, bigsiz, 0)))
+ 					return NULL;
+ 			}
+diff --git a/src/lib/libast/string/fmtclock.c b/src/lib/libast/string/fmtclock.c
+index d829748a8..c0a1b1383 100644
+--- a/src/lib/libast/string/fmtclock.c
++++ b/src/lib/libast/string/fmtclock.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -30,16 +30,16 @@ fmtclock(Sfulong_t t)
+ {
+ 	int		u;
+ 	char*		buf;
+-	int		z;
++	size_t		z;
+ 
+-	static unsigned long	clk_tck;
++	static clock_t	clk_tck;
+ 
+ 	if (!clk_tck)
+ 	{
+ #ifdef CLOCKS_PER_SEC
+-		clk_tck = CLOCKS_PER_SEC;
++		clk_tck = (clock_t)CLOCKS_PER_SEC;
+ #else
+-		if (!(clk_tck = astconf_ulong(CONF_CLK_TCK)))
++		if (!(clk_tck = (clock_t)astconf_ulong(CONF_CLK_TCK)))
+ 			clk_tck = 60;
+ #endif /* CLOCKS_PER_SEC */
+ 	}
+@@ -47,13 +47,13 @@ fmtclock(Sfulong_t t)
+ 		return "0";
+ 	if (t == ((Sfulong_t)~0))
+ 		return "%";
+-	t = (t * 1000000) / clk_tck;
++	t = (t * 1000000) / (Sfulong_t)clk_tck;
+ 	if (t < 1000)
+ 		u = 'u';
+ 	else if ((t /= 1000) < 1000)
+ 		u = 'm';
+ 	else
+-		return fmtelapsed(t / 10, 100);
++		return fmtelapsed((unsigned long)t / 10, 100);
+ 	buf = fmtbuf(z = 7);
+ 	sfsprintf(buf, z, "%I*u%cs", sizeof(t), t, u);
+ 	return buf;
+diff --git a/src/lib/libast/string/fmtdev.c b/src/lib/libast/string/fmtdev.c
+index b5241a493..7e817719a 100644
+--- a/src/lib/libast/string/fmtdev.c
++++ b/src/lib/libast/string/fmtdev.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -35,23 +35,23 @@ char*
+ fmtdev(struct stat* st)
+ {
+ 	char*		buf;
+-	unsigned long	mm;
++	dev_t		mm;
+ 	unsigned int	ma;
+ 	unsigned int	mi;
+-	int		z;
++	size_t		z;
+ 
+ 	mm = (S_ISBLK(st->st_mode) || S_ISCHR(st->st_mode)) ? idevice(st) : st->st_dev;
+-	ma = major(mm);
+-	mi = minor(mm);
++	ma = (unsigned int)major(mm);
++	mi = (unsigned int)minor(mm);
+ 	buf = fmtbuf(z = 17);
+-	if (ma == '#' && isalnum(mi))
++	if (ma == '#' && isalnum((int)mi))
+ 	{
+ 		/*
+ 		 * Plan? Nein!
+ 		 */
+ 
+-		buf[0] = ma;
+-		buf[1] = mi;
++		buf[0] = (char)ma;
++		buf[1] = (char)mi;
+ 		buf[2] = 0;
+ 	}
+ 	else
+diff --git a/src/lib/libast/string/fmtesc.c b/src/lib/libast/string/fmtesc.c
+index 1a358cc4b..7a4b1d4b6 100644
+--- a/src/lib/libast/string/fmtesc.c
++++ b/src/lib/libast/string/fmtesc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -91,12 +91,12 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
+ 		{
+ #if _hdr_wchar && _hdr_wctype
+ 			c = mbchar(s);
+-			if (!spaced && !escaped && (iswspace(c) || iswcntrl(c)))
++			if (!spaced && !escaped && (iswspace((wint_t)c) || iswcntrl((wint_t)c)))
+ 				spaced = 1;
+ 			s -= m;
+ #endif
+ 			while (m--)
+-				*b++ = *s++;
++				*b++ = (char)*s++;
+ 		}
+ 		else
+ 		{
+@@ -176,8 +176,8 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
+ 					{
+ 						escaped = 1;
+ 						*b++ = '\'';
+-						*b++ = c;
+-						*b++ = *s++;
++						*b++ = (char)c;
++						*b++ = (char)*s++;
+ 						if (shell)
+ 						{
+ 							spaced = 1;
+@@ -188,7 +188,7 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
+ 					else
+ 					{
+ 						escaped = 1;
+-						*b++ = c;
++						*b++ = (char)c;
+ 						c = *s++;
+ 					}
+ 				}
+diff --git a/src/lib/libast/string/fmtfmt.c b/src/lib/libast/string/fmtfmt.c
+index ed4e29fff..4845cc0c9 100644
+--- a/src/lib/libast/string/fmtfmt.c
++++ b/src/lib/libast/string/fmtfmt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -47,15 +48,15 @@ fmtfmt(const char* as)
+ {
+ 	char*		s = (char*)as;
+ 	char*		buf;
+-	int		i;
+ 	int		c;
+ 	int		a;
+ 	int		q;
+ 	int		x;
+ 	int		t;
+-	int		m;
+ 	int		n;
+-	int		z;
++	ptrdiff_t	i;
++	ptrdiff_t	m;
++	ptrdiff_t	z;
+ 	char		formats[256];
+ 	unsigned int	extra[elementsof(formats)];
+ 
+@@ -175,10 +176,10 @@ fmtfmt(const char* as)
+ 				i = a;
+ 			else
+ 				i++;
+-			if (i < elementsof(formats))
++			if (i < (ptrdiff_t)elementsof(formats))
+ 			{
+-				formats[i] = t;
+-				if (extra[i] = x)
++				formats[i] = (char)t;
++				if (extra[i] = (unsigned)x)
+ 					do z++; while (x /= 10);
+ 				if (m < i)
+ 					m = i;
+@@ -189,7 +190,7 @@ fmtfmt(const char* as)
+ 		}
+ 		break;
+ 	}
+-	s = buf = fmtbuf(m + z);
++	s = buf = fmtbuf((size_t)(m + z));
+ 	for (i = 1; i <= m; i++)
+ 	{
+ 		if (extra[i])
+diff --git a/src/lib/libast/string/fmtgid.c b/src/lib/libast/string/fmtgid.c
+index ecbfccdc8..d4e1905db 100644
+--- a/src/lib/libast/string/fmtgid.c
++++ b/src/lib/libast/string/fmtgid.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -51,7 +51,7 @@ fmtgid(int gid)
+ 	Id_t*		ip;
+ 	char*		name;
+ 	struct group*	gr;
+-	int		z;
++	size_t		z;
+ 
+ 	static Dt_t*		dict;
+ 	static Dtdisc_t		disc;
+@@ -64,7 +64,7 @@ fmtgid(int gid)
+ 	}
+ 	else if (ip = (Id_t*)dtmatch(dict, &gid))
+ 		return ip->name;
+-	if (gr = getgrgid(gid))
++	if (gr = getgrgid((gid_t)gid))
+ 	{
+ 		name = gr->gr_name;
+ #if _WINIX
+diff --git a/src/lib/libast/string/fmtident.c b/src/lib/libast/string/fmtident.c
+index f0c761aac..5b6699885 100644
+--- a/src/lib/libast/string/fmtident.c
++++ b/src/lib/libast/string/fmtident.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -33,7 +34,7 @@ fmtident(const char* a)
+ 	char*	s = (char*)a;
+ 	char*	t;
+ 	char*	buf;
+-	int	i;
++	size_t	i;
+ 
+ 	i = 0;
+ 	for (;;)
+@@ -63,7 +64,7 @@ fmtident(const char* a)
+ 				break;
+ 		while (t > s && isspace(t[-1]))
+ 			t--;
+-		i = t - s;
++		i = (size_t)(t - s);
+ 		buf = fmtbuf(i + 1);
+ 		memcpy(buf, s, i);
+ 		s = buf;
+diff --git a/src/lib/libast/string/fmtint.c b/src/lib/libast/string/fmtint.c
+index f3b90e7e9..ff9560d7c 100644
+--- a/src/lib/libast/string/fmtint.c
++++ b/src/lib/libast/string/fmtint.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -83,7 +84,8 @@ fmtint(intmax_t ll, int unsign)
+ {
+ 	char		*buff;
+ 	uintmax_t	n,m;
+-	int		j=0,k=3*sizeof(ll);
++	int		j=0;
++	ptrdiff_t	k=3*(ptrdiff_t)sizeof(ll);
+ 	if(unsign || ll>=0)
+ 		n = ll;
+ 	else
+@@ -93,12 +95,13 @@ fmtint(intmax_t ll, int unsign)
+ 	}
+ 	if(n<10)
+ 	{
+-		buff = fmtbuf(k=3);
++		k = 3;
++		buff = fmtbuf((size_t)k);
+ 		buff[--k] = 0;
+-		buff[--k] = '0' + n;
++		buff[--k] = (char)('0' + n);
+ 		goto skip;
+ 	}
+-	buff = fmtbuf(k);
++	buff = fmtbuf((size_t)k);
+ 	buff[--k] = 0;
+ 	do
+ 	{
+diff --git a/src/lib/libast/string/fmtip4.c b/src/lib/libast/string/fmtip4.c
+index 7f59b2a4f..5c2b50095 100644
+--- a/src/lib/libast/string/fmtip4.c
++++ b/src/lib/libast/string/fmtip4.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -28,12 +29,12 @@ char*
+ fmtip4(uint32_t addr, int bits)
+ {
+ 	char*	buf;
+-	int	z;
+-	int	i;
++	size_t	z;
++	ptrdiff_t i;
+ 
+ 	buf = fmtbuf(z = 20);
+ 	i = sfsprintf(buf, z, "%d.%d.%d.%d", (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, (addr)&0xff);
+ 	if (bits >= 0 && bits <= 32)
+-		sfsprintf(buf + i, z - i, "/%d", bits);
++		sfsprintf(buf + i, z - (size_t)i, "/%d", bits);
+ 	return buf;
+ }
+diff --git a/src/lib/libast/string/fmtip6.c b/src/lib/libast/string/fmtip6.c
+index 750cedecd..57cf794fa 100644
+--- a/src/lib/libast/string/fmtip6.c
++++ b/src/lib/libast/string/fmtip6.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -74,7 +74,7 @@ fmtip6(const unsigned char* addr, int bits)
+ 	for (i = z; i < n; i += 2)
+ 	{
+ 		for (k = i; i < n - 1 && !a[i] && !a[i + 1]; i += 2);
+-		if ((r[k] = i - k) > r[m] || r[k] == r[m] && i >= (n - 1))
++		if ((r[k] = (unsigned char)(i - k)) > r[m] || r[k] == r[m] && i >= (n - 1))
+ 			m = k;
+ 	}
+ 	if (!m)
+diff --git a/src/lib/libast/string/fmtls.c b/src/lib/libast/string/fmtls.c
+index bb7383092..2953b3253 100644
+--- a/src/lib/libast/string/fmtls.c
++++ b/src/lib/libast/string/fmtls.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -67,14 +68,14 @@ fmtls(char* buf, const char* name, struct stat* st, const char* info, const char
+ 			if (flags & LS_NUMBER)
+ 				s += sfsprintf(s, LS_W_MAX, " %-*I*d", LS_W_NAME - 1, sizeof(st->st_uid), st->st_uid);
+ 			else
+-				s += sfsprintf(s, LS_W_MAX, " %-*s", LS_W_NAME - 1, fmtuid(st->st_uid));
++				s += sfsprintf(s, LS_W_MAX, " %-*s", LS_W_NAME - 1, fmtuid((int)st->st_uid));
+ 		}
+ 		if (!(flags & LS_NOGROUP))
+ 		{
+ 			if (flags & LS_NUMBER)
+ 				s += sfsprintf(s, LS_W_MAX, " %-*I*d", LS_W_NAME - 1, sizeof(st->st_gid), st->st_gid);
+ 			else
+-				s += sfsprintf(s, LS_W_MAX, " %-*s", LS_W_NAME - 1, fmtgid(st->st_gid));
++				s += sfsprintf(s, LS_W_MAX, " %-*s", LS_W_NAME - 1, fmtgid((int)st->st_gid));
+ 		}
+ 		if (S_ISBLK(st->st_mode) || S_ISCHR(st->st_mode))
+ 			s += sfsprintf(s, LS_W_MAX, "%8s ", fmtdev(st));
+diff --git a/src/lib/libast/string/fmtmatch.c b/src/lib/libast/string/fmtmatch.c
+index dd8b41a14..fb1a39a08 100644
+--- a/src/lib/libast/string/fmtmatch.c
++++ b/src/lib/libast/string/fmtmatch.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -40,12 +40,11 @@ fmtmatch(const char* as)
+ 	char*	z;
+ 	int	a;
+ 	int	e;
+-	int	n;
++	ptrdiff_t n;
+ 	char*	buf;
+ 	char*	stack[32];
+ 
+-	c = 3 * (strlen(s) + 1);
+-	buf = fmtbuf(c);
++	buf = fmtbuf(3 * (strlen(s) + 1));
+ 	t = b = buf + 3;
+ 	p = stack;
+ 	if (a = *s == '^')
+@@ -68,14 +67,14 @@ fmtmatch(const char* as)
+ 				*t++ = *s++;
+ 				*t++ = '(';
+ 				*t++ = '\\';
+-				*t++ = c;
++				*t++ = (char)c;
+ 				c = ')';
+ 				break;
+ 			case '|':
+ 			case '&':
+ 				if (c == '(')
+ 				{
+-					*t++ = c;
++					*t++ = (char)c;
+ 					c = *s++;
+ 					goto logical;
+ 				}
+@@ -87,11 +86,11 @@ fmtmatch(const char* as)
+ 				*t++ = '\\';
+ 				break;
+ 			}
+-			*t++ = c;
++			*t++ = (char)c;
+ 			continue;
+ 		case '[':
+ 			x = t;
+-			*t++ = c;
++			*t++ = (char)c;
+ 			if ((c = *s++) == '^')
+ 			{
+ 				*t++ = '!';
+@@ -100,18 +99,18 @@ fmtmatch(const char* as)
+ 			else if (c == '!')
+ 			{
+ 				*t++ = '\\';
+-				*t++ = c;
++				*t++ = (char)c;
+ 				c = *s++;
+ 			}
+ 			for (;;)
+ 			{
+-				if (!(*t++ = c))
++				if (!(*t++ = (char)c))
+ 					return NULL;
+ 				if (c == '\\')
+-					*t++ = c;
++					*t++ = (char)c;
+ 				if ((c = *s++) == ']')
+ 				{
+-					*t++ = c;
++					*t++ = (char)c;
+ 					break;
+ 				}
+ 			}
+@@ -154,7 +153,7 @@ fmtmatch(const char* as)
+ 			if (p == stack)
+ 				return NULL;
+ 			p--;
+-			*t++ = c;
++			*t++ = (char)c;
+ 			switch (*s)
+ 			{
+ 			case 0:
+@@ -177,7 +176,7 @@ fmtmatch(const char* as)
+ 				for (z = s; *z != '}'; z++)
+ 					if (!*z)
+ 						return NULL;
+-				n = z - s;
++				n = (int)(z - s);
+ 				if (*++z == '?')
+ 					n++;
+ 				x = *p + n;
+@@ -229,7 +228,7 @@ fmtmatch(const char* as)
+ 			n = *(t - 1);
+ 			if (t == b || n == '(' || n == '|')
+ 				return NULL;
+-			*(t - 1) = c;
++			*(t - 1) = (char)c;
+ 			if (c == '{')
+ 			{
+ 				for (z = s; *z != '}'; z++)
+@@ -243,7 +242,7 @@ fmtmatch(const char* as)
+ 				*t++ = '-';
+ 			}
+ 			*t++ = '(';
+-			*t++ = n;
++			*t++ = (char)n;
+ 			*t++ = ')';
+ 			continue;
+ 		case '|':
+@@ -258,14 +257,14 @@ fmtmatch(const char* as)
+ 				*--b = '(';
+ 				*--b = '@';
+ 			}
+-			*t++ = c;
++			*t++ = (char)c;
+ 			continue;
+ 		case '$':
+ 			if (e = !*s)
+ 				break;
+ 			/* FALLTHROUGH */
+ 		default:
+-			*t++ = c;
++			*t++ = (char)c;
+ 			continue;
+ 		}
+ 		break;
+diff --git a/src/lib/libast/string/fmtnum.c b/src/lib/libast/string/fmtnum.c
+index 05996adad..261c49ffa 100644
+--- a/src/lib/libast/string/fmtnum.c
++++ b/src/lib/libast/string/fmtnum.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -33,14 +34,14 @@ fmtnum(unsigned long n, int m)
+ 	int		i;
+ 	unsigned long	r;
+ 	char*		buf;
+-	int		z;
++	size_t		z;
+ 
+ 	char		suf[2];
+ 
+ 	if (m > 1)
+ 	{
+ 		r = n;
+-		n /= m;
++		n /= (unsigned long)m;
+ 		r -= n;
+ 	}
+ 	else
+diff --git a/src/lib/libast/string/fmtre.c b/src/lib/libast/string/fmtre.c
+index eb2e5e1f0..f51396ec0 100644
+--- a/src/lib/libast/string/fmtre.c
++++ b/src/lib/libast/string/fmtre.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -31,26 +31,26 @@
+ typedef struct Stack_s
+ {
+ 	char*		beg;
+-	short		len;
+-	short		min;
++	ptrdiff_t	len;
++	char		min;
+ } Stack_t;
+ 
+ char*
+ fmtre(const char* as)
+ {
+ 	char*		s = (char*)as;
+-	int		c;
++	char		c;
++	ptrdiff_t	i;
+ 	char*		t;
+ 	Stack_t*	p;
+ 	char*		x;
+-	int		n;
+-	int		end;
++	char		n;
++	char		end;
+ 	char*		buf;
+ 	Stack_t		stack[32];
+ 
+ 	end = 1;
+-	c = 2 * strlen(s) + 1;
+-	t = buf = fmtbuf(c);
++	t = buf = fmtbuf(2 * strlen(s) + 1);
+ 	p = stack;
+ 	if (*s != '*' || *(s + 1) == '(' || *(s + 1) == '-' && *(s + 2) == '(')
+ 		*t++ = '^';
+@@ -190,8 +190,8 @@ fmtre(const char* as)
+ 				return NULL;
+ 			*t++ = c;
+ 			p--;
+-			for (c = 0; c < p->len; c++)
+-				*t++ = p->beg[c];
++			for (i = 0; i < p->len; i++)
++				*t++ = p->beg[i];
+ 			if (p->min)
+ 				*t++ = '?';
+ 			continue;
+diff --git a/src/lib/libast/string/fmtscale.c b/src/lib/libast/string/fmtscale.c
+index 6d0a0bc11..f31a686ba 100644
+--- a/src/lib/libast/string/fmtscale.c
++++ b/src/lib/libast/string/fmtscale.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -32,7 +33,7 @@ fmtscale(Sfulong_t n, int k)
+ {
+ 	Sfulong_t		m;
+ 	int			r;
+-	int			z;
++	size_t			z;
+ 	const char*		u;
+ 	char			suf[3];
+ 	char*			s;
+@@ -47,7 +48,7 @@ fmtscale(Sfulong_t n, int k)
+ 	else
+ 	{
+ 		m = 0;
+-		while (n >= k && *(u + 1))
++		while ((k < 0 || n >= (unsigned)k) && *(u + 1))
+ 		{
+ 			m = n;
+ 			n /= k;
+diff --git a/src/lib/libast/string/fmtsignal.c b/src/lib/libast/string/fmtsignal.c
+index aa6defbb7..8c2b20c29 100644
+--- a/src/lib/libast/string/fmtsignal.c
++++ b/src/lib/libast/string/fmtsignal.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -31,7 +32,7 @@ char*
+ fmtsignal(int sig)
+ {
+ 	char*	buf;
+-	int	z;
++	size_t	z;
+ 
+ 	if (sig >= 0)
+ 	{
+diff --git a/src/lib/libast/string/fmttime.c b/src/lib/libast/string/fmttime.c
+index dab05a9e4..1f469dfa4 100644
+--- a/src/lib/libast/string/fmttime.c
++++ b/src/lib/libast/string/fmttime.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -29,7 +30,7 @@ char*
+ fmttime(const char* format, time_t clock)
+ {
+ 	char*	buf;
+-	int	z;
++	size_t	z;
+ 
+ 	buf = fmtbuf(z = 80);
+ 	tmfmt(buf, z, format, &clock);
+diff --git a/src/lib/libast/string/fmttmx.c b/src/lib/libast/string/fmttmx.c
+index 357eb0be2..2df6af02b 100644
+--- a/src/lib/libast/string/fmttmx.c
++++ b/src/lib/libast/string/fmttmx.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -29,7 +30,7 @@ fmttmx(const char* fmt, Time_t t)
+ {
+ 	char*	b;
+ 	char*	e;
+-	int	z;
++	size_t	z;
+ 
+ 	z = 0;
+ 	do
+diff --git a/src/lib/libast/string/fmttv.c b/src/lib/libast/string/fmttv.c
+index 4d95138e6..1d146d8a2 100644
+--- a/src/lib/libast/string/fmttv.c
++++ b/src/lib/libast/string/fmttv.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -29,7 +30,7 @@ fmttv(const char* fmt, Tv_t* tv)
+ {
+ 	char*	s;
+ 	char*	t;
+-	int	n;
++	size_t	n;
+ 
+ 	s = fmttime(fmt, (time_t)tv->tv_sec);
+ 	if (!tv->tv_nsec || tv->tv_nsec == TV_NSEC_IGNORE)
+diff --git a/src/lib/libast/string/fmtuid.c b/src/lib/libast/string/fmtuid.c
+index 4b41eb7e6..729109170 100644
+--- a/src/lib/libast/string/fmtuid.c
++++ b/src/lib/libast/string/fmtuid.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -51,7 +51,7 @@ fmtuid(int uid)
+ 	Id_t*		ip;
+ 	char*		name;
+ 	struct passwd*	pw;
+-	int		z;
++	size_t		z;
+ 
+ 	static Dt_t*		dict;
+ 	static Dtdisc_t		disc;
+@@ -64,7 +64,7 @@ fmtuid(int uid)
+ 	}
+ 	else if (ip = (Id_t*)dtmatch(dict, &uid))
+ 		return ip->name;
+-	if (pw = getpwuid(uid))
++	if (pw = getpwuid((uid_t)uid))
+ 	{
+ 		name = pw->pw_name;
+ #if _WINIX
+diff --git a/src/lib/libast/string/fmtversion.c b/src/lib/libast/string/fmtversion.c
+index aaf4a2a42..35b9edd13 100644
+--- a/src/lib/libast/string/fmtversion.c
++++ b/src/lib/libast/string/fmtversion.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -36,14 +37,14 @@ fmtversion(unsigned long v)
+ 	buf = cur = fmtbuf(n = 18);
+ 	end = cur + n;
+ 	if (v >= 19700101L && v <= 29991231L)
+-		sfsprintf(cur, end - cur, "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
++		sfsprintf(cur, (size_t)(end - cur), "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
+ 	else
+ 	{
+ 		if (n = (v >> 24) & 0xff)
+-			cur += sfsprintf(cur, end - cur, "%d.", n);
++			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
+ 		if (n = (v >> 16) & 0xff)
+-			cur += sfsprintf(cur, end - cur, "%d.", n);
+-		sfsprintf(cur, end - cur, "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
++			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
++		sfsprintf(cur, (size_t)(end - cur), "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
+ 	}
+ 	return buf;
+ }
+diff --git a/src/lib/libast/string/strelapsed.c b/src/lib/libast/string/strelapsed.c
+index 0916c9863..d72859ab8 100644
+--- a/src/lib/libast/string/strelapsed.c
++++ b/src/lib/libast/string/strelapsed.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -37,10 +37,10 @@ strelapsed(const char* s, char** e, int n)
+ 	int		c;
+ 	unsigned long	v;
+ 	unsigned long	t = 0;
+-	int		f = 0;
++	unsigned long	f = 0;
+ 	int		p = 0;
+ 	int		z = 1;
+-	int		m;
++	unsigned long	m;
+ 	const char*	last;
+ 
+ 	for (;;)
+@@ -60,11 +60,11 @@ strelapsed(const char* s, char** e, int n)
+ 		}
+ 		v = 0;
+ 		while ((c = *s++) >= '0' && c <= '9')
+-			v = v * 10 + c - '0';
+-		v *= n;
++			v = v * 10 + (unsigned long)c - '0';
++		v *= (unsigned long)n;
+ 		if (c == '.')
+-			for (m = n; (c = *s++) >= '0' && c <= '9';)
+-				f += (m /= 10) * (c - '0');
++			for (m = (unsigned long)n; (c = *s++) >= '0' && c <= '9';)
++				f += (m /= 10) * ((unsigned long)c - '0');
+ 		if (c == '%')
+ 		{
+ 			t = ~t;
+diff --git a/src/lib/libast/string/stresc.c b/src/lib/libast/string/stresc.c
+index 9988d78c9..36c22b3ba 100644
+--- a/src/lib/libast/string/stresc.c
++++ b/src/lib/libast/string/stresc.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -51,10 +52,10 @@ strexp(char* s, int flags)
+ 				continue;
+ 			}
+ 		}
+-		*t++ = c;
++		*t++ = (char)c;
+ 	}
+ 	*t = 0;
+-	return t - b;
++	return (int)(t - b);
+ }
+ 
+ int
+diff --git a/src/lib/libast/string/strgid.c b/src/lib/libast/string/strgid.c
+index 27de3fcd5..7595c2233 100644
+--- a/src/lib/libast/string/strgid.c
++++ b/src/lib/libast/string/strgid.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -75,16 +75,16 @@ strgid(const char* name)
+ 	else if (ip = (Id_t*)dtmatch(dict, name))
+ 		return ip->id;
+ 	if (gr = getgrnam(name))
+-		id = gr->gr_gid;
++		id = (int)gr->gr_gid;
+ 	else if (pw = getpwnam(name))
+-		id = pw->pw_gid;
++		id = (int)pw->pw_gid;
+ 	else
+ 	{
+-		id = strtol(name, &e, 0);
++		id = (int)strtol(name, &e, 0);
+ #if _WINIX
+ 		if (!*e)
+ 		{
+-			if (!getgrgid(id))
++			if (!getgrgid((gid_t)id))
+ 				id = -1;
+ 		}
+ 		else if (!streq(name, "sys"))
+@@ -96,7 +96,7 @@ strgid(const char* name)
+ 		else
+ 			id = -1;
+ #else
+-		if (*e || !getgrgid(id))
++		if (*e || !getgrgid((gid_t)id))
+ 			id = -1;
+ #endif
+ 	}
+diff --git a/src/lib/libast/string/strlcat.c b/src/lib/libast/string/strlcat.c
+index aaac16c5a..5d1d0a030 100644
+--- a/src/lib/libast/string/strlcat.c
++++ b/src/lib/libast/string/strlcat.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -66,7 +66,7 @@ strlcat(char* s, const char* t, size_t n)
+ 	}
+ 	if (!n)
+ 		while (*t++);
+-	return (t - o) + m - 1;
++	return (size_t)(t - o) + m - 1;
+ }
+ 
+ #endif
+diff --git a/src/lib/libast/string/strlcpy.c b/src/lib/libast/string/strlcpy.c
+index 0aab4a77a..e0dbba8ce 100644
+--- a/src/lib/libast/string/strlcpy.c
++++ b/src/lib/libast/string/strlcpy.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -54,7 +54,7 @@ strlcpy(char* s, const char* t, size_t n)
+ 		} while (*s++ = *t++);
+ 	if (!n)
+ 		while (*t++);
+-	return t - o - 1;
++	return (size_t)(t - o - 1);
+ }
+ 
+ #endif
+diff --git a/src/lib/libast/string/strnvcmp.c b/src/lib/libast/string/strnvcmp.c
+index 0b2013c19..792e1cb56 100644
+--- a/src/lib/libast/string/strnvcmp.c
++++ b/src/lib/libast/string/strnvcmp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -48,9 +49,9 @@ strnvcmp(const char* a, const char* b, size_t n)
+ 		{
+ 			na = nb = 0;
+ 			while (a < ae && isdigit(*a))
+-				na = na * 10 + *a++ - '0';
++				na = na * 10 + (unsigned)*a++ - '0';
+ 			while (b < be && isdigit(*b))
+-				nb = nb * 10 + *b++ - '0';
++				nb = nb * 10 + (unsigned)*b++ - '0';
+ 			if (na < nb)
+ 				return -1;
+ 			if (na > nb)
+diff --git a/src/lib/libast/string/stropt.c b/src/lib/libast/string/stropt.c
+index d859cf4bb..f149cb3c2 100644
+--- a/src/lib/libast/string/stropt.c
++++ b/src/lib/libast/string/stropt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -125,23 +126,23 @@ stropt(const char* as, const void* tab, int siz, int(*f)(void*, const void*, int
+ 				{
+ 					if (c == '\\')
+ 					{
+-						*t++ = chresc(s - 1, &e);
++						*t++ = (char)chresc(s - 1, &e);
+ 						s = e;
+ 					}
+ 					else if (c == qr)
+ 					{
+ 						if (qr != ql)
+-							*t++ = c;
++							*t++ = (char)c;
+ 						if (--qc <= 0)
+ 							qr = ql = 0;
+ 					}
+ 					else if (c == ql)
+ 					{
+-						*t++ = c;
++						*t++ = (char)c;
+ 						qc++;
+ 					}
+ 					else if (qr)
+-						*t++ = c;
++						*t++ = (char)c;
+ 					else if (c == ',' || isspace(c))
+ 						break;
+ 					else if (c == '"' || c == '\'')
+@@ -151,7 +152,7 @@ stropt(const char* as, const void* tab, int siz, int(*f)(void*, const void*, int
+ 					}
+ 					else
+ 					{
+-						*t++ = c;
++						*t++ = (char)c;
+ 						if (c == '{')
+ 						{
+ 							ql = c;
+@@ -174,7 +175,7 @@ stropt(const char* as, const void* tab, int siz, int(*f)(void*, const void*, int
+ 				c = *s;
+ 				*s++ = 0;
+ 			}
+-			n = p ? (*f)(a, p, n, v) : (*f)(a, p, v - u, u);
++			n = p ? (*f)(a, p, n, v) : (*f)(a, p, (int)(v - u), u);
+ 			if (n || !c)
+ 				break;
+ 		}
+diff --git a/src/lib/libast/string/strpsearch.c b/src/lib/libast/string/strpsearch.c
+index fb8d79ff9..6c91a5345 100644
+--- a/src/lib/libast/string/strpsearch.c
++++ b/src/lib/libast/string/strpsearch.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -66,7 +67,7 @@ strpsearch(const void* tab, size_t num, size_t siz, const char* name, char** nex
+ 	c = MAP(m, *((unsigned char*)name));
+ 	while (lo <= hi)
+ 	{
+-		mid = lo + (sequential ? 0 : (((hi - lo) / siz) / 2) * siz);
++		mid = lo + (sequential ? 0 : (((hi - lo) / (ssize_t)siz) / 2) * (ssize_t)siz);
+ 		if (!(v = c - MAP(m, *(s = *((unsigned char**)mid)))) || *s == '[' && !(v = c - MAP(m, *++s)) && (v = 1))
+ 		{
+ 			t = (unsigned char*)name;
+diff --git a/src/lib/libast/string/strsearch.c b/src/lib/libast/string/strsearch.c
+index 859ab6afa..e9c6b61cf 100644
+--- a/src/lib/libast/string/strsearch.c
++++ b/src/lib/libast/string/strsearch.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -42,7 +43,7 @@ strsearch(const void* tab, size_t num, size_t siz, Strcmp_f comparf, const char*
+ 
+ 	while (lo <= hi)
+ 	{
+-		mid = lo + (((hi - lo) / siz) / 2) * siz;
++		mid = lo + (((hi - lo) / (ssize_t)siz) / 2) * (ssize_t)siz;
+ 		if (!(v = context ? (*(Strcmp_context_f)comparf)(name, *((char**)mid), context) : (*comparf)(name, *((char**)mid))))
+ 			return mid;
+ 		else if (v > 0)
+diff --git a/src/lib/libast/string/strtoi.h b/src/lib/libast/string/strtoi.h
+index 546195f41..b56a85947 100644
+--- a/src/lib/libast/string/strtoi.h
++++ b/src/lib/libast/string/strtoi.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -115,7 +115,7 @@
+ #endif
+ 
+ #define ADDOVER(n,c,s)	((S2I_umax-(n))<((S2I_unumber)((c)+(s))))
+-#define MPYOVER(n,c)	(((S2I_unumber)(n))>(S2I_umax/(c)))
++#define MPYOVER(n,c)	(((S2I_unumber)(n))>(S2I_umax/(S2I_unumber)(c)))
+ 
+ static const S2I_unumber	mm[] =
+ {
+@@ -256,10 +256,10 @@ S2I_function(const char* a, char** e, int base)
+ 	{
+ 		if (S2I_valid(p) && (c = *p++) >= '0' && c <= '9')
+ 		{
+-			n = c - '0';
++			n = (S2I_unumber)(c - '0');
+ 			if (S2I_valid(p) && (c = *p) >= '0' && c <= '9')
+ 			{
+-				n = (n << 3) + (n << 1) + c - '0';
++				n = (n << 3) + (n << 1) + (S2I_unumber)c - '0';
+ 				p++;
+ 			}
+ 			if (S2I_valid(p) && *p == '#')
+@@ -267,7 +267,7 @@ S2I_function(const char* a, char** e, int base)
+ 				if (n >= 2 && n <= 64)
+ 				{
+ 					k = s = p + 1;
+-					base = n;
++					base = (int)n;
+ 				}
+ 			}
+ 			else if (base)
+@@ -301,7 +301,7 @@ S2I_function(const char* a, char** e, int base)
+ 		else
+ 		{
+ 			if (basep)
+-				*basep = base;
++				*basep = (char)base;
+ 			m = -1;
+ 		}
+ #endif
+@@ -332,9 +332,9 @@ S2I_function(const char* a, char** e, int base)
+ 				{
+ 					n = (n << 3) + (n << 1);
+ 					c -= '0';
+-					if (ADDOVER(n, c, negative))
++					if (ADDOVER(n, (S2I_unumber)c, (S2I_unumber)negative))
+ 						overflow = 1;
+-					n += c;
++					n += (S2I_unumber)c;
+ 				}
+ 			}
+ 			else if (p && (s - p) != (3 + S2I_valid(s)))
+@@ -359,7 +359,7 @@ S2I_function(const char* a, char** e, int base)
+ 					n = negative ? S2I_min : S2I_max;
+ #endif
+ 				}
+-				return n;
++				return (S2I_type)n;
+ 			}
+ 			else
+ 			{
+@@ -392,7 +392,7 @@ S2I_function(const char* a, char** e, int base)
+ 					n <<= shift;
+ 					if (ADDOVER(n, c, negative))
+ 						overflow = 1;
+-					n += c;
++					n += (S2I_unumber)c;
+ 				}
+ 			}
+ 		}
+@@ -403,10 +403,10 @@ S2I_function(const char* a, char** e, int base)
+ 					overflow = 1;
+ 				else
+ 				{
+-					n *= base;
++					n *= (S2I_unumber)base;
+ 					if (ADDOVER(n, c, negative))
+ 						overflow = 1;
+-					n += c;
++					n += (S2I_unumber)c;
+ 				}
+ 			}
+ 		c = *(s - 1);
+@@ -502,17 +502,17 @@ S2I_function(const char* a, char** e, int base)
+ 					/* pseudo-float */
+ 					if (MPYOVER(n, m))
+ 						overflow = 1;
+-					n *= m;
++					n *= (S2I_unumber)m;
+ 					v = 0;
+ 					while (S2I_valid(s) && (c = *s++) >= '0' && c <= '9')
+-						v += (m /= 10) * (c - '0');
+-					if (ADDOVER(n, v, negative))
++						v += (S2I_unumber)((m /= 10) * (c - '0'));
++					if (ADDOVER(n, v, (S2I_unumber)negative))
+ 						overflow = 1;
+ 					n += v;
+ 					v = 0;
+ 				}
+ 				else
+-					v = m;
++					v = (S2I_unumber)m;
+ 				s--;
+ 				shift = 0;
+ 				break;
+@@ -551,9 +551,9 @@ S2I_function(const char* a, char** e, int base)
+ 				}
+ 				else
+ #if S2I_unsigned
+-				if (shift >= (sizeof(S2I_type) * CHAR_BIT))
++				if (shift >= ((ssize_t)sizeof(S2I_type) * CHAR_BIT))
+ #else
+-				if (shift >= (sizeof(S2I_type) * CHAR_BIT - 1))
++				if (shift >= ((ssize_t)sizeof(S2I_type) * CHAR_BIT - 1))
+ #endif
+ 				{
+ 					v = 0;
+@@ -620,5 +620,5 @@ S2I_function(const char* a, char** e, int base)
+ 		errno = ERANGE;
+ 		return (S2I_type)S2I_max;
+ 	}
+-	return negative ? -n : n;
++	return negative ? (S2I_type)-n : (S2I_type)n;
+ }
+diff --git a/src/lib/libast/string/strtoip4.c b/src/lib/libast/string/strtoip4.c
+index 90a77c465..ca0768506 100644
+--- a/src/lib/libast/string/strtoip4.c
++++ b/src/lib/libast/string/strtoip4.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -62,7 +63,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
+ 	{
+ 		n = 0;
+ 		while ((c = *s++) >= '0' && c <= '9')
+-			n = n * 10 + (c - '0');
++			n = n * 10 + ((unsigned)c - '0');
+ 		if ((c == 'x' || c == 'X') && !part)
+ 		{
+ 			addr = n;
+@@ -76,7 +77,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
+ 					c -= 'F' - 10;
+ 				else
+ 					break;
+-				addr = addr * 16 + c;
++				addr = addr * 16 + (unsigned)c;
+ 			}
+ 			part = 4;
+ 			break;
+@@ -101,7 +102,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
+ 			{
+ 				n = 0;
+ 				while ((c = *s++) >= '0' && c <= '9')
+-					n = n * 10 + (c - '0');
++					n = n * 10 + ((unsigned)c - '0');
+ 				z = (z << 8) | n;
+ 				part++;
+ 				if (c != '.')
+@@ -111,7 +112,7 @@ strtoip4(const char* s, char** e, uint32_t* paddr, unsigned char* pbits)
+ 			if (part > 4)
+ 				goto done;
+ 			if (z <= 32 && (!old || part < 2))
+-				bits = z;
++				bits = (unsigned char)z;
+ 			else if (z)
+ 			{
+ 				if (part == 4 && (z & 0x8000001) == 1)
+diff --git a/src/lib/libast/string/strtoip6.c b/src/lib/libast/string/strtoip6.c
+index 52d553f63..4c424e044 100644
+--- a/src/lib/libast/string/strtoip6.c
++++ b/src/lib/libast/string/strtoip6.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -39,15 +40,16 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
+ 	unsigned char*	b = addr;
+ 	unsigned char*	x = b + IP6ADDR;
+ 	unsigned char*	z;
+-	int		c;
++	int		c = 0;
+ 	uint32_t	a;
+ 
+ 	static unsigned char	lex[256];
+ 
+ 	if (!lex[0])
+ 	{
+-		for (c = 0; c < sizeof(lex); ++c)
+-			lex[c] = END;
++		size_t i;
++		for (i = 0; i < sizeof(lex); ++i)
++			lex[i] = END;
+ 		lex['0'] = 0;
+ 		lex['1'] = 1;
+ 		lex['2'] = 2;
+@@ -81,14 +83,14 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
+ 			case PFX:
+ 				if ((x - b) < 2)
+ 					break;
+-				*b++ = a>>8;
+-				*b++ = a;
++				*b++ = (unsigned char)(a>>8);
++				*b++ = (unsigned char)a;
+ 				break;
+ 			case COL:
+ 				if ((x - b) < 2)
+ 					break;
+-				*b++ = a>>8;
+-				*b++ = a;
++				*b++ = (unsigned char)(a>>8);
++				*b++ = (unsigned char)a;
+ 				a = 0;
+ 				if (*s == ':')
+ 				{
+@@ -121,17 +123,17 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
+ 					case END:
+ 					case PFX:
+ 						if (b < x)
+-							*b++ = a;
++							*b++ = (unsigned char)a;
+ 						a = 0;
+ 						break;
+ 					case DOT:
+ 						if (b >= x)
+ 							break;
+-						*b++ = a;
++						*b++ = (unsigned char)a;
+ 						a = 0;
+ 						continue;
+ 					default:
+-						a = (a * 10) + c;
++						a = (a * 10) + (unsigned)c;
+ 						continue;
+ 					}
+ 					break;
+@@ -157,7 +159,7 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
+ 				}
+ 				break;
+ 			default:
+-				a = (a << 4) | c;
++				a = (a << 4) | (unsigned)c;
+ 				continue;
+ 			}
+ 			break;
+@@ -182,11 +184,11 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
+ 			{
+ 				a = 0;
+ 				while ((c = lex[*((unsigned char*)s++)]) < 10)
+-					a = a * 10 + c;
++					a = a * 10 + (unsigned)c;
+ 			}
+ 			else
+ 				a = 0xff;
+-			*bits = a;
++			*bits = (unsigned char)a;
+ 		}
+ 	}
+ 	if (e)
+diff --git a/src/lib/libast/string/struid.c b/src/lib/libast/string/struid.c
+index 21cbcaefb..ac2a7e679 100644
+--- a/src/lib/libast/string/struid.c
++++ b/src/lib/libast/string/struid.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -69,14 +69,14 @@ struid(const char* name)
+ 	else if (ip = (Id_t*)dtmatch(dict, name))
+ 		return ip->id;
+ 	if (pw = getpwnam(name))
+-		id = pw->pw_uid;
++		id = (int)pw->pw_uid;
+ 	else
+ 	{
+-		id = strtol(name, &e, 0);
++		id = (int)strtol(name, &e, 0);
+ #if _WINIX
+ 		if (!*e)
+ 		{
+-			if (!getpwuid(id))
++			if (!getpwuid((uid_t)id))
+ 				id = -1;
+ 		}
+ 		else if (streq(name, "root") && (pw = getpwnam("Administrator")))
+@@ -84,7 +84,7 @@ struid(const char* name)
+ 		else
+ 			id = -1;
+ #else
+-		if (*e || !getpwuid(id))
++		if (*e || !getpwuid((uid_t)id))
+ 			id = -1;
+ #endif
+ 	}
+diff --git a/src/lib/libast/string/struniq.c b/src/lib/libast/string/struniq.c
+index 65af528bf..f195df131 100644
+--- a/src/lib/libast/string/struniq.c
++++ b/src/lib/libast/string/struniq.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -40,8 +41,8 @@ struniq(char** argv, int n)
+ 	{
+ 		while (streq(*ao, *an))
+ 			if (++an >= ae)
+-				return ao - argv + 1;
++				return (int)(ao - argv + 1);
+ 		*++ao = *an;
+ 	}
+-	return ao - argv + 1;
++	return (int)(ao - argv + 1);
+ }
+diff --git a/src/lib/libast/string/strvcmp.c b/src/lib/libast/string/strvcmp.c
+index 6f7d919fe..f7d610693 100644
+--- a/src/lib/libast/string/strvcmp.c
++++ b/src/lib/libast/string/strvcmp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -36,9 +37,9 @@ strvcmp(const char* a, const char* b)
+ 		{
+ 			na = nb = 0;
+ 			while (isdigit(*a))
+-				na = na * 10 + *a++ - '0';
++				na = na * 10 + (unsigned)*a++ - '0';
+ 			while (isdigit(*b))
+-				nb = nb * 10 + *b++ - '0';
++				nb = nb * 10 + (unsigned)*b++ - '0';
+ 			if (na < nb)
+ 				return -1;
+ 			if (na > nb)
+diff --git a/src/lib/libast/string/swapget.c b/src/lib/libast/string/swapget.c
+index 1b16b71f8..b53daf2b3 100644
+--- a/src/lib/libast/string/swapget.c
++++ b/src/lib/libast/string/swapget.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -31,7 +32,7 @@
+  */
+ 
+ intmax_t
+-swapget(int op, const void* b, int n)
++swapget(int op, const void* b, size_t n)
+ {
+ 	unsigned char*	p;
+ 	unsigned char*	d;
+diff --git a/src/lib/libast/string/swapmem.c b/src/lib/libast/string/swapmem.c
+index c8f99612b..c9b8d55f0 100644
+--- a/src/lib/libast/string/swapmem.c
++++ b/src/lib/libast/string/swapmem.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -36,9 +37,9 @@ swapmem(int op, const void* from, void* to, size_t n)
+ {
+ 	char*	f = (char*)from;
+ 	char*	t = (char*)to;
+-	int	c;
++	char	c;
+ 
+-	switch (op & (n - 1))
++	switch (op & (int)(n - 1))
+ 	{
+ 	case 0:
+ 		if (t != f)
+diff --git a/src/lib/libast/string/swapop.c b/src/lib/libast/string/swapop.c
+index 473f80894..d0633cf25 100644
+--- a/src/lib/libast/string/swapop.c
++++ b/src/lib/libast/string/swapop.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -32,20 +33,20 @@
+  * this is a workaround for 4 byte magic predicting 8 byte swap
+  */
+ 
+-int
+-swapop(const void* internal, const void* external, int size)
++ptrdiff_t
++swapop(const void* internal, const void* external, ptrdiff_t size)
+ {
+ 	int	op;
+-	int	z;
++	ptrdiff_t z;
+ 	char	tmp[sizeof(intmax_t)];
+ 
+ 	if ((z = size) < 0)
+ 		z = -z;
+ 	if (z <= 1)
+ 		return 0;
+-	if (z <= sizeof(intmax_t))
++	if (z <= (ptrdiff_t)sizeof(intmax_t))
+ 		for (op = 0; op < z; op++)
+-			if (!memcmp(internal, swapmem(op, external, tmp, z), z))
++			if (!memcmp(internal, swapmem(op, external, tmp, (size_t)z), (size_t)z))
+ 			{
+ 				if (size < 0 && z == 4 && op == 3)
+ 					op = 7;
+diff --git a/src/lib/libast/string/swapput.c b/src/lib/libast/string/swapput.c
+index 6e2b53a10..2c9ce7299 100644
+--- a/src/lib/libast/string/swapput.c
++++ b/src/lib/libast/string/swapput.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -31,13 +32,13 @@
+  */
+ 
+ void*
+-swapput(int op, void* b, int n, intmax_t v)
++swapput(int op, void* b, size_t n, intmax_t v)
+ {
+ 	char*	p = (char*)b + n;
+ 
+ 	while (p > (char*)b)
+ 	{
+-		*--p = v;
++		*--p = (char)v;
+ 		v >>= CHAR_BIT;
+ 	}
+ 	if (op)
+diff --git a/src/lib/libast/string/tokline.c b/src/lib/libast/string/tokline.c
+index 5eed4f3f4..7886f871e 100644
+--- a/src/lib/libast/string/tokline.c
++++ b/src/lib/libast/string/tokline.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -57,7 +57,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
+ 	Splice_t*	d = (Splice_t*)ad;
+ 	char*		b;
+ 	int		c;
+-	int		n;
++	ptrdiff_t	n;
+ 	int		q;
+ 	int		j;
+ 	char*		e;
+@@ -132,7 +132,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
+ 				}
+ 			}
+ 		} while (n <= 0);
+-		sfsetbuf(s, buf, n);
++		sfsetbuf(s, buf, (size_t)n);
+ 		d->quote = q;
+ 		return 1;
+ 	default:
+@@ -179,7 +179,7 @@ tokline(const char* arg, int flags, int* line)
+ 	}
+ 	else if ((p = sfreserve(f, 0, 0)) && sfvalue(f) > 11 && strmatch(p, "#!!! +([-0-9]) *([!\n]) !!!\n*") && (e = strchr(p, '\n')))
+ 	{
+-		flags = strtol(p + 5, &p, 10);
++		flags = (int)strtol(p + 5, &p, 10);
+ 		error(flags, "%s:%-.*s", arg, e - p - 4, p);
+ 	}
+ 	d->disc.exceptf = spliceline;
+diff --git a/src/lib/libast/string/tokscan.c b/src/lib/libast/string/tokscan.c
+index c3aae5e15..ea7d6f12f 100644
+--- a/src/lib/libast/string/tokscan.c
++++ b/src/lib/libast/string/tokscan.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -77,7 +78,7 @@ lextok(char* s, int c, char** p, int* n)
+ 
+ 	if (*s == '(' && (!c || c == ' ' || c == '\n'))
+ 	{
+-		q = strtol(s + 1, &b, 10);
++		q = (int)strtol(s + 1, &b, 10);
+ 		if (*b == ':')
+ 		{
+ 			if (*(t = ++b + q) == ')' || *t == '\t')
+@@ -252,7 +253,7 @@ tokscan(char* s, char** nxt, const char* fmt, ...)
+ 			}
+ 			else
+ 			{
+-				if (p_char) *p_char = c;
++				if (p_char) *p_char = (char)c;
+ 				s++;
+ 				num++;
+ 			}
+diff --git a/src/lib/libast/string/utf32toutf8.c b/src/lib/libast/string/utf32toutf8.c
+index ed5402b74..9f5d1abc1 100644
+--- a/src/lib/libast/string/utf32toutf8.c
++++ b/src/lib/libast/string/utf32toutf8.c
+@@ -51,7 +51,7 @@ static const Utf8_t	ops[] =
+ size_t
+ utf32toutf8(char* s, uint32_t w)
+ {
+-	int	i;
++	size_t	i;
+ 	char*	b;
+ 	char	tmp[UTF8_LEN_MAX];
+ 
+@@ -62,20 +62,20 @@ utf32toutf8(char* s, uint32_t w)
+ 		if (w < ops[i].range)
+ 		{
+ 			b = s;
+-			*s++ = ops[i].prefix | (w >> ops[i].shift);
++			*s++ = (char)(ops[i].prefix | (w >> ops[i].shift));
+ 			switch (ops[i].shift)
+ 			{
+-			case 30: *s++ = 0x80 | ((w >> 24) & 0x3f);
++			case 30: *s++ = (char)(0x80 | ((w >> 24) & 0x3f));
+ 				 /* FALLTHROUGH */
+-			case 24: *s++ = 0x80 | ((w >> 18) & 0x3f);
++			case 24: *s++ = (char)(0x80 | ((w >> 18) & 0x3f));
+ 				 /* FALLTHROUGH */
+-			case 18: *s++ = 0x80 | ((w >> 12) & 0x3f);
++			case 18: *s++ = (char)(0x80 | ((w >> 12) & 0x3f));
+ 				 /* FALLTHROUGH */
+-			case 12: *s++ = 0x80 | ((w >>  6) & 0x3f);
++			case 12: *s++ = (char)(0x80 | ((w >>  6) & 0x3f));
+ 				 /* FALLTHROUGH */
+-			case  6: *s++ = 0x80 | (w & 0x3f);
++			case  6: *s++ = (char)(0x80 | (w & 0x3f));
+ 			}
+-			return s - b;
++			return (size_t)(s - b);
+ 		}
+ 	}
+ 	return 0;
+-- 
+2.49.0
+

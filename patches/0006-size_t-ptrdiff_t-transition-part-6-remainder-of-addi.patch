@@ -1,0 +1,2542 @@
+From 62113e4f773181c4a8c8dfdd23968eb1d3bca0a9 Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
+ libast
+
+This is the sixth of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The the reminder of SFIO located in the disc folder.
+  - Removed sfkeyprintf_20000308() to prevent bitrot.
+- The libast tm and tmx sublibraries.
+- The rest of the libast path sublibrary.
+- The rest of the libast headers.
+- The vmalloc wrapper's header file.
+- The AST dirlib (where ssize_t was more appropriate that ptrdiff_t).
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+2,131 => 1,752 => 248 (progression from part 5 => part 6 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/lib/libast/dir/dirlib.h        |   7 +-
+ src/lib/libast/disc/sfdcdos.c      |  30 ++++---
+ src/lib/libast/disc/sfdcfilter.c   |   3 +-
+ src/lib/libast/disc/sfdcmore.c     |  20 ++---
+ src/lib/libast/disc/sfdcprefix.c   |   9 +-
+ src/lib/libast/disc/sfdcseekable.c |  17 ++--
+ src/lib/libast/disc/sfdcsubstr.c   |   7 +-
+ src/lib/libast/disc/sfdcunion.c    |  15 ++--
+ src/lib/libast/disc/sfkeyprintf.c  |  63 ++++---------
+ src/lib/libast/features/tty        |   5 +-
+ src/lib/libast/include/ast_std.h   |  20 ++---
+ src/lib/libast/include/find.h      |   4 +-
+ src/lib/libast/include/hashpart.h  |   5 +-
+ src/lib/libast/include/sfdisc.h    |   6 +-
+ src/lib/libast/include/tm.h        |   5 +-
+ src/lib/libast/include/vmalloc.h   |   5 +-
+ src/lib/libast/path/pathcanon.c    |   4 +-
+ src/lib/libast/path/pathcd.c       |  15 ++--
+ src/lib/libast/path/pathpath.c     |   4 +-
+ src/lib/libast/path/pathprog.c     |  18 ++--
+ src/lib/libast/path/pathshell.c    |  10 +--
+ src/lib/libast/path/pathtemp.c     |  23 ++---
+ src/lib/libast/tm/tmdate.c         |   5 +-
+ src/lib/libast/tm/tmfix.c          |   7 +-
+ src/lib/libast/tm/tminit.c         |  16 ++--
+ src/lib/libast/tm/tmleap.c         |   5 +-
+ src/lib/libast/tm/tmlex.c          |   7 +-
+ src/lib/libast/tm/tmlocale.c       |  18 ++--
+ src/lib/libast/tm/tmpoff.c         |   5 +-
+ src/lib/libast/tm/tmscan.c         |   5 +-
+ src/lib/libast/tm/tmsleep.c        |   5 +-
+ src/lib/libast/tm/tmtime.c         |   5 +-
+ src/lib/libast/tm/tmxdate.c        | 136 ++++++++++++++---------------
+ src/lib/libast/tm/tmxduration.c    |   5 +-
+ src/lib/libast/tm/tmxfmt.c         |  28 +++---
+ src/lib/libast/tm/tmxleap.c        |   9 +-
+ src/lib/libast/tm/tmxmake.c        |  31 +++----
+ src/lib/libast/tm/tmxscan.c        |  14 +--
+ src/lib/libast/tm/tmxsettime.c     |   5 +-
+ src/lib/libast/tm/tmxsleep.c       |   5 +-
+ src/lib/libast/tm/tmxtime.c        |  31 +++----
+ src/lib/libast/tm/tmxtouch.c       |   9 +-
+ src/lib/libast/tm/tmzone.c         |  10 +--
+ src/lib/libast/tm/tvgettime.c      |   5 +-
+ src/lib/libast/tm/tvsleep.c        |   4 +-
+ src/lib/libast/tm/tvtouch.c        |   4 +-
+ 46 files changed, 336 insertions(+), 333 deletions(-)
+
+diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
+index 109348990..d3e794014 100644
+--- a/src/lib/libast/dir/dirlib.h
++++ b/src/lib/libast/dir/dirlib.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -100,8 +101,8 @@
+ #undef	telldir
+ 
+ #define _DIR_PRIVATE_ \
+-	int		dd_loc;		/* offset in block		*/ \
+-	int		dd_size;	/* valid data in block		*/ \
++	ssize_t		dd_loc;		/* offset in block		*/ \
++	ssize_t		dd_size;	/* valid data in block		*/ \
+ 	char*		dd_buf;		/* directory block		*/
+ 
+ #undef	_DIRENT_H
+diff --git a/src/lib/libast/disc/sfdcdos.c b/src/lib/libast/disc/sfdcdos.c
+index 41812895d..246a45d71 100644
+--- a/src/lib/libast/disc/sfdcdos.c
++++ b/src/lib/libast/disc/sfdcdos.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfdchdr.h"
+@@ -37,8 +38,7 @@ typedef struct _dosdisc
+ {
+ 	Sfdisc_t	disc;
+ 	struct map	*maptable;
+-	int		mapsize;
+-	int		maptop;
++	void		*buff;
+ 	Sfoff_t		lhere;
+ 	Sfoff_t		llast;
+ 	Sfoff_t		lmax;
+@@ -46,17 +46,18 @@ typedef struct _dosdisc
+ 	Sfoff_t		phere;
+ 	Sfoff_t		plast;
+ 	Sfoff_t		begin;
+-	int		skip;
+-	void		*buff;
++	size_t		mapsize;
++	ptrdiff_t	skip;
++	ptrdiff_t	bsize;
++	ptrdiff_t	maptop;
+ 	char		last;
+ 	char		extra;
+-	int		bsize;
+ } Dosdisc_t;
+ 
+ static void addmapping(Dosdisc_t *dp)
+ {
+-	int n;
+-	if((n=dp->maptop++)>=dp->mapsize)
++	ptrdiff_t n;
++	if((n=dp->maptop++)>=(ptrdiff_t)dp->mapsize)
+ 	{
+ 		dp->mapsize *= 2;
+ 		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))
+@@ -94,7 +95,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+ {
+ 	Dosdisc_t *dp = (Dosdisc_t*)disc;
+ 	char *cp = (char*)buff, *first, *cpmax;
+-	int n, count, m;
++	ptrdiff_t m, n, count;
+ 	if(dp->extra)
+ 	{
+ 		dp->extra=0;
+@@ -157,9 +158,9 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+ 		}
+ 	}
+ 	/* save original discipline inside buffer */
+-	if(count > dp->bsize && !(dp->buff = realloc(dp->buff, dp->bsize = count)))
++	if(count > dp->bsize && !(dp->buff = realloc(dp->buff, (size_t)(dp->bsize = count))))
+ 		return -1;
+-	memcpy(dp->buff, cp, count);
++	memcpy(dp->buff, cp, (size_t)count);
+ 	count=1;
+ 	while(1)
+ 	{
+@@ -171,7 +172,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+ 		if(cp<=cpmax && *cp!='\n')
+ 			continue;
+ 		if((m=(cp-first)-1) >0)
+-			memcpy(first-count, first, m);
++			memcpy(first-count, first, (size_t)m);
+ 		if(cp > cpmax)
+ 			break;
+ 		count++;
+@@ -238,7 +239,8 @@ static Sfoff_t dos_seek(Sfio_t *iop, Sfoff_t offset, int whence, Sfdisc_t* disc)
+ 	Dosdisc_t *dp = (Dosdisc_t*)disc;
+ 	struct map dummy, *mp=0;
+ 	Sfoff_t physical;
+-	int n,size;
++	ptrdiff_t n;
++	size_t size;
+ retry:
+ 	switch(whence)
+ 	{
+@@ -268,9 +270,9 @@ retry:
+ 		break;
+ 	}
+ 	if(sfsetbuf(iop,(char*)iop,0))
+-		size = sfvalue(iop);
++		size = (size_t)sfvalue(iop);
+ 	else
+-		size = iop->endb-iop->data;
++		size = (size_t)(iop->endb-iop->data);
+ 	if(mp)
+ 	{
+ 		sfsk(iop,mp->physical,SEEK_SET,disc);
+diff --git a/src/lib/libast/disc/sfdcfilter.c b/src/lib/libast/disc/sfdcfilter.c
+index e83067b8e..bce5c36d8 100644
+--- a/src/lib/libast/disc/sfdcfilter.c
++++ b/src/lib/libast/disc/sfdcfilter.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfdchdr.h"
+@@ -67,7 +68,7 @@ static ssize_t filterread(Sfio_t*	f,	/* stream reading from */
+ 
+ 			if(r == 1) /* non-blocking write */
+ 			{	errno = 0;
+-				if((w = sfwr(fi->filter, fi->next, w, 0)) > 0)
++				if((w = sfwr(fi->filter, fi->next, (size_t)w, 0)) > 0)
+ 					fi->next += w;
+ 				else if(errno != EAGAIN)
+ 					return 0;
+diff --git a/src/lib/libast/disc/sfdcmore.c b/src/lib/libast/disc/sfdcmore.c
+index 06a107ed5..d178ac0b9 100644
+--- a/src/lib/libast/disc/sfdcmore.c
++++ b/src/lib/libast/disc/sfdcmore.c
+@@ -37,11 +37,11 @@ typedef struct
+ 	Sfdisc_t	disc;		/* sfio discipline		*/
+ 	Sfio_t*		input;		/* tied with this input stream	*/
+ 	Sfio_t*		error;		/* tied with this error stream	*/
++	size_t		match;		/* match length, 0 if none	*/
+ 	int		rows;		/* max rows			*/
+ 	int		cols;		/* max cols			*/
+ 	int		row;		/* current row			*/
+ 	int		col;		/* current col			*/
+-	int		match;		/* match length, 0 if none	*/
+ 	char		pattern[128];	/* match pattern		*/
+ 	char		prompt[1];	/* prompt string		*/
+ } More_t;
+@@ -69,7 +69,7 @@ static ssize_t moreread(Sfio_t* f, void* buf, size_t n, Sfdisc_t* dp)
+ static int ttyquery(Sfio_t* rp, Sfio_t* wp, const char* label, Sfdisc_t* dp)
+ {
+ 	int		r;
+-	int		n;
++	size_t		n;
+ 
+ #ifdef TCSADRAIN
+ 	unsigned char	c;
+@@ -90,7 +90,7 @@ static int ttyquery(Sfio_t* rp, Sfio_t* wp, const char* label, Sfdisc_t* dp)
+ 	tty.c_cc[VMIN] = 1;
+ 	tty.c_lflag &= ~(ICANON|ECHO|ECHOK|ISIG);
+ 	tcsetattr(rfd, TCSADRAIN, &tty);
+-	if ((r = read(rfd, &c, 1)) == 1)
++	if ((r = (int)read(rfd, &c, 1)) == 1)
+ 	{
+ 		if (c == old.c_cc[VEOF])
+ 			r = -1;
+@@ -135,7 +135,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
+ 	int		r;
+ 
+ 	if (!more->row)
+-		return n;
++		return (ssize_t)n;
+ 	if (!more->col)
+ 		return sfwr(f, buf, n, dp);
+ 	w = 0;
+@@ -148,10 +148,10 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
+ 		for (r = more->pattern[0];; s++)
+ 		{
+ 			if (s >= e)
+-				return n;
++				return (ssize_t)n;
+ 			if (*s == '\n')
+ 				b = s + 1;
+-			else if (*s == r && (e - s) >= more->match && !strncmp(s, more->pattern, more->match))
++			else if (*s == r && (e - s) >= (ssize_t)more->match && !strncmp(s, more->pattern, more->match))
+ 				break;
+ 		}
+ 		s = b;
+@@ -182,7 +182,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
+ 			more->col = 1;
+ 			continue;
+ 		}
+-		w += sfwr(f, b, s - b, dp);
++		w += sfwr(f, b, (size_t)(s - b), dp);
+ 		b = s;
+ 		r = ttyquery(sfstdin, f, more->prompt, dp);
+ 		if (r == '/' || r == 'n')
+@@ -190,7 +190,7 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
+ 			if (r == '/')
+ 			{
+ 				sfwr(f, "/", 1, dp);
+-				if ((s = sfgetr(sfstdin, '\n', 1)) && (n = sfvalue(sfstdin) - 1) > 0)
++				if ((s = sfgetr(sfstdin, '\n', 1)) && (n = (size_t)sfvalue(sfstdin) - 1) > 0)
+ 				{
+ 					if (n >= sizeof(more->pattern))
+ 						n = sizeof(more->pattern) - 1;
+@@ -218,11 +218,11 @@ static ssize_t morewrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
+ 			break;
+ 		default:
+ 			more->row = 0;
+-			return n;
++			return (ssize_t)n;
+ 		}
+ 	}
+ 	if (s > b)
+-		w += sfwr(f, b, s - b, dp);
++		w += sfwr(f, b, (size_t)(s - b), dp);
+ 	return w;
+ }
+ 
+diff --git a/src/lib/libast/disc/sfdcprefix.c b/src/lib/libast/disc/sfdcprefix.c
+index 91a9ca8cb..cc4c75821 100644
+--- a/src/lib/libast/disc/sfdcprefix.c
++++ b/src/lib/libast/disc/sfdcprefix.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include "sfdchdr.h"
+@@ -57,12 +58,12 @@ static ssize_t pfxwrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* dp)
+ 	e = s + n;
+ 	do
+ 	{
+-		if (!(t = memchr(s, '\n', e - s)))
++		if (!(t = memchr(s, '\n', (size_t)(e - s))))
+ 		{
+ 			skip = 1;
+ 			t = e - 1;
+ 		}
+-		n = t - s + 1;
++		n = (size_t)(t - s + 1);
+ 		if (pfx->skip)
+ 			pfx->skip = 0;
+ 		else
+@@ -96,7 +97,7 @@ int sfdcprefix(Sfio_t* f, const char* prefix)
+ {
+ 	Prefix_t*	pfx;
+ 	char*		s;
+-	size_t			n;
++	size_t		n;
+ 
+ 	/*
+ 	 * this is a writeonly discipline
+@@ -114,7 +115,7 @@ int sfdcprefix(Sfio_t* f, const char* prefix)
+ 	memcpy(pfx->prefix, prefix, n);
+ 	s = (char*)prefix + n;
+ 	while (--s > (char*)prefix && (*s == ' ' || *s == '\t'));
+-	n = s - (char*)prefix;
++	n = (size_t)(s - (char*)prefix);
+ 	if (*s != ' ' || *s != '\t')
+ 		n++;
+ 	pfx->empty = n;
+diff --git a/src/lib/libast/disc/sfdcseekable.c b/src/lib/libast/disc/sfdcseekable.c
+index 9012596cd..f8c67ed88 100644
+--- a/src/lib/libast/disc/sfdcseekable.c
++++ b/src/lib/libast/disc/sfdcseekable.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfdchdr.h"
+@@ -43,7 +44,7 @@ static ssize_t skwrite(Sfio_t*		f,	/* stream involved */
+ 	NOT_USED(buf);
+ 	NOT_USED(n);
+ 	NOT_USED(disc);
+-	return (ssize_t)(-1);
++	return -1;
+ }
+ 
+ static ssize_t skread(Sfio_t*	f,	/* stream involved */
+@@ -63,14 +64,14 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
+ 
+ 	addr = sfseek(sf,0,SEEK_CUR);
+ 
+-	if(addr+n <= sk->extent)
++	if((addr+(ssize_t)n) <= sk->extent)
+ 		return sfread(sf,buf,n);
+ 
+ 	if((r = (ssize_t)(sk->extent-addr)) > 0)
+-	{	if((w = sfread(sf,buf,r)) != r)
++	{	if((w = sfread(sf,buf,(size_t)r)) != r)
+ 			return w;
+ 		buf = (char*)buf + r;
+-		n -= r;
++		n -= (size_t)r;
+ 	}
+ 
+ 	/* do a raw read */
+@@ -80,7 +81,7 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
+ 	}
+ 	else
+ 	{
+-		if((p = sfwrite(sf,buf,w)) != w)
++		if((p = sfwrite(sf,buf,(size_t)w)) != w)
+ 			sk->eof = 1;
+ 		if(p > 0)
+ 			sk->extent += p;
+@@ -122,12 +123,12 @@ static Sfoff_t skseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
+ 
+ 		/* read enough to reach the seek point */
+ 		while(addr > sk->extent)
+-		{	if(addr > sk->extent+sizeof(buf) )
++		{	if(addr > sk->extent+(ssize_t)sizeof(buf) )
+ 				w = sizeof(buf);
+ 			else	w = (int)(addr-sk->extent);
+-			if((r = sfrd(f,buf,w,disc)) <= 0)
++			if((r = sfrd(f,buf,(size_t)w,disc)) <= 0)
+ 				w = r-1;
+-			else if((w = sfwrite(sf,buf,r)) > 0)
++			else if((w = sfwrite(sf,buf,(size_t)r)) > 0)
+ 				sk->extent += w;
+ 			if(w != r)
+ 			{	sk->eof = 1;
+diff --git a/src/lib/libast/disc/sfdcsubstr.c b/src/lib/libast/disc/sfdcsubstr.c
+index 03a4f084e..f561c30de 100644
+--- a/src/lib/libast/disc/sfdcsubstr.c
++++ b/src/lib/libast/disc/sfdcsubstr.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfdchdr.h"
+@@ -45,9 +46,9 @@ static ssize_t streamio(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc, int type
+ 
+ 	/* read just what we need */
+ 	if(su->extent >= 0 && (ssize_t)n > (io = (ssize_t)(su->extent - su->here)) )
+-		n = io;
+-	if(n <= 0)
+-		return n;
++		n = (size_t)io;
++	if((ssize_t)n <= 0)
++		return (ssize_t)n;
+ 
+ 	/* save current location in parent stream */
+ 	parent = sfsk(f,0,SEEK_CUR,disc);
+diff --git a/src/lib/libast/disc/sfdcunion.c b/src/lib/libast/disc/sfdcunion.c
+index 5b4eacf53..608b7502e 100644
+--- a/src/lib/libast/disc/sfdcunion.c
++++ b/src/lib/libast/disc/sfdcunion.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfdchdr.h"
+@@ -35,9 +36,9 @@ typedef struct _file_s
+ typedef struct _union_s
+ {
+ 	Sfdisc_t	disc;	/* discipline structure */
+-	short		type;	/* type of streams	*/
+-	short		c;	/* current stream	*/
+-	short		n;	/* number of streams	*/
++	int		type;	/* type of streams	*/
++	int		c;	/* current stream	*/
++	int		n;	/* number of streams	*/
+ 	Sfoff_t		here;	/* current location	*/
+ 	File_t		f[1];	/* array of streams	*/
+ } Union_t;
+@@ -63,10 +64,10 @@ static ssize_t unread(Sfio_t*	f,	/* stream involved */
+ 	ssize_t	r, m;
+ 
+ 	un = (Union_t*)disc;
+-	m = n;
++	m = (ssize_t)n;
+ 	f = un->f[un->c].f;
+ 	while(1)
+-	{	if((r = sfread(f,buf,m)) < 0 || (r == 0 && un->c == un->n-1) )
++	{	if((r = sfread(f,buf,(size_t)m)) < 0 || (r == 0 && un->c == un->n-1) )
+ 			break;
+ 
+ 		m -= r;
+@@ -79,7 +80,7 @@ static ssize_t unread(Sfio_t*	f,	/* stream involved */
+ 		if(sfeof(f) && un->c < un->n-1)
+ 			f = un->f[un->c += 1].f;
+ 	}
+-	return n-m;
++	return (ssize_t)n-m;
+ }
+ 
+ static Sfoff_t unseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
+@@ -148,7 +149,7 @@ int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
+ 	if(n <= 0)
+ 		return -1;
+ 
+-	if(!(un = (Union_t*)malloc(sizeof(Union_t)+(n-1)*sizeof(File_t))) )
++	if(!(un = (Union_t*)malloc(sizeof(Union_t)+((size_t)n-1)*sizeof(File_t))) )
+ 		return -1;
+ 	memset(un, 0, sizeof(*un));
+ 
+diff --git a/src/lib/libast/disc/sfkeyprintf.c b/src/lib/libast/disc/sfkeyprintf.c
+index 91c4d6806..e5f0cef86 100644
+--- a/src/lib/libast/disc/sfkeyprintf.c
++++ b/src/lib/libast/disc/sfkeyprintf.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -83,7 +84,7 @@ getfield(Field_t* f, int restore)
+ 	if (f->first)
+ 		f->first = 0;
+ 	else if (restore)
+-		*s = f->delimiter;
++		*s = (char)f->delimiter;
+ 	b = ++s;
+ 	lp = rp = n = 0;
+ 	for (;;)
+@@ -150,9 +151,9 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+ 
+ 	NOT_USED(sp);
+ 	fp->level++;
+-	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf(fp->fmt.n_str + 1)))
++	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)fp->fmt.n_str + 1)))
+ 	{
+-		memcpy(v, fp->fmt.t_str, fp->fmt.n_str);
++		memcpy(v, fp->fmt.t_str, (size_t)fp->fmt.n_str);
+ 		v[fp->fmt.n_str] = 0;
+ 		b = v;
+ 		for (;;)
+@@ -190,7 +191,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+ 						x = FMT_case;
+ 					else if (streq(a, "edit"))
+ 						x = FMT_edit;
+-					*(a + 4) = d;
++					*(a + 4) = (char)d;
+ 					if (x)
+ 						a = 0;
+ 				}
+@@ -203,7 +204,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+ 		h = (*fp->lookup)(fp->handle, &fp->fmt, a, &s, &n);
+ 		fp->fmt.t_str = t;
+ 		if (i)
+-			*v++ = i;
++			*v++ = (char)i;
+ 	}
+ 	else
+ 	{
+@@ -214,7 +215,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+ 	switch (fp->fmt.fmt)
+ 	{
+ 	case 'c':
+-		value->c = s ? *s : n;
++		value->c = s ? *s : (char)n;
+ 		break;
+ 	case 'd':
+ 	case 'i':
+@@ -262,20 +263,20 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+ 
+ 						fmt = *fp;
+ 						fmt.fmt.form = v;
+-						for (h = 0; h < elementsof(fmt.tmp); h++)
++						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
+ 							fmt.tmp[h] = 0;
+ 						if (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
+ 							s = "";
+-						*(v - 1) = d;
++						*(v - 1) = (char)d;
+ 						if (f.delimiter)
+-							*f.next = d;
+-						for (h = 0; h < elementsof(fmt.tmp); h++)
++							*f.next = (char)d;
++						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
+ 							if (fmt.tmp[h])
+ 								sfclose(fmt.tmp[h]);
+ 						h = 1;
+ 						break;
+ 					}
+-					*(v - 1) = d;
++					*(v - 1) = (char)d;
+ 				}
+ 				break;
+ 			case FMT_edit:
+@@ -317,7 +318,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+ 		value->s = "\n";
+ 		break;
+ 	case '.':
+-		value->i = n;
++		value->i = (int)n;
+ 		break;
+ 	default:
+ 		if ((!fp->convert || !(value->s = (*fp->convert)(fp->handle, &fp->fmt, a, s, n))) && (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%%%c", fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp->tmp[0]))))
+@@ -332,13 +333,11 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
+  * this is the original interface
+  */
+ 
+-#undef	sfkeyprintf
+-
+-int
++ptrdiff_t
+ sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
+ {
+-	int		i;
+-	int		r;
++	size_t		i;
++	ptrdiff_t	r;
+ 	Fmt_t		fmt;
+ 
+ 	memset(&fmt, 0, sizeof(fmt));
+@@ -357,33 +356,3 @@ sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup
+ 			regfree(fmt.re[i]);
+ 	return r;
+ }
+-
+-#undef	_AST_API_H
+-
+-#include <ast_api.h>
+-
+-/*
+- * Sffmt_t* callback args
+- */
+-
+-int
+-sfkeyprintf_20000308(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
+-{
+-	int		i;
+-	int		r;
+-	Fmt_t		fmt;
+-
+-	memset(&fmt, 0, sizeof(fmt));
+-	fmt.version = 20030909;
+-	fmt.fmt.version = SFIO_VERSION;
+-	fmt.fmt.form = (char*)format;
+-	fmt.fmt.extf = getfmt;
+-	fmt.handle = handle;
+-	fmt.lookup = lookup;
+-	fmt.convert = convert;
+-	r = sfprintf(sp, "%!", &fmt) - fmt.invisible;
+-	for (i = 0; i < elementsof(fmt.tmp); i++)
+-		if (fmt.tmp[i])
+-			sfclose(fmt.tmp[i]);
+-	return r;
+-}
+diff --git a/src/lib/libast/features/tty b/src/lib/libast/features/tty
+index 7096a1284..a4945396f 100644
+--- a/src/lib/libast/features/tty
++++ b/src/lib/libast/features/tty
+@@ -11,7 +11,10 @@ lib	tcgetpgrp unistd.h fail{
+ 	exit 1
+ }end
+ mac	_POSIX_VDISABLE termios.h
+-mem	termios.c_line termios.h
++mem	termios.c_line  termios.h
++typ	speed_t         termios.h
++typ	tcflag_t        termios.h
++typ	cc_t            termios.h
+ 
+ cat{
+ 
+diff --git a/src/lib/libast/include/ast_std.h b/src/lib/libast/include/ast_std.h
+index 5ffcea191..f63cca420 100644
+--- a/src/lib/libast/include/ast_std.h
++++ b/src/lib/libast/include/ast_std.h
+@@ -166,15 +166,15 @@ extern char*		setlocale(int, const char*);
+ #define AST_LC_COUNT		13	/* number of preceding AST_LC_* defines */
+ #define AST_LC_LANG		255
+ 
+-#define AST_LC_internal		1
+-#define AST_LC_7bit		(1 << 23)
+-#define AST_LC_utf8		(1 << 24)
+-#define AST_LC_test		(1 << 25)
+-#define AST_LC_setenv		(1 << 26)
+-#define AST_LC_find		(1 << 27)
+-#define AST_LC_debug		(1 << 28)
+-#define AST_LC_setlocale	(1 << 29)
+-#define AST_LC_translate	(1 << 30)
++#define AST_LC_internal		1U
++#define AST_LC_7bit		(1U << 23)
++#define AST_LC_utf8		(1U << 24)
++#define AST_LC_test		(1U << 25)
++#define AST_LC_setenv		(1U << 26)
++#define AST_LC_find		(1U << 27)
++#define AST_LC_debug		(1U << 28)
++#define AST_LC_setlocale	(1U << 29)
++#define AST_LC_translate	(1U << 30)
+ 
+ #ifndef LC_ALL
+ #define LC_ALL			(-AST_LC_ALL)
+@@ -247,7 +247,7 @@ typedef struct
+ 
+ 	struct				/* ast.mb.* -- multibyte encoding/decoding state */
+ 	{
+-	int		cur_max;	/* current maximum length in bytes of a character: > 1 == multibyte locale */
++	size_t		cur_max;	/* current maximum length in bytes of a character: > 1 == multibyte locale */
+ 	uint32_t	sync;		/* length of invalid multibyte character */
+ 	wchar_t		tmp_w;		/* scratch */
+ 	int		tmp_i;		/* scratch */
+diff --git a/src/lib/libast/include/find.h b/src/lib/libast/include/find.h
+index e834dbb36..0f3494ed5 100644
+--- a/src/lib/libast/include/find.h
++++ b/src/lib/libast/include/find.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -61,7 +61,7 @@ typedef struct Finddisc_s
+ typedef struct Find_s
+ {
+ 	const char*	id;		/* library ID string		*/
+-	unsigned long	stamp;		/* codes time stamp		*/
++	time_t		stamp;		/* codes time stamp		*/
+ 
+ #ifdef _FIND_PRIVATE_
+ 	_FIND_PRIVATE_
+diff --git a/src/lib/libast/include/hashpart.h b/src/lib/libast/include/hashpart.h
+index 15e802448..14ebe9d42 100644
+--- a/src/lib/libast/include/hashpart.h
++++ b/src/lib/libast/include/hashpart.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -42,6 +43,6 @@
+ 
+ #endif
+ 
+-#define HASHPART(h,c)	(h = HASH_MPY(h) + HASH_ADD(h) + (c))
++#define HASHPART(h,c)	(h = (size_t)(HASH_MPY(h) + HASH_ADD(h) + (c)))
+ 
+ #endif
+diff --git a/src/lib/libast/include/sfdisc.h b/src/lib/libast/include/sfdisc.h
+index 787953e5c..ae7f3d83b 100644
+--- a/src/lib/libast/include/sfdisc.h
++++ b/src/lib/libast/include/sfdisc.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -38,8 +39,7 @@
+ typedef int (*Sf_key_lookup_t)(void*, Sffmt_t*, const char*, char**, Sflong_t*);
+ typedef char* (*Sf_key_convert_t)(void*, Sffmt_t*, const char*, char*, Sflong_t);
+ 
+-extern int		sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
+-extern int		sfkeyprintf_20000308(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
++extern ptrdiff_t	sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
+ 
+ /*
+  * pure sfio read and/or write disciplines
+diff --git a/src/lib/libast/include/tm.h b/src/lib/libast/include/tm.h
+index 2ed18bb81..775234b26 100644
+--- a/src/lib/libast/include/tm.h
++++ b/src/lib/libast/include/tm.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -15,6 +15,7 @@
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
+ *               K. Eugene Carlson <kvngncrlsn@gmail.com>               *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -164,7 +165,7 @@ extern char**		tmlocale(void);
+ extern Tm_t*		tmmake(time_t*);
+ extern char*		tmpoff(char*, size_t, const char*, int, int);
+ extern time_t		tmscan(const char*, char**, const char*, char**, time_t*, long);
+-extern int		tmsleep(time_t, time_t);
++extern int		tmsleep(time_t, uint32_t);
+ extern time_t		tmtime(Tm_t*, int);
+ extern Tm_zone_t*	tmtype(const char*, char**);
+ extern int		tmweek(Tm_t*, int, int, int);
+diff --git a/src/lib/libast/include/vmalloc.h b/src/lib/libast/include/vmalloc.h
+index 7d8ac6c82..0047d56f7 100644
+--- a/src/lib/libast/include/vmalloc.h
++++ b/src/lib/libast/include/vmalloc.h
+@@ -10,6 +10,7 @@
+ *         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
+ *                                                                      *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -42,8 +43,8 @@ extern void		vmclear(Vmalloc_t*);
+ extern void		vmclose(Vmalloc_t*);
+ 
+ /* region option bits */
+-#define VM_INIT		0x01			/* initialize allocated/grown memory	*/
+-#define VM_FREEONFAIL	0x02			/* vmresize frees block on resize fail	*/
++#define VM_INIT		0x01U			/* initialize allocated/grown memory	*/
++#define VM_FREEONFAIL	0x02U			/* vmresize frees block on resize fail	*/
+ 
+ /* legacy */
+ #define vmnewof(v,p,t,n,x)	( (t*)_Vm_newoldof_((v), (p), sizeof(t)*(n)+(x), 1) )
+diff --git a/src/lib/libast/path/pathcanon.c b/src/lib/libast/path/pathcanon.c
+index 15d20b28b..f128a842d 100644
+--- a/src/lib/libast/path/pathcanon.c
++++ b/src/lib/libast/path/pathcanon.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -56,9 +56,9 @@ pathcanon_20100601(char* path, size_t size, int flags)
+ 	char*	r;
+ 	char*	s;
+ 	char*	t;
+-	int	dots;
+ 	char*	phys;
+ 	char*	v;
++	ptrdiff_t dots;
+ 	int	loop;
+ 	int	oerrno;
+ 
+diff --git a/src/lib/libast/path/pathcd.c b/src/lib/libast/path/pathcd.c
+index 662d18766..29d581722 100644
+--- a/src/lib/libast/path/pathcd.c
++++ b/src/lib/libast/path/pathcd.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -59,11 +60,11 @@ vchdir(const char* path)
+ int
+ pathcd(const char* path, const char* home)
+ {
+-	char*	p = (char*)path;
+-	char*	s;
+-	int	n;
+-	int	i;
+-	int	r;
++	char*		p = (char*)path;
++	char*		s;
++	ptrdiff_t	n;
++	ptrdiff_t	i;
++	int		r;
+ 
+ 	r = 0;
+ 	for (;;)
+@@ -79,7 +80,7 @@ pathcd(const char* path, const char* home)
+ 		 * chdir failed
+ 		 */
+ 
+-		if ((n = strlen(p)) < PATH_MAX)
++		if ((n = (ptrdiff_t)strlen(p)) < PATH_MAX)
+ 			return -1;
+ #ifdef ENAMETOOLONG
+ 		if (errno != ENAMETOOLONG)
+diff --git a/src/lib/libast/path/pathpath.c b/src/lib/libast/path/pathpath.c
+index e5a45ab82..bcb8ee271 100644
+--- a/src/lib/libast/path/pathpath.c
++++ b/src/lib/libast/path/pathpath.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -84,7 +84,7 @@ pathpath_20100601(const char* p, const char* a, int mode, char* path, size_t siz
+ 				if(!getcwd(buf, sizeof(buf)))
+ 					return NULL;
+ 				s = buf + strlen(buf);
+-				sfsprintf(s, sizeof(buf) - (s - buf), "/%s", p);
++				sfsprintf(s, sizeof(buf) - (size_t)(s - buf), "/%s", p);
+ 				if (path != buf)
+ 					strcpy(path, buf);
+ 			}
+diff --git a/src/lib/libast/path/pathprog.c b/src/lib/libast/path/pathprog.c
+index 09a61483c..3c18a4963 100644
+--- a/src/lib/libast/path/pathprog.c
++++ b/src/lib/libast/path/pathprog.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -43,6 +44,7 @@ static size_t
+ prog(const char* command, char* path, size_t size)
+ {
+ 	ssize_t		n;
++	size_t		len;
+ 	char*		s;
+ #if _WINIX
+ 	char*		t;
+@@ -57,9 +59,9 @@ prog(const char* command, char* path, size_t size)
+ #ifdef _PROC_PROG
+ 	if ((n = readlink(_PROC_PROG, path, size)) > 0 && *path == '/')
+ 	{
+-		if (n < size)
++		if ((size_t)n < size)
+ 			path[n] = 0;
+-		return n;
++		return (size_t)n;
+ 	}
+ #endif
+ #if _lib_getexecname
+@@ -103,17 +105,17 @@ prog(const char* command, char* path, size_t size)
+ 	}
+ 	return 0;
+  found:
+-	n = strlen(s);
+-	if (n < size)
+-		memcpy(path, s, n + 1);
+-	return n;
++	len = strlen(s);
++	if (len < size)
++		memcpy(path, s, len + 1);
++	return len;
+ }
+ 
+ size_t
+ pathprog(const char* command, char* path, size_t size)
+ {
+ 	char*		rel;
+-	ssize_t		n;
++	size_t		n;
+ 
+ 	if ((n = prog(command, path, size)) > 0 && n < size && *path != '/' && (rel = strdup(path)))
+ 	{
+diff --git a/src/lib/libast/path/pathshell.c b/src/lib/libast/path/pathshell.c
+index 7537c5393..b607994b9 100644
+--- a/src/lib/libast/path/pathshell.c
++++ b/src/lib/libast/path/pathshell.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -54,10 +54,10 @@ char*
+ pathshell(void)
+ {
+ 	char*		sh;
+-	int		ru;
+-	int		eu;
+-	int		rg;
+-	int		eg;
++	uid_t		ru;
++	uid_t		eu;
++	gid_t		rg;
++	gid_t		eg;
+ 	struct stat	st;
+ 
+ 	static char*	val;
+diff --git a/src/lib/libast/path/pathtemp.c b/src/lib/libast/path/pathtemp.c
+index 5b5c099ad..8b59053be 100644
+--- a/src/lib/libast/path/pathtemp.c
++++ b/src/lib/libast/path/pathtemp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -137,10 +137,10 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
+ 	char*		s;
+ 	char*		x;
+ 	uint32_t	key;
+-	int		m;
+ 	int		n;
+-	int		l;
+-	int		r;
++	ptrdiff_t	m;
++	ptrdiff_t	l;
++	ptrdiff_t	r;
+ 	int		z;
+ 	int		attempt;
+ 	Tv_t		tv;
+@@ -226,7 +226,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
+ 					s++;
+ 					n++;
+ 				}
+-				if (!(tmp.vec = newof(0, char*, n, strlen(x) + 1)))
++				if (!(tmp.vec = newof(0, char*, (size_t)n, strlen(x) + 1)))
+ 					return NULL;
+ 				tmp.dir = tmp.vec;
+ 				x = strcpy((char*)(tmp.dir + n), x);
+@@ -269,11 +269,12 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
+ 	z = 0;
+ 	if (!pfx && !(pfx = tmp.pfx))
+ 		pfx = "ast";
+-	m = strlen(pfx);
++	m = (ptrdiff_t)strlen(pfx);
+ 	if (buf && dir && (buf == (char*)dir && (buf + strlen(buf) + 1) == (char*)pfx || buf == (char*)pfx && !*dir) && !strcmp((char*)pfx + m + 1, "XXXXX"))
+ 	{
+ 		d = (char*)dir;
+-		len = m += strlen(d) + 8;
++		m += (ptrdiff_t)strlen(d) + 8;
++		len = (size_t)m;
+ 		l = 3;
+ 		r = 3;
+ 	}
+@@ -303,7 +304,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
+ 	if (d)
+ 	{
+ 		while (s < x && (n = *d++))
+-			*s++ = n;
++			*s++ = (char)n;
+ 		if (s < x && s > b && *(s - 1) != '/')
+ 			*s++ = '/';
+ 	}
+@@ -313,15 +314,15 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
+ 	{
+ 		if (n == '/' || n == '\\' || n == z)
+ 			n = '_';
+-		*s++ = n;
++		*s++ = (char)n;
+ 	}
+ 	*s = 0;
+-	len -= (s - b);
++	len -= (size_t)(s - b);
+ 	for (attempt = 0; attempt < ATTEMPT; attempt++)
+ 	{
+ 		if (!tmp.rng || !tmp.seed && (attempt || tmp.pid != getpid()))
+ 		{
+-			int	r;
++			uint32_t r;
+ 
+ 			/*
+ 			 * get a quasi-random coefficient
+diff --git a/src/lib/libast/tm/tmdate.c b/src/lib/libast/tm/tmdate.c
+index 831ffa642..70e37d11e 100644
+--- a/src/lib/libast/tm/tmdate.c
++++ b/src/lib/libast/tm/tmdate.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -33,5 +34,5 @@
+ time_t
+ tmdate(const char* s, char** e, time_t* clock)
+ {
+-	return tmxsec(tmxdate(s, e, tmxclock(clock)));
++	return (time_t)tmxsec(tmxdate(s, e, tmxclock(clock)));
+ }
+diff --git a/src/lib/libast/tm/tmfix.c b/src/lib/libast/tm/tmfix.c
+index 94c14e8da..a4cc05d34 100644
+--- a/src/lib/libast/tm/tmfix.c
++++ b/src/lib/libast/tm/tmfix.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -15,6 +15,7 @@
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
+ *                      Phi <phi.debian@gmail.com>                      *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -62,10 +63,10 @@ tmfix(Tm_t* tm)
+ 	 * adjust from shortest to longest units
+ 	 */
+ 
+-	if ((n = tm->tm_nsec) < 0)
++	if ((n = (int)tm->tm_nsec) < 0)
+ 	{
+ 		tm->tm_sec -= (TMX_RESOLUTION - n) / TMX_RESOLUTION;
+-		tm->tm_nsec = TMX_RESOLUTION - (-n) % TMX_RESOLUTION;
++		tm->tm_nsec = (unsigned)(TMX_RESOLUTION - (-n) % TMX_RESOLUTION);
+ 	}
+ 	else if (n >= TMX_RESOLUTION)
+ 	{
+diff --git a/src/lib/libast/tm/tminit.c b/src/lib/libast/tm/tminit.c
+index ad7e97a22..716c1ce54 100644
+--- a/src/lib/libast/tm/tminit.c
++++ b/src/lib/libast/tm/tminit.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -173,7 +173,7 @@ tmopt(void* a, const void* p, int n, const char* v)
+ 		switch (((Namval_t*)p)->value)
+ 		{
+ 		case TM_DEFAULT:
+-			tm_info.deformat = (n && (n = strlen(v)) > 0 && (n < 2 || v[n-2] != '%' || v[n-1] != '?')) ? strdup(v) : tm_info.format[TM_DEFAULT];
++			tm_info.deformat = (n && (n = (int)strlen(v)) > 0 && (n < 2 || v[n-2] != '%' || v[n-1] != '?')) ? strdup(v) : tm_info.format[TM_DEFAULT];
+ 			break;
+ 		case TM_type:
+ 			tm_info.local->type = (n && *v) ? ((zp = tmtype(v, NULL)) ? zp->type : strdup(v)) : 0;
+@@ -269,8 +269,8 @@ tmlocal(time_t now)
+ 			break;
+ 		}
+ 	}
+-	local.west = n;
+-	local.dst = m;
++	local.west = (short)n;
++	local.dst = (short)m;
+ 
+ 	/*
+ 	 * now get the time zone names
+@@ -333,11 +333,11 @@ tmlocal(time_t now)
+ 				if (!(s = zp->daylight))
+ 				{
+ 					e = (s = buf) + sizeof(buf);
+-					s = tmpoff(s, e - s, zp->standard, 0, 0);
++					s = tmpoff(s, (size_t)(e - s), zp->standard, 0, 0);
+ 					if (s < e - 1)
+ 					{
+ 						*s++ = ' ';
+-						tmpoff(s, e - s, tm_info.format[TM_DT], m, TM_DST);
++						tmpoff(s, (size_t)(e - s), tm_info.format[TM_DT], m, TM_DST);
+ 					}
+ 					s = strdup(buf);
+ 				}
+@@ -353,13 +353,13 @@ tmlocal(time_t now)
+ 			 */
+ 
+ 			e = (s = buf) + sizeof(buf);
+-			s = tmpoff(s, e - s, tm_info.format[TM_UT], n, 0);
++			s = tmpoff(s, (size_t)(e - s), tm_info.format[TM_UT], n, 0);
+ 			if (!local.standard)
+ 				local.standard = strdup(buf);
+ 			if (s < e - 1)
+ 			{
+ 				*s++ = ' ';
+-				tmpoff(s, e - s, tm_info.format[TM_UT], m, TM_DST);
++				tmpoff(s, (size_t)(e - s), tm_info.format[TM_UT], m, TM_DST);
+ 				if (!local.daylight)
+ 					local.daylight = strdup(buf);
+ 			}
+diff --git a/src/lib/libast/tm/tmleap.c b/src/lib/libast/tm/tmleap.c
+index 78b212f47..c6ff92c6c 100644
+--- a/src/lib/libast/tm/tmleap.c
++++ b/src/lib/libast/tm/tmleap.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -33,5 +34,5 @@
+ time_t
+ tmleap(time_t* clock)
+ {
+-	return tmxsec(tmxleap(tmxclock(clock)));
++	return (time_t)tmxsec(tmxleap(tmxclock(clock)));
+ }
+diff --git a/src/lib/libast/tm/tmlex.c b/src/lib/libast/tm/tmlex.c
+index bf3ecd2ac..c46e0d7b4 100644
+--- a/src/lib/libast/tm/tmlex.c
++++ b/src/lib/libast/tm/tmlex.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -49,7 +50,7 @@ tmlex(const char* s, char** e, char** tab, int ntab, char** suf, int nsuf)
+ 
+ 	for (p = tab, n = ntab; n-- && (x = *p); p++)
+ 		if (*x && *x != '%' && tmword(s, e, x, suf, nsuf))
+-			return p - tab;
++			return (int)(p - tab);
+ 	if (tm_info.format != tm_data.format && tab >= tm_info.format && tab < tm_info.format + TM_NFORM)
+ 	{
+ 		tab = tm_data.format + (tab - tm_info.format);
+@@ -57,7 +58,7 @@ tmlex(const char* s, char** e, char** tab, int ntab, char** suf, int nsuf)
+ 			suf = tm_data.format + (suf - tm_info.format);
+ 		for (p = tab, n = ntab; n-- && (x = *p); p++)
+ 			if (*x && *x != '%' && tmword(s, e, x, suf, nsuf))
+-				return p - tab;
++				return (int)(p - tab);
+ 	}
+ 	return -1;
+ }
+diff --git a/src/lib/libast/tm/tmlocale.c b/src/lib/libast/tm/tmlocale.c
+index fbe1d1984..44441aaa2 100644
+--- a/src/lib/libast/tm/tmlocale.c
++++ b/src/lib/libast/tm/tmlocale.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -66,7 +66,7 @@ fixup(Lc_info_t* li, char** b)
+ {
+ 	char**			v;
+ 	char**			e;
+-	int			n;
++	unsigned int		n;
+ 
+ 	static int		must[] =
+ 	{
+@@ -510,8 +510,8 @@ native_lc_time(Lc_info_t* li)
+ 	char*	s;
+ 	char*	t;
+ 	char**	b;
+-	int	n;
+-	int	i;
++	size_t	n;
++	unsigned int	i;
+ 
+ 	n = 0;
+ 	for (i = 0; i < elementsof(map); i++)
+@@ -553,7 +553,7 @@ load(Lc_info_t* li)
+ 	char**		v;
+ 	char**		e;
+ 	unsigned char*		u;
+-	ssize_t			n;
++	ptrdiff_t		n;
+ 	iconv_t			cvt;
+ 	Sfio_t*			sp;
+ 	Sfio_t*			tp;
+@@ -571,7 +571,7 @@ load(Lc_info_t* li)
+ 		tm_info.deformat = tm_info.format[TM_DEFAULT];
+ 	if (mcfind(NULL, NULL, LC_TIME, 0, path, sizeof(path)) && (sp = sfopen(NULL, path, "r")))
+ 	{
+-		n = sfsize(sp);
++		n = (ptrdiff_t)sfsize(sp);
+ 		tp = 0;
+ 		if (u = (unsigned char*)sfreserve(sp, 3, 1))
+ 		{
+@@ -580,19 +580,19 @@ load(Lc_info_t* li)
+ 				if (tp = sfstropen())
+ 				{
+ 					sfread(sp, u, 3);
+-					n = iconv_move(cvt, sp, tp, SFIO_UNBOUND, NULL);
++					n = iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
+ 				}
+ 				iconv_close(cvt);
+ 			}
+ 			if (!tp)
+ 				sfread(sp, u, 0);
+ 		}
+-		if (b = newof(0, char*, TM_NFORM, n + 2))
++		if (b = newof(0, char*, TM_NFORM, (size_t)n + 2))
+ 		{
+ 			v = b;
+ 			e = b + TM_NFORM;
+ 			s = (char*)e;
+-			if (tp && memcpy(s, sfstrbase(tp), n) || !tp && sfread(sp, s, n) == n)
++			if (tp && memcpy(s, sfstrbase(tp), (size_t)n) || !tp && sfread(sp, s, (size_t)n) == n)
+ 			{
+ 				s[n] = '\n';
+ 				while (v < e)
+diff --git a/src/lib/libast/tm/tmpoff.c b/src/lib/libast/tm/tmpoff.c
+index 0d0d1f1ea..187aa73c3 100644
+--- a/src/lib/libast/tm/tmpoff.c
++++ b/src/lib/libast/tm/tmpoff.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -52,7 +53,7 @@ tmpoff(char* s, size_t z, const char* p, int n, int d)
+ 		}
+ 		else
+ 			*s++ = '-';
+-		s += sfsprintf(s, e - s, "%02d%s%02d", n / 60, d == -24*60 ? ":" : "", n % 60);
++		s += sfsprintf(s, (size_t)(e - s), "%02d%s%02d", n / 60, d == -24*60 ? ":" : "", n % 60);
+ 	}
+ 	return s;
+ }
+diff --git a/src/lib/libast/tm/tmscan.c b/src/lib/libast/tm/tmscan.c
+index 11adc1210..a1077edff 100644
+--- a/src/lib/libast/tm/tmscan.c
++++ b/src/lib/libast/tm/tmscan.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -33,5 +34,5 @@
+ time_t
+ tmscan(const char* s, char** e, const char* format, char** f, time_t* clock, long flags)
+ {
+-	return tmxsec(tmxscan(s, e, format, f, tmxclock(clock), flags));
++	return (time_t)tmxsec(tmxscan(s, e, format, f, tmxclock(clock), flags));
+ }
+diff --git a/src/lib/libast/tm/tmsleep.c b/src/lib/libast/tm/tmsleep.c
+index e35502ea5..a0e5010f6 100644
+--- a/src/lib/libast/tm/tmsleep.c
++++ b/src/lib/libast/tm/tmsleep.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -28,7 +29,7 @@
+ #include <tv.h>
+ 
+ int
+-tmsleep(time_t sec, time_t nsec)
++tmsleep(time_t sec, uint32_t nsec)
+ {
+ 	Tv_t	tv;
+ 
+diff --git a/src/lib/libast/tm/tmtime.c b/src/lib/libast/tm/tmtime.c
+index 8a15f25a0..368983665 100644
+--- a/src/lib/libast/tm/tmtime.c
++++ b/src/lib/libast/tm/tmtime.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -33,5 +34,5 @@
+ time_t
+ tmtime(Tm_t* tm, int west)
+ {
+-	return tmxsec(tmxtime(tm, west));
++	return (time_t)tmxsec(tmxtime(tm, west));
+ }
+diff --git a/src/lib/libast/tm/tmxdate.c b/src/lib/libast/tm/tmxdate.c
+index 45ef6fd5d..f475377bb 100644
+--- a/src/lib/libast/tm/tmxdate.c
++++ b/src/lib/libast/tm/tmxdate.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -39,27 +39,27 @@
+ 
+ #undef	BREAK
+ 
+-#define BREAK		(1<<0)
+-#define CCYYMMDDHHMMSS	(1<<1)
+-#define CRON		(1<<2)
+-#define DAY		(1<<3)
+-#define EXACT		(1<<4)
+-#define FINAL		(1<<5)
+-#define HOLD		(1<<6)
+-#define HOUR		(1<<7)
+-#define LAST		(1<<8)
+-#define MDAY		(1<<9)
+-#define MINUTE		(1<<10)
+-#define MONTH		(1<<11)
+-#define NEXT		(1<<12)
+-#define NSEC		(1<<13)
+-#define ORDINAL		(1<<14)
+-#define SECOND		(1<<15)
+-#define THIS		(1L<<16)
+-#define WDAY		(1L<<17)
+-#define WORK		(1L<<18)
+-#define YEAR		(1L<<19)
+-#define ZONE		(1L<<20)
++#define BREAK		(1U<<0)
++#define CCYYMMDDHHMMSS	(1U<<1)
++#define CRON		(1U<<2)
++#define DAY		(1U<<3)
++#define EXACT		(1U<<4)
++#define FINAL		(1U<<5)
++#define HOLD		(1U<<6)
++#define HOUR		(1U<<7)
++#define LAST		(1U<<8)
++#define MDAY		(1U<<9)
++#define MINUTE		(1U<<10)
++#define MONTH		(1U<<11)
++#define NEXT		(1U<<12)
++#define NSEC		(1U<<13)
++#define ORDINAL		(1U<<14)
++#define SECOND		(1U<<15)
++#define THIS		(1UL<<16)
++#define WDAY		(1UL<<17)
++#define WORK		(1UL<<18)
++#define YEAR		(1UL<<19)
++#define ZONE		(1UL<<20)
+ 
+ #define FFMT		"%s%s%s%s%s%s%s|"
+ #define FLAGS(f)	(f&EXACT)?"|EXACT":"",(f&LAST)?"|LAST":"",(f&THIS)?"|THIS":"",(f&NEXT)?"|NEXT":"",(f&ORDINAL)?"|ORDINAL":"",(f&FINAL)?"|FINAL":"",(f&WORK)?"|WORK":""
+@@ -69,11 +69,11 @@
+  */
+ 
+ static int
+-range(char* s, char** e, char* set, int lo, int hi)
++range(char* s, char** e, char* set, size_t lo, size_t hi)
+ {
+-	int	n;
+-	int	m;
+-	int	i;
++	long	n;
++	long	m;
++	long	i;
+ 	char*	t;
+ 
+ 	while (isspace(*s) || *s == '_')
+@@ -87,13 +87,13 @@ range(char* s, char** e, char* set, int lo, int hi)
+ 	for (;;)
+ 	{
+ 		n = strtol(s, &t, 10);
+-		if (s == t || n < lo || n > hi)
++		if (s == t || n < (ssize_t)lo || n > (ssize_t)hi)
+ 			return -1;
+ 		i = 1;
+ 		if (*(s = t) == '-')
+ 		{
+ 			m = strtol(++s, &t, 10);
+-			if (s == t || m < n || m > hi)
++			if (s == t || m < n || m > (ssize_t)hi)
+ 				return -1;
+ 			if (*(s = t) == '/')
+ 			{
+@@ -134,7 +134,7 @@ powerize(Tm_t* tm, unsigned long p, unsigned long q, unsigned long u)
+ 		q *= 10;
+ 		t *= 10;
+ 	}
+-	tm->tm_nsec += (int)((unsigned long)t % TMX_RESOLUTION);
++	tm->tm_nsec += (uint32_t)((unsigned long)t % TMX_RESOLUTION);
+ 	tm->tm_sec += (int)(t / TMX_RESOLUTION);
+ }
+ 
+@@ -157,7 +157,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ {
+ 	Tm_t*		tm;
+ 	long		n;
+-	int		w = 0;
++	long		w = 0;
+ 	unsigned long	set;
+ 	unsigned long	state;
+ 	unsigned long	flags;
+@@ -215,7 +215,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 	zone = TM_LOCALZONE;
+ 	skip[0] = 0;
+ 	for (n = 1; n <= UCHAR_MAX; n++)
+-		skip[n] = isspace(n) || strchr("_,;@=|!^()[]{}", n);
++		skip[n] = isspace((int)n) || strchr("_,;@=|!^()[]{}", (int)n);
+ 
+ 	/*
+ 	 * get <weekday year month day hour minutes seconds ?[ds]t [ap]m>
+@@ -269,7 +269,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 					fix = 0;
+ 					m = 1000000000;
+ 					while (isdigit(*++s))
+-						fix += (*s - '0') * (m /= 10);
++						fix += (Time_t)((*s - '0') * (m /= 10));
+ 					now = tmxsns(now, fix);
+ 				}
+ 				else if (now <= 0x7fffffff)
+@@ -491,7 +491,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 				case '8':
+ 				case '9':
+ 					q *= 10;
+-					p = p * 10 + (c - '0');
++					p = p * 10 + ((unsigned long)c - '0');
+ 					continue;
+ 				default:
+ 				exact:
+@@ -531,10 +531,10 @@ tmxdate(const char* s, char** e, Time_t now)
+ 			{
+ 				if (n == '*')
+ 					n = *++s;
+-				else if (!isdigit(n))
++				else if (!isdigit((int)n))
+ 					break;
+ 				else
+-					while ((n = *++s) == ',' || n == '-' || n == '/' || isdigit(n));
++					while ((n = *++s) == ',' || n == '-' || n == '/' || isdigit((int)n));
+ 				if (n != ' ' && n != '_' && n != ';')
+ 				{
+ 					if (!n)
+@@ -696,7 +696,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 			n = strtol(s, &t, 10);
+ 			if ((w = t - s) && *t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && isdigit(*(t + 3)))
+ 			{
+-				now = n;
++				now = (Time_t)n;
+ 				goto sns;
+ 			}
+ 			if ((*t == 'T' || *t == 't') && ((set|state) & (YEAR|MONTH)) == (YEAR|MONTH) && isdigit(*(t + 1)))
+@@ -714,7 +714,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 					n += 100;
+ 				m = n;
+ 				n = strtol(++u, &t, 10);
+-				if ((i = (t - u)) < 2 || i > 3)
++				if ((i = (int)(t - u)) < 2 || i > 3)
+ 					break;
+ 				if (i == 3)
+ 				{
+@@ -729,10 +729,10 @@ tmxdate(const char* s, char** e, Time_t now)
+ 					break;
+ 				if (k == 7)
+ 					k = 0;
+-				tm->tm_year = m;
++				tm->tm_year = (int)m;
+ 				if (!(state & LAST))	/* use 'exact' to get HHMMSS */
+ 					tm->tm_hour = tm->tm_min = tm->tm_sec = tm->tm_nsec = 0;
+-				tmweek(tm, 2, n, k);
++				tmweek(tm, 2, (int)n, k);
+ 				set |= YEAR|MONTH|DAY;
+ 				s = t;
+ 				continue;
+@@ -798,7 +798,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 				{
+ 					q = 1000000000;
+ 					while (isdigit(*++t))
+-						p += (*t - '0') * (q /= 10);
++						p += ((unsigned long)*t - '0') * (q /= 10);
+ 					set |= NSEC;
+ 				}
+ 				if (n > (59 + TM_MAXLEAP))
+@@ -812,7 +812,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 				if (n && k != TM_PARTS)
+ 					n--;	/* Not for TM_PARTS on par with gdate(1) */
+ 				message((-1, "AHA#%d n=%d", __LINE__, n));
+-				state |= ((f = n) ? NEXT : THIS)|ORDINAL;
++				state |= ((f = (int)n) ? NEXT : THIS)|ORDINAL;
+ 				set &= ~(EXACT|LAST|NEXT|THIS);
+ 				set |= state & (EXACT|LAST|NEXT|THIS);
+ 				for (s = t; skip[*((unsigned char*)s)]; s++);
+@@ -839,7 +839,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 				else
+ 				{
+ 					message((-1, "AHA#%d t=\"%s\"", __LINE__, t));
+-					if (!(state & (LAST|NEXT|THIS)) && ((i = t - s) == 4 && (*t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && *(t + 3) != '.' || (!*t || isspace(*t) || *t == '_' || isalnum(*t)) && n >= 0 && (n % 100) < 60 && ((m = (n / 100)) < 20 || m < 24 && !((set|state) & (YEAR|MONTH|HOUR|MINUTE)))) || i > 4 && i <= 12))
++					if (!(state & (LAST|NEXT|THIS)) && ((i = (int)(t - s)) == 4 && (*t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && *(t + 3) != '.' || (!*t || isspace(*t) || *t == '_' || isalnum(*t)) && n >= 0 && (n % 100) < 60 && ((m = (n / 100)) < 20 || m < 24 && !((set|state) & (YEAR|MONTH|HOUR|MINUTE)))) || i > 4 && i <= 12))
+ 					{
+ 						/*
+ 						 * various { date(1) touch(1) } formats
+@@ -947,7 +947,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 								{
+ 									q = 1000000000;
+ 									while (isdigit(*++t))
+-										p += (*t - '0') * (q /= 10);
++										p += ((unsigned long)*t - '0') * (q /= 10);
+ 									set |= NSEC;
+ 								}
+ 							}
+@@ -957,13 +957,13 @@ tmxdate(const char* s, char** e, Time_t now)
+ 					save:
+ 						tm->tm_hour = j;
+ 						tm->tm_min = i;
+-						tm->tm_sec = n;
+-						tm->tm_nsec = p;
++						tm->tm_sec = (int)n;
++						tm->tm_nsec = (uint32_t)p;
+ 					save_yymmdd:
+ 						tm->tm_mday = k;
+ 					save_yymm:
+ 						tm->tm_mon = l - 1;
+-						tm->tm_year = m;
++						tm->tm_year = (int)m;
+ 						s = t;
+ 						set |= flags;
+ 						if ((*s == '-' || *s == '+') && (i = tmgoff(s, &t, TM_LOCALZONE)) != TM_LOCALZONE)
+@@ -985,12 +985,12 @@ tmxdate(const char* s, char** e, Time_t now)
+ 						while (isspace(*++s) || *s == '_');
+ 						if (!isdigit(*s))
+ 							break;
+-						i = n;
++						i = (int)n;
+ 						n = strtol(s, &t, 10);
+ 						for (s = t; isspace(*s) || *s == '_'; s++);
+ 						if (n > 59)
+ 							break;
+-						j = n;
++						j = (int)n;
+ 						m = 0;
+ 						if (*s == c)
+ 						{
+@@ -1008,7 +1008,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 							{
+ 								q = 1000000000;
+ 								while (isdigit(*++s))
+-									m += (*s - '0') * (q /= 10);
++									m += ((unsigned long)*s - '0') * (q /= 10);
+ 								set |= NSEC;
+ 							}
+ 						}
+@@ -1020,8 +1020,8 @@ tmxdate(const char* s, char** e, Time_t now)
+ 						tm->tm_hour = i;
+ 						l = tm->tm_min;
+ 						tm->tm_min = j;
+-						tm->tm_sec = n;
+-						tm->tm_nsec = m;
++						tm->tm_sec = (int)n;
++						tm->tm_nsec = (uint32_t)m;
+ 						while (isspace(*s))
+ 							s++;
+ 						switch (tmlex(s, &t, tm_info.format, TM_NFORM, tm_info.format + TM_MERIDIAN, 2))
+@@ -1096,12 +1096,12 @@ tmxdate(const char* s, char** e, Time_t now)
+ 			if (n > 0)
+ 			{
+ 				x = s;
+-				q = *s++;
++				q = (unsigned long)*s++;
+ 				message((-1, "AHA#%d n=%d q='%c'", __LINE__, n, q));
+ 				if (isalpha(*s))
+ 				{
+ 					q <<= 8;
+-					q |= *s++;
++					q |= (unsigned long)*s++;
+ 					if (isalpha(*s))
+ 					{
+ 						if (tmlex(s, &t, tm_info.format + TM_SUFFIXES, TM_PARTS - TM_SUFFIXES, NULL, 0) >= 0)
+@@ -1109,11 +1109,11 @@ tmxdate(const char* s, char** e, Time_t now)
+ 						if (isalpha(*s))
+ 						{
+ 							q <<= 8;
+-							q |= *s++;
++							q |= (unsigned long)*s++;
+ 							if (isalpha(*s))
+ 							{
+ 								q <<= 8;
+-								q |= *s++;
++								q |= (unsigned long)*s++;
+ 								if (isalpha(*s))
+ 									q = 0;
+ 							}
+@@ -1283,7 +1283,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 						{
+ 							if (n > 24)
+ 								goto done;
+-							tm->tm_hour = n;
++							tm->tm_hour = (int)n;
+ 						}
+ 						for (k = tm->tm_hour; k < 0; k += 24);
+ 						k %= 24;
+@@ -1444,7 +1444,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 							if ((state & (LAST|NEXT|THIS)) == LAST)
+ 								tm->tm_mday = tm_data.days[tm->tm_mon] + (tm->tm_mon == 1 && tmisleapyear(tm->tm_year));
+ 							else if (state & ORDINAL)
+-								tm->tm_mday = m + 1;
++								tm->tm_mday = (int)m + 1;
+ 							else
+ 								tm->tm_mday += m;
+ 							if (!(set & (FINAL|WORK)))
+@@ -1487,7 +1487,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 						tm = tmxtm(tm, tmxtime(tm, zone), tm->tm_zone, 0);
+ 						day = j -= TM_DAY;
+ 						if (!dir)
+-							dir = m;
++							dir = (int)m;
+ 						message((-1, "AHA#%d j=%d m=%d", __LINE__, j, m));
+ 						j -= tm->tm_wday;
+ 						message((-1, "AHA#%d mday=%d wday=%d day=%d dir=%d f=%d i=%d j=%d l=%d m=%d", __LINE__, tm->tm_mday, tm->tm_wday, day, dir, f, i, j, l, m));
+@@ -1552,7 +1552,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 							if (n > 31)
+ 								goto done;
+ 							state |= DAY|MDAY;
+-							tm->tm_mday = n;
++							tm->tm_mday = (int)n;
+ 							if (f > 0)
+ 								tm->tm_year += f;
+ 						}
+@@ -1610,10 +1610,10 @@ tmxdate(const char* s, char** e, Time_t now)
+ 		}
+ 		else if (*s == '/')
+ 		{
+-			if (!(state & (YEAR|MONTH)) && n >= 1969 && n < 3000 && (i = strtol(s + 1, &t, 10)) > 0 && i <= 12)
++			if (!(state & (YEAR|MONTH)) && n >= 1969 && n < 3000 && (i = (int)strtol(s + 1, &t, 10)) > 0 && i <= 12)
+ 			{
+ 				state |= YEAR;
+-				tm->tm_year = n - 1900;
++				tm->tm_year = (int)n - 1900;
+ 				s = t;
+ 				i--;
+ 			}
+@@ -1631,7 +1631,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 				}
+ 				else
+ 				{
+-					i = n - 1;
++					i = (int)n - 1;
+ 					n = strtol(s, &t, 10);
+ 					s = t;
+ 					if (n <= 0 || n > 31)
+@@ -1640,7 +1640,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 						break;
+ 				}
+ 				state |= DAY;
+-				tm->tm_mday = n;
++				tm->tm_mday = (int)n;
+ 			}
+ 			state |= MONTH;
+ 			n = tm->tm_mon;
+@@ -1678,7 +1678,7 @@ tmxdate(const char* s, char** e, Time_t now)
+ 			if ((state & YEAR) || n < 1969 || n >= 3000)
+ 				break;
+ 			state |= YEAR;
+-			tm->tm_year = n - 1900;
++			tm->tm_year = (int)n - 1900;
+ 		}
+ 		else if (w == 3)
+ 		{
+@@ -1686,24 +1686,24 @@ tmxdate(const char* s, char** e, Time_t now)
+ 				break;
+ 			state |= MONTH|DAY|MDAY;
+ 			tm->tm_mon = 0;
+-			tm->tm_mday = n;
++			tm->tm_mday = (int)n;
+ 		}
+ 		else if (w == 2 && !(state & YEAR))
+ 		{
+ 			state |= YEAR;
+ 			if (n < TM_WINDOW)
+ 				n += 100;
+-			tm->tm_year = n;
++			tm->tm_year = (int)n;
+ 		}
+ 		else if (!(state & MONTH) && n >= 1 && n <= 12)
+ 		{
+ 			state |= MONTH;
+-			tm->tm_mon = n - 1;
++			tm->tm_mon = (int)n - 1;
+ 		}
+ 		else if (!(state & (MDAY|WDAY)) && n >= 1 && n <= 31)
+ 		{
+ 			state |= DAY|MDAY|WDAY;
+-			tm->tm_mday = n;
++			tm->tm_mday = (int)n;
+ 		}
+ 		else
+ 			break;
+diff --git a/src/lib/libast/tm/tmxduration.c b/src/lib/libast/tm/tmxduration.c
+index e470001b2..c89530113 100644
+--- a/src/lib/libast/tm/tmxduration.c
++++ b/src/lib/libast/tm/tmxduration.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -36,7 +37,7 @@ tmxduration(const char* s, char** e)
+ 	char*		t;
+ 	char*		x;
+ 	Sfio_t*		f;
+-	int		i;
++	ptrdiff_t	i;
+ 
+ 	now = TMX_NOW;
+ 	while (isspace(*s))
+diff --git a/src/lib/libast/tm/tmxfmt.c b/src/lib/libast/tm/tmxfmt.c
+index 873d2aafa..9fe6d1353 100644
+--- a/src/lib/libast/tm/tmxfmt.c
++++ b/src/lib/libast/tm/tmxfmt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -71,11 +71,11 @@ number(char* s, char* e, long n, int p, int w, int pad)
+ 	}
+ 	b = s;
+ 	if (p > 0)
+-		s += sfsprintf(s, e - s, "%0*lu", p, n);
++		s += sfsprintf(s, (size_t)(e - s), "%0*lu", p, n);
+ 	else if (p < 0)
+-		s += sfsprintf(s, e - s, "%*lu", -p, n);
++		s += sfsprintf(s, (size_t)(e - s), "%*lu", -p, n);
+ 	else
+-		s += sfsprintf(s, e - s, "%lu", n);
++		s += sfsprintf(s, (size_t)(e - s), "%lu", n);
+ 	if (w && (s - b) > w)
+ 		*(s = b + w) = 0;
+ 	return s;
+@@ -145,7 +145,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
+ 		if (c != '%')
+ 		{
+ 			if (cp < ep)
+-				*cp++ = c;
++				*cp++ = (char)c;
+ 			continue;
+ 		}
+ 		alt = 0;
+@@ -216,7 +216,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
+ 					else if (c == ')' && !--i)
+ 						break;
+ 					else if (arg < &argbuf[sizeof(argbuf) - 1])
+-						*arg++ = c;
++						*arg++ = (char)c;
+ 				}
+ 				*arg = 0;
+ 				arg = argbuf;
+@@ -358,7 +358,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
+ 		case 'P':	/* (AST|GNU) lower case meridian */
+ 			p = tm_info.format[TM_MERIDIAN + (tm->tm_hour >= 12)];
+ 			while (cp < ep && (n = *p++))
+-				*cp++ = isupper(n) ? tolower(n) : n;
++				*cp++ = (char)(isupper(n) ? tolower(n) : n);
+ 			continue;
+ 		case 'q':	/* quarter of the year (1-4) */
+ 			cp = number(cp, ep, (long)(tm->tm_mon / 3) + 1, 0, width, pad);
+@@ -530,14 +530,14 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
+ 			f = fmt;
+ 			*f++ = '%';
+ 			if (pad == '0')
+-				*f++ = pad;
++				*f++ = (char)pad;
+ 			if (width)
+-				f += sfsprintf(f, &fmt[sizeof(fmt)] - f, "%d", width);
+-			f += sfsprintf(f, &fmt[sizeof(fmt)] - f, "I%du", sizeof(Tmxsec_t));
+-			cp += sfsprintf(cp, ep - cp, fmt, tmxsec(now));
++				f += sfsprintf(f, (size_t)(&fmt[sizeof(fmt)] - f), "%d", width);
++			f += sfsprintf(f, (size_t)(&fmt[sizeof(fmt)] - f), "I%du", sizeof(Tmxsec_t));
++			cp += sfsprintf(cp, (size_t)(ep - cp), fmt, tmxsec(now));
+ 			if (parts > 1)
+ 			{
+-				n = sfsprintf(cp, ep - cp, ".%09I*u", sizeof(Tmxnsec_t), tmxnsec(now));
++				n = (int)sfsprintf(cp, (size_t)(ep - cp), ".%09I*u", sizeof(Tmxnsec_t), tmxnsec(now));
+ 				if (prec && n >= prec)
+ 					n = prec + 1;
+ 				cp += n;
+@@ -595,7 +595,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
+ 				continue;
+ 			}
+ 			if ((ep - cp) >= 16)
+-				cp = tmpoff(cp, ep - cp, "", (flags & TM_UTC) ? 0 : tm->tm_zone->west + (tm->tm_isdst ? tm->tm_zone->dst : 0), pad == '_' ? -24 * 60 : 24 * 60);
++				cp = tmpoff(cp, (size_t)(ep - cp), "", (flags & TM_UTC) ? 0 : tm->tm_zone->west + (tm->tm_isdst ? tm->tm_zone->dst : 0), pad == '_' ? -24 * 60 : 24 * 60);
+ 			continue;
+ 		case 'Z':	/* time zone */
+ 			if (arg)
+@@ -623,7 +623,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
+ 			if (cp < ep)
+ 				*cp++ = '%';
+ 			if (cp < ep)
+-				*cp++ = c;
++				*cp++ = (char)c;
+ 			continue;
+ 		}
+ 	index:
+diff --git a/src/lib/libast/tm/tmxleap.c b/src/lib/libast/tm/tmxleap.c
+index b6c0dde44..7a498796d 100644
+--- a/src/lib/libast/tm/tmxleap.c
++++ b/src/lib/libast/tm/tmxleap.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -15,6 +15,7 @@
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
+ *               K. Eugene Carlson <kvngncrlsn@gmail.com>               *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -35,14 +36,14 @@ Time_t
+ tmxleap(Time_t t)
+ {
+ 	Tm_leap_t*	lp;
+-	uint32_t		sec;
++	Tmxsec_t	sec;
+ 
+ 	tmset(tm_info.zone, time(NULL), 0);
+ 	if (tm_info.flags & TM_ADJUST)
+ 	{
+ 		sec = tmxsec(t);
+-		for (lp = &tm_data.leap[0]; sec < (lp->time - lp->total); lp++);
+-		t = tmxsns(sec + lp->total, tmxnsec(t));
++		for (lp = &tm_data.leap[0]; sec < (Tmxsec_t)(lp->time - lp->total); lp++);
++		t = tmxsns(sec + (Tmxsec_t)lp->total, tmxnsec(t));
+ 	}
+ 	return t;
+ }
+diff --git a/src/lib/libast/tm/tmxmake.c b/src/lib/libast/tm/tmxmake.c
+index a0217e30d..8fc8b7615 100644
+--- a/src/lib/libast/tm/tmxmake.c
++++ b/src/lib/libast/tm/tmxmake.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -15,6 +15,7 @@
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
+ *               K. Eugene Carlson <kvngncrlsn@gmail.com>               *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -42,23 +43,23 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
+ 	time_t			now;
+ 	int			leapsec;
+ 	int			y;
+-	uint32_t		n;
++	Time_t			n;
+ 	int32_t			o;
+ #if TMX_FLOAT
+ 	Time_t			z;
+ 	uint32_t		i;
+ #endif
+ 
+-	tmset(tm_info.zone, tmxsec(t), newzone);
++	tmset(tm_info.zone, (time_t)tmxsec(t), newzone);
+ 	leapsec = 0;
+ 	if ((tm_info.flags & (TM_ADJUST|TM_LEAP)) == (TM_ADJUST|TM_LEAP) && (n = tmxsec(t)))
+ 	{
+-		for (lp = &tm_data.leap[0]; n < lp->time; lp++);
++		for (lp = &tm_data.leap[0]; n < (Time_t)lp->time; lp++);
+ 		if (lp->total)
+ 		{
+-			if (n == lp->time && (leapsec = (lp->total - (lp+1)->total)) < 0)
++			if (n == (Time_t)lp->time && (leapsec = (lp->total - (lp+1)->total)) < 0)
+ 				leapsec = 0;
+-			t = tmxsns(n - lp->total, tmxnsec(t));
++			t = tmxsns(n - (Time_t)lp->total, tmxnsec(t));
+ 		}
+ 	}
+ 	x = tmxsec(t);
+@@ -69,23 +70,23 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
+ 		else
+ 			tm->tm_zone = tm_info.zone;
+ 	}
+-	if ((o = 60 * tm->tm_zone->west) && x > o)
++	if ((o = 60 * tm->tm_zone->west) && x > (unsigned)o)
+ 	{
+-		x -= o;
++		x -= (Time_t)o;
+ 		o = 0;
+ 	}
+ #if TMX_FLOAT
+ 	i = x / (24 * 60 * 60);
+ 	z = i;
+ 	n = x - z * (24 * 60 * 60);
+-	tm->tm_sec = n % 60 + leapsec;
++	tm->tm_sec = n % 60 + (Time_t)leapsec;
+ 	n /= 60;
+ 	tm->tm_min = n % 60;
+ 	n /= 60;
+ 	tm->tm_hour = n % 24;
+ #define x	i
+ #else
+-	tm->tm_sec = x % 60 + leapsec;
++	tm->tm_sec = (int)x % 60 + leapsec;
+ 	x /= 60;
+ 	tm->tm_min = x % 60;
+ 	x /= 60;
+@@ -93,11 +94,11 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
+ 	x /= 24;
+ #endif
+ 	tm->tm_wday = (x + 4) % 7;
+-	tm->tm_year = (400 * (x + 25202)) / 146097 + 1;
+-	n = tm->tm_year - 1;
++	tm->tm_year = (400 * ((int)x + 25202)) / 146097 + 1;
++	n = (Time_t)tm->tm_year - 1;
+ 	x -= n * 365 + n / 4 - n / 100 + (n + (1900 - 1600)) / 400 - (1970 - 1901) * 365 - (1970 - 1901) / 4;
+ 	tm->tm_mon = 0;
+-	tm->tm_mday = x + 1;
++	tm->tm_mday = (int)x + 1;
+ 	tm->tm_nsec = tmxnsec(t);
+ 	tmfix(tm);
+ 	n += 1900;
+@@ -105,14 +106,14 @@ tmxtm(Tm_t* tm, Time_t t, Tm_zone_t* zone, const char newzone)
+ 	if (tm->tm_zone->daylight)
+ 	{
+ 		if ((y = tmequiv(tm) - 1900) == tm->tm_year)
+-			now = tmxsec(t);
++			now = (time_t)tmxsec(t);
+ 		else
+ 		{
+ 			Tm_t	te;
+ 
+ 			te = *tm;
+ 			te.tm_year = y;
+-			now = tmxsec(tmxtime(&te, tm->tm_zone->west));
++			now = (time_t)tmxsec(tmxtime(&te, tm->tm_zone->west));
+ 		}
+ 		if ((tp = tmlocaltime(&now)) && ((tm->tm_isdst = tp->tm_isdst) || o))
+ 		{
+diff --git a/src/lib/libast/tm/tmxscan.c b/src/lib/libast/tm/tmxscan.c
+index ba883e62e..e306a94f8 100644
+--- a/src/lib/libast/tm/tmxscan.c
++++ b/src/lib/libast/tm/tmxscan.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -35,7 +35,7 @@
+ 
+ typedef struct
+ {
+-	int32_t		nsec;
++	uint32_t	nsec;
+ 	int		year;
+ 	int		mon;
+ 	int		week;
+@@ -306,7 +306,7 @@ scan(const char* s, char** e, const char* format, char** f, Time_t t, long flags
+ 				continue;
+ 			case 'N':
+ 				NUMBER(9, 0, 999999999L);
+-				set.nsec = n;
++				set.nsec = (uint32_t)n;
+ 				continue;
+ 			case 'p':
+ 				if ((n = tmlex(s, &u, tm_info.format + TM_MERIDIAN, TM_UT - TM_MERIDIAN, NULL, 0)) < 0)
+@@ -478,19 +478,19 @@ tmxscan(const char* s, char** e, const char* format, char** f, Time_t t, long fl
+ 		if (!initialized)
+ 		{
+ 			Sfio_t*	sp;
+-			int		n;
+-			off_t			m;
++			size_t		n;
++			off_t		m;
+ 
+ 			initialized = 1;
+ 			if ((v = getenv("DATEMSK")) && *v && (sp = sfopen(NULL, v, "r")))
+ 			{
+ 				for (n = 1; sfgetr(sp, '\n', 0); n++);
+ 				m = sfseek(sp, 0L, SEEK_CUR);
+-				if (p = newof(0, char*, n, m))
++				if (p = newof(0, char*, n, (size_t)m))
+ 				{
+ 					sfseek(sp, 0L, SEEK_SET);
+ 					v = (char*)(p + n);
+-					if (sfread(sp, v, m) != m)
++					if (sfread(sp, v, (size_t)m) != m)
+ 					{
+ 						free(p);
+ 						p = 0;
+diff --git a/src/lib/libast/tm/tmxsettime.c b/src/lib/libast/tm/tmxsettime.c
+index f0421c04d..6e15751c2 100644
+--- a/src/lib/libast/tm/tmxsettime.c
++++ b/src/lib/libast/tm/tmxsettime.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -35,7 +36,7 @@ tmxsettime(Time_t t)
+ {
+ 	Tv_t	tv;
+ 
+-	tv.tv_sec = tmxsec(t);
++	tv.tv_sec = (time_t)tmxsec(t);
+ 	tv.tv_nsec = tmxnsec(t);
+ 	return tvsettime(&tv);
+ }
+diff --git a/src/lib/libast/tm/tmxsleep.c b/src/lib/libast/tm/tmxsleep.c
+index fb6972350..236200fae 100644
+--- a/src/lib/libast/tm/tmxsleep.c
++++ b/src/lib/libast/tm/tmxsleep.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -31,7 +32,7 @@ tmxsleep(Time_t t)
+ {
+ 	Tv_t	tv;
+ 
+-	tv.tv_sec = tmxsec(t);
++	tv.tv_sec = (time_t)tmxsec(t);
+ 	tv.tv_nsec = tmxnsec(t);
+ 	return tvsleep(&tv, NULL);
+ }
+diff --git a/src/lib/libast/tm/tmxtime.c b/src/lib/libast/tm/tmxtime.c
+index 1f66f646f..8dc52fad5 100644
+--- a/src/lib/libast/tm/tmxtime.c
++++ b/src/lib/libast/tm/tmxtime.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -15,6 +15,7 @@
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
+ *               K. Eugene Carlson <kvngncrlsn@gmail.com>               *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -61,19 +62,19 @@ tmxtime(Tm_t* tm, int west)
+ 	if (y < 69 || y > (TMX_MAXYEAR - 1900))
+ 		return TMX_NOTIME;
+ 	y--;
+-	t = y * 365 + y / 4 - y / 100 + (y + (1900 - 1600)) / 400 - (1970 - 1901) * 365 - (1970 - 1901) / 4;
++	t = (Time_t)(y * 365 + y / 4 - y / 100 + (y + (1900 - 1600)) / 400 - (1970 - 1901) * 365 - (1970 - 1901) / 4);
+ 	if ((n = tm->tm_mon) > 11)
+ 		n = 11;
+ 	y += 1901;
+ 	if (n > 1 && tmisleapyear(y))
+ 		t++;
+-	t += tm_data.sum[n] + tm->tm_mday - 1;
++	t += (Time_t)(tm_data.sum[n] + tm->tm_mday - 1);
+ 	t *= 24;
+-	t += tm->tm_hour;
++	t += (Time_t)tm->tm_hour;
+ 	t *= 60;
+-	t += tm->tm_min;
++	t += (Time_t)tm->tm_min;
+ 	t *= 60;
+-	t += sec = tm->tm_sec;
++	t += (Time_t)(sec = tm->tm_sec);
+ 	if (west != TM_UTCZONE && !(tm_info.flags & TM_UTC))
+ 	{
+ 		/*
+@@ -82,24 +83,24 @@ tmxtime(Tm_t* tm, int west)
+ 
+ 		if (west == TM_LOCALZONE)
+ 		{
+-			t += tm_info.zone->west * 60;
++			t += (Time_t)tm_info.zone->west * 60;
+ 			if (!tm_info.zone->daylight)
+ 				tm->tm_isdst = 0;
+ 			else
+ 			{
+ 				y = tm->tm_year;
+ 				tm->tm_year = tmequiv(tm) - 1900;
+-				now = tmxsec(tmxtime(tm, tm_info.zone->west));
++				now = (time_t)tmxsec(tmxtime(tm, tm_info.zone->west));
+ 				tm->tm_year = y;
+ 				if (!(tl = tmlocaltime(&now)))
+ 					return TMX_NOTIME;
+ 				if (tm->tm_isdst = tl->tm_isdst)
+-					t += tm_info.zone->dst * 60;
++					t += (Time_t)tm_info.zone->dst * 60;
+ 			}
+ 		}
+ 		else
+ 		{
+-			t += west * 60;
++			t += (Time_t)west * 60;
+ 			if (!tm_info.zone->daylight)
+ 				tm->tm_isdst = 0;
+ 			else if (tm->tm_isdst < 0)
+@@ -107,7 +108,7 @@ tmxtime(Tm_t* tm, int west)
+ 				y = tm->tm_year;
+ 				tm->tm_year = tmequiv(tm) - 1900;
+ 				tm->tm_isdst = 0;
+-				now = tmxsec(tmxtime(tm, tm_info.zone->west));
++				now = (time_t)tmxsec(tmxtime(tm, tm_info.zone->west));
+ 				tm->tm_year = y;
+ 				if (!(tl = tmlocaltime(&now)))
+ 					return TMX_NOTIME;
+@@ -124,11 +125,11 @@ tmxtime(Tm_t* tm, int west)
+ 		 * leap second adjustments
+ 		 */
+ 
+-		for (lp = &tm_data.leap[0]; t < lp->time - (lp+1)->total; lp++);
+-		t += lp->total;
++		for (lp = &tm_data.leap[0]; (signed)t < lp->time - (lp+1)->total; lp++);
++		t += (Time_t)lp->total;
+ 		n = lp->total - (lp+1)->total;
+-		if (t <= (lp->time + n) && (n > 0 && sec > 59 || n < 0 && sec > (59 + n) && sec <= 59))
+-			t -= n;
++		if ((signed)t <= (lp->time + n) && (n > 0 && sec > 59 || n < 0 && sec > (59 + n) && sec <= 59))
++			t -= (Time_t)n;
+ 	}
+ 	return tmxsns(t, tm->tm_nsec);
+ }
+diff --git a/src/lib/libast/tm/tmxtouch.c b/src/lib/libast/tm/tmxtouch.c
+index 7922071fd..c8b3f5133 100644
+--- a/src/lib/libast/tm/tmxtouch.c
++++ b/src/lib/libast/tm/tmxtouch.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -49,7 +50,7 @@ tmxtouch(const char* path, Time_t at, Time_t mt, Time_t ct, int flags)
+ 		ap = 0;
+ 	else
+ 	{
+-		av.tv_sec = tmxsec(at);
++		av.tv_sec = (time_t)tmxsec(at);
+ 		av.tv_nsec = tmxnsec(at);
+ 		ap = &av;
+ 	}
+@@ -59,7 +60,7 @@ tmxtouch(const char* path, Time_t at, Time_t mt, Time_t ct, int flags)
+ 		mp = 0;
+ 	else
+ 	{
+-		mv.tv_sec = tmxsec(mt);
++		mv.tv_sec = (time_t)tmxsec(mt);
+ 		mv.tv_nsec = tmxnsec(mt);
+ 		mp = &mv;
+ 	}
+@@ -69,7 +70,7 @@ tmxtouch(const char* path, Time_t at, Time_t mt, Time_t ct, int flags)
+ 		cp = 0;
+ 	else
+ 	{
+-		cv.tv_sec = tmxsec(ct);
++		cv.tv_sec = (time_t)tmxsec(ct);
+ 		cv.tv_nsec = tmxnsec(ct);
+ 		cp = &cv;
+ 	}
+diff --git a/src/lib/libast/tm/tmzone.c b/src/lib/libast/tm/tmzone.c
+index efb06e1ab..a9e1d752f 100644
+--- a/src/lib/libast/tm/tmzone.c
++++ b/src/lib/libast/tm/tmzone.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -56,7 +56,7 @@ tmzone(const char* name, char** end, const char* type, int* dst)
+ 	static char		off[16];
+ 
+ 	tmset(tm_info.zone, time(NULL), 0);
+-	if ((name[0] == '+' || name[0] == '-') && (fixed.west = tmgoff(name, &e, TM_LOCALZONE)) != TM_LOCALZONE && (!*e || isspace(*e)))
++	if ((name[0] == '+' || name[0] == '-') && (fixed.west = (short)tmgoff(name, &e, TM_LOCALZONE)) != TM_LOCALZONE && (!*e || isspace(*e)))
+ 	{
+ 		p = fixed.standard = fixed.daylight = off;
+ 		*p++ = 'Z';
+@@ -69,7 +69,7 @@ tmzone(const char* name, char** end, const char* type, int* dst)
+ 			*p++ = 'W';
+ 		p += sfsprintf(p, sizeof(off) - 2, "%u", d / 60);
+ 		if (d = (d % 60) / 15)
+-			*p++ = 'A' + d - 1;
++			*p++ = (char)('A' + d - 1);
+ 		*p = 0;
+ 		fixed.dst = 0;
+ 		if (end)
+@@ -102,8 +102,8 @@ tmzone(const char* name, char** end, const char* type, int* dst)
+ 		fixed.west += d;
+ 		if (name[1] == 'E')
+ 			fixed.west = -fixed.west;
+-		fixed.dst = name[0] == 'Z' ? 0 : d ? -d : TM_DST;
+-		memcpy(fixed.standard = fixed.daylight = off, name, d);
++		fixed.dst = name[0] == 'Z' ? 0 : d ? (short)-d : TM_DST;
++		memcpy(fixed.standard = fixed.daylight = off, name, (size_t)d);
+ 		off[d] = 0;
+ 		if (end)
+ 			*end = e;
+diff --git a/src/lib/libast/tm/tvgettime.c b/src/lib/libast/tm/tvgettime.c
+index f6387f071..1d1b5cab3 100644
+--- a/src/lib/libast/tm/tvgettime.c
++++ b/src/lib/libast/tm/tvgettime.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -32,7 +33,7 @@ tvgettime(Tv_t* tv)
+ 
+ 	clock_gettime(CLOCK_REALTIME, &s);
+ 	tv->tv_sec = s.tv_sec;
+-	tv->tv_nsec = s.tv_nsec;
++	tv->tv_nsec = (uint32_t)s.tv_nsec;
+ 
+ #else
+ 
+diff --git a/src/lib/libast/tm/tvsleep.c b/src/lib/libast/tm/tvsleep.c
+index 1c68f7bae..f9ecf4d99 100644
+--- a/src/lib/libast/tm/tvsleep.c
++++ b/src/lib/libast/tm/tvsleep.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -70,7 +70,7 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
+ 	if ((r = nanosleep(&stv, &srv)) && errno == EINTR && rv)
+ 	{
+ 		rv->tv_sec = srv.tv_sec;
+-		rv->tv_nsec = srv.tv_nsec;
++		rv->tv_nsec = (uint32_t)srv.tv_nsec;
+ 	}
+ 	return r;
+ 
+diff --git a/src/lib/libast/tm/tvtouch.c b/src/lib/libast/tm/tvtouch.c
+index aca8c4d97..a702a4de9 100644
+--- a/src/lib/libast/tm/tvtouch.c
++++ b/src/lib/libast/tm/tvtouch.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -73,7 +73,7 @@ int
+ tvtouch(const char* path, const Tv_t* av, const Tv_t* mv, const Tv_t* cv, int flags)
+ {
+ 	int		fd;
+-	int		mode;
++	mode_t		mode;
+ 	int		oerrno;
+ 	struct stat	st;
+ 	Tv_t		now;
+-- 
+2.49.0
+

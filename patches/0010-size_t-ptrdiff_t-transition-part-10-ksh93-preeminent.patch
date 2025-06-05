@@ -1,0 +1,848 @@
+From 3b3c2e7baf434a13fcb06e008f17d5fef336e799 Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
+ commands
+
+This is the tenth of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The various primary ksh93 builtins located in the bltins folder.
+  - print_namval() returns a value only used for boolean tests,
+    so it doesn't need to return nv_size + 1 and thus a warning
+    can be quashed.
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+1,097 => 990 => 248 (progression from part 9 => part 10 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/cmd/ksh93/bltins/alarm.c     |  2 +-
+ src/cmd/ksh93/bltins/cd_pwd.c    |  2 +-
+ src/cmd/ksh93/bltins/enum.c      | 16 +++---
+ src/cmd/ksh93/bltins/getopts.c   |  6 +--
+ src/cmd/ksh93/bltins/hist.c      |  8 +--
+ src/cmd/ksh93/bltins/misc.c      | 18 +++----
+ src/cmd/ksh93/bltins/mkservice.c |  6 +--
+ src/cmd/ksh93/bltins/read.c      | 83 +++++++++++++++++---------------
+ src/cmd/ksh93/bltins/trap.c      | 16 +++---
+ src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
+ src/cmd/ksh93/bltins/ulimit.c    | 16 +++---
+ src/cmd/ksh93/bltins/umask.c     |  8 +--
+ src/cmd/ksh93/include/builtins.h |  2 +-
+ 13 files changed, 113 insertions(+), 104 deletions(-)
+
+diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
+index 399b3c24d..4c2a4bad6 100644
+--- a/src/cmd/ksh93/bltins/alarm.c
++++ b/src/cmd/ksh93/bltins/alarm.c
+@@ -70,7 +70,7 @@ static void *time_add(struct tevent *item, void *list)
+ 		tp->next = item;
+ 	}
+ 	tp = item;
+-	tp->timeout = sh_timeradd(tp->milli,tp->flags&R_FLAG,trap_timeout,tp);
++	tp->timeout = sh_timeradd((Sfulong_t)tp->milli,tp->flags&R_FLAG,trap_timeout,tp);
+ 	return list;
+ }
+ 
+diff --git a/src/cmd/ksh93/bltins/cd_pwd.c b/src/cmd/ksh93/bltins/cd_pwd.c
+index 66a49780a..89cada6f1 100644
+--- a/src/cmd/ksh93/bltins/cd_pwd.c
++++ b/src/cmd/ksh93/bltins/cd_pwd.c
+@@ -371,7 +371,7 @@ int	b_pwd(int argc, char *argv[],Shbltin_t *context)
+ 	}
+ 	if(flag)
+ 	{
+-		cp = strcpy(stkseek(sh.stk,strlen(cp)+PATH_MAX),cp);
++		cp = strcpy(stkseek(sh.stk,(ptrdiff_t)strlen(cp)+PATH_MAX),cp);
+ 		pathcanon(cp,PATH_PHYSICAL);
+ 	}
+ 	sfputr(sfstdout,cp,'\n');
+diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
+index 37f2bdd38..40c81c05a 100644
+--- a/src/cmd/ksh93/bltins/enum.c
++++ b/src/cmd/ksh93/bltins/enum.c
+@@ -103,15 +103,15 @@ extern const char is_spcbuiltin[];
+ struct Enum
+ {
+ 	Namfun_t	hdr;
+-	short		nelem;
+-	short		iflag;
++	ptrdiff_t	nelem;
++	char		iflag;
+ 	const char	*values[1];
+ };
+ 
+ /*
+  * For range checking in arith.c
+  */
+-short b_enum_nelem(Namfun_t *fp)
++ptrdiff_t b_enum_nelem(Namfun_t *fp)
+ {
+ 	return ((struct Enum *)fp)->nelem;
+ }
+@@ -155,8 +155,8 @@ static Namfun_t *clone_enum(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
+ 	NOT_USED(np);
+ 	NOT_USED(mp);
+ 	NOT_USED(flags);
+-	ep = sh_newof(0,struct Enum,1,pp->nelem*sizeof(char*));
+-	memcpy(ep,pp,sizeof(struct Enum)+pp->nelem*sizeof(char*));
++	ep = sh_newof(0,struct Enum,1,(size_t)pp->nelem*sizeof(char*));
++	memcpy(ep,pp,sizeof(struct Enum)+(size_t)pp->nelem*sizeof(char*));
+ 	return &ep->hdr;
+ }
+ 
+@@ -211,7 +211,9 @@ const Namdisc_t ENUM_disc = { 0, put_enum, get_enum, nv_getn, 0, 0, clone_enum }
+ 
+ int b_enum(int argc, char** argv, Shbltin_t *context)
+ {
+-	int			sz,i,n,iflag = 0;
++	int			i;
++	char			iflag = 0;
++	size_t			sz,n;
+ 	Namval_t		*np, *tp;
+ 	Namarr_t		*ap;
+ 	char			*cp,*sp;
+@@ -276,7 +278,7 @@ int b_enum(int argc, char** argv, Shbltin_t *context)
+ 		sz += n*sizeof(char*);
+ 		ep = sh_newof(0,struct Enum,1,sz);
+ 		ep->iflag = iflag;
+-		ep->nelem = n;
++		ep->nelem = (ptrdiff_t)n;
+ 		cp = (char*)&ep->values[n+1];
+ 		nv_putsub(np, NULL, ARRAY_SCAN);
+ 		ep->values[n] = 0;
+diff --git a/src/cmd/ksh93/bltins/getopts.c b/src/cmd/ksh93/bltins/getopts.c
+index 2c356dda7..2b59c4d4b 100644
+--- a/src/cmd/ksh93/bltins/getopts.c
++++ b/src/cmd/ksh93/bltins/getopts.c
+@@ -42,7 +42,7 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
+ 	if(nv_search(s,sh.fun_tree,0))
+ #endif /* SHOPT_NAMESPACE */
+ 	{
+-		int savtop = stktell(stkp);
++		ptrdiff_t savtop = stktell(stkp);
+ 		void *savptr = stkfreeze(stkp,0);
+ 		sfputc(stkp,'$');
+ 		sfputc(stkp,'(');
+@@ -146,7 +146,7 @@ int	b_getopts(int argc,char *argv[],Shbltin_t *context)
+ 			opt_info.arg = 0;
+ 			flag = '?';
+ 		}
+-		*(options = value) = flag;
++		*(options = value) = (char)flag;
+ 		sh.st.opterror = 1;
+ 		if (opt_info.offset != 0 && !argv[opt_info.index][opt_info.offset])
+ 		{
+@@ -183,7 +183,7 @@ int	b_getopts(int argc,char *argv[],Shbltin_t *context)
+ 		r = 0;
+ 	error_info.context->flags &= ~ERROR_SILENT;
+ 	sh.st.optindex = opt_info.index;
+-	sh.st.optchar = opt_info.offset;
++	sh.st.optchar = (short)opt_info.offset;
+ 	nv_putval(np, options, 0);
+ 	np = sh_scoped(OPTARGNOD);
+ 	if(opt_info.num == LONG_MIN)
+diff --git a/src/cmd/ksh93/bltins/hist.c b/src/cmd/ksh93/bltins/hist.c
+index fde5e36a7..571cd3539 100644
+--- a/src/cmd/ksh93/bltins/hist.c
++++ b/src/cmd/ksh93/bltins/hist.c
+@@ -91,7 +91,7 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
+ 	    case 'N':
+ 		if(indx<=0)
+ 		{
+-			if((flag = hist_max(hp) - opt_info.num-1) < 0)
++			if((flag = hist_max(hp) - (int)opt_info.num-1) < 0)
+ 				flag = 1;
+ 			range[++indx] = flag;
+ 			break;
+@@ -320,16 +320,16 @@ static void hist_subst(const char *command,int fd,char *replace)
+ {
+ 	char *newp=replace;
+ 	char *sp;
+-	int c;
++	size_t c;
+ 	off_t size;
+ 	char *string;
+ 	while(*++newp != '='); /* skip to '=' */
+ 	if((size = lseek(fd,0,SEEK_END)) < 0)
+ 		return;
+ 	lseek(fd,0,SEEK_SET);
+-	c =  (int)size;
++	c = (size_t)size;
+ 	string = stkalloc(sh.stk,c+1);
+-	if(read(fd,string,c)!=c)
++	if(read(fd,string,c)!=(ssize_t)c)
+ 		return;
+ 	string[c] = 0;
+ 	*newp++ =  0;
+diff --git a/src/cmd/ksh93/bltins/misc.c b/src/cmd/ksh93/bltins/misc.c
+index 168633f61..510735da2 100644
+--- a/src/cmd/ksh93/bltins/misc.c
++++ b/src/cmd/ksh93/bltins/misc.c
+@@ -155,12 +155,12 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
+ 		sh_onstate(SH_EXEC);
+ 		if(sh.subshell && !sh.subshare)
+ 		{
+-			struct dolnod *dp = stkalloc(sh.stk, sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + argc*sizeof(char*));
++			struct dolnod *dp = stkalloc(sh.stk, sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + (size_t)argc*sizeof(char*));
+ 			struct comnod *t = stkalloc(sh.stk,sizeof(struct comnod));
+ 			memset(t, 0, sizeof(struct comnod));
+ 			dp->dolnum = argc;
+ 			dp->dolbot = ARG_SPARE;
+-			memcpy(dp->dolval+ARG_SPARE, argv, (argc+1)*sizeof(char*));
++			memcpy(dp->dolval+ARG_SPARE, argv, ((size_t)argc+1)*sizeof(char*));
+ 			t->comarg.dp = dp;
+ 			sh_exec((Shnode_t*)t,sh_isstate(SH_ERREXIT));
+ 			sh_offstate(SH_EXEC);
+@@ -528,12 +528,12 @@ int    b_jobs(int n,char *argv[],Shbltin_t *context)
+  */
+ static void	print_times(struct timeval utime, struct timeval stime)
+ {
+-	Sfulong_t ut_min = utime.tv_sec / 60;
+-	Sfulong_t ut_sec = utime.tv_sec % 60;
+-	Sfulong_t ut_ms = utime.tv_usec / 1000;
+-	Sfulong_t st_min = stime.tv_sec / 60;
+-	Sfulong_t st_sec = stime.tv_sec % 60;
+-	Sfulong_t st_ms = stime.tv_usec / 1000;
++	Sfulong_t ut_min = (Sfulong_t)(utime.tv_sec / 60);
++	Sfulong_t ut_sec = (Sfulong_t)(utime.tv_sec % 60);
++	Sfulong_t ut_ms = (Sfulong_t)(utime.tv_usec / 1000);
++	Sfulong_t st_min = (Sfulong_t)(stime.tv_sec / 60);
++	Sfulong_t st_sec = (Sfulong_t)(stime.tv_sec % 60);
++	Sfulong_t st_ms = (Sfulong_t)(stime.tv_usec / 1000);
+ 	sfprintf(sfstdout, sh_isoption(SH_POSIX) ? "%jum%ju%c%03jus %jum%ju%c%03jus\n" : "%jum%02ju%c%03jus %jum%02ju%c%03jus\n",
+ 		ut_min, ut_sec, sh.radixpoint, ut_ms, st_min, st_sec, sh.radixpoint, st_ms);
+ }
+@@ -554,7 +554,7 @@ static void	print_cpu_times(void)
+ {
+ 	struct timeval utime, stime;
+ 	Sfdouble_t dtime;
+-	int clk_tck = sh.lim.clk_tck;
++	clock_t clk_tck = sh.lim.clk_tck;
+ 	struct tms cpu_times;
+ 	times(&cpu_times);
+ 	/* Print the time (user & system) consumed by the shell. */
+diff --git a/src/cmd/ksh93/bltins/mkservice.c b/src/cmd/ksh93/bltins/mkservice.c
+index b60980b2f..07cae7a26 100644
+--- a/src/cmd/ksh93/bltins/mkservice.c
++++ b/src/cmd/ksh93/bltins/mkservice.c
+@@ -237,7 +237,7 @@ static int waitnotify(int fd, long timeout, int rw)
+ 			sfprintf(sfstderr," %d",sffileno(poll_list[i]));
+ 		sfputc(sfstderr,'\n');
+ #endif
+-		nready  = sfpoll(poll_list,pstream-poll_list,timeout);
++		nready = sfpoll(poll_list,(int)(pstream-poll_list),(int)timeout);
+ #ifdef DEBUG
+ 		sfprintf(sfstderr,"after poll nready=%d",nready);
+ 		for(i=0; i < nready; i++)
+@@ -258,7 +258,7 @@ static int waitnotify(int fd, long timeout, int rw)
+ 
+ static int service_init(void)
+ {
+-	int n = 20;
++	size_t n = 20;
+ 	file_list = (int*)sh_newof(NULL,short,n,0);
+ 	poll_list = sh_newof(NULL,Sfio_t*,n,0);
+ 	service_list = sh_newof(NULL,Service_t*,n,0);
+@@ -345,7 +345,7 @@ static char* setdisc(Namval_t* np, const char* event, Namval_t* action, Namfun_t
+ 	Service_t*	sp = (Service_t*)fp;
+ 	const char*	cp;
+ 	int		i;
+-	int		n = strlen(event) - 1;
++	size_t		n = strlen(event) - 1;
+ 	Namval_t*	nq;
+ 
+ 	for (i = 0; cp = disctab[i]; i++)
+diff --git a/src/cmd/ksh93/bltins/read.c b/src/cmd/ksh93/bltins/read.c
+index 1568948cb..9c6b4100e 100644
+--- a/src/cmd/ksh93/bltins/read.c
++++ b/src/cmd/ksh93/bltins/read.c
+@@ -52,11 +52,11 @@ struct read_save
+ {
+ 	char		**argv;
+ 	char		*prompt;
++	Sflong_t	timeout;
++	size_t		plen;
++	ssize_t		len;
+ 	int		fd;
+-	int		plen;
+ 	int		flags;
+-	ssize_t		len;
+-	Sflong_t	timeout;
+ };
+ 
+ int	b_read(int argc,char *argv[], Shbltin_t *context)
+@@ -65,9 +65,11 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 	char *prompt;
+ 	const char *msg = e_file+4;
+ 	int r, flags=0, fd=0;
+-	ssize_t	len=0;
++	ssize_t len=0;
++	size_t q;
+ 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
+-	int save_prompt, fixargs=context->invariant;
++	int fixargs=context->invariant;
++	short save_prompt;
+ 	struct read_save *rp;
+ 	static char default_prompt[3] = {ESC,ESC};
+ 	rp = (struct read_save*)(context->data);
+@@ -84,7 +86,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 		fd = rp->fd;
+ 		argv = rp->argv;
+ 		prompt = rp->prompt;
+-		r = rp->plen;
++		q = rp->plen;
+ 		goto bypass;
+ 	}
+ 	while((r = optget(argv,sh_optread))) switch(r)
+@@ -115,7 +117,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 	    case 'n': case 'N':
+ 		flags &= ((1<<D_FLAG)-1);
+ 		flags |= (r=='n'?N_FLAG:NN_FLAG);
+-		len = opt_info.num;
++		len = (ptrdiff_t)opt_info.num;
+ 		break;
+ 	    case 'r':
+ 		flags |= R_FLAG;
+@@ -162,9 +164,9 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 	}
+ 	/* look for prompt */
+ 	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (r&IOTTY))
+-		r = strlen(prompt++);
++		q = strlen(prompt++);
+ 	else
+-		r = 0;
++		q = 0;
+ 	if(argc==fixargs)
+ 	{
+ 		rp = sh_newof(NULL,struct read_save,1,0);
+@@ -174,15 +176,15 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 		rp->timeout = timeout;
+ 		rp->argv = argv;
+ 		rp->prompt = prompt;
+-		rp->plen = r;
++		rp->plen = q;
+ 		rp->len = len;
+ 	}
+ bypass:
+ 	sh.prompt = default_prompt;
+-	if(r && (sh.prompt=(char*)sfreserve(sfstderr,r,SFIO_LOCKR)))
++	if(q && (sh.prompt=(char*)sfreserve(sfstderr,(ssize_t)q,SFIO_LOCKR)))
+ 	{
+-		memcpy(sh.prompt,prompt,r);
+-		sfwrite(sfstderr,sh.prompt,r-1);
++		memcpy(sh.prompt,prompt,q);
++		sfwrite(sfstderr,sh.prompt,q-1);
+ 	}
+ 	sh.timeout = 0;
+ 	save_prompt = sh.nextprompt;
+@@ -229,7 +231,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 	volatile char		was_write = 0;
+ 	volatile char		was_share = 1;
+ 	volatile int		keytrap;
+-	int			rel, wrd;
++	int			wrd;
++	ptrdiff_t		rel;
+ 	long			array_index = 0;
+ 	void			*timeslot=0;
+ 	int			delim = '\n';
+@@ -303,7 +306,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 		if(!(flags&(N_FLAG|NN_FLAG)))
+ 		{
+ 			delim = ((unsigned)flags)>>(D_FLAG+1);
+-			ep->e_nttyparm.c_cc[VEOL] = delim;
++			ep->e_nttyparm.c_cc[VEOL] = (cc_t)delim;
+ 			ep->e_nttyparm.c_lflag |= ISIG;
+ 			tty_set(fd,TCSADRAIN,&ep->e_nttyparm);
+ 		}
+@@ -339,13 +342,13 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 		{
+ 			Namval_t *mp = nv_open(name,sh.var_tree,oflags|NV_NOREF);
+ 			if((c=(*nfp->disc->readf)(mp,iop,delim,nfp))>=0)
+-				return c;
++				return (int)c;
+ 		}
+ 	}
+ 	if(binary && !(flags&(N_FLAG|NN_FLAG)))
+ 	{
+ 		flags |= NN_FLAG;
+-		size = nv_size(np);
++		size = (ssize_t)nv_size(np);
+ 	}
+ 	was_write = (sfset(iop,SFIO_WRITE,0)&SFIO_WRITE)!=0;
+ 	if(fd==0)
+@@ -357,7 +360,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 		if(jmpval)
+ 			goto done;
+ 		if(timeout)
+-	                timeslot = sh_timeradd(timeout,0,timedout,iop);
++	                timeslot = sh_timeradd((Sfulong_t)timeout,0,timedout,iop);
+ 	}
+ #if !SHOPT_SCRIPTONLY
+ 	if((flags&S_FLAG) && !sh.hist_ptr)
+@@ -371,9 +374,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 	{
+ 		char buf[256],*var=buf,*cur,*end,*up,*v;
+ 		/* reserved buffer */
+-		if((c=size)>=sizeof(buf))
++		if((c=size)>=(ssize_t)sizeof(buf))
+ 		{
+-			var = (char*)sh_malloc(c+1);
++			var = (char*)sh_malloc((size_t)c+1);
+ 			end = var + c;
+ 		}
+ 		else
+@@ -388,8 +391,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 		}
+ 		else
+ 		{
+-			ssize_t	m;
+-			int	f;
++			ptrdiff_t	m;
++			int		f;
+ 			for (;;)
+ 			{
+ 				c = size;
+@@ -398,7 +401,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 					cp = 0;
+ 					f = 0;
+ 					m = 0;
+-					while(c-->0 && (buf[m]=ed_getchar(ep,0)))
++					while(c-->0 && (buf[m]=(char)ed_getchar(ep,0)))
+ 						m++;
+ 					if(m>0)
+ 						cp = (unsigned char*)buf;
+@@ -420,7 +423,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
+ 					}
+ 				}
+-				if(m>0 && (flags&N_FLAG) && !binary && (v=memchr(cp,'\n',m)))
++				if(m>0 && (flags&N_FLAG) && !binary && (v=memchr(cp,'\n',(size_t)m)))
+ 				{
+ 					*v++ = 0;
+ 					m = v-(char*)cp;
+@@ -431,23 +434,23 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 				{
+ 					if(c > (end-cur))
+ 					{
+-						ssize_t	cx = cur - var, ux = up - var;
++						ptrdiff_t cx = cur - var, ux = up - var;
+ 						m = (end - var) + (c - (end - cur));
+ 						if (var == buf)
+ 						{
+-							v = (char*)sh_malloc(m+1);
+-							var = memcpy(v, var, cur - var);
++							v = (char*)sh_malloc((size_t)m+1);
++							var = memcpy(v, var, (size_t)(cur - var));
+ 						}
+ 						else
+-							var = sh_newof(var, char, m, 1);
++							var = sh_newof(var, char, (size_t)m, 1);
+ 						end = var + m;
+ 						cur = var + cx;
+ 						up = var + ux;
+ 					}
+ 					if(cur!=(char*)cp)
+-						memcpy(cur,cp,c);
++						memcpy(cur,cp,(size_t)c);
+ 					if(f)
+-						sfread(iop,cp,c);
++						sfread(iop,cp,(size_t)c);
+ 					cur += c;
+ 					if(mbwide() && !binary)
+ 					{
+@@ -479,7 +482,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 		}
+ 		if(timeslot)
+ 			sh_timerdel(timeslot);
+-		if(binary && !((size=nv_size(np)) && nv_isarray(np) && c!=size))
++		if(binary && !((size=(ssize_t)nv_size(np)) && nv_isarray(np) && c!=size))
+ 		{
+ #if SHOPT_OPTIMIZE
+ 			/* only optimize this operation if the loop invariants optimizer is not being used */
+@@ -488,16 +491,16 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 			int optimize = 1;
+ #endif
+ 			if(optimize && c==size && np->nvalue && !nv_isarray(np))
+-				memcpy(np->nvalue,var,c);
++				memcpy(np->nvalue,var,(size_t)c);
+ 			else
+ 			{
+ 				Namval_t *mp;
+ 				if(var==buf)
+-					var = sh_memdup(var,c+1);
++					var = sh_memdup(var,(size_t)c+1);
+ 				nv_putval(np,var,NV_RAW);
+-				nv_setsize(np,c);
++				nv_setsize(np,(size_t)c);
+ 				if(!nv_isattr(np,NV_MINIMAL|NV_EXPORT) && (mp = np->nvmeta))
+-					nv_setsize(mp,c);
++					nv_setsize(mp,(size_t)c);
+ 			}
+ 		}
+ 		else
+@@ -529,10 +532,10 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 			cpmax--;
+ #endif /* SHOPT_CRNL */
+ 		if(*(cpmax-1) != delim)
+-			*(cpmax-1) = delim;
++			*(cpmax-1) = (unsigned char)delim;
+ #if !SHOPT_SCRIPTONLY
+ 		if(flags&S_FLAG)
+-			sfwrite(sh.hist_ptr->histfp,(char*)cp,c);
++			sfwrite(sh.hist_ptr->histfp,(char*)cp,(size_t)c);
+ #endif
+ 		c = sh.ifstable[*cp++];
+ #if !SHOPT_MULTIBYTE
+@@ -657,7 +660,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 				{
+ #if !SHOPT_SCRIPTONLY
+ 					if(flags&S_FLAG)
+-						sfwrite(sh.hist_ptr->histfp,(char*)cp,c);
++						sfwrite(sh.hist_ptr->histfp,(char*)cp,(size_t)c);
+ #endif
+ 					cpmax = cp + c;
+ 					c = sh.ifstable[*cp++];
+@@ -731,7 +734,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 						{
+ 							if(val)
+ 							{
+-								sfwrite(sh.stk,val,cp-(unsigned char*)val);
++								sfwrite(sh.stk,val,(size_t)(cp-(unsigned char*)val));
+ 								use_stak = 1;
+ 							}
+ 							val = (char*)++cp;
+@@ -745,7 +748,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 						{
+ 							if(val)
+ 							{
+-								sfwrite(sh.stk,val,cp-(unsigned char*)val);
++								sfwrite(sh.stk,val,(size_t)(cp-(unsigned char*)val));
+ 								use_stak=1;
+ 							}
+ 							if(cp = (unsigned char*)sfgetr(iop,delim,0))
+diff --git a/src/cmd/ksh93/bltins/trap.c b/src/cmd/ksh93/bltins/trap.c
+index cf06556aa..e9a657f99 100644
+--- a/src/cmd/ksh93/bltins/trap.c
++++ b/src/cmd/ksh93/bltins/trap.c
+@@ -164,7 +164,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
+ 				if(sh.subshell && !sh.subshare)
+ 					sh_subfork();
+ 				if(sig >= sh.st.trapmax)
+-					sh.st.trapmax = sig+1;
++					sh.st.trapmax = (unsigned short)sig+1;
+ 				arg = sh.st.trapcom[sig];
+ 				sh_sigtrap(sig);
+ 				sh.st.trapcom[sig] = (sh.sigflag[sig]&SH_SIGOFF) ? Empty : sh_strdup(action);
+@@ -345,18 +345,18 @@ int	b_suspend(int argc,char *argv[],Shbltin_t *context)
+ static int sig_number(const char *string)
+ {
+ 	const Shtable_t	*tp;
+-	int		n, o, sig=0;
++	int		n, sig=0;
+ 	char		*last, *name;
+ 	if(isdigit(*string))
+ 	{
+-		n = strtol(string,&last,10);
++		n = (int)strtol(string,&last,10);
+ 		if(*last)
+ 			n = -1;
+ 	}
+ 	else
+ 	{
+ 		int c;
+-		o = stktell(sh.stk);
++		ptrdiff_t o = stktell(sh.stk);
+ 		do
+ 		{
+ 			c = *string++;
+@@ -372,20 +372,20 @@ static int sig_number(const char *string)
+ 			o += 3;
+ 			if(isdigit(*stkptr(sh.stk,o)))
+ 			{
+-				n = strtol(stkptr(sh.stk,o),&last,10);
++				n = (int)strtol(stkptr(sh.stk,o),&last,10);
+ 				if(!*last)
+ 					return n;
+ 			}
+ 		}
+ 		tp = sh_locate(stkptr(sh.stk,o),(const Shtable_t*)shtab_signals,sizeof(*shtab_signals));
+-		n = tp->sh_number;
++		n = (int)tp->sh_number;
+ 		if(sig==1 && (n>=(SH_TRAP-1) && n < (1<<SH_SIGBITS)))
+ 		{
+ 			/* sig prefix cannot match internal traps */
+ 			n = 0;
+ 			tp = (Shtable_t*)((char*)tp + sizeof(*shtab_signals));
+ 			if(strcmp(stkptr(sh.stk,o),tp->sh_name)==0)
+-				n = tp->sh_number;
++				n = (int)tp->sh_number;
+ 		}
+ 		if((n>>SH_SIGBITS)&SH_SIGRUNTIME)
+ 			n = sh.sigruntime[(n&((1<<SH_SIGBITS)-1))-1];
+@@ -492,7 +492,7 @@ static void sig_list(int flag)
+ 		}
+ 		else if(sig&SH_TRAP)
+ 			traps[sig&~SH_TRAP] = (char*)tp->sh_name;
+-		else if(sig-- && sig < elementsof(names))
++		else if(sig-- && sig < (int)elementsof(names))
+ 			names[sig] = (char*)tp->sh_name;
+ 	}
+ 	if(flag > 0)
+diff --git a/src/cmd/ksh93/bltins/typeset.c b/src/cmd/ksh93/bltins/typeset.c
+index bb5a2e8ea..eaa0f96f3 100644
+--- a/src/cmd/ksh93/bltins/typeset.c
++++ b/src/cmd/ksh93/bltins/typeset.c
+@@ -69,7 +69,7 @@ struct tdata
+ 	int     	scanmask;
+ 	Dt_t 		*scanroot;
+ 	char    	**argnam;
+-	int		indent;
++	size_t		indent;
+ 	int		noref;
+ };
+ 
+@@ -239,7 +239,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
+ 	}
+ 	else if(argv[0][0] != 't')		/* not <t>ypeset */
+ 	{
+-		char **new_argv = stkalloc(sh.stk, (argc + 2) * sizeof(char*));
++		char **new_argv = stkalloc(sh.stk, ((size_t)argc + 2) * sizeof(char*));
+ 		error_info.id = new_argv[0] = SYSTYPESET->nvname;
+ 		if(argv[0][0] == 'a')		/* <a>utoload == typeset -fu */
+ 			new_argv[1] = "-fu";
+@@ -294,7 +294,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
+ 				/* FALLTHROUGH */
+ 			case 'F':
+ 			case 'X':
+-				if(!opt_info.arg || (tdata.argnum = opt_info.num) <0)
++				if(!opt_info.arg || (tdata.argnum = (int)opt_info.num) <0)
+ 					tdata.argnum = (n=='X'?2*sizeof(Sfdouble_t):10);
+ 				else if (tdata.argnum==0)
+ 					tdata.argnum = NV_FLTSIZEZERO;
+@@ -371,7 +371,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
+ 				troot = sh.fun_tree;
+ 				break;
+ 			case 'i':
+-				if(!opt_info.arg || (tdata.argnum = opt_info.num) <2 || tdata.argnum >64)
++				if(!opt_info.arg || (tdata.argnum = (int)opt_info.num) <2 || tdata.argnum >64)
+ 					tdata.argnum = 10;
+ 				if(isfloat)
+ 				{
+@@ -526,9 +526,9 @@ endargs:
+ 	{
+ 		Stk_t *stkp = sh.stk;
+ #if SHOPT_NAMESPACE
+-		int off = 0;
++		ptrdiff_t off = 0;
+ #endif /* SHOPT_NAMESPACE */
+-		int offset = stktell(stkp);
++		ptrdiff_t offset = stktell(stkp);
+ 		if(!tdata.prefix)
+ 			return sh_outtype(sfstdout);
+ 		sfputr(stkp,NV_CLASS,-1);
+@@ -761,7 +761,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
+ 					r++;
+ 				if(tp->help)
+ 				{
+-					int offset = stktell(sh.stk);
++					ptrdiff_t offset = stktell(sh.stk);
+ 					if(!np)
+ 					{
+ 						sfputr(sh.stk,sh.prefix,'.');
+@@ -967,7 +967,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
+ 					if(flag&NV_RDONLY && !tp->argnum && !(flag&(NV_INTEGER|NV_BINARY)) && !(flag&(NV_LJUST|NV_RJUST|NV_ZFILL)))
+ 						/* New requested attribute(s) are readonly, have a provided or defaulted size of 0, and are
+ 						   not a string justification nor numeric. Justified or binary strings can have a size of 0. */
+-						nv_newattr(np, newflag&~NV_ASSIGN, np->nvsize);
++						nv_newattr(np, newflag&~NV_ASSIGN, (ptrdiff_t)np->nvsize);
+ 					else
+ 						nv_newattr(np, newflag&~NV_ASSIGN, tp->argnum);
+ 				}
+@@ -1095,7 +1095,7 @@ int sh_addlib(void* dll, char* name, Pathcomp_t* pp)
+ 	if (nlib >= maxlib)
+ 	{
+ 		maxlib += GROWLIB;
+-		liblist = sh_newof(liblist, Libcomp_t, maxlib+1, 0);
++		liblist = sh_newof(liblist, Libcomp_t, (size_t)maxlib+1, 0);
+ 	}
+ 	liblist[nlib].dll = dll;
+ 	liblist[nlib].attr = (sp->nosfio?BLT_NOSFIO:0);
+@@ -1130,8 +1130,9 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+ {
+ 	char *arg=0, *name;
+ 	int n, r=0, flag=0;
++	ptrdiff_t offset;
+ 	Namval_t *np;
+-	long dlete=0;
++	int dlete=0;
+ 	struct tdata tdata;
+ 	Shbltin_f addr;
+ 	Stk_t	*stkp;
+@@ -1213,7 +1214,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+ 		return 0;
+ 	}
+ 	r = 0;
+-	flag = stktell(stkp);
++	offset = stktell(stkp);
+ 	while(arg = *argv)
+ 	{
+ 		name = path_basename(arg);
+@@ -1227,7 +1228,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+ 			{
+ 				if(!dlete && !liblist[n].dll)
+ 					continue;
+-				if(dlete || (addr = (Shbltin_f)dlllook(liblist[n].dll,stkptr(stkp,flag))))
++				if(dlete || (addr = (Shbltin_f)dlllook(liblist[n].dll,stkptr(stkp,offset))))
+ #else
+ 		if(dlete)
+ 			for(n=dlete; --n>=0;)
+@@ -1260,7 +1261,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+ 			errormsg(SH_DICT,ERROR_exit(0),"%s: %s",*argv,errmsg);
+ 			r = 1;
+ 		}
+-		stkseek(stkp,flag);
++		stkseek(stkp,offset);
+ 		argv++;
+ 	}
+ 	return r;
+@@ -1476,7 +1477,8 @@ static int unall(int argc, char **argv, Dt_t *troot)
+ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
+ {
+ 	char	*cp;
+-	int	indent=tp->indent, outname=0, isfun;
++	size_t	indent=tp->indent;
++	int	outname=0, isfun;
+ 	char	tempexport=0;
+ 	sh_sigcheck();
+ 	if(flag)
+@@ -1554,7 +1556,7 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
+ 			sfputc(file, '\n');
+ 			sh_deparse(file, (Shnode_t*)(rp->ptree), 2 | nv_isattr(np,NV_FPOSIX), 0);
+ 		}
+-		return nv_size(np) + 1;
++		return 1;
+ 	}
+ 	if(nv_arrayptr(np))
+ 	{
+@@ -1642,7 +1644,7 @@ static void print_scan(Sfio_t *file, int flag, Dt_t *root, int option,struct tda
+ 	if(flag==NV_LTOU || flag==NV_UTOL)
+ 		tp->scanmask |= NV_UTOL|NV_LTOU;
+ 	namec = nv_scan(root, nullscan, tp, tp->scanmask, flag&~NV_IARRAY);
+-	argv = tp->argnam  = stkalloc(sh.stk,(namec+1)*sizeof(char*));
++	argv = tp->argnam  = stkalloc(sh.stk,((size_t)namec+1)*sizeof(char*));
+ 	namec = nv_scan(root, pushname, tp, tp->scanmask, flag&~NV_IARRAY);
+ 	if(mbcoll())
+ 		strsort(argv,namec,strcoll);
+diff --git a/src/cmd/ksh93/bltins/ulimit.c b/src/cmd/ksh93/bltins/ulimit.c
+index 930b32a68..10a5c40cd 100644
+--- a/src/cmd/ksh93/bltins/ulimit.c
++++ b/src/cmd/ksh93/bltins/ulimit.c
+@@ -70,14 +70,14 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ {
+ 	char *limit;
+ 	int mode=0, n;
+-	unsigned long hit = 0;
++	unsigned long hit = 0, label;
+ #if _lib_getrlimit
+ 	struct rlimit rlp;
+ #endif /* _lib_getrlimit */
+ 	const Limit_t* tp;
+ 	char* conf;
+-	int label, unit, nosupport, ret=0;
+-	rlim_t i=0;
++	int nosupport, ret=0;
++	rlim_t i=0, unit;
+ 	char tmp[41];
+ 	Optdisc_t disc;
+ 	NOT_USED(context);
+@@ -94,7 +94,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ 			mode |= SOFT;
+ 			continue;
+ 		case 'a':
+-			hit = ~0;
++			hit = ~0UL;
+ 			break;
+ 		default:
+ 			if(n < 0)
+@@ -134,7 +134,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ 		if(!(hit&1))
+ 			continue;
+ 		nosupport = (n = tp->index) == RLIMIT_UNKNOWN;
+-		unit = shtab_units[tp->type];
++		unit = (rlim_t)shtab_units[tp->type];
+ 		if(limit)
+ 		{
+ 			if(sh.subshell && !sh.subshare)
+@@ -145,11 +145,11 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ 			{
+ 				char *last;
+ 				/* an explicit suffix unit overrides the default */
+-				if((i=strtol(limit,&last,0))!=ULIMIT_INFINITY && !*last)
++				if((i=(rlim_t)strtol(limit,&last,0))!=ULIMIT_INFINITY && !*last)
+ 					i *= unit;
+-				else if((i=strton(limit,&last,NULL,0))==ULIMIT_INFINITY || *last)
++				else if((i=(rlim_t)strton(limit,&last,NULL,0))==ULIMIT_INFINITY || *last)
+ 				{
+-					if((i=sh_strnum(limit,&last,2))==ULIMIT_INFINITY || *last)
++					if((i=(rlim_t)sh_strnum(limit,&last,2))==ULIMIT_INFINITY || *last)
+ 					{
+ 						errormsg(SH_DICT,ERROR_system(1),e_number,limit);
+ 						UNREACHABLE();
+diff --git a/src/cmd/ksh93/bltins/umask.c b/src/cmd/ksh93/bltins/umask.c
+index 7b9819dd3..d27e999b7 100644
+--- a/src/cmd/ksh93/bltins/umask.c
++++ b/src/cmd/ksh93/bltins/umask.c
+@@ -39,7 +39,8 @@
+ int	b_umask(int argc,char *argv[],Shbltin_t *context)
+ {
+ 	char *mask;
+-	int flag = 0, sflag = 0;
++	mode_t flag = 0;
++	int sflag = 0;
+ 	NOT_USED(context);
+ 	while((argc = optget(argv,sh_optumask))) switch(argc)
+ 	{
+@@ -62,13 +63,13 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
+ 	argv += opt_info.index;
+ 	if(mask = *argv)
+ 	{
+-		int c;
+ 		if(isdigit(*mask))
+ 		{
++			int c;
+ 			while(c = *mask++)
+ 			{
+ 				if (c>='0' && c<='7')
+-					flag = (flag<<3) + (c-'0');
++					flag = (mode_t)((flag<<3) + (mode_t)(c-'0'));
+ 				else
+ 				{
+ 					errormsg(SH_DICT,ERROR_exit(1),e_number,*argv);
+@@ -79,6 +80,7 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
+ 		else
+ 		{
+ 			char *cp = mask;
++			mode_t c;
+ 			flag = umask(0);
+ 			c = strperm(cp,&cp,~flag&0777);
+ 			if(*cp)
+diff --git a/src/cmd/ksh93/include/builtins.h b/src/cmd/ksh93/include/builtins.h
+index 8522c4ac7..e5f8f2c75 100644
+--- a/src/cmd/ksh93/include/builtins.h
++++ b/src/cmd/ksh93/include/builtins.h
+@@ -112,7 +112,7 @@ extern int b_times(int, char*[],Shbltin_t*);
+     extern int B_echo(int, char*[],Shbltin_t*);
+ #endif /* SHOPT_ECHOPRINT */
+ 
+-extern short		b_enum_nelem(Namfun_t*);
++extern ptrdiff_t	b_enum_nelem(Namfun_t*);
+ 
+ extern const char	e_alrm1[];
+ extern const char	e_alrm2[];
+-- 
+2.49.0
+

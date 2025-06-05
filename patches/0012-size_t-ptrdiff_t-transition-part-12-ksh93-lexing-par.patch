@@ -1,0 +1,1356 @@
+From fc48987e48bac68b385a26268721c5ba4ee02f11 Mon Sep 17 00:00:00 2001
+From: Johnothan King <johnothanking@protonmail.com>
+Date: Wed, 4 Jun 2025 20:48:18 -0700
+Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
+ subshells
+
+This is the twelfth of the thickfold patch series, which enables ksh93
+to operate within a 64-bit address space.
+
+The parts of ksh93 affected by this commit are:
+- The lexing and parsing components in lex.c, parse.c, fcin.c
+  and trestore.c.
+- Minor fixes for the virtual subshell mechanism.
+- The code underlying shcomp(1), aka sh_tdump().
+- A minor fix to a cast in sh_timeradd().
+
+Change in the number of warnings on Linux when compiling with clang using
+-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
+671 => 555 => 248 (progression from part 11 => part 12 => part 13)
+
+Progresses https://github.com/ksh93/ksh/issues/592
+---
+ src/cmd/ksh93/include/fcin.h    |  15 ++--
+ src/cmd/ksh93/include/shlex.h   |  16 ++--
+ src/cmd/ksh93/include/shnodes.h |   6 +-
+ src/cmd/ksh93/sh/fcin.c         |  16 ++--
+ src/cmd/ksh93/sh/lex.c          | 138 +++++++++++++++++---------------
+ src/cmd/ksh93/sh/parse.c        |  81 ++++++++++---------
+ src/cmd/ksh93/sh/subshell.c     |  14 ++--
+ src/cmd/ksh93/sh/tdump.c        |  34 ++++----
+ src/cmd/ksh93/sh/timers.c       |   4 +-
+ src/cmd/ksh93/sh/trestore.c     |  46 +++++------
+ 10 files changed, 192 insertions(+), 178 deletions(-)
+
+diff --git a/src/cmd/ksh93/include/fcin.h b/src/cmd/ksh93/include/fcin.h
+index 7aee58561..420a397e2 100644
+--- a/src/cmd/ksh93/include/fcin.h
++++ b/src/cmd/ksh93/include/fcin.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -12,6 +12,7 @@
+ *                                                                      *
+ *                  David Korn <dgk@research.att.com>                   *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #ifndef fcgetc
+@@ -33,7 +34,7 @@ typedef struct _fcin
+ 	unsigned char	*fcptr;		/* pointer to next input char */
+ 	unsigned char	fcchar;		/* saved character */
+ 	short		fclen;		/* last multibyte char len */
+-	void (*fcfun)(Sfio_t*,const char*,int,void*);	/* advance function */
++	void (*fcfun)(Sfio_t*,const char*,ptrdiff_t,void*);	/* advance function */
+ 	void		*context;	/* context pointer */
+ 	int		fcleft;		/* for multibyte boundary */
+ 	Sfoff_t		fcoff;		/* offset for last read */
+@@ -46,9 +47,9 @@ typedef struct _fcin
+ #   define fcmbget(x)	(fcget())
+ #endif
+ #define fcfile()	(_Fcin._fcfile)
+-#define fcgetc()	(*_Fcin.fcptr++ ? (int)_Fcin.fcptr[-1] : fcfill())
+-#define fcget()		((int)(*_Fcin.fcptr++))
+-#define fcpeek(n)	((int)_Fcin.fcptr[n])
++#define fcgetc()	(*_Fcin.fcptr++ ? _Fcin.fcptr[-1] : fcfill())
++#define fcget()		(*_Fcin.fcptr++)
++#define fcpeek(n)	(_Fcin.fcptr[n])
+ #define fcseek(n)	((char*)(_Fcin.fcptr+=(n)))
+ #define fcfirst()	((char*)_Fcin.fcbuff)
+ #define fclast()	((char*)_Fcin.fclast)
+@@ -58,9 +59,9 @@ typedef struct _fcin
+ #define fcsave(x)	(*(x) = _Fcin)
+ #define fcrestore(x)	(_Fcin = *(x))
+ extern int		fcfill(void);
+-extern int		fcfopen(Sfio_t*);
++extern ssize_t		fcfopen(Sfio_t*);
+ extern int		fcclose(void);
+-void			fcnotify(void(*)(Sfio_t*,const char*,int,void*),void*);
++void			fcnotify(void(*)(Sfio_t*,const char*,ptrdiff_t,void*),void*);
+ 
+ extern Fcin_t		_Fcin;		/* used by macros */
+ 
+diff --git a/src/cmd/ksh93/include/shlex.h b/src/cmd/ksh93/include/shlex.h
+index 0894a732f..8a8272d4a 100644
+--- a/src/cmd/ksh93/include/shlex.h
++++ b/src/cmd/ksh93/include/shlex.h
+@@ -70,21 +70,21 @@ typedef struct  _shlex_
+ {
+ 	struct argnod	*arg;		/* current word */
+ 	struct ionod	*heredoc;	/* pending here document list */
++	ptrdiff_t	varnamelength;	/* length of variable name in assignment */
+ 	int		token;		/* current token number */
+ 	int		lastline;	/* last line number */
+ 	int		lasttok;	/* previous token number */
+ 	int		digits;		/* numerical value with word token */
++	int		inlineno;	/* saved value of sh.inlineno */
++	int		firstline;	/* saved value of sh.st.firstline */
++	int		assignlevel;	/* nesting level for assignment */
+ 	char		aliasok;	/* on when alias is legal */
+ 	char		assignok;	/* on when name=value is legal */
+-	int		varnamelength;	/* length of variable name in assignment */
+ 	char		inexec;		/* on when processing exec */
+ 	char		intypeset;	/* 1 when processing typeset, 2 when processing enum */
+ 	char		comp_assign;	/* in compound assignment */
+ 	char		comsub;		/* parsing command substitution */
+ 	char		noreserv;	/* reserved words not legal */
+-	int		inlineno;	/* saved value of sh.inlineno */
+-	int		firstline;	/* saved value of sh.st.firstline */
+-	int		assignlevel;	/* nesting level for assignment */
+ 	/* The following two struct members are considered private to lex.c */
+ 	struct _shlex_pvt_lexdata_  lexd;
+ 	struct _shlex_pvt_lexstate_  lex;
+@@ -166,20 +166,20 @@ typedef struct  _shlex_
+ extern int		sh_lex(Lex_t*);
+ extern Shnode_t		*sh_dolparen(Lex_t*);
+ extern Lex_t		*sh_lexopen(Lex_t*, int);
+-extern void 		sh_lexskip(Lex_t*,int,int,int);
++extern void 		sh_lexskip(Lex_t*,char,int,int);
+ extern noreturn void 	sh_syntax(Lex_t*, int);
+ 
+ #if SHOPT_KIA
+     typedef struct
+     {
+-	off_t		offset;
++	ptrdiff_t	offset;
+ 	Sfio_t		*file;		/* kia output file */
+ 	Sfio_t		*tmp;		/* kia reference file */
+ 	unsigned long	script;		/* script entity number */
+ 	unsigned long	fscript;	/* script file entity number */
+ 	unsigned long	current;	/* current entity number */
+ 	unsigned long	unknown;	/* <unknown> entity number */
+-	off_t		begin;		/* offset of first entry */
++	Sfoff_t		begin;		/* offset of first entry */
+ 	char		*scriptname;	/* name of script file */
+ 	Dt_t		*entity_tree;	/* for entity IDs */
+     } Kia_t;
+@@ -187,7 +187,7 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
+     extern Kia_t		kia;
+ 
+     extern int                  kiaclose(Lex_t *);
+-    extern unsigned long        kiaentity(Lex_t*, const char*,int,int,int,int,unsigned long,int,int,const char*);
++    extern unsigned long        kiaentity(Lex_t*, const char*,ptrdiff_t,int,int,int,unsigned long,int,size_t,const char*);
+ #endif /* SHOPT_KIA */
+ 
+ #endif /* !NOTSYM */
+diff --git a/src/cmd/ksh93/include/shnodes.h b/src/cmd/ksh93/include/shnodes.h
+index 59236e1b6..7d99ddbff 100644
+--- a/src/cmd/ksh93/include/shnodes.h
++++ b/src/cmd/ksh93/include/shnodes.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -209,8 +209,8 @@ union Shnode_u
+ 
+ extern void			sh_freeup(void);
+ extern void			sh_funstaks(struct slnod*,int);
+-extern Sfio_t 			*sh_subshell(Shnode_t*, volatile int, int);
+-extern int			sh_tdump(Sfio_t*, const Shnode_t*);
++extern Sfio_t 			*sh_subshell(Shnode_t*, volatile int, char);
++extern ptrdiff_t		sh_tdump(Sfio_t*, const Shnode_t*);
+ extern Shnode_t			*sh_trestore(Sfio_t*);
+ 
+ #endif /* _SHNODES_H */
+diff --git a/src/cmd/ksh93/sh/fcin.c b/src/cmd/ksh93/sh/fcin.c
+index cb18e96ef..358280570 100644
+--- a/src/cmd/ksh93/sh/fcin.c
++++ b/src/cmd/ksh93/sh/fcin.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -34,9 +34,9 @@ Fcin_t _Fcin = {0};
+ /*
+  * open stream <f> for fast character input
+  */
+-int	fcfopen(Sfio_t* f)
++ssize_t	fcfopen(Sfio_t* f)
+ {
+-	int	n;
++	ssize_t	n;
+ 	char	*buff;
+ 	Fcin_t	save;
+ 	errno = 0;
+@@ -71,9 +71,9 @@ int	fcfopen(Sfio_t* f)
+  * If last is non-zero, and the stream is a file, 0 is returned when
+  * the previous character is a 0 byte.
+  */
+-int	fcfill(void)
++int fcfill(void)
+ {
+-	int	n;
++	ptrdiff_t n;
+ 	Sfio_t	*f;
+ 	unsigned char	*last=_Fcin.fclast, *ptr=_Fcin.fcptr;
+ 	if(!(f=fcfile()))
+@@ -96,7 +96,7 @@ int	fcfill(void)
+ 	}
+ 	if((n = ptr-_Fcin.fcbuff) && _Fcin.fcfun)
+ 		(*_Fcin.fcfun)(f,(const char*)_Fcin.fcbuff,n,_Fcin.context);
+-	sfread(f, (char*)_Fcin.fcbuff, n);
++	sfread(f, (char*)_Fcin.fcbuff, (size_t)n);
+ 	_Fcin.fcoff +=n;
+ 	_Fcin._fcfile = 0;
+ 	if(!last)
+@@ -126,7 +126,7 @@ int fcclose(void)
+ /*
+  * Set the notify function that is called for each fcfill()
+  */
+-void fcnotify(void (*fun)(Sfio_t*,const char*,int,void*),void* context)
++void fcnotify(void (*fun)(Sfio_t*,const char*,ptrdiff_t,void*),void* context)
+ {
+ 	_Fcin.fcfun = fun;
+ 	_Fcin.context = context;
+@@ -148,7 +148,7 @@ extern void fcrestore(Fcin_t *fp)
+ int _fcmbget(short *len)
+ {
+ 	int	c;
+-	switch(*len = mbsize(_Fcin.fcptr))
++	switch(*len = (short)mbsize(_Fcin.fcptr))
+ 	{
+ 	    case -1:
+ 		*len = 1;
+diff --git a/src/cmd/ksh93/sh/lex.c b/src/cmd/ksh93/sh/lex.c
+index 643fda58c..32d6d935c 100644
+--- a/src/cmd/ksh93/sh/lex.c
++++ b/src/cmd/ksh93/sh/lex.c
+@@ -73,7 +73,7 @@ static int		alias_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
+ static void		setupalias(Lex_t*,const char*, Namval_t*);
+ static int		comsub(Lex_t*,int);
+ static void		nested_here(Lex_t*);
+-static int		here_copy(Lex_t*, struct ionod*);
++static ptrdiff_t	here_copy(Lex_t*, struct ionod*);
+ static int 		stack_grow(void);
+ static const Sfdisc_t alias_disc = { NULL, NULL, NULL, alias_exceptf, NULL };
+ 
+@@ -93,7 +93,7 @@ static void refvar(Lex_t *lp, int type)
+ 	}
+ 	else
+ 	{
+-		int n,offset = stktell(sh.stk);
++		ptrdiff_t n,offset = stktell(sh.stk);
+ 		void *savptr;
+ 		char *begin;
+ 		off = offset + (fcseek(0)-(type+1)) - fcfirst();
+@@ -101,7 +101,7 @@ static void refvar(Lex_t *lp, int type)
+ 		{
+ 			/* variable starts on stack, copy remainder */
+ 			if(off>offset)
+-				sfwrite(sh.stk,fcfirst()+type,off-offset);
++				sfwrite(sh.stk,fcfirst()+type,(size_t)(off-offset));
+ 			n = stktell(sh.stk)-kia.offset;
+ 			begin = stkptr(sh.stk,kia.offset);
+ 		}
+@@ -123,23 +123,23 @@ static void refvar(Lex_t *lp, int type)
+  * This routine gets called when reading across a buffer boundary
+  * If lexd.nocopy is off, then current token is saved on the stack
+  */
+-static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
++static void lex_advance(Sfio_t *iop, const char *buff, ptrdiff_t size, void *context)
+ {
+ 	Lex_t		*lp = (Lex_t*)context;
+ 	/* write to history file and to stderr if necessary */
+ 	if(iop && !sfstacked(iop))
+ 	{
+ 		if(sh_isstate(SH_HISTORY) && sh.hist_ptr)
+-			sfwrite(sh.hist_ptr->histfp, buff, size);
++			sfwrite(sh.hist_ptr->histfp, buff, (size_t)size);
+ 		if(sh_isstate(SH_VERBOSE))
+-			sfwrite(sfstderr, buff, size);
++			sfwrite(sfstderr, buff, (size_t)size);
+ 	}
+ 	if(lp->lexd.nocopy)
+ 		return;
+ 	if(lp->lexd.dolparen && lp->lexd.docword && lp->lexd.docend)
+ 	{
+-		int n = size - (lp->lexd.docend-(char*)buff);
+-		sfwrite(sh.strbuf,lp->lexd.docend,n);
++		ptrdiff_t n = size - (lp->lexd.docend-(char*)buff);
++		sfwrite(sh.strbuf,lp->lexd.docend,(size_t)n);
+ 		lp->lexd.docextra  += n;
+ 		if(sffileno(iop)>=0)
+ 			lp->lexd.docend = sfsetbuf(iop,iop,0);
+@@ -148,7 +148,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
+ 	}
+ 	if(lp->lexd.first)
+ 	{
+-		size -= (lp->lexd.first-(char*)buff);
++		size -= lp->lexd.first-(char*)buff;
+ 		buff = lp->lexd.first;
+ 		if(!lp->lexd.inlexskip)
+ 			lp->arg = stkseek(sh.stk,ARGVAL);
+@@ -158,7 +158,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
+ 	}
+ 	if(size>0 && (lp->arg||lp->lexd.inlexskip))
+ 	{
+-		sfwrite(sh.stk,buff,size);
++		sfwrite(sh.stk,buff,(size_t)size);
+ 		lp->lexd.first = 0;
+ 	}
+ }
+@@ -172,7 +172,8 @@ static int lexfill(Lex_t *lp)
+ 	int c;
+ 	Lex_t savelex;
+ 	struct argnod *ap;
+-	int aok,docextra;
++	int docextra;
++	char aok;
+ 	savelex = *lp;
+ 	ap = lp->arg;
+ 	c = fcfill();
+@@ -249,10 +250,11 @@ int sh_lex(Lex_t *lp)
+ int sh_lex(Lex_t* lp)
+ {
+ 	const char	*state;
+-	int		n, c, mode=ST_BEGIN, wordflags=0;
++	ptrdiff_t	n;
++	int		c, mode=ST_BEGIN, wordflags=0;
+ 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
+ 	int		epatchar=0;
+-	int		varnametry = 0, varnamecount = 0, varnamelength = 0;
++	ptrdiff_t	varnametry = 0, varnamecount = 0, varnamelength = 0;
+ 	SETLEN(1);
+ 	if(lp->lexd.paren)
+ 	{
+@@ -402,7 +404,7 @@ int sh_lex(Lex_t* lp)
+ 						fcseek(1);
+ 				}
+ 				while(c=='#');
+-				lp->lexd.nocopy = n;
++				lp->lexd.nocopy = (char)n;
+ 				if(c<0)
+ 					return lp->token=EOFSYM;
+ 				n = S_NLTOK;
+@@ -632,9 +634,9 @@ int sh_lex(Lex_t* lp)
+ 						fcsopen((char*)state);
+ 					/* remove \new-line */
+ 					n = stktell(sh.stk)-c;
+-					stkseek(sh.stk,n);
++					stkseek(sh.stk,(ptrdiff_t)n);
+ 					lp->arg = ap;
+-					if(n<=ARGVAL)
++					if(n<=(ptrdiff_t)ARGVAL)
+ 					{
+ 						mode = 0;
+ 						lp->lexd.first = 0;
+@@ -809,7 +811,7 @@ int sh_lex(Lex_t* lp)
+ 				else if((n=endchar(lp))==c)
+ 				{
+ 					if(sh.inlineno > lp->lastline)
+-						lp->lex.last_quote = c;
++						lp->lex.last_quote = (char)c;
+ 					/*
+ 					 * At this point, we know that the previous skipping of characters was done
+ 					 * according to the ST_QUOTE state table. We also know that the character that
+@@ -848,7 +850,7 @@ int sh_lex(Lex_t* lp)
+ 				fcseek(-LEN);
+ 				n = lp->digits;
+ 				wordflags |= comsub(lp,c);
+-				lp->digits = n;
++				lp->digits = (int)n;
+ 				continue;
+ 			case S_RBRA:
+ 				if((n=endchar(lp)) == '$')
+@@ -882,7 +884,7 @@ int sh_lex(Lex_t* lp)
+ 					if(n>0)
+ 						fcseek(-LEN);
+ 				}
+-				if(isaletter(n) || n==LBRACT)
++				if(isaletter((wchar_t)n) || n==LBRACT)
+ 					continue;
+ 				if(mode==ST_NAME)
+ 				{
+@@ -993,7 +995,7 @@ int sh_lex(Lex_t* lp)
+ 						{
+ 							if(c!='%')
+ 							{
+-								lp->token = n;
++								lp->token = (int)n;
+ 								sh_syntax(lp,0);
+ 							}
+ 							else if(lp->lexd.warn)
+@@ -1285,11 +1287,11 @@ breakloop:
+ 	if(!lp->arg)
+ 		lp->arg = stkseek(sh.stk,ARGVAL);
+ 	if(n>0)
+-		sfwrite(sh.stk,state,n);
++		sfwrite(sh.stk,state,(size_t)n);
+ 	sfputc(sh.stk,0);
+ 	stkseek(sh.stk,stktell(sh.stk)-1);
+ 	state = stkptr(sh.stk,ARGVAL);
+-	n = stktell(sh.stk)-ARGVAL;
++	n = stktell(sh.stk)-(ptrdiff_t)ARGVAL;
+ 	lp->lexd.first=0;
+ 	if(n==1)
+ 	{
+@@ -1298,13 +1300,13 @@ breakloop:
+ 		if(!lp->lex.intest && (c=='<' || c=='>') && isadigit(n))
+ 		{
+ 			c = sh_lex(lp);
+-			lp->digits = (n-'0');
++			lp->digits = ((int)n-'0');
+ 			return c;
+ 		}
+ 		if(n==LBRACT)
+ 			c = 0;
+ 		else if(n==RBRACE && lp->comsub)
+-			return lp->token=n;
++			return lp->token=(int)n;
+ 		else if(n=='~')
+ 			c = ARG_MAC;
+ 		else
+@@ -1349,7 +1351,7 @@ breakloop:
+ 	else
+ 		lp->arg = endword(0);
+ 	state = lp->arg->argval;
+-	lp->comp_assign = assignment;
++	lp->comp_assign = (char)assignment;
+ 	if(assignment)
+ 	{
+ 		lp->arg->argflag |= ARG_ASSIGN;
+@@ -1402,7 +1404,7 @@ breakloop:
+ 			lp->token = ETESTSYM;
+ 			return lp->token;
+ 		}
+-		c = sh_lookup(state,shtab_testops);
++		c = (int)sh_lookup(state,shtab_testops);
+ 		switch(c)
+ 		{
+ 		case TEST_SEQ:
+@@ -1484,7 +1486,7 @@ breakloop:
+ 	if(!lp->lex.skipword)
+ 	{
+ 		if(n>1 && lp->lex.reservok==1 && mode==ST_NAME &&
+-			(c=sh_lookup(state,shtab_reserved)))
++			(c=(int)sh_lookup(state,shtab_reserved)))
+ 		{
+ 			if(lp->lex.incase)
+ 			{
+@@ -1566,15 +1568,17 @@ breakloop:
+  */
+ static int comsub(Lex_t *lp, int endtok)
+ {
+-	int n,c;
++	ptrdiff_t n;
++	int c;
+ 	unsigned short count=1;
+ 	int line=sh.inlineno;
+ 	struct ionod *inheredoc = lp->heredoc;
+ 	char save_arithexp = lp->lexd.dolparen_arithexp;
+ 	char *first,*cp=fcseek(0),word[5];
+-	int off, messages=0, assignok=lp->assignok, csub;
++	int messages=0;
++	char assignok=lp->assignok, csub=lp->comsub;
++	ptrdiff_t off;
+ 	struct _shlex_pvt_lexstate_ save = lp->lex;
+-	csub = lp->comsub;
+ 	sh_lexopen(lp,1);
+ 	lp->lexd.dolparen++;
+ 	lp->lexd.dolparen_arithexp = endtok==LPAREN && fcpeek(1)==LPAREN;  /* $(( */
+@@ -1589,7 +1593,7 @@ static int comsub(Lex_t *lp, int endtok)
+ 		c=*cp, *cp=0;
+ 	n = sh_lex(lp);
+ 	if(off<0)
+-		*cp = c;
++		*cp = (char)c;
+ 	if(n==endtok || off<0)
+ 	{
+ 		if(endtok==LPAREN && lp->lexd.paren)
+@@ -1624,7 +1628,7 @@ static int comsub(Lex_t *lp, int endtok)
+ 					}
+ 					goto skip;
+ 				}
+-				word[n++] = c;
++				word[n++] = (char)c;
+ 			}
+ 			if(sh_lexstates[ST_NAME][c]==S_BREAK)
+ 			{
+@@ -1724,14 +1728,15 @@ done:
+ static void nested_here(Lex_t *lp)
+ {
+ 	struct ionod	*iop;
+-	int		n=0,offset;
++	size_t		n=0;
++	ptrdiff_t	offset;
+ 	struct argnod	*arg = lp->arg;
+ 	char		*base;
+ 	if(offset=stktell(sh.stk))
+ 		base = stkfreeze(sh.stk,0);
+ 	if(lp->lexd.docend)
+-		n = fcseek(0)-lp->lexd.docend;
+-	iop = sh_newof(0,struct ionod,1,lp->lexd.docextra+n+ARGVAL);
++		n = (size_t)(fcseek(0)-lp->lexd.docend);
++	iop = sh_newof(0,struct ionod,1,(size_t)lp->lexd.docextra+n+ARGVAL);
+ 	iop->iolst = lp->heredoc;
+ 	stkseek(sh.stk,ARGVAL);
+ 	if(lp->lexd.docextra)
+@@ -1761,7 +1766,7 @@ static void nested_here(Lex_t *lp)
+  * if <copy> is non,zero, then the characters are copied to the stack
+  * <state> is the initial lexical state
+  */
+-void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
++void sh_lexskip(Lex_t *lp, char close, int copy, int state)
+ {
+ 	char	*cp;
+ 	lp->lexd.nest = close;
+@@ -1775,11 +1780,12 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+ 	lp->lexd.inlexskip = 0;
+ 	if(copy)
+ 	{
++		ptrdiff_t len;
+ 		fcnotify(0,lp);
+ 		if(!(cp=lp->lexd.first))
+ 			cp = fcfirst();
+-		if((copy = fcseek(0)-cp) > 0)
+-			sfwrite(sh.stk,cp,copy);
++		if((len = fcseek(0)-cp) > 0)
++			sfwrite(sh.stk,cp,(size_t)len);
+ 	}
+ 	else
+ 		lp->lexd.nocopy--;
+@@ -1789,21 +1795,21 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+     ssize_t _sfwrite(Sfio_t *sp, const void *buff, size_t n)
+     {
+ 	const char *cp = (const char*)buff, *next=cp, *ep = cp + n;
+-	int m=0,k;
+-	while(next = (const char*)memchr(next,'\r',ep-next))
++	ptrdiff_t m=0,k;
++	while(next = (const char*)memchr(next,'\r',(size_t)(ep-next)))
+ 		if(*++next=='\n')
+ 		{
+ 			if(k=next-cp-1)
+ 			{
+-				if((k=sfwrite(sp,cp,k)) < 0)
++				if((k=sfwrite(sp,cp,(size_t)k)) < 0)
+ 					return m>0?m:-1;
+ 				m += k;
+ 			}
+ 			cp = next;
+ 		}
+-	if((k=sfwrite(sp,cp,ep-cp)) < 0)
++	if((k=sfwrite(sp,cp,(size_t)(ep-cp))) < 0)
+ 		return m>0?m:-1;
+-	return m+k;
++	return (ssize_t)(m+k);
+     }
+ #   define sfwrite	_sfwrite
+ #endif /* SHOPT_CRNL */
+@@ -1814,13 +1820,13 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+  * noted with the IOQUOTE flag
+  * returns 1 for complete here-doc, 0 for EOF
+  */
+-static int here_copy(Lex_t *lp,struct ionod *iop)
++static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
+ {
+ 	const char	*state;
+-	int		c,n;
++	ptrdiff_t	c,n, nsave;
+ 	char		*bufp,*cp;
+ 	Sfio_t		*sp=sh.heredocs;
+-	int		stripcol=0,stripflg, nsave, special=0;
++	int		stripcol=0,stripflg, special=0;
+ 	if(iop->iolst)
+ 		here_copy(lp,iop->iolst);
+ 	iop->iooffset = sfseek(sp,0,SEEK_END);
+@@ -1864,7 +1870,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 				if(mbsize(fcseek(0)) < 0 && fcleft() < MB_LEN_MAX)
+ 				{
+ 					n = S_EOF;
+-					SETLEN(-fcleft());
++					SETLEN((short)-fcleft());
+ 					break;
+ 				}
+ 			}
+@@ -1880,7 +1886,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 			{
+ 				if(n==S_ESC)
+ 					c--;
+-				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,c))>0)
++				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,(size_t)c))>0)
+ 					iop->iosize += c;
+ 			}
+ 			if(LEN==0)
+@@ -1889,7 +1895,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 			{
+ 				n = LEN;
+ 				c = fcmbget(&LEN);
+-				SETLEN(LEN + n);
++				SETLEN(LEN + (short)n);
+ 			}
+ 			else
+ 				c = lexfill(lp);
+@@ -1924,8 +1930,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 				if(!lp->lexd.dolparen)
+ 				{
+ 					/* write out line */
+-					n = fcseek(0)-bufp;
+-					if((n=sfwrite(sp,bufp,n))>0)
++					if((n=sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
+ 						iop->iosize += n;
+ 				}
+ 				/* skip over tabs */
+@@ -1960,7 +1965,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 				{
+ 					if(!lp->lexd.dolparen && (c=cp-bufp))
+ 					{
+-						if((c=sfwrite(sp,cp=bufp,c))>0)
++						if((c=sfwrite(sp,cp=bufp,(size_t)c))>0)
+ 							iop->iosize+=c;
+ 					}
+ 					nsave = n;
+@@ -1984,7 +1989,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 				{
+ 					if(!lp->lexd.dolparen && (n=cp-bufp))
+ 					{
+-						if((n=sfwrite(sp,bufp,n))>0)
++						if((n=sfwrite(sp,bufp,(size_t)n))>0)
+ 							iop->iosize += n;
+ 					}
+ 					sh.inlineno--;
+@@ -2002,7 +2007,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 					 */
+ 					if(!lp->lexd.dolparen && nsave>0)
+ 					{
+-						if((n=sfwrite(sp,iop->iodelim,nsave))>0)
++						if((n=sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
+ 							iop->iosize += n;
+ 						bufp = fcfirst();
+ 					}
+@@ -2035,7 +2040,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 				sh.inlineno++;
+ 				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
+ 				{
+-					if(n && (n=sfwrite(sp,bufp,n))>0)
++					if(n && (n=sfwrite(sp,bufp,(size_t)n))>0)
+ 						iop->iosize += n;
+ 					bufp = fcseek(0)+1;
+ 				}
+@@ -2073,7 +2078,7 @@ static char	*fmttoken(Lex_t *lp, int sym)
+ 	if(sym&SYMRES)
+ 	{
+ 		const Shtable_t *tp=shtab_reserved;
+-		while(tp->sh_number && tp->sh_number!=sym)
++		while(tp->sh_number && (int)tp->sh_number!=sym)
+ 			tp++;
+ 		return (char*)tp->sh_name;
+ 	}
+@@ -2165,9 +2170,9 @@ noreturn void sh_syntax(Lex_t *lp, int special)
+ static unsigned char *stack_shift(unsigned char *sp, unsigned char *dp)
+ {
+ 	unsigned char *ep;
+-	int offset = stktell(sh.stk);
+-	int left = offset - (sp - (unsigned char*)stkptr(sh.stk, 0));
+-	int shift = (dp+1-sp);
++	ptrdiff_t offset = stktell(sh.stk);
++	ptrdiff_t left = offset - (sp - (unsigned char*)stkptr(sh.stk, 0));
++	ptrdiff_t shift = (dp+1-sp);
+ 	offset += shift;
+ 	stkseek(sh.stk,offset);
+ 	sp = (unsigned char*)stkptr(sh.stk,offset);
+@@ -2190,7 +2195,8 @@ static struct argnod *endword(int mode)
+ 	const char *const state = sh_lexstates[ST_NESTED];
+ 	unsigned char *sp, *dp, *ep=0, *xp=0;	/* must be unsigned: pointed-to values used as index to 256-byte state table */
+ 	int inquote=0, inlit=0;			/* set within quoted strings */
+-	int n, bracket=0;
++	int bracket=0;
++	ptrdiff_t n;
+ 	sfputc(sh.stk,0);
+ 	sp =  (unsigned char*)stkptr(sh.stk,ARGVAL);
+ 	if(mbwide())
+@@ -2277,7 +2283,7 @@ static struct argnod *endword(int mode)
+ 					}
+ 					*--dp = 0;
+ 					msg = ERROR_translate(0,error_info.id,0,ep);
+-					n = strlen(msg);
++					n = (ptrdiff_t)strlen(msg);
+ 					dp = ep+n;
+ 					if(sp-dp <= 1)
+ 					{
+@@ -2285,7 +2291,7 @@ static struct argnod *endword(int mode)
+ 						dp = sp-1;
+ 						ep = dp-n;
+ 					}
+-					memmove(ep,msg,n);
++					memmove(ep,msg,(size_t)n);
+ 					*dp++ = '"';
+ 				}
+ 				ep = 0;
+@@ -2345,7 +2351,7 @@ static struct argnod *endword(int mode)
+ 				if(n=='\n')
+ 					dp--;
+ 				else
+-					dp[-1] = n;
++					dp[-1] = (unsigned char)n;
+ 				sp++;
+ 			}
+ 			break;
+@@ -2465,9 +2471,9 @@ static int alias_exceptf(Sfio_t *iop,int type,void *data, Sfdisc_t *handle)
+ 	{
+ 		/* if last character is a blank, then next word can be an alias */
+ 		int c = fcpeek(-1);
+-		if(isblank(c))
++		if(isblank((wint_t)c))
+ 			lp->aliasok = 1;
+-		*ap->buf = ap->nextc;
++		*ap->buf = (char)ap->nextc;
+ 		ap->nextc = 0;
+ 		sfsetbuf(iop,ap->buf,1);
+ 		return 1;
+@@ -2518,6 +2524,6 @@ static void setupalias(Lex_t *lp, const char *string,Namval_t *np)
+ static int stack_grow(void)
+ {
+ 	lex_max += STACK_ARRAY;
+-	lex_match = sh_realloc(lex_match,sizeof(int)*lex_max);
++	lex_match = sh_realloc(lex_match,sizeof(int)*(size_t)lex_max);
+ 	return 1;
+ }
+diff --git a/src/cmd/ksh93/sh/parse.c b/src/cmd/ksh93/sh/parse.c
+index a78992d53..363858df5 100644
+--- a/src/cmd/ksh93/sh/parse.c
++++ b/src/cmd/ksh93/sh/parse.c
+@@ -79,8 +79,9 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
+ {
+ 	struct argnod *argp = arglist;
+ 	char *cp;
+-	int n,eline;
+-	int width=0;
++	int eline;
++	size_t width=0;
++	ptrdiff_t n;
+ 	unsigned long r=0;
+ 	static char atbuff[20];
+ 	int  justify=0;
+@@ -114,11 +115,11 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
+ 			while((n= *++cp))
+ 			{
+ 				if(isdigit(n))
+-					width = 10*width + n-'0';
++					width = 10*width + (size_t)n-'0';
+ 				else if(n=='L' || n=='R' || n =='Z')
+-					justify=n;
++					justify = (int)n;
+ 				else
+-					*attribute++ = n;
++					*attribute++ = (char)n;
+ 			}
+ 		}
+ 	}
+@@ -130,7 +131,7 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
+ 		if((cp=strchr(argp->argval,'='))||(cp=strchr(argp->argval,'?')))
+ 			n = cp-argp->argval;
+ 		else
+-			n = strlen(argp->argval);
++			n = (ptrdiff_t)strlen(argp->argval);
+ 		eline = sh.inlineno-(lexp->token==NL);
+ 		r=kiaentity(lexp,argp->argval,n,type,line,eline,parent,justify,width,atbuff);
+ 		sfprintf(kia.tmp,"p;%..64d;v;%..64d;%d;%d;s;\n",kia.current,r,line,eline);
+@@ -396,7 +397,7 @@ void	*sh_parse(Sfio_t *iop, int flag)
+ 	Lex_t		*lexp = (Lex_t*)sh.lex_context;
+ 	Fcin_t		sav_input;
+ 	struct argnod	*sav_arg = lexp->arg;
+-	int		sav_prompt = sh.nextprompt;
++	short		sav_prompt = sh.nextprompt;
+ 	if(sh.binscript && (sffileno(iop)==sh.infd || (flag&SH_FUNEVAL)))
+ 		return sh_trestore(iop);
+ 	fcsave(&sav_input);
+@@ -738,7 +739,7 @@ static struct regnod*	syncase(Lex_t *lexp,int esym)
+ static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
+ {
+ 	Shnode_t	*t, *tw = tf;
+-	int		offset;
++	ptrdiff_t	offset;
+ 	struct argnod	*argp;
+ 	int		n;
+ 	int		argflag = lexp->arg->argflag;
+@@ -762,7 +763,7 @@ static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
+ 		if(!lexp->token)
+ 			break;
+ 		/* remove trailing white space */
+-		while(offset>ARGVAL && ((c= *stkptr(sh.stk,offset-1)),isspace(c)))
++		while(offset>(signed)ARGVAL && ((c= *stkptr(sh.stk,offset-1)),isspace(c)))
+ 			offset--;
+ 		/* check for empty initialization expression */
+ 		if(offset==ARGVAL && n==0)
+@@ -778,7 +779,7 @@ static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
+ 		else
+ 			tw->wh.whtre = t;
+ 	}
+-	while((offset=fcpeek(0)) && isspace(offset))
++	while((offset=fcpeek(0)) && isspace((int)offset))
+ 		fcseek(1);
+ 	sfputr(sh.stk,fcseek(0),-1);
+ 	argp = stkfreeze(sh.stk,1);
+@@ -819,7 +820,9 @@ static Shnode_t *funct(Lex_t *lexp)
+ #if SHOPT_KIA
+ 	unsigned long current = kia.current;
+ #endif /* SHOPT_KIA */
+-	int nargs=0,size=0,jmpval;
++	size_t nargs=0;
++	size_t size=0;
++	int jmpval;
+ 	struct  checkpt buff;
+ 	int save_optget = opt_get;
+ 	void	*in_mktype = sh.mktype;
+@@ -867,7 +870,7 @@ static Shnode_t *funct(Lex_t *lexp)
+ 			}
+ 			if(c)
+ 				sh_syntax(lexp,2);
+-			nargs = argv-argv0;
++			nargs = (size_t)(argv-argv0);
+ 			size += sizeof(struct dolnod)+(nargs+ARG_SPARE)*sizeof(char*);
+ 			if(sh.shcomp && strncmp(".sh.math.",t->funct.functnam,9)==0)
+ 			{
+@@ -875,7 +878,7 @@ static Shnode_t *funct(Lex_t *lexp)
+ 				Namval_t *np= nv_open(t->funct.functnam,sh.fun_tree,NV_ADD|NV_VARNAME);
+ 				rp = np->nvalue = new_of(struct Ufunction,sh.funload?sizeof(Dtlink_t):0);
+ 				memset(rp, 0, sizeof(struct Ufunction));
+-				rp->argc = ac->comarg.dp->dolnum;
++				rp->argc = (short)ac->comarg.dp->dolnum;
+ 			}
+ 		}
+ 		while(lexp->token==NL)
+@@ -997,25 +1000,26 @@ static int check_array(Lex_t *lexp)
+ static struct argnod *assign(Lex_t *lexp, struct argnod *ap, int type)
+ {
+ 	int n;
++	size_t len;
+ 	Shnode_t *t, **tp;
+ 	struct comnod *ac = NULL;
+ 	int array=0, index=0;
+ 	Namval_t *np;
+ 	lexp->assignlevel++;
+-	n = strlen(ap->argval)-1;
+-	if(ap->argval[n]!='=')
++	len = strlen(ap->argval)-1;
++	if(ap->argval[len]!='=')
+ 		sh_syntax(lexp,0);
+-	if(ap->argval[n-1]=='+')
++	if(ap->argval[len-1]=='+')
+ 	{
+-		ap->argval[n--]=0;
++		ap->argval[len--]=0;
+ 		array = ARG_APPEND;
+ 		type |= NV_APPEND;
+ 	}
+ 	/* shift right */
+-	while(n > 0)
++	while(len > 0)
+ 	{
+-		ap->argval[n] = ap->argval[n-1];
+-		n--;
++		ap->argval[len] = ap->argval[len-1];
++		len--;
+ 	}
+ 	*ap->argval=0;
+ 	t = getnode(fornod);
+@@ -1196,7 +1200,8 @@ static Shnode_t	*item(Lex_t *lexp,int flag)
+ 	int tok = (lexp->token&0xff);
+ 	int savwdval = lexp->lasttok;
+ 	int savline = lexp->lastline;
+-	int showme=0, comsub;
++	int showme=0;
++	char comsub;
+ 	if(!(flag&SH_NOIO) && (tok=='<' || tok=='>' || lexp->token==IOVNAME))
+ 		io=inout(lexp,NULL,1);
+ 	else
+@@ -1424,7 +1429,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
+ 	int		was_assign = 0;
+ 	int		argno = 0;
+ 	int		assignment = 0;
+-	int		key_on = (!(flag&SH_NOIO) && sh_isoption(SH_KEYWORD));
++	char		key_on = (!(flag&SH_NOIO) && sh_isoption(SH_KEYWORD));
+ 	int		associative=0;
+ 	if((argp=lexp->arg) && (argp->argflag&ARG_ASSIGN) && argp->argval[0]=='[')
+ 	{
+@@ -1462,7 +1467,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
+ 				if(assignment==1)
+ 				{
+ 					stkseek(sh.stk,ARGVAL);
+-					sfwrite(sh.stk,argp->argval,lexp->varnamelength);
++					sfwrite(sh.stk,argp->argval,(size_t)lexp->varnamelength);
+ 					ap = stkfreeze(sh.stk,1);
+ 					ap->argflag = ARG_RAW;
+ 					ap->argchn.ap = 0;
+@@ -1530,7 +1535,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
+ 		{
+ 			if(argp->argflag&ARG_ASSIGN)
+ 			{
+-				int intypeset = lexp->intypeset;
++				char intypeset = lexp->intypeset;
+ 				lexp->intypeset = 0;
+ 				if(t->comnamp == SYSCOMPOUND)
+ 					type = NV_COMVAR;
+@@ -1774,7 +1779,7 @@ static struct ionod	*inout(Lex_t *lexp,struct ionod *lastio,int flag)
+ 		if(lexp->arg->argflag&ARG_RAW)
+ 			iof |= IORAW;
+ 	}
+-	iop->iofile=iof;
++	iop->iofile=(unsigned)iof;
+ 	if(flag>0)
+ 		/* allow alias substitutions and parameter assignments */
+ 		lexp->aliasok = lexp->assignok = 1;
+@@ -1857,7 +1862,7 @@ static struct argnod *qscan(struct comnod *ac,int argn)
+ 			errormsg(SH_DICT,ERROR_warn(0),message,ac->comline);
+ 	}
+ 	/* leave space for an extra argument at the front */
+-	dp = stkalloc(sh.stk,(unsigned)sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + argn*sizeof(char*));
++	dp = stkalloc(sh.stk,sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + (size_t)argn*sizeof(char*));
+ 	cp = dp->dolval+ARG_SPARE;
+ 	dp->dolnum = argn;
+ 	dp->dolbot = ARG_SPARE;
+@@ -2032,13 +2037,13 @@ static Shnode_t *test_primary(Lex_t *lexp)
+  * return an entity checksum
+  * The entity is created if it doesn't exist
+  */
+-unsigned long kiaentity(Lex_t *lexp,const char *name,int len,int type,int first,int last,unsigned long parent, int pkind, int width, const char *attr)
++unsigned long kiaentity(Lex_t *lexp,const char *name,ptrdiff_t len,int type,int first,int last,unsigned long parent, int pkind, size_t width, const char *attr)
+ {
+ 	Namval_t *np;
+-	long offset = stktell(sh.stk);
++	ptrdiff_t offset = stktell(sh.stk);
+ 	sfputc(sh.stk,type);
+ 	if(len>0)
+-		sfwrite(sh.stk,name,len);
++		sfwrite(sh.stk,name,(size_t)len);
+ 	else
+ 	{
+ 		if(type=='p')
+@@ -2058,9 +2063,9 @@ unsigned long kiaentity(Lex_t *lexp,const char *name,int len,int type,int first,
+ 		if(!pkind)
+ 			pkind = '0';
+ 		if(len>0)
+-			sfprintf(kia.file,"%..64d;%c;%.*s;%d;%d;%..64d;%..64d;%c;%d;%s\n",np->hash,type,len,name,first,last,parent,kia.fscript,pkind,width,attr);
++			sfprintf(kia.file,"%..64d;%c;%.*s;%d;%d;%..64d;%..64d;%c;%zu;%s\n",np->hash,type,len,name,first,last,parent,kia.fscript,pkind,width,attr);
+ 		else
+-			sfprintf(kia.file,"%..64d;%c;%s;%d;%d;%..64d;%..64d;%c;%d;%s\n",np->hash,type,name,first,last,parent,kia.fscript,pkind,width,attr);
++			sfprintf(kia.file,"%..64d;%c;%s;%d;%d;%..64d;%..64d;%c;%zu;%s\n",np->hash,type,name,first,last,parent,kia.fscript,pkind,width,attr);
+ 	}
+ 	return np->hash;
+ }
+@@ -2076,25 +2081,25 @@ static void kia_add(Namval_t *np, void *data)
+ 
+ int kiaclose(Lex_t *lexp)
+ {
+-	off_t off1,off2;
+-	int n;
++	Sflong_t off1,off2;
++	ptrdiff_t n;
+ 	if(kia.file)
+ 	{
+ 		unsigned long r = kiaentity(lexp,kia.scriptname,-1,'p',-1,sh.inlineno-1,0,'s',0,"");
+ 		kiaentity(lexp,kia.scriptname,-1,'p',1,sh.inlineno-1,r,'s',0,"");
+ 		kiaentity(lexp,kia.scriptname,-1,'f',1,sh.inlineno-1,r,'s',0,"");
+ 		nv_scan(kia.entity_tree,kia_add,lexp,NV_TAGGED,0);
+-		off1 = sfseek(kia.file,0,SEEK_END);
++		off1 = (Sflong_t)sfseek(kia.file,0,SEEK_END);
+ 		sfseek(kia.tmp,0,SEEK_SET);
+ 		sfmove(kia.tmp,kia.file,SFIO_UNBOUND,-1);
+-		off2 = sfseek(kia.file,0,SEEK_END);
++		off2 = (Sflong_t)sfseek(kia.file,0,SEEK_END);
+ 		if(off2==off1)
+-			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%zu\nDIRECTORY;",(Sflong_t)kia.begin,(size_t)(off1-kia.begin));
++			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin);
+ 		else
+-			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%zu\nRELATIONSHIP;%jd;%zu\nDIRECTORY;",(Sflong_t)kia.begin,(size_t)(off1-kia.begin),(Sflong_t)off1,(size_t)(off2-off1));
++			n= sfprintf(kia.file,"DIRECTORY\nENTITY;%jd;%jd\nRELATIONSHIP;%jd;%jd\nDIRECTORY;",(Sflong_t)kia.begin,off1-(Sflong_t)kia.begin,off1,off2-off1);
+ 		if(off2 >= INT_MAX)
+ 			off2 = -(n+12);
+-		sfprintf(kia.file,"%010.10jd;%010d\n",(Sflong_t)off2+10, n+12);
++		sfprintf(kia.file,"%010.10jd;%010zd\n",off2+10, n+12);
+ 	}
+ 	return sfclose(kia.file);
+ }
+diff --git a/src/cmd/ksh93/sh/subshell.c b/src/cmd/ksh93/sh/subshell.c
+index 0b51ee470..6821cd5a5 100644
+--- a/src/cmd/ksh93/sh/subshell.c
++++ b/src/cmd/ksh93/sh/subshell.c
+@@ -320,7 +320,8 @@ static void nv_restore(struct subshell *sp)
+ 	struct Link	*lp, *lq;
+ 	Namval_t	*mp, *np;
+ 	Namval_t	*mpnext;
+-	int		flags,nofree;
++	int		flags;
++	char		nofree;
+ 	sh.nv_restore = 1;
+ 	for(lp=sp->svar; lp; lp=lq)
+ 	{
+@@ -492,7 +493,7 @@ int sh_validate_subpwdfd(void)
+  * If comsub is not null, the return value will be a stream consisting of
+  * output of command <t>.  Otherwise, NULL will be returned.
+  */
+-Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
++Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
+ {
+ 	struct subshell sub_data;
+ 	struct subshell *sp = &sub_data;
+@@ -595,7 +596,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+ 		sh.st.otrap = savst.trap;
+ 		if((nsig=sh.st.trapmax)>0 || sh.st.trapcom[0])
+ 		{
+-			savsig = sh_malloc(nsig * sizeof(char*));
++			savsig = sh_malloc((size_t)nsig * sizeof(char*));
+ 			/*
+ 			 * the data is, usually, modified in code like:
+ 			 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
+@@ -718,7 +719,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+ 		{
+ 			if(sh.spid)
+ 			{
+-				int e = sh.exitval, c = sh.chldexitsig;
++				int e = sh.exitval;
++				char c = sh.chldexitsig;
+ 				job_wait(sh.spid);
+ 				sh.exitval = e, sh.chldexitsig = c;
+ 				if(sh.pipepid==sh.spid)
+@@ -835,7 +837,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+ 		n = sh.st.trapmax-savst.trapmax;
+ 		sh_sigreset(1);
+ 		if(n>0)
+-			memset(&sh.st.trapcom[savst.trapmax],0,n*sizeof(char*));
++			memset(&sh.st.trapcom[savst.trapmax],0,(size_t)n*sizeof(char*));
+ 		sh.st = savst;
+ 		sh.st.otrap = 0;
+ 		if(nsig)
+@@ -843,7 +845,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+ 			for (isig = 0; isig < nsig; ++isig)
+ 				if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
+ 					free(sh.st.trapcom[isig]);
+-			memcpy((char*)&sh.st.trapcom[0],savsig,nsig*sizeof(char*));
++			memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));
+ 			free(savsig);
+ 		}
+ 		sh.options = sp->options;
+diff --git a/src/cmd/ksh93/sh/tdump.c b/src/cmd/ksh93/sh/tdump.c
+index 19da2f796..19c5c7ed0 100644
+--- a/src/cmd/ksh93/sh/tdump.c
++++ b/src/cmd/ksh93/sh/tdump.c
+@@ -29,17 +29,17 @@
+ #include	"path.h"
+ #include	"io.h"
+ 
+-static int p_comlist(const struct dolnod*);
+-static int p_arg(const struct argnod*);
+-static int p_comarg(const struct comnod*);
+-static int p_redirect(const struct ionod*);
+-static int p_switch(const struct regnod*);
+-static int p_tree(const Shnode_t*);
+-static int p_string(const char*);
++static ptrdiff_t p_comlist(const struct dolnod*);
++static ptrdiff_t p_arg(const struct argnod*);
++static ptrdiff_t p_comarg(const struct comnod*);
++static ptrdiff_t p_redirect(const struct ionod*);
++static ptrdiff_t p_switch(const struct regnod*);
++static ptrdiff_t p_tree(const Shnode_t*);
++static ssize_t   p_string(const char*);
+ 
+ static Sfio_t *outfile;
+ 
+-int sh_tdump(Sfio_t *out, const Shnode_t *t)
++ptrdiff_t sh_tdump(Sfio_t *out, const Shnode_t *t)
+ {
+ 	outfile = out;
+ 	return p_tree(t);
+@@ -48,7 +48,7 @@ int sh_tdump(Sfio_t *out, const Shnode_t *t)
+ /*
+  * print script corresponding to shell tree <t>
+  */
+-static int p_tree(const Shnode_t *t)
++static ptrdiff_t p_tree(const Shnode_t *t)
+ {
+ 	if(!t)
+ 		return sfputl(outfile,-1);
+@@ -135,9 +135,9 @@ static int p_tree(const Shnode_t *t)
+ 	return -1;
+ }
+ 
+-static int p_arg(const struct argnod *arg)
++static ptrdiff_t p_arg(const struct argnod *arg)
+ {
+-	int n;
++	size_t n;
+ 	struct fornod *fp;
+ 	while(arg)
+ 	{
+@@ -169,7 +169,7 @@ static int p_arg(const struct argnod *arg)
+ 	return sfputu(outfile,0);
+ }
+ 
+-static int p_redirect(const struct ionod *iop)
++static ptrdiff_t p_redirect(const struct ionod *iop)
+ {
+ 	while(iop)
+ 	{
+@@ -197,7 +197,7 @@ static int p_redirect(const struct ionod *iop)
+ 	return sfputl(outfile,-1);
+ }
+ 
+-static int p_comarg(const struct comnod *com)
++static ptrdiff_t p_comarg(const struct comnod *com)
+ {
+ 	p_redirect(com->comio);
+ 	p_arg(com->comset);
+@@ -210,10 +210,10 @@ static int p_comarg(const struct comnod *com)
+ 	return sfputu(outfile,com->comline);
+ }
+ 
+-static int p_comlist(const struct dolnod *dol)
++static ptrdiff_t p_comlist(const struct dolnod *dol)
+ {
+ 	char *cp, *const*argv;
+-	int n;
++	ptrdiff_t n;
+ 	argv = dol->dolval+ARG_SPARE;
+ 	while(cp = *argv)
+ 		argv++;
+@@ -225,7 +225,7 @@ static int p_comlist(const struct dolnod *dol)
+ 	return sfputu(outfile,0);
+ }
+ 
+-static int p_switch(const struct regnod *reg)
++static ptrdiff_t p_switch(const struct regnod *reg)
+ {
+ 	while(reg)
+ 	{
+@@ -237,7 +237,7 @@ static int p_switch(const struct regnod *reg)
+ 	return sfputl(outfile,-1);
+ }
+ 
+-static int p_string(const char *string)
++static ssize_t p_string(const char *string)
+ {
+ 	size_t n=strlen(string);
+ 	if(sfputu(outfile,n+1)<0)
+diff --git a/src/cmd/ksh93/sh/timers.c b/src/cmd/ksh93/sh/timers.c
+index 26e96d854..35911f609 100644
+--- a/src/cmd/ksh93/sh/timers.c
++++ b/src/cmd/ksh93/sh/timers.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -200,7 +200,7 @@ void *sh_timeradd(Sfulong_t msec,int flags,void (*action)(void*),void *handle)
+ 		{
+ 			Handler_t *hp = (Handler_t*)sh_malloc(sizeof(Handler_t));
+ 			*hp = fn;
+-			sh_timeradd((Sflong_t)(1000*t), 0, oldalrm, hp);
++			sh_timeradd((Sfulong_t)(1000*t), 0, oldalrm, hp);
+ 		}
+ 		tp = tptop;
+ 	}
+diff --git a/src/cmd/ksh93/sh/trestore.c b/src/cmd/ksh93/sh/trestore.c
+index 8911b507e..aba4c84f5 100644
+--- a/src/cmd/ksh93/sh/trestore.c
++++ b/src/cmd/ksh93/sh/trestore.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -51,12 +51,12 @@ Shnode_t *sh_trestore(Sfio_t *in)
+  */
+ static Shnode_t *r_tree(void)
+ {
+-	long l = sfgetl(infile);
++	Sflong_t l = sfgetl(infile);
+ 	int type;
+ 	Shnode_t *t=0;
+ 	if(l<0)
+ 		return t;
+-	type = l;
++	type = (int)l;
+ 	switch(type&COMMSK)
+ 	{
+ 		case TTIME:
+@@ -72,7 +72,7 @@ static Shnode_t *r_tree(void)
+ 		case TSETIO:
+ 		case TFORK:
+ 			t = getnode(forknod);
+-			t->fork.forkline = sfgetu(infile);
++			t->fork.forkline = (int)sfgetu(infile);
+ 			t->fork.forktre = r_tree();
+ 			t->fork.forkio = r_redirect();
+ 			break;
+@@ -98,7 +98,7 @@ static Shnode_t *r_tree(void)
+ 			break;
+ 		case TARITH:
+ 			t = getnode(arithnod);
+-			t->ar.arline = sfgetu(infile);
++			t->ar.arline = (int)sfgetu(infile);
+ 			t->ar.arexpr = r_arg();
+ 			t->ar.arcomp = 0;
+ 			if((t->ar.arexpr)->argflag&ARG_RAW)
+@@ -108,7 +108,7 @@ static Shnode_t *r_tree(void)
+ 			t = getnode(fornod);
+ 			t->for_.forline = 0;
+ 			if(type&FLINENO)
+-				t->for_.forline = sfgetu(infile);
++				t->for_.forline = (int)sfgetu(infile);
+ 			t->for_.fortre = r_tree();
+ 			t->for_.fornam = r_string();
+ 			t->for_.forlst = (struct comnod*)r_tree();
+@@ -117,7 +117,7 @@ static Shnode_t *r_tree(void)
+ 			t = getnode(swnod);
+ 			t->sw.swline = 0;
+ 			if(type&FLINENO)
+-				t->sw.swline = sfgetu(infile);
++				t->sw.swline = (int)sfgetu(infile);
+ 			t->sw.swarg = r_arg();
+ 			if(type&COMSCAN)
+ 				t->sw.swio = r_redirect();
+@@ -131,7 +131,7 @@ static Shnode_t *r_tree(void)
+ 			struct slnod *slp;
+ 			struct functnod *fp;
+ 			t = getnode(functnod);
+-			t->funct.functline = sfgetu(infile);
++			t->funct.functline = (int)sfgetu(infile);
+ 			t->funct.functnam = r_string();
+ 			savstak = sh.stk;
+ 			sh.stk = stkopen(STK_SMALL);
+@@ -154,7 +154,7 @@ static Shnode_t *r_tree(void)
+ 		}
+ 		case TTST:
+ 			t = getnode(tstnod);
+-			t->tst.tstline = sfgetu(infile);
++			t->tst.tstline = (int)sfgetu(infile);
+ 			if((type&TPAREN)==TPAREN)
+ 				t->lst.lstlef = r_tree();
+ 			else
+@@ -172,11 +172,11 @@ static Shnode_t *r_tree(void)
+ static struct argnod *r_arg(void)
+ {
+ 	struct argnod	*ap=0, *apold, *aptop=0;
+-	long		l;
++	Sfulong_t	l;
+ 	Stk_t		*stkp=sh.stk;
+ 	while((l=sfgetu(infile))>0)
+ 	{
+-		ap = stkseek(stkp,(unsigned)l+ARGVAL);
++		ap = stkseek(stkp,(ptrdiff_t)l+(ptrdiff_t)ARGVAL);
+ 		if(!aptop)
+ 			aptop = ap;
+ 		else
+@@ -192,7 +192,7 @@ static struct argnod *r_arg(void)
+ 		else if(*ap->argval==0 && (ap->argflag&~(ARG_APPEND|ARG_MESSAGE|ARG_QUOTED|ARG_ARRAY))==0)
+ 		{
+ 			struct fornod *fp = (struct fornod*)getnode(fornod);
+-			fp->fortyp = sfgetu(infile);
++			fp->fortyp = (int)sfgetu(infile);
+ 			fp->fortre = r_tree();
+ 			fp->fornam = ap->argval+1;
+ 			ap->argchn.ap = (struct argnod*)fp;
+@@ -206,7 +206,7 @@ static struct argnod *r_arg(void)
+ 
+ static struct ionod *r_redirect(void)
+ {
+-	long l;
++	Sflong_t l;
+ 	struct ionod *iop=0, *iopold, *ioptop=0;
+ 	while((l=sfgetl(infile))>=0)
+ 	{
+@@ -215,14 +215,14 @@ static struct ionod *r_redirect(void)
+ 			ioptop = iop;
+ 		else
+ 			iopold->ionxt = iop;
+-		iop->iofile = l;
++		iop->iofile = (unsigned int)l;
+ 		if((l & IOPROCSUB) && !(l & IOLSEEK))
+ 			iop->ioname = (char*)r_tree();	/* process substitution as file name to redirection */
+ 		else
+ 			iop->ioname = r_string();	/* file name, descriptor, etc. */
+ 		if(iop->iodelim = r_string())
+ 		{
+-			iop->iosize = sfgetl(infile);
++			iop->iosize = (ptrdiff_t)sfgetl(infile);
+ 			if(sh.heredocs)
+ 				iop->iooffset = sfseek(sh.heredocs,0,SEEK_END);
+ 			else
+@@ -258,7 +258,7 @@ static void r_comarg(struct comnod *com)
+ 	}
+ 	else if(com->comarg.dp = r_comlist())
+ 		cmdname = com->comarg.dp->dolval[ARG_SPARE];
+-	com->comline = sfgetu(infile);
++	com->comline = (int)sfgetu(infile);
+ 	com->comnamq = 0;
+ 	if(cmdname)
+ 	{
+@@ -278,12 +278,12 @@ static void r_comarg(struct comnod *com)
+ static struct dolnod *r_comlist(void)
+ {
+ 	struct dolnod *dol=0;
+-	long l;
++	Sflong_t l;
+ 	char **argv;
+ 	if((l=sfgetl(infile))>0)
+ 	{
+-		dol = stkalloc(sh.stk,sizeof(struct dolnod) + sizeof(char*)*(l+ARG_SPARE));
+-		dol->dolnum = l;
++		dol = stkalloc(sh.stk,sizeof(struct dolnod) + sizeof(char*)*((size_t)l+ARG_SPARE));
++		dol->dolnum = (int)l;
+ 		dol->dolbot = ARG_SPARE;
+ 		argv = dol->dolval+ARG_SPARE;
+ 		while(*argv++ = r_string());
+@@ -293,7 +293,7 @@ static struct dolnod *r_comlist(void)
+ 
+ static struct regnod *r_switch(void)
+ {
+-	long l;
++	Sflong_t l;
+ 	struct regnod *reg=0,*regold,*regtop=0;
+ 	while((l=sfgetl(infile))>=0)
+ 	{
+@@ -315,12 +315,12 @@ static struct regnod *r_switch(void)
+ static char *r_string(void)
+ {
+ 	Sfio_t *in = infile;
+-	unsigned long l = sfgetu(in);
++	size_t l = (size_t)sfgetu(in);
+ 	char *ptr;
+ 	if(l == 0)
+ 		return NULL;
+-	ptr = stkalloc(sh.stk,(unsigned)l);
+-	if(--l > 0 && sfread(in,ptr,(size_t)l) != (size_t)l)
++	ptr = stkalloc(sh.stk,l);
++	if(--l > 0 && (size_t)sfread(in,ptr,l) != l)
+ 		return NULL;
+ 	ptr[l] = 0;
+ 	return ptr;
+-- 
+2.49.0
+
