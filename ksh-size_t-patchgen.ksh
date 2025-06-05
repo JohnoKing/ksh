@@ -54,7 +54,7 @@ following clang compiler flags are passed:
 Originally, this patch was going to take the suggested approach of
 replacing int with ssize_t. While that does work in practice, it\'s
 a bad idea because POSIX does not guarantee ssize_t will accept
-any negative value besides -1, despite its signed nature:
+any negative value besides -1, despite its signed nature[1]:
     > The type ssize_t shall be capable of storing values at least
     > in the range [-1, {SSIZE_MAX}].
 As such, for correctness and portability these patches will prefer
@@ -101,6 +101,8 @@ Side note: To re-emphasize, this patch is one part of a whole
 changes can be found on the thickfold-size_t branch.
 This first part has been submitted severed from the other
 changes to make code review less laborious (I hope).
+
+[1]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_types.h.html#tag_14_70
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -149,9 +151,14 @@ The parts of ksh93 affected by this commit are:
   changes.
   - Nearly all of the code is de novo, though towards the latter end
     of development I used graphviz commits for cross-reference:
-    - https://gitlab.com/graphviz/graphviz/-/commit/6451a669    
+    - https://gitlab.com/graphviz/graphviz/-/commit/6451a669
     - https://gitlab.com/graphviz/graphviz/-/commit/153a8f87
-    - https://gitlab.com/graphviz/graphviz/-/commit/cb9b35d1
+    - Improved multibyte handling in sfvscanf via use of
+      unsigned char*; ported from graphviz:
+      https://gitlab.com/graphviz/graphviz/-/commit/cb9b35d1
+      (I\'m aware this function is unused, but after some manual
+      testing it works well AFAICT. A bit odd that ksh93 never
+      uses it once.)
   - sfseek(): Removed a wasteful double assignment for f->iosz.
     This error was introduced in 2003-06-21 ksh93o+, and likely
     would have gone unnoticed if not for the thickfold project.
@@ -202,7 +209,7 @@ Change in the number of warnings on Linux when compiling with clang using
 Progresses https://github.com/ksh93/ksh/issues/592'
 
 
-fetch src/lib/libast/regex/                                                                                                                                                                                                                                             
+fetch src/lib/libast/regex/
 fetch src/lib/libast/string/
 fetch src/lib/libast/include/regex.h
 fetch src/lib/libast/include/swap.h
