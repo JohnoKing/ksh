@@ -1,6 +1,6 @@
-From 12bd3f81682d55b88c77263c6b6add45756501d5 Mon Sep 17 00:00:00 2001
+From 6b46552f95a1d6d371476b9e1b984ce68540190e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 4 Jun 2025 20:48:21 -0700
+Date: Sat, 7 Jun 2025 05:28:15 -0700
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -67,14 +67,14 @@ Fixes https://github.com/ksh93/ksh/issues/592
  19 files changed, 337 insertions(+), 304 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 87fccff76..fe4c78389 100644
+index 87fccff76..718190b0e 100644
 --- a/NEWS
 +++ b/NEWS
 @@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
  For full details, see the git log at: https://github.com/ksh93/ksh
  Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2025-06-04:
++2025-06-07:
 +
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +

@@ -1,6 +1,6 @@
-From 0ec94e233145671a7dcdcd604b886987202438ca Mon Sep 17 00:00:00 2001
+From 9c42d011ee698d58bc4a4238de7053d37e06963d Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 4 Jun 2025 20:48:17 -0700
+Date: Sat, 7 Jun 2025 05:28:11 -0700
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
 
 This is the first of a thirteen(!!) part patch series that enables
@@ -24,6 +24,7 @@ both 32-bit or both 64-bit. There are edge cases where this might
 not be so, but I've chosen to use ptrdiff_t despite that since
 the caveats of such edge cases aren't nearly as bad as that of
 a platform's ssize_t rejecting values lower than -1.
+[1]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_types.h.html#tag_14_70
 
 In some areas ssize_t results from e.g. sfvalue() may end up being
 used with ptrdiff_t variables. This is not pedantically correct,
@@ -60,8 +61,8 @@ Side note: To re-emphasize, this patch is one part of a whole
 changes can be found on the thickfold-size_t branch.
 This first part has been submitted severed from the other
 changes to make code review less laborious (I hope).
-
-[1]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_types.h.html#tag_14_70
+The full patch series can be found here:
+https://github.com/JohnoKing/ksh/tree/ad588c003d/patches
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -69,13 +70,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/defs.h  |  10 +-
  src/cmd/ksh93/include/shell.h |  22 +--
  src/cmd/ksh93/include/test.h  |   4 +-
- src/cmd/ksh93/sh/init.c       | 109 ++++++-----
- src/cmd/ksh93/sh/macro.c      | 359 ++++++++++++++++++----------------
+ src/cmd/ksh93/sh/init.c       | 109 +++++-----
+ src/cmd/ksh93/sh/macro.c      | 361 ++++++++++++++++++----------------
  src/cmd/ksh93/shell.3         |   6 +-
  src/lib/libast/include/stk.h  |   5 +-
  src/lib/libast/man/stk.3      |  12 +-
  src/lib/libast/misc/stk.c     |  56 +++---
- 10 files changed, 324 insertions(+), 295 deletions(-)
+ 10 files changed, 325 insertions(+), 296 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
 index 610b56d47..93552e0c6 100644
@@ -692,9 +693,18 @@ index 2eef7d0a0..aadcfd7e9 100644
  			stkseek(sh.stk,off);
  			c  = mbconv(stkptr(sh.stk,off),c);
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index 4c77dea20..ddb98b813 100644
+index 4c77dea20..02f765578 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
+@@ -49,7 +49,7 @@
+ #include	"streval.h"
+ 
+ #if _WINIX
+-    static int Skip;
++    static ptrdiff_t Skip;
+ #endif /* _WINIX */
+ 
+ static int	_c_;
 @@ -75,7 +75,7 @@ typedef struct  _mac_
  	char		arrayok;	/* $x[] ok for arrays */
  	char		subcopy;	/* set when copying subscript */

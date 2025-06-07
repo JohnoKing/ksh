@@ -1,6 +1,6 @@
-From 62113e4f773181c4a8c8dfdd23968eb1d3bca0a9 Mon Sep 17 00:00:00 2001
+From a45fcc2d706fa9a38aa4235992de717c74f346f0 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 4 Jun 2025 20:48:18 -0700
+Date: Sat, 7 Jun 2025 05:28:12 -0700
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to libast
 
 This is the sixth of the thickfold patch series, which enables ksh93
@@ -40,7 +40,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/path/pathcanon.c    |   4 +-
  src/lib/libast/path/pathcd.c       |  15 ++--
  src/lib/libast/path/pathpath.c     |   4 +-
- src/lib/libast/path/pathprog.c     |  18 ++--
+ src/lib/libast/path/pathprog.c     |  22 ++---
  src/lib/libast/path/pathshell.c    |  10 +--
  src/lib/libast/path/pathtemp.c     |  23 ++---
  src/lib/libast/tm/tmdate.c         |   5 +-
@@ -48,7 +48,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tminit.c         |  16 ++--
  src/lib/libast/tm/tmleap.c         |   5 +-
  src/lib/libast/tm/tmlex.c          |   7 +-
- src/lib/libast/tm/tmlocale.c       |  18 ++--
+ src/lib/libast/tm/tmlocale.c       |  30 +++----
  src/lib/libast/tm/tmpoff.c         |   5 +-
  src/lib/libast/tm/tmscan.c         |   5 +-
  src/lib/libast/tm/tmsleep.c        |   5 +-
@@ -67,7 +67,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
  src/lib/libast/tm/tvtouch.c        |   4 +-
- 46 files changed, 336 insertions(+), 333 deletions(-)
+ 46 files changed, 344 insertions(+), 341 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index 109348990..d3e794014 100644
@@ -928,7 +928,7 @@ index e5a45ab82..bcb8ee271 100644
  					strcpy(path, buf);
  			}
 diff --git a/src/lib/libast/path/pathprog.c b/src/lib/libast/path/pathprog.c
-index 09a61483c..3c18a4963 100644
+index 09a61483c..fdc9a53eb 100644
 --- a/src/lib/libast/path/pathprog.c
 +++ b/src/lib/libast/path/pathprog.c
 @@ -2,7 +2,7 @@
@@ -968,6 +968,22 @@ index 09a61483c..3c18a4963 100644
  	}
  #endif
  #if _lib_getexecname
+@@ -87,13 +89,13 @@ prog(const char* command, char* path, size_t size)
+ 			else if (!q && isspace(c))
+ 				break;
+ 			else if (t < e)
+-				*t++ = c == '\\' ? '/' : c;
++				*t++ = c == '\\' ? '/' : (char)c;
+ 			else
+ 				n++;
+ 		}
+ 		if (t < e)
+ 			*t = 0;
+-		return (t - path) + n;
++		return (size_t)(t - path) + (size_t)n;
+ 	}
+ #endif
+ 	if (command)
 @@ -103,17 +105,17 @@ prog(const char* command, char* path, size_t size)
  	}
  	return 0;
@@ -1291,7 +1307,7 @@ index bf3ecd2ac..c46e0d7b4 100644
  	return -1;
  }
 diff --git a/src/lib/libast/tm/tmlocale.c b/src/lib/libast/tm/tmlocale.c
-index fbe1d1984..44441aaa2 100644
+index fbe1d1984..61c128ca1 100644
 --- a/src/lib/libast/tm/tmlocale.c
 +++ b/src/lib/libast/tm/tmlocale.c
 @@ -2,7 +2,7 @@
@@ -1312,6 +1328,34 @@ index fbe1d1984..44441aaa2 100644
  
  	static int		must[] =
  	{
+@@ -185,10 +185,10 @@ static const Map_t map[] =
+ static char*
+ word2posix(char* f, char* w, int alternate)
+ {
+-	char*	r;
+-	int	c;
+-	int	p;
+-	int	n;
++	char*		r;
++	char		c;
++	char		p;
++	ptrdiff_t	n;
+ 
+ 	while (*w)
+ 	{
+@@ -357,10 +357,10 @@ native_lc_time(Lc_info_t* li)
+ 	n = nt + ns + nl;
+ 	for (i = 0; i < elementsof(map); i++)
+ 		n += GetLocaleInfo(lcid, map[i].native, 0, 0);
+-	if (!(b = newof(0, char*, TM_NFORM, n)))
++	if (!(b = newof(0, char*, TM_NFORM, (size_t)n)))
+ 		return;
+ 	s = (char*)(b + TM_NFORM);
+-	for (i = 0; i < elementsof(map); i++)
++	for (i = 0; i < (int)elementsof(map); i++)
+ 	{
+ 		if (!(m = GetLocaleInfo(lcid, map[i].native, s, n)))
+ 			goto bad;
 @@ -510,8 +510,8 @@ native_lc_time(Lc_info_t* li)
  	char*	s;
  	char*	t;
