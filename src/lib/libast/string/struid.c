@@ -80,7 +80,7 @@ struid(const char* name)
 				id = -1;
 		}
 		else if (streq(name, "root") && (pw = getpwnam("Administrator")))
-			id = pw->pw_uid;
+			id = (int)pw->pw_uid;
 		else
 			id = -1;
 #else

@@ -90,9 +90,9 @@ strgid(const char* name)
 		else if (!streq(name, "sys"))
 			id = -1;
 		else if (gr = getgrnam("Administrators"))
-			id = gr->gr_gid;
+			id = (int)gr->gr_gid;
 		else if (pw = getpwnam("Administrator"))
-			id = pw->pw_gid;
+			id = (int)pw->pw_gid;
 		else
 			id = -1;
 #else

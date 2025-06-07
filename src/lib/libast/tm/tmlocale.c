@@ -185,10 +185,10 @@ static const Map_t map[] =
 static char*
 word2posix(char* f, char* w, int alternate)
 {
-	char*	r;
-	int	c;
-	int	p;
-	int	n;
+	char*		r;
+	char		c;
+	char		p;
+	ptrdiff_t	n;
 
 	while (*w)
 	{
@@ -357,10 +357,10 @@ native_lc_time(Lc_info_t* li)
 	n = nt + ns + nl;
 	for (i = 0; i < elementsof(map); i++)
 		n += GetLocaleInfo(lcid, map[i].native, 0, 0);
-	if (!(b = newof(0, char*, TM_NFORM, n)))
+	if (!(b = newof(0, char*, TM_NFORM, (size_t)n)))
 		return;
 	s = (char*)(b + TM_NFORM);
-	for (i = 0; i < elementsof(map); i++)
+	for (i = 0; i < (int)elementsof(map); i++)
 	{
 		if (!(m = GetLocaleInfo(lcid, map[i].native, s, n)))
 			goto bad;

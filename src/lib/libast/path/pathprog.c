@@ -89,13 +89,13 @@ prog(const char* command, char* path, size_t size)
 			else if (!q && isspace(c))
 				break;
 			else if (t < e)
-				*t++ = c == '\\' ? '/' : c;
+				*t++ = c == '\\' ? '/' : (char)c;
 			else
 				n++;
 		}
 		if (t < e)
 			*t = 0;
-		return (t - path) + n;
+		return (size_t)(t - path) + (size_t)n;
 	}
 #endif
 	if (command)
