@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -34,9 +34,9 @@ Fcin_t _Fcin = {0};
 /*
  * open stream <f> for fast character input
  */
-int	fcfopen(Sfio_t* f)
+ssize_t	fcfopen(Sfio_t* f)
 {
-	int	n;
+	ssize_t	n;
 	char	*buff;
 	Fcin_t	save;
 	errno = 0;
@@ -71,9 +71,9 @@ int	fcfopen(Sfio_t* f)
  * If last is non-zero, and the stream is a file, 0 is returned when
  * the previous character is a 0 byte.
  */
-int	fcfill(void)
+int fcfill(void)
 {
-	int	n;
+	ptrdiff_t n;
 	Sfio_t	*f;
 	unsigned char	*last=_Fcin.fclast, *ptr=_Fcin.fcptr;
 	if(!(f=fcfile()))
@@ -96,7 +96,7 @@ int	fcfill(void)
 	}
 	if((n = ptr-_Fcin.fcbuff) && _Fcin.fcfun)
 		(*_Fcin.fcfun)(f,(const char*)_Fcin.fcbuff,n,_Fcin.context);
-	sfread(f, (char*)_Fcin.fcbuff, n);
+	sfread(f, (char*)_Fcin.fcbuff, (size_t)n);
 	_Fcin.fcoff +=n;
 	_Fcin._fcfile = 0;
 	if(!last)
@@ -126,7 +126,7 @@ int fcclose(void)
 /*
  * Set the notify function that is called for each fcfill()
  */
-void fcnotify(void (*fun)(Sfio_t*,const char*,int,void*),void* context)
+void fcnotify(void (*fun)(Sfio_t*,const char*,ptrdiff_t,void*),void* context)
 {
 	_Fcin.fcfun = fun;
 	_Fcin.context = context;
@@ -148,7 +148,7 @@ extern void fcrestore(Fcin_t *fp)
 int _fcmbget(short *len)
 {
 	int	c;
-	switch(*len = mbsize(_Fcin.fcptr))
+	switch(*len = (short)mbsize(_Fcin.fcptr))
 	{
 	    case -1:
 		*len = 1;

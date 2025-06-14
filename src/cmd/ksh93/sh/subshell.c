@@ -320,7 +320,8 @@ static void nv_restore(struct subshell *sp)
 	struct Link	*lp, *lq;
 	Namval_t	*mp, *np;
 	Namval_t	*mpnext;
-	int		flags,nofree;
+	int		flags;
+	char		nofree;
 	sh.nv_restore = 1;
 	for(lp=sp->svar; lp; lp=lq)
 	{
@@ -492,7 +493,7 @@ int sh_validate_subpwdfd(void)
  * If comsub is not null, the return value will be a stream consisting of
  * output of command <t>.  Otherwise, NULL will be returned.
  */
-Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 {
 	struct subshell sub_data;
 	struct subshell *sp = &sub_data;
@@ -595,7 +596,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
 		sh.st.otrap = savst.trap;
 		if((nsig=sh.st.trapmax)>0 || sh.st.trapcom[0])
 		{
-			savsig = sh_malloc(nsig * sizeof(char*));
+			savsig = sh_malloc((size_t)nsig * sizeof(char*));
 			/*
 			 * the data is, usually, modified in code like:
 			 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
@@ -718,7 +719,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
 		{
 			if(sh.spid)
 			{
-				int e = sh.exitval, c = sh.chldexitsig;
+				int e = sh.exitval;
+				char c = sh.chldexitsig;
 				job_wait(sh.spid);
 				sh.exitval = e, sh.chldexitsig = c;
 				if(sh.pipepid==sh.spid)
@@ -835,7 +837,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
 		n = sh.st.trapmax-savst.trapmax;
 		sh_sigreset(1);
 		if(n>0)
-			memset(&sh.st.trapcom[savst.trapmax],0,n*sizeof(char*));
+			memset(&sh.st.trapcom[savst.trapmax],0,(size_t)n*sizeof(char*));
 		sh.st = savst;
 		sh.st.otrap = 0;
 		if(nsig)
@@ -843,7 +845,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
 			for (isig = 0; isig < nsig; ++isig)
 				if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
 					free(sh.st.trapcom[isig]);
-			memcpy((char*)&sh.st.trapcom[0],savsig,nsig*sizeof(char*));
+			memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));
 			free(savsig);
 		}
 		sh.options = sp->options;
