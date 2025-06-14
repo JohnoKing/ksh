@@ -40,9 +40,9 @@
 	char*		pb; \
 	char*		pp; \
 	char*		pe; \
-	int		off; \
-	int		prelen; \
-	int		suflen; \
+	ptrdiff_t	off; \
+	size_t		prelen; \
+	size_t		suflen; \
 	char**		lib; \
 	char		nam[64]; \
 	char		pat[64]; \
@@ -87,9 +87,9 @@ dllinfo(void)
 	char*			d;
 	char*			v;
 	char*			p;
-	int			dn;
-	int			vn;
-	int			pn;
+	ptrdiff_t		vn;
+	size_t			dn;
+	size_t			pn;
 	char			pat[256];
 
 	static Dllinfo_t	info;
@@ -108,7 +108,7 @@ dllinfo(void)
 				for (;;)
 				{
 					for (d = s; *s && *s != ':' && *s != ','; s++);
-					if (!(dn = s - d))
+					if (!(dn = (size_t)(s - d)))
 						d = 0;
 					if (*s == ':')
 					{
@@ -118,7 +118,7 @@ dllinfo(void)
 						if (*s == ':')
 						{
 							for (p = ++s; *s && *s != ':' && *s != ','; s++);
-							if (!(pn = s - p))
+							if (!(pn = (size_t)(s - p)))
 								p = 0;
 						}
 						else
@@ -144,11 +144,11 @@ dllinfo(void)
 					memcpy(info.sibbuf, d, dn);
 					info.sibling[0] = info.sibbuf;
 				}
-				if (v && vn < sizeof(info.envbuf))
+				if (v && vn < (ptrdiff_t)sizeof(info.envbuf))
 				{
 					if(vn <= 0)
 						abort();
-					memcpy(info.envbuf, v, vn);
+					memcpy(info.envbuf, v, (size_t)vn);
 					info.env = info.envbuf;
 				}
 			}
@@ -187,9 +187,9 @@ vercmp(FTSENT* const* ap, FTSENT* const* bp)
 	{
 		if (isdigit(*a) && isdigit(*b))
 		{
-			m = strtol((char*)a, &e, 10);
+			m = (int)strtol((char*)a, &e, 10);
 			a = (unsigned char*)e;
-			n = strtol((char*)b, &e, 10);
+			n = (int)strtol((char*)b, &e, 10);
 			b = (unsigned char*)e;
 			if (n -= m)
 				return n;
@@ -216,9 +216,9 @@ dllsopen(const char* lib, const char* name, const char* version)
 	Dllscan_t*	scan;
 	Dllinfo_t*	info;
 	Vmalloc_t*	vm;
-	int		i;
-	int		j;
-	int		k;
+	size_t		i;
+	size_t		j;
+	size_t		k;
 	char		buf[32];
 
 	if (!(vm = vmopen()))
@@ -263,9 +263,9 @@ dllsopen(const char* lib, const char* name, const char* version)
 	}
 	else if (t = strrchr(name, '/'))
 	{
-		if (!(scan->pb = vmnewof(vm, 0, char, t - (char*)name, 2)))
+		if (!(scan->pb = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 2)))
 			goto bad;
-		memcpy(scan->pb, name, t - (char*)name);
+		memcpy(scan->pb, name, (size_t)(t - (char*)name));
 		name = (const char*)(t + 1);
 	}
 	if (name)
@@ -292,9 +292,9 @@ dllsopen(const char* lib, const char* name, const char* version)
 					if (*t != '-')
 						scan->flags |= DLL_MATCH_VERSION;
 					version = t + 1;
-					if (!(s = vmnewof(vm, 0, char, t - (char*)name, 1)))
+					if (!(s = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 1)))
 						goto bad;
-					memcpy(s, name, t - (char*)name);
+					memcpy(s, name, (size_t)(t - (char*)name));
 					name = (const char*)s;
 					break;
 				}
