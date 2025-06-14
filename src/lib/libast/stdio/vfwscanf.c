@@ -77,7 +77,7 @@ wideread(Sfio_t* f, void* buf, size_t size, Sfdisc_t* dp)
 	if (r != sizeof(wuf[0]))
 		return -1;
 	wuf[1] = 0;
-	r = wcstombs(buf, wuf, size);
+	r = (ssize_t)wcstombs(buf, wuf, size);
 	return r;
 }
 

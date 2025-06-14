@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,15 +14,16 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 
 #include "stdhdr.h"
 
 extern char*
-_stdgets(Sfio_t* f, char* us, int n, int isgets)
+_stdgets(Sfio_t* f, char* us, ptrdiff_t n, int isgets)
 {
-	int		p;
+	ptrdiff_t	p;
 	unsigned char*	is;
 	unsigned char*	ps;
 
@@ -46,7 +47,7 @@ _stdgets(Sfio_t* f, char* us, int n, int isgets)
 		if(p > n)
 			p = n;
 
-		if((ps = (uchar*)memccpy((char*)is,(char*)ps,'\n',p)) != NULL)
+		if((ps = (uchar*)memccpy((char*)is,(char*)ps,'\n',(size_t)p)) != NULL)
 			p = ps-is;
 		is += p;
 		ps  = f->next+p;

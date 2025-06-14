@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 
@@ -32,7 +33,7 @@ fputws(const wchar_t* s, Sfio_t* f)
 
 	FWIDE(f, WEOF);
 	n = wcslen(s) * sizeof(wchar_t);
-	return (sfwrite(f, s, n) == n) ? 0 : -1;
+	return (sfwrite(f, s, n) == (ssize_t)n) ? 0 : -1;
 }
 
 #endif /* !_has_multibyte */

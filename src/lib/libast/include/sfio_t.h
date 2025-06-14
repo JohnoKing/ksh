@@ -76,7 +76,7 @@
 	  (short)(file),				/* file		*/ \
 	  (unsigned char*)(data),			/* data		*/ \
 	  (ssize_t)(size),				/* size		*/ \
-	  (ssize_t)(-1),				/* val		*/ \
+	  -1,						/* val		*/ \
 	  0,						/* extent	*/ \
 	  0,						/* here		*/ \
 	  0,						/* ngetr	*/ \

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 #include	"sfhdr.h"
@@ -23,20 +24,20 @@
 **	Written by Kiem-Phong Vo.
 */
 
-int sfprintf(Sfio_t* f, const char* form, ...)
+ptrdiff_t sfprintf(Sfio_t* f, const char* form, ...)
 {
 	va_list	args;
-	int	rv;
+	ptrdiff_t rv;
 	va_start(args,form);
 	rv = sfvprintf(f,form,args);
 	va_end(args);
 	return rv;
 }
 
-ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
+ptrdiff_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 {
 	Sfio_t		*f;
-	ssize_t		rv;
+	ptrdiff_t	rv;
 	Sfnotify_f	notify = _Sfnotify;
 
 	/* make a temp stream */
@@ -49,10 +50,10 @@ ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 	if((rv = sfvprintf(f,form,args)) < 0 )
 		return -1;
 	if(s && n > 0)
-	{	if((rv+1) >= n)
+	{	if(((size_t)rv+1) >= n)
 			n--;
 		else
-			n = rv;
+			n = (size_t)rv;
 		memcpy(s, f->data, n);
 		s[n] = 0;
 	}
@@ -64,10 +65,10 @@ ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 	return rv;
 }
 
-ssize_t sfsprintf(char* s, size_t n, const char* form, ...)
+ptrdiff_t sfsprintf(char* s, size_t n, const char* form, ...)
 {
 	va_list	args;
-	ssize_t	rv;
+	ptrdiff_t rv;
 	va_start(args,form);
 	rv = sfvsprintf(s,n,form,args);
 	va_end(args);

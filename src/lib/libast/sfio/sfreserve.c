@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 #include	"sfhdr.h"
@@ -166,7 +167,7 @@ done:	/* compute the buffer to be returned */
 		data = f->next;
 	else if(f->flags&SFIO_STRING) /* try extending string buffer */
 	{	if((f->mode&SFIO_WRITE) && (f->flags&SFIO_MALLOC) )
-		{	(void)SFWR(f,f->next,sz,f->disc);
+		{	(void)SFWR(f,f->next,(size_t)sz,f->disc);
 			if((n = f->endb - f->next) >= sz )
 				data = f->next;
 		}
@@ -176,7 +177,7 @@ done:	/* compute the buffer to be returned */
 			data = rsrv->data;
 	}
 	else if(type != SFIO_LOCKR && sz > f->size && (rsrv = _sfrsrv(f,sz)) )
-	{	if((n = SFREAD(f,rsrv->data,sz)) >= sz) /* read side buffer */
+	{	if((n = SFREAD(f,rsrv->data,(size_t)sz)) >= sz) /* read side buffer */
 			data = rsrv->data;
 		else	rsrv->slen = -n;
 	}

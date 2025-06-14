@@ -60,7 +60,7 @@ struct _sfdisc_s
 typedef struct _sffmt_s	Sffmt_t;
 typedef int		(*Sffmtext_f)(Sfio_t*, void*, Sffmt_t*);
 typedef int		(*Sffmtevent_f)(Sfio_t*, int, void*, Sffmt_t*);
-typedef int		(*Sffmtreload_f)(int, char, void*, Sffmt_t*);
+typedef ssize_t		(*Sffmtreload_f)(ssize_t, char, void*, Sffmt_t*);
 struct _sffmt_s
 {	long		version;/* version of this structure		*/
 	Sffmtext_f	extf;	/* function to process arguments	*/
@@ -73,12 +73,12 @@ struct _sffmt_s
 	int		fmt;	/* format character			*/
 	ssize_t		size;	/* object size				*/
 	int		flags;	/* formatting flags			*/
-	int		width;	/* width of field			*/
-	int		precis;	/* precision required			*/
-	int		base;	/* conversion base			*/
+	ptrdiff_t	width;	/* width of field			*/
+	ptrdiff_t	precis;	/* precision required			*/
+	ptrdiff_t	base;	/* conversion base			*/
 
 	char*		t_str;	/* type string 				*/
-	ssize_t		n_str;	/* length of t_str 			*/
+	ptrdiff_t	n_str;	/* length of t_str 			*/
 
 	void*		mbs;	/* multibyte state for format string	*/
 };
@@ -211,17 +211,17 @@ extern Sfoff_t		sfmove(Sfio_t*, Sfio_t*, Sfoff_t, int);
 extern int		sfclose(Sfio_t*);
 extern Sfoff_t		sftell(Sfio_t*);
 extern Sfoff_t		sfseek(Sfio_t*, Sfoff_t, int);
-extern ssize_t		sfputr(Sfio_t*, const char*, int);
+extern ptrdiff_t	sfputr(Sfio_t*, const char*, int);
 extern char*		sfgetr(Sfio_t*, int, int);
 extern ssize_t		sfnputc(Sfio_t*, int, size_t);
 extern int		sfungetc(Sfio_t*, int);
-extern int		sfprintf(Sfio_t*, const char*, ...);
+extern ptrdiff_t	sfprintf(Sfio_t*, const char*, ...);
 extern char*		sfprints(const char*, ...);
-extern ssize_t		sfaprints(char**, const char*, ...);
-extern ssize_t		sfsprintf(char*, size_t, const char*, ...);
-extern ssize_t		sfvsprintf(char*, size_t, const char*, va_list);
-extern ssize_t		sfvasprints(char**, const char*, va_list);
-extern int		sfvprintf(Sfio_t*, const char*, va_list);
+extern ptrdiff_t	sfaprints(char**, const char*, ...);
+extern ptrdiff_t	sfsprintf(char*, size_t, const char*, ...);
+extern ptrdiff_t	sfvsprintf(char*, size_t, const char*, va_list);
+extern ptrdiff_t	sfvasprints(char**, const char*, va_list);
+extern ptrdiff_t	sfvprintf(Sfio_t*, const char*, va_list);
 extern int		sfscanf(Sfio_t*, const char*, ...);
 extern int		sfsscanf(const char*, const char*, ...);
 extern int		sfvsscanf(const char*, const char*, va_list);
@@ -238,11 +238,11 @@ extern int		sfdlen(Sfdouble_t);
 extern int		sfllen(Sflong_t);
 extern int		sfulen(Sfulong_t);
 
-extern int		sfputd(Sfio_t*, Sfdouble_t);
-extern int		sfputl(Sfio_t*, Sflong_t);
-extern int		sfputu(Sfio_t*, Sfulong_t);
-extern int		sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
-extern int		sfputc(Sfio_t*, int);
+extern ptrdiff_t	sfputd(Sfio_t*, Sfdouble_t);
+extern ptrdiff_t	sfputl(Sfio_t*, Sflong_t);
+extern ptrdiff_t	sfputu(Sfio_t*, Sfulong_t);
+extern ptrdiff_t	sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
+extern ptrdiff_t	sfputc(Sfio_t*, int);
 
 extern Sfdouble_t	sfgetd(Sfio_t*);
 extern Sflong_t		sfgetl(Sfio_t*);
@@ -250,13 +250,13 @@ extern Sfulong_t	sfgetu(Sfio_t*);
 extern Sfulong_t	sfgetm(Sfio_t*, Sfulong_t);
 extern int		sfgetc(Sfio_t*);
 
-extern int		_sfputd(Sfio_t*, Sfdouble_t);
-extern int		_sfputl(Sfio_t*, Sflong_t);
-extern int		_sfputu(Sfio_t*, Sfulong_t);
-extern int		_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
-extern int		_sfflsbuf(Sfio_t*, int);
+extern ptrdiff_t	_sfputd(Sfio_t*, Sfdouble_t);
+extern ptrdiff_t	_sfputl(Sfio_t*, Sflong_t);
+extern ptrdiff_t	_sfputu(Sfio_t*, Sfulong_t);
+extern ptrdiff_t	_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
 
-extern int		_sffilbuf(Sfio_t*, int);
+extern ptrdiff_t	_sfflsbuf(Sfio_t*, ssize_t);
+extern ptrdiff_t	_sffilbuf(Sfio_t*, ssize_t);
 
 extern int		_sfdlen(Sfdouble_t);
 extern int		_sfllen(Sflong_t);
@@ -295,7 +295,7 @@ extern ssize_t		sfmaxr(ssize_t, int);
 #define __sf_putc(f,c)	(_SFIO_(f)->_next >= _SFIO_(f)->_endw ? \
 			 _sfflsbuf(_SFIO_(f),(int)((unsigned char)(c))) : \
 			 (int)(*_SFIO_(f)->_next++ = (unsigned char)(c)) )
-#define __sf_getc(f)	(_SFIO_(f)->_next >= _SFIO_(f)->_endr ? _sffilbuf(_SFIO_(f),0) : \
+#define __sf_getc(f)	(_SFIO_(f)->_next >= _SFIO_(f)->_endr ? (int)_sffilbuf(_SFIO_(f),0) : \
 			 (int)(*_SFIO_(f)->_next++) )
 
 #define __sf_dlen(v)	(_sfdlen((Sfdouble_t)(v)) )
@@ -364,7 +364,7 @@ __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
 #ifndef _SFSTR_H /* GSF's string manipulation stuff */
 #define _SFSTR_H		1
 
-#define sfstropen()		sfnew(0, 0, -1, -1, SFIO_READ|SFIO_WRITE|SFIO_STRING)
+#define sfstropen()		sfnew(0, 0, (size_t)-1, -1, SFIO_READ|SFIO_WRITE|SFIO_STRING)
 #define sfstrclose(f)		sfclose(f)
 
 #define sfstrseek(f,p,m) \
