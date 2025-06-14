@@ -32,6 +32,6 @@
 #   endif
 #endif /* SHOPT_MULTIBYTE */
 
-extern int sh_strchr(const char*,const char*);
+extern ptrdiff_t sh_strchr(const char*,const char*);
 
 #endif /* _national_h_defined */

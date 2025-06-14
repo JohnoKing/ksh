@@ -66,7 +66,7 @@ struct Namfun
 	const Namdisc_t	*disc;
 	char		nofree;
 	unsigned int	subshell;
-	uint32_t	dsize;
+	size_t		dsize;
 	Namfun_t	*next;
 	char		*last;
 	Namval_t	*type;
@@ -75,7 +75,7 @@ struct Namfun
 struct Nambfun
 {
 	Namfun_t        fun;
-	int		num;
+	ptrdiff_t	num;
 	const char	**bnames;
 	Namval_t	*bltins[1];
 };
@@ -107,28 +107,18 @@ struct Namval
 {
 	Dtlink_t	nvlink;		/* space for cdt links */
 	char		*nvname;	/* pointer to name of the node */
-#if _ast_sizeof_pointer == 8
-#   if _ast_intswap > 0
-	unsigned short	nvflag; 	/* attributes */
-	unsigned short	pad1;
-#   else
-	unsigned short	pad1;
-	unsigned short	nvflag; 	/* attributes */
-#   endif
-	uint32_t  	nvsize;		/* size or base */
-#else
-	unsigned short	nvflag; 	/* attributes */
-	unsigned short 	nvsize;		/* size or base */
-#endif
+	uint16_t	nvflag; 	/* attributes */
+	size_t  	nvsize;		/* size or base */
 	Namfun_t	*nvfun;		/* pointer to trap functions */
 	void		*nvalue;	/* pointer to any kind of value */
 	void		*nvmeta;	/* pointer to any of various kinds of type-dependent data */
+	Sfdouble_t	*pad;		/* for alignment purposes */
 };
 
 #define NV_CLASS	".sh.type"
 #define NV_DATA		"_"	/* special class or instance variable */
-#define NV_MINSZ	(sizeof(struct Namval)-sizeof(Dtlink_t)-sizeof(char*))
-#define nv_namptr(p,n)	((Namval_t*)((char*)(p)+(n)*NV_MINSZ-sizeof(Dtlink_t)))
+#define NV_MINSZ	(sizeof(struct Namval)-offsetof(struct Namval, nvflag))
+#define nv_namptr(p,n)	((Namval_t*)((char*)(p)+(n)*NV_MINSZ-offsetof(struct Namval, nvname)))
 
 /* The following attributes are for internal use */
 #define NV_NOFREE	0x200	/* don't free the space when releasing value */
@@ -266,7 +256,7 @@ extern int		nv_isnull(Namval_t*);
 extern Namfun_t		*nv_isvtree(Namval_t*);
 extern Namval_t		*nv_lastdict(void);
 extern Namval_t		*nv_mkinttype(char*, size_t, int, const char*, Namdisc_t*);
-extern void 		nv_newattr(Namval_t*,unsigned,int);
+extern void 		nv_newattr(Namval_t*,unsigned,ptrdiff_t);
 extern void 		nv_newtype(Namval_t*);
 extern Namval_t		*nv_open(const char*,Dt_t*,int);
 extern void 		nv_putval(Namval_t*,const char*,int);
@@ -279,7 +269,7 @@ extern void		nv_setref(Namval_t*, Dt_t*,int);
 extern int		nv_settype(Namval_t*, Namval_t*, int);
 extern void 		nv_setvec(Namval_t*,int,int,char*[]);
 extern void		nv_setvtree(Namval_t*);
-extern int 		nv_setsize(Namval_t*,int);
+extern size_t 		nv_setsize(Namval_t*,size_t);
 extern Namfun_t		*nv_disc(Namval_t*,Namfun_t*,int);
 extern void 		nv_unset(Namval_t*,int);
 extern Namval_t		*nv_search(const char *, Dt_t*, int);
@@ -288,7 +278,7 @@ extern Namval_t		*nv_type(Namval_t*);
 extern void		nv_addtype(Namval_t*,const char*, Optdisc_t*, size_t);
 extern const Namdisc_t	*nv_discfun(int);
 
-#define nv_size(np)		nv_setsize((np),-1)
+#define nv_size(np)		nv_setsize((np),(size_t)-1)
 #define nv_stack(np,nf)		nv_disc(np,nf,0)
 
 #endif /* NV_DEFAULT */
