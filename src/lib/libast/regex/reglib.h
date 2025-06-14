@@ -38,11 +38,15 @@
 #define fatal		_reg_fatal
 #define state		_reg_state
 
+#include <ast.h>
+#include <cdt.h>
+#include <stk.h>
+
 typedef struct regsubop_s
 {
 	int		op;		/* REG_SUB_LOWER,REG_SUB_UPPER	*/
-	int		off;		/* re_rhs or match[] offset	*/
-	int		len;		/* re_rhs len or len==0 match[]	*/
+	ptrdiff_t	off;		/* re_rhs or match[] offset	*/
+	ptrdiff_t	len;		/* re_rhs len or len==0 match[]	*/
 } regsubop_t;
 
 #define _REG_SUB_PRIVATE_ \
@@ -50,10 +54,6 @@ typedef struct regsubop_s
 	char*		re_end;		/* re_buf end			*/ \
 	regsubop_t*	re_ops;		/* rhs ops			*/ \
 	char		re_rhs[1];	/* substitution rhs		*/
-
-#include <ast.h>
-#include <cdt.h>
-#include <stk.h>
 
 #include "regex.h"
 
@@ -296,8 +296,8 @@ typedef struct Vector_s
 {
 	Stk_t*		stk;		/* stack pointer		*/
 	char*		vec;		/* the data			*/
-	int		inc;		/* growth increment		*/
-	int		siz;		/* element size			*/
+	ptrdiff_t	inc;		/* growth increment		*/
+	size_t		siz;		/* element size			*/
 	ssize_t		max;		/* max index			*/
 	ssize_t		cur;		/* current index -- user domain	*/
 } Vector_t;
@@ -356,7 +356,7 @@ typedef struct Group_s
 {
 	int		number;		/* group number			*/
 	int		last;		/* last contained group number	*/
-	int		size;		/* lookbehind size		*/
+	ptrdiff_t	size;		/* lookbehind size		*/
 	int		back;		/* backreferenced		*/
 	regflags_t	flags;		/* group flags			*/
 	union
@@ -462,8 +462,8 @@ typedef struct Trie_node_s
 typedef struct Trie_s
 {
 	Trie_node_t**	root;
-	int		min;
-	int		max;
+	ptrdiff_t	min;
+	ptrdiff_t	max;
 } Trie_t;
 
 /*
@@ -474,12 +474,12 @@ typedef struct Rex_s
 {
 	unsigned char	type;			/* node type		*/
 	unsigned char	marked;			/* already marked	*/
-	short		serial;			/* subpattern number	*/
+	int		serial;			/* subpattern number	*/
 	regflags_t	flags;			/* scoped flags		*/
 	int		explicit;		/* scoped explicit match*/
 	struct Rex_s*	next;			/* remaining parts	*/
-	int		lo;			/* lo dup count		*/
-	int		hi;			/* hi dup count		*/
+	ptrdiff_t	lo;			/* lo dup count		*/
+	ptrdiff_t	hi;			/* hi dup count		*/
 	unsigned char*	map;			/* fold and/or ccode map*/
 	union
 	{

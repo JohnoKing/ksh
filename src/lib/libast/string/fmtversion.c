@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 /*
@@ -36,14 +37,14 @@ fmtversion(unsigned long v)
 	buf = cur = fmtbuf(n = 18);
 	end = cur + n;
 	if (v >= 19700101L && v <= 29991231L)
-		sfsprintf(cur, end - cur, "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
+		sfsprintf(cur, (size_t)(end - cur), "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
 	else
 	{
 		if (n = (v >> 24) & 0xff)
-			cur += sfsprintf(cur, end - cur, "%d.", n);
+			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
 		if (n = (v >> 16) & 0xff)
-			cur += sfsprintf(cur, end - cur, "%d.", n);
-		sfsprintf(cur, end - cur, "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
+			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
+		sfsprintf(cur, (size_t)(end - cur), "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
 	}
 	return buf;
 }

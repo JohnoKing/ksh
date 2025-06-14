@@ -60,7 +60,7 @@ regerror(int code, const regex_t* p, char* buf, size_t size)
 	NoP(p);
 	if (code++ == REG_VERSIONID)
 		s = (const char*)fmtident(&id[1]);
-	else if (code >= 0 && code < elementsof(reg_error))
+	else if (code >= 0 && code < (ssize_t)elementsof(reg_error))
 		s = reg_error[code];
 	else
 		s = (const char*)"unknown error";

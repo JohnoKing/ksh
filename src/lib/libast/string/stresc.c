@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 /*
@@ -51,10 +52,10 @@ strexp(char* s, int flags)
 				continue;
 			}
 		}
-		*t++ = c;
+		*t++ = (char)c;
 	}
 	*t = 0;
-	return t - b;
+	return (int)(t - b);
 }
 
 int

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 /*
@@ -32,7 +33,7 @@ fmtscale(Sfulong_t n, int k)
 {
 	Sfulong_t		m;
 	int			r;
-	int			z;
+	size_t			z;
 	const char*		u;
 	char			suf[3];
 	char*			s;
@@ -47,7 +48,7 @@ fmtscale(Sfulong_t n, int k)
 	else
 	{
 		m = 0;
-		while (n >= k && *(u + 1))
+		while ((k < 0 || n >= (unsigned)k) && *(u + 1))
 		{
 			m = n;
 			n /= k;
