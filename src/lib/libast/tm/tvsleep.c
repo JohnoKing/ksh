@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -70,7 +70,7 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
 	if ((r = nanosleep(&stv, &srv)) && errno == EINTR && rv)
 	{
 		rv->tv_sec = srv.tv_sec;
-		rv->tv_nsec = srv.tv_nsec;
+		rv->tv_nsec = (uint32_t)srv.tv_nsec;
 	}
 	return r;
 

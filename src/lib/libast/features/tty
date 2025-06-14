@@ -11,7 +11,7 @@ lib	tcgetpgrp unistd.h fail{
 	exit 1
 }end
 mac	_POSIX_VDISABLE termios.h
-mem	termios.c_line termios.h
+mem	termios.c_line  termios.h
 
 cat{
 

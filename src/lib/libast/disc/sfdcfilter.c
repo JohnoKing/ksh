@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 #include	"sfdchdr.h"
@@ -67,7 +68,7 @@ static ssize_t filterread(Sfio_t*	f,	/* stream reading from */
 
 			if(r == 1) /* non-blocking write */
 			{	errno = 0;
-				if((w = sfwr(fi->filter, fi->next, w, 0)) > 0)
+				if((w = sfwr(fi->filter, fi->next, (size_t)w, 0)) > 0)
 					fi->next += w;
 				else if(errno != EAGAIN)
 					return 0;
