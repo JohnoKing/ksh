@@ -179,7 +179,7 @@ static int pathchk(char* path, int mode)
 			errno=0;
 			cp[-1] = 0;
 			r = mypathconf(path, 0);
-			if((cp[-1]=c)==0)
+			if((cp[-1]=(char)c)==0)
 				cp--;
 			else while(*cp=='/')
 				cp++;
@@ -208,7 +208,7 @@ static int pathchk(char* path, int mode)
 		while((c= *cp++) && c!='/')
 			if((mode & COMPONENTS) && !isport(c))
 			{
-				buf[0] = c;
+				buf[0] = (char)c;
 				buf[1] = 0;
 				error(2,"%s: '%s' not in portable character set",path,fmtquote(buf, NULL, "'", 1, 0));
 				return -1;

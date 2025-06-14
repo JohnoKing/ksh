@@ -96,7 +96,7 @@ static void l_dirname(Sfio_t *outfile, const char *pathname, char termch)
 		if(last!=pathname && pathname[0]=='/' && pathname[1]=='/' && *astconf("PATH_LEADING_SLASHES",NULL,NULL)!='1')
 			pathname++;
 	}
-	sfwrite(outfile,pathname,last+1-pathname);
+	sfwrite(outfile,pathname,(size_t)(last+1-pathname));
 	sfputc(outfile,termch);
 }
 

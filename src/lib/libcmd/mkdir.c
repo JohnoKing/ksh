@@ -62,7 +62,7 @@ int
 b_mkdir(int argc, char** argv, Shbltin_t* context)
 {
 	char*		path;
-	int		n;
+	ptrdiff_t	n;
 	mode_t		mode = DIRMODE;
 	mode_t		mask = 0;
 	int		mflag = 0;
@@ -143,7 +143,7 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
 			 */
 
 			made = 0;
-			n = strlen(path);
+			n = (ptrdiff_t)strlen(path);
 			while (n > 0 && path[--n] == '/');
 			path[n + 1] = 0;
 			for (part = path, n = *part; n;)
@@ -158,12 +158,12 @@ b_mkdir(int argc, char** argv, Shbltin_t* context)
 				if (mkdir(path, n ? dmode : mode) < 0 && errno != EEXIST && access(path, F_OK) < 0)
 				{
 					error(ERROR_system(0), "%s: cannot create intermediate directory", path);
-					*part = n;
+					*part = (char)n;
 					break;
 				}
 				if (vflag)
 					error(0, "%s: directory created", path);
-				if (!(*part = n))
+				if (!(*part = (char)n))
 				{
 					made = 1;
 					break;

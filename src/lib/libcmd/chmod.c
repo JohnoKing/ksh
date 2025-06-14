@@ -24,6 +24,16 @@
  * chmod
  */
 
+#define lchmod		______lchmod
+
+#include <cmd.h>
+#include <ls.h>
+#include <fts.h>
+
+#include "FEATURE/symlink"
+
+#undef	lchmod
+
 static const char usage[] =
 "[-?\n@(#)$Id: chmod (ksh 93u+m) 2022-08-30 $\n]"
 "[--catalog?" ERROR_CATALOG "]"
@@ -123,17 +133,6 @@ static const char usage[] =
 	"\bls\b(1), \bumask\b(2)]"
 ;
 
-
-#define lchmod		______lchmod
-
-#include <cmd.h>
-#include <ls.h>
-#include <fts.h>
-
-#include "FEATURE/symlink"
-
-#undef	lchmod
-
 extern int	lchmod(const char*, mode_t);
 
 /*
@@ -144,7 +143,7 @@ extern int	lchmod(const char*, mode_t);
 int
 b_chmod(int argc, char** argv, Shbltin_t* context)
 {
-	int		mode = 0;
+	mode_t		mode = 0;
 	int		force = 0;
 	int		flags;
 	char*		amode = 0;
@@ -154,7 +153,7 @@ b_chmod(int argc, char** argv, Shbltin_t* context)
 	int		(*chmodf)(const char*, mode_t);
 	int		logical = 1;
 	int		notify = 0;
-	int		ignore = 0;
+	mode_t		ignore = 0;
 	int		show = 0;
 	int		chlink = 0;
 	struct stat	st;

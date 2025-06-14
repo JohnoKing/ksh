@@ -79,12 +79,14 @@ static const char usage[] =
 
 typedef int (*Compare_f)(const char*, const char*, size_t);
 
-static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, int mode, int* all, Compare_f compare)
+static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, ptrdiff_t width, int mode, int* all, Compare_f compare)
 {
-	int n, f, outsize=0, mb = mbwide();
+	ptrdiff_t n, f;
+	ssize_t outsize=0;
+	int mb = mbwide();
 	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
 	char *orecp=NULL, *sbufp=0, *outbuff;
-	int reclen,oreclen= -1,count=0,cwidth=0,sep,next;
+	ptrdiff_t reclen,oreclen= -1,count=0,cwidth=0,sep,next;
 	if(mode&C_FLAG)
 		cwidth = CWIDTH+1;
 	while(1)
@@ -94,7 +96,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
 		{
 			n = sfvalue(fdin);
-			bufp = memcpy(fmtbuf(n + 1), bufp, n);
+			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
 			bufp[n++] = '\n';
 		}
 		else
@@ -143,7 +145,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 		}
 		else
 			reclen = -2;
-		if(reclen==oreclen && (!reclen || !(*compare)(cp,orecp,reclen)))
+		if(reclen==oreclen && (!reclen || !(*compare)(cp,orecp,(size_t)reclen)))
 		{
 			count++;
 			if (!all)
@@ -169,7 +171,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 							f = 0;
 							while(f < CWIDTH-1)
 								outp[f++] = ' ';
-							outp[f++] = '0' + count + 1;
+							outp[f++] = (char)('0' + count + 1);
 							outp[f] = ' ';
 						}
 						else if(count<MAXCNT)
@@ -189,9 +191,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 							outsize -= (CWIDTH+1);
 							if(outp!=sbufp)
 							{
-								if(!(sbufp=fmtbuf(outsize)))
+								if(!(sbufp=fmtbuf((size_t)outsize)))
 									return 1;
-								memcpy(sbufp,outp+CWIDTH+1,outsize);
+								memcpy(sbufp,outp+CWIDTH+1,(size_t)outsize);
 								sfwrite(fdout,outp,0);
 								outp = sbufp;
 							}
@@ -200,7 +202,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 							sfprintf(fdout,"%4d ",count+1);
 						}
 					}
-					if(sfwrite(fdout,outp,outsize) != outsize)
+					if(sfwrite(fdout,outp,(size_t)outsize) != outsize)
 						return 1;
 				}
 			}
@@ -209,7 +211,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 			break;
 		if(count = next)
 		{
-			if(sfwrite(fdout,outp,outsize) != outsize)
+			if(sfwrite(fdout,outp,(size_t)outsize) != outsize)
 				return 1;
 			if(*all >= 0)
 				*all = 1;
@@ -225,12 +227,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 		{
 			/* no room in outp, clear lock and use side buffer */
 			sfwrite(fdout,outp,0);
-			if(!(sbufp = outp=fmtbuf(outsize=n+cwidth+sep)))
+			outsize = n + cwidth + sep;
+			if(!(sbufp = outp=fmtbuf((size_t)outsize)))
 				return 1;
 		}
 		else
 			outsize = n+cwidth+sep;
-		memcpy(outp+cwidth+sep,bufp,n);
+		memcpy(outp+cwidth+sep,bufp,(size_t)n);
 		if(sep)
 			outp[cwidth] = '\n';
 		oreclen = reclen;
@@ -244,7 +247,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 {
 	int mode=0;
 	char *cp;
-	int fields=0, chars=0, width=-1;
+	ptrdiff_t fields=0, chars=0, width=-1;
 	Sfio_t *fpin, *fpout;
 	int* all = 0;
 	int sep;
@@ -285,15 +288,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 			continue;
 		case 'f':
 			if(*opt_info.option=='-')
-				fields = opt_info.num;
+				fields = (ptrdiff_t)opt_info.num;
 			else
-				chars = opt_info.num;
+				chars = (ptrdiff_t)opt_info.num;
 			continue;
 		case 's':
-			chars = opt_info.num;
+			chars = (ptrdiff_t)opt_info.num;
 			continue;
 		case 'w':
-			width = opt_info.num;
+			width = (ptrdiff_t)opt_info.num;
 			continue;
 		case ':':
 			error(2, "%s", opt_info.arg);
