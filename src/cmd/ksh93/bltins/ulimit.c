@@ -70,14 +70,14 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 {
 	char *limit;
 	int mode=0, n;
-	unsigned long hit = 0;
+	unsigned long hit = 0, label;
 #if _lib_getrlimit
 	struct rlimit rlp;
 #endif /* _lib_getrlimit */
 	const Limit_t* tp;
 	char* conf;
-	int label, unit, nosupport, ret=0;
-	rlim_t i=0;
+	int nosupport, ret=0;
+	rlim_t i=0, unit;
 	char tmp[41];
 	Optdisc_t disc;
 	NOT_USED(context);
@@ -94,7 +94,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 			mode |= SOFT;
 			continue;
 		case 'a':
-			hit = ~0;
+			hit = ~0UL;
 			break;
 		default:
 			if(n < 0)
@@ -134,7 +134,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 		if(!(hit&1))
 			continue;
 		nosupport = (n = tp->index) == RLIMIT_UNKNOWN;
-		unit = shtab_units[tp->type];
+		unit = (rlim_t)shtab_units[tp->type];
 		if(limit)
 		{
 			if(sh.subshell && !sh.subshare)
@@ -145,11 +145,11 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 			{
 				char *last;
 				/* an explicit suffix unit overrides the default */
-				if((i=strtol(limit,&last,0))!=ULIMIT_INFINITY && !*last)
+				if((i=(rlim_t)strtol(limit,&last,0))!=ULIMIT_INFINITY && !*last)
 					i *= unit;
-				else if((i=strton(limit,&last,NULL,0))==ULIMIT_INFINITY || *last)
+				else if((i=(rlim_t)strton(limit,&last,NULL,0))==ULIMIT_INFINITY || *last)
 				{
-					if((i=sh_strnum(limit,&last,2))==ULIMIT_INFINITY || *last)
+					if((i=(rlim_t)sh_strnum(limit,&last,2))==ULIMIT_INFINITY || *last)
 					{
 						errormsg(SH_DICT,ERROR_system(1),e_number,limit);
 						UNREACHABLE();

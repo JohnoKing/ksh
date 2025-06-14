@@ -103,15 +103,15 @@ extern const char is_spcbuiltin[];
 struct Enum
 {
 	Namfun_t	hdr;
-	short		nelem;
-	short		iflag;
+	ptrdiff_t	nelem;
+	char		iflag;
 	const char	*values[1];
 };
 
 /*
  * For range checking in arith.c
  */
-short b_enum_nelem(Namfun_t *fp)
+ptrdiff_t b_enum_nelem(Namfun_t *fp)
 {
 	return ((struct Enum *)fp)->nelem;
 }
@@ -155,8 +155,8 @@ static Namfun_t *clone_enum(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 	NOT_USED(np);
 	NOT_USED(mp);
 	NOT_USED(flags);
-	ep = sh_newof(0,struct Enum,1,pp->nelem*sizeof(char*));
-	memcpy(ep,pp,sizeof(struct Enum)+pp->nelem*sizeof(char*));
+	ep = sh_newof(0,struct Enum,1,(size_t)pp->nelem*sizeof(char*));
+	memcpy(ep,pp,sizeof(struct Enum)+(size_t)pp->nelem*sizeof(char*));
 	return &ep->hdr;
 }
 
@@ -211,7 +211,9 @@ const Namdisc_t ENUM_disc = { 0, put_enum, get_enum, nv_getn, 0, 0, clone_enum }
 
 int b_enum(int argc, char** argv, Shbltin_t *context)
 {
-	int			sz,i,n,iflag = 0;
+	int			i;
+	char			iflag = 0;
+	size_t			sz,n;
 	Namval_t		*np, *tp;
 	Namarr_t		*ap;
 	char			*cp,*sp;
@@ -276,7 +278,7 @@ int b_enum(int argc, char** argv, Shbltin_t *context)
 		sz += n*sizeof(char*);
 		ep = sh_newof(0,struct Enum,1,sz);
 		ep->iflag = iflag;
-		ep->nelem = n;
+		ep->nelem = (ptrdiff_t)n;
 		cp = (char*)&ep->values[n+1];
 		nv_putsub(np, NULL, ARRAY_SCAN);
 		ep->values[n] = 0;

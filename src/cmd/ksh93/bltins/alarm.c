@@ -70,7 +70,7 @@ static void *time_add(struct tevent *item, void *list)
 		tp->next = item;
 	}
 	tp = item;
-	tp->timeout = sh_timeradd(tp->milli,tp->flags&R_FLAG,trap_timeout,tp);
+	tp->timeout = sh_timeradd((Sfulong_t)tp->milli,tp->flags&R_FLAG,trap_timeout,tp);
 	return list;
 }
 
