@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 /*
@@ -91,7 +92,7 @@ _mm_severity(void)
 	{
 		char*		s;
 		MM_table_t*	p;
-		int		n;
+		size_t		n;
 		int		c;
 		char*			e;
 		MM_table_t*		q;
@@ -134,8 +135,8 @@ _mm_severity(void)
 			if (n)
 			{
 				for (p = (MM_table_t*)mm_severity_init; p->name; p++);
-				n += p - (MM_table_t*)mm_severity_init + 1;
-				if (severity = newof(0, MM_table_t, n, s - e))
+				n += (size_t)(p - (MM_table_t*)mm_severity_init + 1);
+				if (severity = newof(0, MM_table_t, n, (size_t)(s - e)))
 				{
 					s = (char*)severity + n * sizeof(MM_table_t);
 					strcpy(s, e);
@@ -155,7 +156,7 @@ _mm_severity(void)
 							{
 							case 0:
 								*(s - 1) = 0;
-								p->value = strtol(s, NULL, 0);
+								p->value = (unsigned int)strtoul(s, NULL, 0);
 								break;
 							case 1:
 								p->display = s;
@@ -182,7 +183,7 @@ _mm_severity(void)
 }
 
 static char*
-display(const MM_table_t* tab, int value, int mask)
+display(const MM_table_t* tab, unsigned int value, int mask)
 {
 	while (tab->name)
 	{
@@ -200,7 +201,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 	char*		s;
 	char*		t;
 	MM_table_t*	p;
-	int			n;
+	ptrdiff_t		n;
 	int			m;
 	int			r;
 	int			fd;
@@ -244,13 +245,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s:", n, n, s);
 			s = ++t;
-			if ((n = strlen(t)) > MM_LABEL_2_MAX)
+			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_2_MAX)
 				n = MM_LABEL_2_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}
 		else
 		{
-			if ((n = strlen(t)) > MM_LABEL_1_MAX)
+			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_1_MAX)
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}
@@ -287,7 +288,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 		else break;
 		if ((mask & MM_label) && label)
 			sfprintf(sp, "%s: ", lab);
-		if ((mask & MM_severity) && (s = display(mm_severity, severity, 0)))
+		if ((mask & MM_severity) && (s = display(mm_severity, (unsigned)severity, 0)))
 			sfprintf(sp, "%s: ", s);
 		n = sfstrtell(sp);
 		if ((mask & MM_text) && text)
@@ -311,17 +312,17 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 			if (mask & (MM_class|MM_source|MM_status))
 			{
 				sfputc(sp, ' ');
-				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, m, 1)))
+				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, (unsigned)m, 1)))
 					sfprintf(sp, " %s", s);
-				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, m, 1)))
+				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, (unsigned)m, 1)))
 					sfprintf(sp, " %s", s);
-				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, m, 1)))
+				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, (unsigned)m, 1)))
 					sfprintf(sp, " %s", s);
 			}
 			sfputc(sp, '\n');
 		}
 		n = sfstrtell(sp);
-		if (!(s = sfstruse(sp)) || write(fd, s, n) != n)
+		if (!(s = sfstruse(sp)) || write(fd, s, (size_t)n) != n)
 			r |= c;
 	}
 	sfstrclose(sp);

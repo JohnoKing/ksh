@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -70,7 +70,7 @@ recstr(const char* s, char** e)
 	case '+':
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
-		n = strton(s, &t, NULL, 0);
+		n = (int)strton(s, &t, NULL, 0);
 		if (n > 0 && t > (char*)s)
 		{
 			if (e)
@@ -107,7 +107,7 @@ recstr(const char* s, char** e)
 	case 'u':
 	case 'U':
 		while (*++s == ' ' || *s == '\t' || *s == ',');
-		n = strtol(s, &t, 0);
+		n = (int)strtol(s, &t, 0);
 		if (n < 0 || n > 15 || *t++ != '.')
 			break;
 		v = strtol(t, &t, 0);
@@ -176,7 +176,7 @@ recstr(const char* s, char** e)
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
 				v = 0;
-				a[n++] = strtol(s, &t, 0);
+				a[n++] = (int)strtol(s, &t, 0);
 				s = (const char*)t - 1;
 				continue;
 			}
