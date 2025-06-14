@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 
 2025-06-14:
 
+- Ksh is now capable of allocating memory within a 64-bit address space.
+
+2025-06-14:
+
 - Fixed a bug occurring on systems with posix_spawn(3), spawnve(2), and
   spawn(2), which when exploited could cause ksh93 to execute scripts
   without a shebang with a shell other than itself, provided /bin/ksh
