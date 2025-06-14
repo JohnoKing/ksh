@@ -97,8 +97,8 @@ typedef struct State_s
 
 static unsigned int		_aso_data_signal;
 
-static ssize_t
-_aso_lock_signal(void* data, ssize_t k, void volatile* p)
+static ptrdiff_t
+_aso_lock_signal(void* data, ptrdiff_t k, void volatile* p)
 {
 	NOT_USED(data);
 	NOT_USED(p);
@@ -137,7 +137,7 @@ static State_t			state =
 };
 
 static int
-asoerror(int type, const char* format, const char* a, const char* b, long n)
+asoerror(int type, const char* format, const char* a, const char* b, unsigned int n)
 {
 	char	buf[128];
 
@@ -165,7 +165,7 @@ Asometh_t*
 _asometh(int type, void* data)
 {
 	size_t		n;
-	int		i;
+	size_t		i;
 	char*		e;
 	Asometh_t*	meth;
 	char*		name;
@@ -191,7 +191,7 @@ _asometh(int type, void* data)
 	}
 	if (!(name = (char*)data))
 		return state.meth;
-	n = (e = strchr(name, ',')) ? (e - name) : strlen(name);
+	n = (e = strchr(name, ',')) ? (size_t)(e - name) : strlen(name);
 	for (i = 0; i < elementsof(method); i++)
 		if (strncmp(name, method[i]->name, n) == 0)
 		{
@@ -285,10 +285,10 @@ asoloop(uintmax_t rep)
  * error checking state.lockf() call
  */
 
-static ssize_t
-lock(void* data, ssize_t k, void volatile* p)
+static ptrdiff_t
+lock(void* data, ptrdiff_t k, void volatile* p)
 {
-	ssize_t		r;
+	ptrdiff_t	r;
 
 	if ((r = state.lockf(data, k, p)) < 0 && state.errorf)
 		asoerror(ASO_EMETHOD, "%s method lock failed", state.meth->name, 0, 0);
@@ -302,7 +302,7 @@ lock(void* data, ssize_t k, void volatile* p)
 uint8_t
 asoget8(uint8_t volatile* p)
 {
-	int	o;
+	uint8_t		o;
 
 	do
 	{
@@ -314,7 +314,7 @@ asoget8(uint8_t volatile* p)
 uint16_t
 asoget16(uint16_t volatile* p)
 {
-	int	o;
+	uint16_t	o;
 
 	do
 	{
@@ -370,8 +370,8 @@ asogetptr(void volatile* p)
 uint8_t
 asoinc8(uint8_t volatile* p)
 {
-	ssize_t		k;
-	int		o;
+	ptrdiff_t	k;
+	uint8_t		o;
 
 #if defined(_aso_inc8)
 	if (!state.lockf)
@@ -395,8 +395,8 @@ asoinc8(uint8_t volatile* p)
 uint16_t
 asoinc16(uint16_t volatile* p)
 {
-	ssize_t		k;
-	int		o;
+	ptrdiff_t	k;
+	uint16_t	o;
 
 #if defined(_aso_inc16)
 	if (!state.lockf)
@@ -420,8 +420,8 @@ asoinc16(uint16_t volatile* p)
 uint32_t
 asoinc32(uint32_t volatile* p)
 {
-	ssize_t		k;
-	int		o;
+	ptrdiff_t	k;
+	uint32_t	o;
 
 #if defined(_aso_inc32)
 	if (!state.lockf)
@@ -447,7 +447,7 @@ asoinc32(uint32_t volatile* p)
 uint64_t
 asoinc64(uint64_t volatile* p)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 	uint64_t	o;
 
 #if defined(_aso_inc64)
@@ -478,8 +478,8 @@ asoinc64(uint64_t volatile* p)
 uint8_t
 asodec8(uint8_t volatile* p)
 {
-	ssize_t		k;
-	int		o;
+	ptrdiff_t	k;
+	uint8_t		o;
 
 #if defined(_aso_dec8)
 	if (!state.lockf)
@@ -503,8 +503,8 @@ asodec8(uint8_t volatile* p)
 uint16_t
 asodec16(uint16_t volatile* p)
 {
-	ssize_t		k;
-	int		o;
+	ptrdiff_t	k;
+	uint16_t	o;
 
 #if defined(_aso_dec16)
 	if (!state.lockf)
@@ -528,8 +528,8 @@ asodec16(uint16_t volatile* p)
 uint32_t
 asodec32(uint32_t volatile* p)
 {
-	ssize_t		k;
-	int		o;
+	ptrdiff_t	k;
+	uint32_t	o;
 
 #if defined(_aso_dec32)
 	if (!state.lockf)
@@ -555,7 +555,7 @@ asodec32(uint32_t volatile* p)
 uint64_t
 asodec64(uint64_t volatile* p)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 	uint64_t	o;
 
 #if defined(_aso_dec64)
@@ -584,9 +584,9 @@ asodec64(uint64_t volatile* p)
  */
 
 uint8_t
-asocas8(uint8_t volatile* p, int o, int n)
+asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 
 #if defined(_aso_cas8)
 	if (!state.lockf)
@@ -597,10 +597,10 @@ asocas8(uint8_t volatile* p, int o, int n)
 		U16_8_t		u;
 		U16_8_t		v;
 		U16_8_t*	a;
-		int		s;
-		int		i;
+		ptrdiff_t	s;
+		ptrdiff_t	i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
+		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U16_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -624,10 +624,10 @@ asocas8(uint8_t volatile* p, int o, int n)
 		U32_8_t		u;
 		U32_8_t		v;
 		U32_8_t*	a;
-		int		s;
-		int		i;
+		ptrdiff_t	s;
+		ptrdiff_t	i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
+		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U32_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -651,10 +651,10 @@ asocas8(uint8_t volatile* p, int o, int n)
 		U64_8_t		u;
 		U64_8_t		v;
 		U64_8_t*	a;
-		int		s;
-		int		i;
+		ptrdiff_t	s;
+		ptrdiff_t	i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1));
+		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U64_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -685,7 +685,7 @@ asocas8(uint8_t volatile* p, int o, int n)
 uint16_t
 asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 
 #if defined(_aso_cas16)
 	if (!state.lockf)
@@ -696,10 +696,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 		U32_16_t	u;
 		U32_16_t	v;
 		U32_16_t*	a;
-		int		s;
-		int		i;
+		ptrdiff_t	s;
+		ptrdiff_t	i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
+		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
 		a = (U32_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -723,10 +723,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 		U64_16_t	u;
 		U64_16_t	v;
 		U64_16_t*	a;
-		int		s;
-		int		i;
+		ptrdiff_t	s;
+		ptrdiff_t	i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
+		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
 		a = (U64_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -757,7 +757,7 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 uint32_t
 asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 
 #if defined(_aso_cas32)
 	if (!state.lockf)
@@ -768,10 +768,10 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
 		U64_32_t	u;
 		U64_32_t	v;
 		U64_32_t*	a;
-		int		s;
-		int		i;
+		ptrdiff_t	s;
+		ptrdiff_t	i;
 
-		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 4;
+		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 4;
 		a = (U64_32_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
 		for (;;)
 		{
@@ -804,7 +804,7 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
 uint64_t
 asocas64(uint64_t volatile* p, uint64_t o, uint64_t n)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 
 #if defined(_aso_cas64)
 	if (!state.lockf)
@@ -828,7 +828,7 @@ asocas64(uint64_t volatile* p, uint64_t o, uint64_t n)
 void*
 asocasptr(void volatile* p, void* o, void* n)
 {
-	ssize_t		k;
+	ptrdiff_t	k;
 
 #if defined(_aso_casptr)
 	if (!state.lockf)

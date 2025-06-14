@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -40,7 +40,7 @@ union _u_
 	uintmax_t		u6;
 	_ast_fltmax_t		u7;
 	void*			u8;
-	char*			(*u9)();
+	char*			(*u9)(void);
 	jmp_buf			u10;
 };
 
@@ -112,7 +112,7 @@ main(void)
 	printf("#define ALIGN_INTEGRAL		uintptr_t\n");
 	printf("#define ALIGN_INTEGER(x)	((intptr_t)(x))\n");
 	printf("#define ALIGN_POINTER(x)	((char*)(x))\n");
-	if (bits2 == (align2 - 1))
+	if ((signed)bits2 == (align2 - 1))
 		printf("#define ALIGN_ROUND(x,y)	ALIGN_POINTER(ALIGN_INTEGER((x)+(y)-1)&~((y)-1))\n");
 	else
 		printf("#define ALIGN_ROUND(x,y)	ALIGN_POINTER(ALIGN_INTEGER(ALIGN_ALIGN(x)+(((y)+%d)/%d)-1)&~((((y)+%d)/%d)-1))\n", align0, align0, align0, align0);
