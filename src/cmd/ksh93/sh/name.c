@@ -2046,8 +2046,9 @@ static void rightjust(char *str, size_t size, char fill)
 	       		*--sp = ' ';
 		return;
 	}
-	while(n--)
+	while(n)
 	{
+		n--;
 		sp--;
 		*sp = *cp--;
 	}

@@ -1257,7 +1257,7 @@ void	ed_genncpy(genchar *dp,const genchar *sp, size_t n)
 {
 	dp = (genchar*)roundof((uintptr_t)dp,sizeof(genchar));
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
-	while(n-->0 && (*dp++ = *sp++));
+	while(n>0 && (*dp++ = *sp++) && --n);
 }
 #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
 

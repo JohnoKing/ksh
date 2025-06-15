@@ -58,9 +58,9 @@ static State_t	matchstate;
 static void
 flushcache(void)
 {
-	size_t		i;
+	ptrdiff_t	i;
 
-	for (i = matchstate.size; i--;)
+	for (i = (ptrdiff_t)matchstate.size; i--;)
 		if (matchstate.cache[i] && matchstate.cache[i]->keep)
 		{
 			matchstate.cache[i]->keep = 0;

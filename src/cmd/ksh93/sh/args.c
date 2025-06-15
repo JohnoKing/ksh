@@ -492,8 +492,9 @@ struct dolnod *sh_argcreate(char *argv[])
 	dp->dolnxt = 0;
 	pp = dp->dolval;
 	sp = (char*)dp + sizeof(struct dolnod) + n*sizeof(char*);
-	while(n--)
+	while(n)
 	{
+		n--;
 		*pp++ = sp;
 		sp = strcopy(sp, *argv++) + 1;
 	}
