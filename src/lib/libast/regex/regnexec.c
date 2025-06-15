@@ -250,7 +250,7 @@ _matchpush(Env_t* env, Rex_t* rex)
 
 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
 		num = 0;
-	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + ((size_t)num - 1) * sizeof(regmatch_t))))
+	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + (size_t)(num > 0 ? num - 1 : 0) * sizeof(regmatch_t))))
 	{
 		env->error = REG_ESPACE;
 		return 1;
