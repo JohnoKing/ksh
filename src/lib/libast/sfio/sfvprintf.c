@@ -31,7 +31,7 @@
 **	Written by Kiem-Phong Vo.
 */
 
-#define HIGHBITS	(~((~((ptrdiff_t)0)) >> 1))
+#define HIGHBITI	(~((~((uint)0)) >> 1))
 #define HIGHBITL	(~((~((Sfulong_t)0)) >> 1))
 
 #define SFFMT_PREFIX	(SFFMT_MINUS|SFFMT_SIGN|SFFMT_BLANK)
@@ -1061,25 +1061,25 @@ loop_fmt :
 					break;
 				if(v < 0 && fmt == 'd' )
 				{	flags |= SFFMT_MINUS;
-					if((size_t)v == HIGHBITS) /* avoid overflow */
-					{	v = (ptrdiff_t)(HIGHBITS/(size_t)base);
-						*--sp = _Sfdigits[HIGHBITS -
-								  (size_t)v*(size_t)base];
+					if((uint)v == HIGHBITI) /* avoid overflow */
+					{	v = (int)(HIGHBITI/base);
+						*--sp = _Sfdigits[HIGHBITI -
+								  (uint)v*base];
 					}
 					else	v = -v;
 				}
 				if(n_s < 0)	/* base 10 */
-				{	sfucvt(v,sp,n,ssp,ptrdiff_t,size_t);
+				{	sfucvt(v,sp,n,ssp,int,uint);
 				}
 				else if(n_s > 0) /* base power-of-2 */
 				{	do
-					{	*--sp = ssp[v&n_s];
-					} while((v = (ptrdiff_t)(((size_t)v) >> n)) );
+					{	*--sp = ssp[(uint)v&n_s];
+					} while((v = (((uint)v) >> n)) );
 				}
 				else /* n_s == 0, general base */
 				{	do
-					{	*--sp = ssp[((size_t)v)%(size_t)base];
-					} while((v = (ptrdiff_t)(((size_t)v)/(size_t)base)) );
+					{	*--sp = ssp[((uint)v)%base];
+					} while((v = (ptrdiff_t)(((uint)v)/base)) );
 				}
 			}
 
