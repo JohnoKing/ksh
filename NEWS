@@ -7,7 +7,8 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 - Fixed a possible out of bounds crash that could occur when running
   a POSIX function (aka a function of the form 'name() {').
 
-2025-06-14:
+- Fixed a regression occurring on systems with glibc 2.35+ that could
+  cause the pty regression tests to crash or lockup.
 
 - Ksh is now capable of allocating memory within a 64-bit address space.
 
