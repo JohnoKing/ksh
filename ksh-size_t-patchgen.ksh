@@ -262,7 +262,7 @@ Remarks:
 - _ast_assertfail and debug_fatal() end with abort(), so they were
   marked with the noreturn attribute.
 - error_break() triggered a warning because it\'s given extern
-  despite being uses as though it were static, so it was
+  despite being used as though it were static, so it was
   marked static to reflect actual usage.
   - typefix() was not extern, but was missing its static designation,
     so that has also been rectified.
