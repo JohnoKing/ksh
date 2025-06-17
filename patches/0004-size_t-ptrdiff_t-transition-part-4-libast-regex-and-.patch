@@ -1,6 +1,6 @@
-From fdc6e30952ec4327cd8b2e18fb1072eb3e6739b9 Mon Sep 17 00:00:00 2001
+From 18f14bf69332ab5ee273e8ef5e8d7b84139a65b7 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 7 Jun 2025 05:28:12 -0700
+Date: Mon, 16 Jun 2025 19:33:51 -0700
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string sublibraries
 
 This is the fourth of the thickfold patch series, which enables ksh93
@@ -19,7 +19,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/swap.h       |   9 +-
  src/lib/libast/man/regex.3          |   2 +-
  src/lib/libast/man/swap.3           |   6 +-
- src/lib/libast/regex/regcache.c     |  39 +++---
+ src/lib/libast/regex/regcache.c     |  41 +++---
  src/lib/libast/regex/regclass.c     |  66 ++++-----
  src/lib/libast/regex/regcoll.c      |  20 +--
  src/lib/libast/regex/regcomp.c      | 205 ++++++++++++++--------------
@@ -76,7 +76,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |   8 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  16 +--
- 60 files changed, 571 insertions(+), 534 deletions(-)
+ 60 files changed, 572 insertions(+), 535 deletions(-)
 
 diff --git a/src/lib/libast/include/swap.h b/src/lib/libast/include/swap.h
 index e7b054b41..fb7e1cdd4 100644
@@ -144,7 +144,7 @@ index 28db4c2bc..7bc12c9c1 100644
  .L "void* swapmem(int op, const void* from, void* to, size_t n);"
  .SH DESCRIPTION
 diff --git a/src/lib/libast/regex/regcache.c b/src/lib/libast/regex/regcache.c
-index 8b251cfc9..52dfcb8a6 100644
+index 8b251cfc9..18fb76215 100644
 --- a/src/lib/libast/regex/regcache.c
 +++ b/src/lib/libast/regex/regcache.c
 @@ -2,7 +2,7 @@
@@ -171,15 +171,18 @@ index 8b251cfc9..52dfcb8a6 100644
  	unsigned long	serial;
  	char*		locale;
  	Cache_t**	cache;
-@@ -58,7 +58,7 @@ static State_t	matchstate;
+@@ -58,9 +58,9 @@ static State_t	matchstate;
  static void
  flushcache(void)
  {
 -	int		i;
-+	size_t		i;
++	ptrdiff_t	i;
  
- 	for (i = matchstate.size; i--;)
+-	for (i = matchstate.size; i--;)
++	for (i = (ptrdiff_t)matchstate.size; i--;)
  		if (matchstate.cache[i] && matchstate.cache[i]->keep)
+ 		{
+ 			matchstate.cache[i]->keep = 0;
 @@ -76,11 +76,12 @@ regex_t*
  regcache(const char* pattern, regflags_t reflags, int* status)
  {
@@ -1236,7 +1239,7 @@ index 67388c9ac..378ae8499 100644
  	union
  	{
 diff --git a/src/lib/libast/regex/regnexec.c b/src/lib/libast/regex/regnexec.c
-index d19b15398..fe92d8996 100644
+index d19b15398..7ecdac3ae 100644
 --- a/src/lib/libast/regex/regnexec.c
 +++ b/src/lib/libast/regex/regnexec.c
 @@ -130,16 +130,16 @@ typedef struct
@@ -1312,7 +1315,7 @@ index d19b15398..fe92d8996 100644
  	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
  		num = 0;
 -	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + (num - 1) * sizeof(regmatch_t))))
-+	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + ((size_t)num - 1) * sizeof(regmatch_t))))
++	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + (size_t)(num > 0 ? num - 1 : 0) * sizeof(regmatch_t))))
  	{
  		env->error = REG_ESPACE;
  		return 1;

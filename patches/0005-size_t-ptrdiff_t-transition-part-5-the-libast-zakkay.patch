@@ -1,6 +1,6 @@
-From 934aac69e55a2217147cc5e9bf4c4677a4832a83 Mon Sep 17 00:00:00 2001
+From 355250c42fdb38645e15c85ecc2c86269b534e12 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 7 Jun 2025 05:28:12 -0700
+Date: Mon, 16 Jun 2025 19:33:51 -0700
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -848,7 +848,7 @@ index eebdc3b4e..db9d9ca8d 100644
  }
  
 diff --git a/src/lib/libast/comp/omitted.c b/src/lib/libast/comp/omitted.c
-index 4c8396676..1c83069c1 100644
+index 7298b1089..73e67483f 100644
 --- a/src/lib/libast/comp/omitted.c
 +++ b/src/lib/libast/comp/omitted.c
 @@ -2,7 +2,7 @@
@@ -1362,7 +1362,7 @@ index 247c519b5..ae652f465 100644
  #ifdef _GLOB_PRIVATE_
  	_GLOB_PRIVATE_
 diff --git a/src/lib/libast/misc/cmdarg.c b/src/lib/libast/misc/cmdarg.c
-index 2a54a5e1b..1bd65031b 100644
+index af70dd98a..966d6775c 100644
 --- a/src/lib/libast/misc/cmdarg.c
 +++ b/src/lib/libast/misc/cmdarg.c
 @@ -41,7 +41,7 @@ cmdrun(int argc, char** argv, Cmddisc_t* disc)
@@ -1439,7 +1439,7 @@ index 2a54a5e1b..1bd65031b 100644
  		x = ARG_MAX;
  	if (size <= 0 || size > x)
  		size = x;
- 	sh = pathshell();
+ 	sh = astconf("SH", NULL, NULL);
 -	m = n + (argc + 4) * sizeof(char**) + strlen(sh) + 1;
 -	m = roundof(m, sizeof(char**));
 +	m = n + (argc + 4) * (ptrdiff_t)sizeof(char**) + (ptrdiff_t)strlen(sh) + 1;
@@ -3237,7 +3237,7 @@ index 27930fedc..b950fa4f7 100644
  	if (opts)
  	{
 diff --git a/src/lib/libast/misc/procopen.c b/src/lib/libast/misc/procopen.c
-index b8b0b6bd9..bbf5b74e6 100644
+index c53291c9f..004dc5358 100644
 --- a/src/lib/libast/misc/procopen.c
 +++ b/src/lib/libast/misc/procopen.c
 @@ -175,12 +175,12 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)

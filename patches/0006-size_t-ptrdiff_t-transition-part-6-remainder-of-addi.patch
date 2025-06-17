@@ -1,6 +1,6 @@
-From a45fcc2d706fa9a38aa4235992de717c74f346f0 Mon Sep 17 00:00:00 2001
+From 16fcb43f0d835a7983427e81075761397656ba8e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 7 Jun 2025 05:28:12 -0700
+Date: Mon, 16 Jun 2025 19:33:51 -0700
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to libast
 
 This is the sixth of the thickfold patch series, which enables ksh93
@@ -30,7 +30,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/disc/sfdcsubstr.c   |   7 +-
  src/lib/libast/disc/sfdcunion.c    |  15 ++--
  src/lib/libast/disc/sfkeyprintf.c  |  63 ++++---------
- src/lib/libast/features/tty        |   5 +-
+ src/lib/libast/features/tty        |   2 +-
  src/lib/libast/include/ast_std.h   |  20 ++---
  src/lib/libast/include/find.h      |   4 +-
  src/lib/libast/include/hashpart.h  |   5 +-
@@ -40,8 +40,6 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/path/pathcanon.c    |   4 +-
  src/lib/libast/path/pathcd.c       |  15 ++--
  src/lib/libast/path/pathpath.c     |   4 +-
- src/lib/libast/path/pathprog.c     |  22 ++---
- src/lib/libast/path/pathshell.c    |  10 +--
  src/lib/libast/path/pathtemp.c     |  23 ++---
  src/lib/libast/tm/tmdate.c         |   5 +-
  src/lib/libast/tm/tmfix.c          |   7 +-
@@ -67,7 +65,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
  src/lib/libast/tm/tvtouch.c        |   4 +-
- 46 files changed, 344 insertions(+), 341 deletions(-)
+ 44 files changed, 324 insertions(+), 326 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index 109348990..d3e794014 100644
@@ -646,18 +644,15 @@ index 91c4d6806..e5f0cef86 100644
 -	return r;
 -}
 diff --git a/src/lib/libast/features/tty b/src/lib/libast/features/tty
-index 7096a1284..a4945396f 100644
+index 7096a1284..d4c8680b4 100644
 --- a/src/lib/libast/features/tty
 +++ b/src/lib/libast/features/tty
-@@ -11,7 +11,10 @@ lib	tcgetpgrp unistd.h fail{
+@@ -11,7 +11,7 @@ lib	tcgetpgrp unistd.h fail{
  	exit 1
  }end
  mac	_POSIX_VDISABLE termios.h
 -mem	termios.c_line termios.h
 +mem	termios.c_line  termios.h
-+typ	speed_t         termios.h
-+typ	tcflag_t        termios.h
-+typ	cc_t            termios.h
  
  cat{
  
@@ -927,114 +922,6 @@ index e5a45ab82..bcb8ee271 100644
  				if (path != buf)
  					strcpy(path, buf);
  			}
-diff --git a/src/lib/libast/path/pathprog.c b/src/lib/libast/path/pathprog.c
-index 09a61483c..fdc9a53eb 100644
---- a/src/lib/libast/path/pathprog.c
-+++ b/src/lib/libast/path/pathprog.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-@@ -43,6 +44,7 @@ static size_t
- prog(const char* command, char* path, size_t size)
- {
- 	ssize_t		n;
-+	size_t		len;
- 	char*		s;
- #if _WINIX
- 	char*		t;
-@@ -57,9 +59,9 @@ prog(const char* command, char* path, size_t size)
- #ifdef _PROC_PROG
- 	if ((n = readlink(_PROC_PROG, path, size)) > 0 && *path == '/')
- 	{
--		if (n < size)
-+		if ((size_t)n < size)
- 			path[n] = 0;
--		return n;
-+		return (size_t)n;
- 	}
- #endif
- #if _lib_getexecname
-@@ -87,13 +89,13 @@ prog(const char* command, char* path, size_t size)
- 			else if (!q && isspace(c))
- 				break;
- 			else if (t < e)
--				*t++ = c == '\\' ? '/' : c;
-+				*t++ = c == '\\' ? '/' : (char)c;
- 			else
- 				n++;
- 		}
- 		if (t < e)
- 			*t = 0;
--		return (t - path) + n;
-+		return (size_t)(t - path) + (size_t)n;
- 	}
- #endif
- 	if (command)
-@@ -103,17 +105,17 @@ prog(const char* command, char* path, size_t size)
- 	}
- 	return 0;
-  found:
--	n = strlen(s);
--	if (n < size)
--		memcpy(path, s, n + 1);
--	return n;
-+	len = strlen(s);
-+	if (len < size)
-+		memcpy(path, s, len + 1);
-+	return len;
- }
- 
- size_t
- pathprog(const char* command, char* path, size_t size)
- {
- 	char*		rel;
--	ssize_t		n;
-+	size_t		n;
- 
- 	if ((n = prog(command, path, size)) > 0 && n < size && *path != '/' && (rel = strdup(path)))
- 	{
-diff --git a/src/lib/libast/path/pathshell.c b/src/lib/libast/path/pathshell.c
-index 7537c5393..b607994b9 100644
---- a/src/lib/libast/path/pathshell.c
-+++ b/src/lib/libast/path/pathshell.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -54,10 +54,10 @@ char*
- pathshell(void)
- {
- 	char*		sh;
--	int		ru;
--	int		eu;
--	int		rg;
--	int		eg;
-+	uid_t		ru;
-+	uid_t		eu;
-+	gid_t		rg;
-+	gid_t		eg;
- 	struct stat	st;
- 
- 	static char*	val;
 diff --git a/src/lib/libast/path/pathtemp.c b/src/lib/libast/path/pathtemp.c
 index 5b5c099ad..8b59053be 100644
 --- a/src/lib/libast/path/pathtemp.c

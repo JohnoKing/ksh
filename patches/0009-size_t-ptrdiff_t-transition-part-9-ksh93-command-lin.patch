@@ -1,6 +1,6 @@
-From 692bc08dc25b0344d830cfa9615685f873fd0e6a Mon Sep 17 00:00:00 2001
+From e96d673e86c9ebc57c1e9283d258302b8fc9a420 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 7 Jun 2025 05:28:12 -0700
+Date: Mon, 16 Jun 2025 19:33:51 -0700
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -21,14 +21,14 @@ Change in the number of warnings on Linux when compiling with clang using
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/edit/completion.c | 65 +++++++++++-----------
- src/cmd/ksh93/edit/edit.c       | 65 +++++++++++-----------
+ src/cmd/ksh93/edit/edit.c       | 67 +++++++++++------------
  src/cmd/ksh93/edit/emacs.c      | 46 ++++++++--------
  src/cmd/ksh93/edit/hexpand.c    | 51 +++++++++---------
  src/cmd/ksh93/edit/history.c    | 95 ++++++++++++++++++---------------
  src/cmd/ksh93/edit/vi.c         | 40 +++++++-------
  src/cmd/ksh93/include/edit.h    |  6 +--
  src/cmd/ksh93/include/history.h | 13 ++---
- 8 files changed, 198 insertions(+), 183 deletions(-)
+ 8 files changed, 199 insertions(+), 184 deletions(-)
 
 diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
 index 431de2984..18684e8c5 100644
@@ -231,7 +231,7 @@ index 431de2984..18684e8c5 100644
  	return 0;
  }
 diff --git a/src/cmd/ksh93/edit/edit.c b/src/cmd/ksh93/edit/edit.c
-index 1a2e5d774..3af0e37ac 100644
+index c0eea1b15..716e79052 100644
 --- a/src/cmd/ksh93/edit/edit.c
 +++ b/src/cmd/ksh93/edit/edit.c
 @@ -67,7 +67,7 @@ static char *erase_eos;  /* erase to end of screen */
@@ -243,7 +243,7 @@ index 1a2e5d774..3af0e37ac 100644
  
  #ifndef _POSIX_DISABLE
  #   define _POSIX_DISABLE	0
-@@ -262,11 +262,11 @@ int ed_window(void)
+@@ -264,11 +264,11 @@ int ed_window(void)
  
  void ed_flush(Edit_t *ep)
  {
@@ -257,7 +257,7 @@ index 1a2e5d774..3af0e37ac 100644
  	ep->e_outptr = ep->e_outbase;
  }
  
-@@ -412,7 +412,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
+@@ -414,7 +414,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
  				for(n=1; c = *last++; n++)
  				{
  					if(pp < ppmax)
@@ -266,7 +266,7 @@ index 1a2e5d774..3af0e37ac 100644
  					if(c=='\a' || c==ESC || c=='\r')
  						break;
  					if(skip || (c>='0' && c<='9'))
-@@ -475,7 +475,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
+@@ -477,7 +477,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
  						qlen++;
  					else if(!is_print(c))
  						ep->e_crlf = 0;
@@ -275,7 +275,7 @@ index 1a2e5d774..3af0e37ac 100644
  						qlen += qwid - mbwidth(c);
  					while(prev < last && pp < ppmax)
  						*pp++ = *prev++;
-@@ -484,7 +484,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
+@@ -486,7 +486,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
  		}
  	}
  	if(pp-ep->e_prompt > qlen)
@@ -284,7 +284,7 @@ index 1a2e5d774..3af0e37ac 100644
  	*pp = 0;
  	if(ep->e_multiline)
  	{
-@@ -547,7 +547,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
+@@ -549,7 +549,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
  		n = strlen(pp);
  		if(n > LOOKAHEAD)
  			n = LOOKAHEAD;
@@ -293,7 +293,7 @@ index 1a2e5d774..3af0e37ac 100644
  		while(n-- > 0)
  			ep->e_lbuf[n] = *pp++;
  		ep->e_default = 0;
-@@ -617,7 +617,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
+@@ -619,7 +619,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
  		 */
  		if(sh.winch && sh_editor_active() && sh_isstate(SH_INTERACTIVE))
  		{
@@ -302,7 +302,7 @@ index 1a2e5d774..3af0e37ac 100644
  			if(!ep->e_prompt)
  			{
  				/* ed_emacsread or ed_viread was unable to put the tty in raw mode */
-@@ -674,7 +674,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
+@@ -677,7 +677,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
  		/* an interrupt that should be ignored */
  		errno = 0;
  		if(!waitevent || (rv=(*waitevent)(fd,-1L,0))>=0)
@@ -311,7 +311,7 @@ index 1a2e5d774..3af0e37ac 100644
  	}
  	if(rv < 0)
  	{
-@@ -702,7 +702,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
+@@ -705,7 +705,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
  #endif /* _hdr_utime */
  		while(1)
  		{
@@ -320,7 +320,7 @@ index 1a2e5d774..3af0e37ac 100644
  			if(rv>=0 || errno!=EINTR)
  				break;
  			if(sh.trapnote&(SH_SIGSET|SH_SIGTRAP))
-@@ -712,7 +712,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
+@@ -715,7 +715,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
  		}
  	}
  	else if(rv>=0 && mode>0)
@@ -329,7 +329,7 @@ index 1a2e5d774..3af0e37ac 100644
  done:
  	sh.waitevent = waitevent;
  	sh_offstate(SH_TTYWAIT);
-@@ -731,7 +731,8 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
+@@ -734,7 +734,8 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
  	int c;
  #if SHOPT_MULTIBYTE
  	char *endp, *p=string;
@@ -339,7 +339,7 @@ index 1a2e5d774..3af0e37ac 100644
  	*(endp = &p[nbyte]) = 0;
  	endp = &p[nbyte];
  	do
-@@ -762,7 +763,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
+@@ -765,7 +766,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
  				if(type)
  					c = -c;
  			}
@@ -348,7 +348,7 @@ index 1a2e5d774..3af0e37ac 100644
  			{
  				if(errno == EILSEQ)
  					errno = 0;
-@@ -852,7 +853,7 @@ int ed_getchar(Edit_t *ep,int mode)
+@@ -855,7 +856,7 @@ int ed_getchar(Edit_t *ep,int mode)
  					{
  						if(!ep->e_lookahead)
  						{
@@ -357,7 +357,7 @@ index 1a2e5d774..3af0e37ac 100644
  								putstack(ep,readin+n,c,1);
  						}
  						if(!ep->e_lookahead)
-@@ -863,7 +864,7 @@ int ed_getchar(Edit_t *ep,int mode)
+@@ -866,7 +867,7 @@ int ed_getchar(Edit_t *ep,int mode)
  							break;
  						}
  						c = -c;
@@ -366,7 +366,7 @@ index 1a2e5d774..3af0e37ac 100644
  						if(c>='0' && c<='9' && n>2)
  							continue;
  						if(n>2 || (c!= '['  &&  c!= 'O'))
-@@ -917,7 +918,7 @@ void		ed_putchar(Edit_t *ep,int c)
+@@ -920,7 +921,7 @@ void		ed_putchar(Edit_t *ep,int c)
  	char *dp = ep->e_outptr;
  	if(!dp)
  		return;
@@ -375,7 +375,7 @@ index 1a2e5d774..3af0e37ac 100644
  	*dp = '\0';
  	if(dp >= ep->e_outlast)
  		ed_flush(ep);
-@@ -991,7 +992,7 @@ Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
+@@ -994,7 +995,7 @@ Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
  		if(col==0)
  			pos.line++;
  	}
@@ -384,7 +384,7 @@ index 1a2e5d774..3af0e37ac 100644
  	return pos;
  }
  #endif /* SHOPT_ESH || SHOPT_VSH */
-@@ -1046,7 +1047,7 @@ int ed_setcursor(Edit_t *ep,genchar *physical,int old,int new,int first)
+@@ -1049,7 +1050,7 @@ int ed_setcursor(Edit_t *ep,genchar *physical,int old,int new,int first)
  					int m = ep->e_winsz+1-plen;
  					ed_putchar(ep,'\n');
  					n = plen;
@@ -393,7 +393,7 @@ index 1a2e5d774..3af0e37ac 100644
  					{
  						while(physical[m] && n-->0)
  							ed_putchar(ep,physical[m++]);
-@@ -1115,7 +1116,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int
+@@ -1118,7 +1119,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int
  	for(r=poff;c= *sp;sp++)
  	{
  		if(curp == sp)
@@ -402,7 +402,7 @@ index 1a2e5d774..3af0e37ac 100644
  #if SHOPT_MULTIBYTE
  		d = mbwidth((wchar_t)c);
  		if(d==1 && is_cntrl(c))
-@@ -1139,7 +1140,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int
+@@ -1142,7 +1143,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int
  		{
  			if(c=='\t')
  			{
@@ -411,7 +411,7 @@ index 1a2e5d774..3af0e37ac 100644
  				c += ep->e_plen;
  				c = TABSIZE - c%TABSIZE;
  				while(--c>0)
-@@ -1152,14 +1153,14 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int
+@@ -1155,14 +1156,14 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int
  				c = printchar(c);
  			}
  			if(curp == sp)
@@ -429,7 +429,7 @@ index 1a2e5d774..3af0e37ac 100644
  	return r;
  }
  #endif /* SHOPT_ESH || SHOPT_VSH */
-@@ -1186,7 +1187,7 @@ int	ed_internal(const char *src, genchar *dest)
+@@ -1189,7 +1190,7 @@ int	ed_internal(const char *src, genchar *dest)
  	while(*cp)
  		*dp++ = mbchar(cp);
  	*dp = 0;
@@ -438,7 +438,7 @@ index 1a2e5d774..3af0e37ac 100644
  }
  #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
  
-@@ -1222,12 +1223,12 @@ int	ed_external(const genchar *src, char *dest)
+@@ -1225,12 +1226,12 @@ int	ed_external(const genchar *src, char *dest)
  		{
  			/* copy the character as is */
  			size = 1;
@@ -453,7 +453,7 @@ index 1a2e5d774..3af0e37ac 100644
  }
  #endif /* SHOPT_MULTIBYTE */
  
-@@ -1249,7 +1250,7 @@ void	ed_gencpy(genchar *dp,const genchar *sp)
+@@ -1252,11 +1253,11 @@ void	ed_gencpy(genchar *dp,const genchar *sp)
   * copy at most <n> items from <sp> to <dp>
   */
  
@@ -462,7 +462,12 @@ index 1a2e5d774..3af0e37ac 100644
  {
  	dp = (genchar*)roundof((uintptr_t)dp,sizeof(genchar));
  	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
-@@ -1262,12 +1263,12 @@ void	ed_genncpy(genchar *dp,const genchar *sp, int n)
+-	while(n-->0 && (*dp++ = *sp++));
++	while(n>0 && (*dp++ = *sp++) && --n);
+ }
+ #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
+ 
+@@ -1265,12 +1266,12 @@ void	ed_genncpy(genchar *dp,const genchar *sp, int n)
   * find the string length of <str>
   */
  
@@ -477,7 +482,7 @@ index 1a2e5d774..3af0e37ac 100644
  }
  #endif /* (SHOPT_ESH || SHOPT_VSH) && SHOPT_MULTIBYTE */
  
-@@ -1275,7 +1276,7 @@ int	ed_genlen(const genchar *str)
+@@ -1278,7 +1279,7 @@ int	ed_genlen(const genchar *str)
   * Execute keyboard trap on given buffer <inbuff> of given size <isize>
   * <mode> < 0 for vi insert mode
   */
@@ -486,7 +491,7 @@ index 1a2e5d774..3af0e37ac 100644
  {
  	char *cp;
  	int savexit;
-@@ -1308,9 +1309,9 @@ static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
+@@ -1311,9 +1312,9 @@ static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
  		nv_unset(ED_CHRNOD,0);
  	else if(bufsize>0)
  	{
@@ -1349,7 +1354,7 @@ index 9833e3731..ddaf4d2df 100644
  		if(!isspace(virtual[x]))
  #endif /* SHOPT_MULTIBYTE */
 diff --git a/src/cmd/ksh93/include/edit.h b/src/cmd/ksh93/include/edit.h
-index 6d8753ec5..66f7861d1 100644
+index 6a3f492d1..f9aa60928 100644
 --- a/src/cmd/ksh93/include/edit.h
 +++ b/src/cmd/ksh93/include/edit.h
 @@ -112,7 +112,7 @@ typedef struct edit

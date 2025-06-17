@@ -1,6 +1,6 @@
-From 6b46552f95a1d6d371476b9e1b984ce68540190e Mon Sep 17 00:00:00 2001
+From d32f9ce8e54f80cdba3f1a290ccdc778c2efb1d9 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 7 Jun 2025 05:28:15 -0700
+Date: Mon, 16 Jun 2025 19:33:55 -0700
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -51,7 +51,7 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/jobs.h    |   6 +-
  src/cmd/ksh93/include/path.h    |  10 +--
  src/cmd/ksh93/include/streval.h |  16 ++---
- src/cmd/ksh93/sh/args.c         |  41 ++++++------
+ src/cmd/ksh93/sh/args.c         |  44 +++++++------
  src/cmd/ksh93/sh/arith.c        |  26 ++++----
  src/cmd/ksh93/sh/deparse.c      |  27 ++++----
  src/cmd/ksh93/sh/expand.c       |  25 +++----
@@ -62,25 +62,25 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/path.c         |  98 +++++++++++++++-------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++++-------
  src/cmd/ksh93/sh/xec.c          | 111 +++++++++++++++++---------------
- src/cmd/ksh93/tests/basic.sh    |   2 +-
+ src/cmd/ksh93/tests/basic.sh    |  26 +++++++-
  src/cmd/ksh93/tests/subshell.sh |   2 +-
- 19 files changed, 337 insertions(+), 304 deletions(-)
+ 19 files changed, 363 insertions(+), 305 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 87fccff76..718190b0e 100644
+index 81c063c04..0410b8a0a 100644
 --- a/NEWS
 +++ b/NEWS
 @@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
  For full details, see the git log at: https://github.com/ksh93/ksh
  Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2025-06-07:
++2025-06-16:
 +
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2025-05-31:
+ 2025-06-14:
  
- - Fixed a bug that caused the multiline option to break when PS*
+ - Fixed a bug occurring on systems with posix_spawn(3), spawnve(2), and
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -235,7 +235,7 @@ index af67a5789..9fdc02677 100644
  #define ARITH_COMP	04	/* set when compile separate from execute */
  #define ARITH_ASSIGNOP	010	/* set during assignment operators */
 diff --git a/src/cmd/ksh93/sh/args.c b/src/cmd/ksh93/sh/args.c
-index 99d22f686..c4e7bbec1 100644
+index 99d22f686..f193c85ae 100644
 --- a/src/cmd/ksh93/sh/args.c
 +++ b/src/cmd/ksh93/sh/args.c
 @@ -57,7 +57,7 @@ static  const char optksh[] =
@@ -299,7 +299,7 @@ index 99d22f686..c4e7bbec1 100644
  		if(sh_isoption(n))
  			*flagp++ = *cp;
  		cp++;
-@@ -477,15 +480,15 @@ struct dolnod *sh_argcreate(char *argv[])
+@@ -477,20 +480,21 @@ struct dolnod *sh_argcreate(char *argv[])
  {
  	struct dolnod *dp;
  	char **pp=argv, *sp;
@@ -318,7 +318,14 @@ index 99d22f686..c4e7bbec1 100644
  	dp->dolnxt = 0;
  	pp = dp->dolval;
  	sp = (char*)dp + sizeof(struct dolnod) + n*sizeof(char*);
-@@ -549,7 +552,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
+-	while(n--)
++	while(n)
+ 	{
++		n--;
+ 		*pp++ = sp;
+ 		sp = strcopy(sp, *argv++) + 1;
+ 	}
+@@ -549,7 +553,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
  	const Shtable_t *tp;
  	const char *name;
  	int on;
@@ -327,7 +334,7 @@ index 99d22f686..c4e7bbec1 100644
  	if(!(mode&PRINT_NO_HEADER))
  		sfputr(sfstdout,sh_translate(e_heading),'\n');
  	if(mode&PRINT_TABLE)
-@@ -560,14 +563,14 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
+@@ -560,14 +564,14 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
  		int	i;
  
  		c = 0;
@@ -344,7 +351,7 @@ index 99d22f686..c4e7bbec1 100644
  				c = w;
  		}
  		c += 4;
-@@ -575,7 +578,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
+@@ -575,7 +579,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
  			w = 2*c;
  		r = w / c;
  		i = 0;
@@ -353,7 +360,7 @@ index 99d22f686..c4e7bbec1 100644
  		{
  			if(mask && !is_option(mask,value&0xff))
  				continue;
-@@ -604,7 +607,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
+@@ -604,7 +608,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
  #endif
  	if(!(mode&(PRINT_ALL|PRINT_VERBOSE))) /* only print set options */
  		sfwrite(sfstdout,"set --default",13);
@@ -362,7 +369,7 @@ index 99d22f686..c4e7bbec1 100644
  	{
  		if(mask && !is_option(mask,value&0xff))
  			continue;
-@@ -703,7 +706,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
+@@ -703,7 +707,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
  				sh_trim(*comargn);
  			if(!(argp=nextarg) || (argp->argflag&ARG_MAKE))
  			{
@@ -371,7 +378,7 @@ index 99d22f686..c4e7bbec1 100644
  					strsort(comargn,argn,strcoll);
  				comargm = comargn;
  			}
-@@ -768,7 +771,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
+@@ -768,7 +772,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
  	else
  		sh.outpipe = pv;
  	sh_onstate(SH_PROCSUB);
@@ -1345,7 +1352,7 @@ index f98d273b3..5cb002d05 100644
  		{
  			pw->p_flag |= (P_SIGNALLED|P_STOPPED);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
-index 56c4f9437..b11fc1796 100644
+index b52b149e6..ea8f5d92f 100644
 --- a/src/cmd/ksh93/sh/main.c
 +++ b/src/cmd/ksh93/sh/main.c
 @@ -98,6 +98,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
@@ -1367,7 +1374,7 @@ index 56c4f9437..b11fc1796 100644
  		if(sh_isoption(SH_INTERACTIVE))
  		{
  #ifdef SIGXCPU
-@@ -635,7 +636,7 @@ static void chkmail(char *files)
+@@ -614,7 +615,7 @@ static void chkmail(char *files)
  	char		*cp,*sp,*qp;
  	char		save;
  	struct argnod	*arglist=0;
@@ -1376,7 +1383,7 @@ index 56c4f9437..b11fc1796 100644
  	char	 	*savstak = stkptr(sh.stk,0);
  	struct stat	statb;
  	if(*(cp=files) == 0)
-@@ -728,8 +729,8 @@ static void fixargs(char **argv, int mode)
+@@ -707,8 +708,8 @@ static void fixargs(char **argv, int mode)
  {
  #   if PSTAT
  	char *cp;
@@ -1387,7 +1394,7 @@ index 56c4f9437..b11fc1796 100644
  	char *buff;
  	union pstun un;
  	if(mode==0)
-@@ -741,7 +742,7 @@ static void fixargs(char **argv, int mode)
+@@ -720,7 +721,7 @@ static void fixargs(char **argv, int mode)
  		command_len = st.command_length;
  		return;
  	}
@@ -1396,7 +1403,7 @@ index 56c4f9437..b11fc1796 100644
  	buff = stkseek(sh.stk,0);
  	if(command_len==0)
  		return;
-@@ -760,7 +761,7 @@ static void fixargs(char **argv, int mode)
+@@ -739,7 +740,7 @@ static void fixargs(char **argv, int mode)
  #   elif _lib_setproctitle
  #	define CMDMAXLEN 255
  	char *cp;
@@ -1405,7 +1412,7 @@ index 56c4f9437..b11fc1796 100644
  	char buff[CMDMAXLEN + 1];
  	if(mode==0)
  		return;
-@@ -778,12 +779,12 @@ static void fixargs(char **argv, int mode)
+@@ -757,12 +758,12 @@ static void fixargs(char **argv, int mode)
  #   else
  	/* Generic version, works on at least Linux and macOS */
  	char *cp;
@@ -1422,7 +1429,7 @@ index 56c4f9437..b11fc1796 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index 3882d3965..b4b186901 100644
+index 29b21a69c..ca83f47ea 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1594,7 +1601,7 @@ index 3882d3965..b4b186901 100644
  			{
  				xval = *--xp;
  				*xp = v;
-@@ -1284,7 +1289,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1282,7 +1287,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  		errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_exec,path);
  		UNREACHABLE();
  	}
@@ -1603,7 +1610,7 @@ index 3882d3965..b4b186901 100644
  }
  
  /*
-@@ -1453,13 +1458,14 @@ static noreturn void exscript(char *path,char *argv[])
+@@ -1451,13 +1456,14 @@ static noreturn void exscript(char *path,char *argv[])
  static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, int flag)
  {
  	Pathcomp_t *pp, *oldpp;
@@ -1620,7 +1627,7 @@ index 3882d3965..b4b186901 100644
  		sfputc(sh.stk,0);
  		stkseek(sh.stk,offset);
  		name = (const char*)stkptr(sh.stk,offset);
-@@ -1501,12 +1507,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
+@@ -1499,12 +1505,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
   * This function checks for the .paths file in directory in <pp>
   * it assumes that the directory is on the stack at <offset>
   */
@@ -1638,7 +1645,7 @@ index 3882d3965..b4b186901 100644
  	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
  		stkseek(sh.stk,offset);
  	sfputr(sh.stk,"/.paths",0);
-@@ -1519,11 +1527,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1517,11 +1525,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			close(fd);
  			return 0;
  		}
@@ -1654,7 +1661,7 @@ index 3882d3965..b4b186901 100644
  		sp[n] = 0;
  		close(fd);
  		for(ep=0; n--; cp++)
-@@ -1542,17 +1550,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1540,17 +1548,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
  			*cp = 0;
  			m = ep ? (ep-sp) : 0;
@@ -1675,7 +1682,7 @@ index 3882d3965..b4b186901 100644
  			{
  				if(pp->bbuf)
  					free(pp->bbuf);
-@@ -1560,10 +1568,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1558,10 +1566,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
  			else if(m)
  			{
@@ -1689,7 +1696,7 @@ index 3882d3965..b4b186901 100644
  				strcpy(&pp->lib[k+1],ep);
  				pathcanon(&pp->lib[m],0);
  				if(!first)
-@@ -1586,7 +1594,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
+@@ -1584,7 +1592,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
  {
  	const char *cp;
  	Pathcomp_t *old=0;
@@ -1698,7 +1705,7 @@ index 3882d3965..b4b186901 100644
  	char *savptr = NULL;
  	if(!path && type!=PATH_PATH)
  		return first;
-@@ -1692,7 +1700,7 @@ void path_newdir(Pathcomp_t *first)
+@@ -1690,7 +1698,7 @@ void path_newdir(Pathcomp_t *first)
  		if((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH)
  		{
  			/* try to insert .paths component */
@@ -1707,7 +1714,7 @@ index 3882d3965..b4b186901 100644
  			sfputr(sh.stk,pp->name,0);
  			stkseek(sh.stk,offset);
  			next = pp->next;
-@@ -1817,7 +1825,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
+@@ -1815,7 +1823,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
  		path_nextcomp(pp,name,pp);
  		sp = stkptr(sh.stk,PATH_OFFSET);
  		if(sp && lstat(sp,&statb)>=0 && S_ISLNK(statb.st_mode))
@@ -1914,7 +1921,7 @@ index 1e77d44f8..02a646ea5 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index b770321da..504584097 100644
+index 1f78e3a73..9d046bb0d 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
 @@ -152,10 +152,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
@@ -2291,7 +2298,7 @@ index b770321da..504584097 100644
  	Namval_t	node;
  	struct Namref	nr;
 diff --git a/src/cmd/ksh93/tests/basic.sh b/src/cmd/ksh93/tests/basic.sh
-index 7096353b6..84be5df93 100755
+index 9e503a906..abee7c887 100755
 --- a/src/cmd/ksh93/tests/basic.sh
 +++ b/src/cmd/ksh93/tests/basic.sh
 @@ -2,7 +2,7 @@
@@ -2303,6 +2310,37 @@ index 7096353b6..84be5df93 100755
  #                      and is licensed under the                       #
  #                 Eclipse Public License, Version 2.0                  #
  #                                                                      #
+@@ -957,6 +957,30 @@ for t in {A..Z}; do
+ 	[[ $? == 1 ]] || err_exit "'trap' throws segfault when given invalid signal name '$t'"
+ done
+ 
++# ======
++# Is ksh93 capable of operating within a 64-bit address space?
++# https://github.com/ksh93/ksh/issues/592
++integer res ret=0
++if [[ -f /proc/meminfo ]] && ! check_profiling_or_asan
++then	meminfo=($(grep 'MemAvailable:' /proc/meminfo))
++	integer res
++	((res = meminfo[1] / 1000000))
++	# Don't try unless we have at least 5 * 2 + 2 GB of available RAM
++	if ((res >= 12))
++	then	got=$(	ulimit -t unlimited 2>/dev/null  # Fork
++			# Allocate 5 gigabytes into the variable 'v'.
++			# This test must allocate more than UINT_MAX.
++			printf -v v "%5000000000d" 0
++			echo ${#v}
++		)
++		if (($? != 0))
++		then	err_exit "ksh crashes when attempting to allocate 5 gigabytes to a variable"
++		elif [[ $got != 5000000000 ]]
++		then	err_exit "ksh cannot allocate at least 5 gigabytes to a variable (got $(printf %q "$got"))"
++		fi
++	fi
++fi
++
+ # ======
+ # Is an invalid flag handled correctly?
+ # ksh2020 regression: https://github.com/att/ast/issues/1284
 diff --git a/src/cmd/ksh93/tests/subshell.sh b/src/cmd/ksh93/tests/subshell.sh
 index 911ee07a5..32d1d29f8 100755
 --- a/src/cmd/ksh93/tests/subshell.sh

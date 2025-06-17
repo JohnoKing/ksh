@@ -1,6 +1,6 @@
-From f52532da46118d49c8f1a690c63c6f13b8e52de9 Mon Sep 17 00:00:00 2001
+From 00f337cab2a1fc52071e12713192651ee089caca Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 7 Jun 2025 05:28:11 -0700
+Date: Mon, 16 Jun 2025 19:33:51 -0700
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -43,36 +43,36 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/print.c       |  93 +++++++++---------
+ src/cmd/ksh93/bltins/print.c       |  93 ++++++++++---------
  src/lib/libast/features/stdio      |  18 ++--
- src/lib/libast/hash/hashalloc.c    |  15 +--
- src/lib/libast/hash/hashdump.c     |  15 +--
+ src/lib/libast/hash/hashalloc.c    |  15 ++--
+ src/lib/libast/hash/hashdump.c     |  15 ++--
  src/lib/libast/hash/hashlib.h      |  13 +--
- src/lib/libast/hash/hashlook.c     |  15 +--
- src/lib/libast/hash/hashsize.c     |  11 ++-
+ src/lib/libast/hash/hashlook.c     |  15 ++--
+ src/lib/libast/hash/hashsize.c     |  11 +--
  src/lib/libast/hash/memhash.c      |   7 +-
  src/lib/libast/hash/strhash.c      |   8 +-
  src/lib/libast/hash/strsum.c       |   5 +-
- src/lib/libast/include/ast.h       |  35 +++----
+ src/lib/libast/include/ast.h       |  35 ++++----
  src/lib/libast/include/hash.h      |   9 +-
  src/lib/libast/include/modex.h     |   7 +-
- src/lib/libast/include/regex.h     |  97 ++++++++++---------
- src/lib/libast/include/sfio.h      |  50 +++++-----
+ src/lib/libast/include/regex.h     |  97 ++++++++++----------
+ src/lib/libast/include/sfio.h      |  50 +++++------
  src/lib/libast/include/sfio_s.h    |   5 +-
  src/lib/libast/include/sfio_t.h    |   2 +-
  src/lib/libast/man/fmt.3           |   6 +-
- src/lib/libast/man/hash.3          |  10 +-
+ src/lib/libast/man/hash.3          |  10 +--
  src/lib/libast/man/modecanon.3     |   4 +-
  src/lib/libast/man/path.3          |   2 +-
- src/lib/libast/man/sfio.3          |  62 ++++++------
+ src/lib/libast/man/sfio.3          |  62 ++++++-------
  src/lib/libast/man/strmatch.3      |   4 +-
  src/lib/libast/man/strperm.3       |   2 +-
- src/lib/libast/path/pathgetlink.c  |  11 ++-
+ src/lib/libast/path/pathgetlink.c  |  11 +--
  src/lib/libast/sfio/_sfgetl.c      |   5 +-
  src/lib/libast/sfio/_sfgetu.c      |   5 +-
  src/lib/libast/sfio/_sfputc.c      |   5 +-
- src/lib/libast/sfio/_sfputd.c      |  11 ++-
- src/lib/libast/sfio/_sfputl.c      |  10 +-
+ src/lib/libast/sfio/_sfputd.c      |  11 +--
+ src/lib/libast/sfio/_sfputl.c      |  10 +--
  src/lib/libast/sfio/_sfputm.c      |  14 +--
  src/lib/libast/sfio/_sfputu.c      |  12 +--
  src/lib/libast/sfio/sfcvt.c        |  18 ++--
@@ -94,35 +94,35 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfnew.c        |   7 +-
  src/lib/libast/sfio/sfnputc.c      |  17 ++--
  src/lib/libast/sfio/sfpeek.c       |   5 +-
- src/lib/libast/sfio/sfpkrd.c       |  20 ++--
+ src/lib/libast/sfio/sfpkrd.c       |  20 ++---
  src/lib/libast/sfio/sfpoll.c       |   4 +-
  src/lib/libast/sfio/sfpool.c       |  14 +--
  src/lib/libast/sfio/sfpopen.c      |   4 +-
  src/lib/libast/sfio/sfprintf.c     |  19 ++--
- src/lib/libast/sfio/sfprints.c     |  15 +--
+ src/lib/libast/sfio/sfprints.c     |  15 ++--
  src/lib/libast/sfio/sfputd.c       |   5 +-
  src/lib/libast/sfio/sfputl.c       |   5 +-
  src/lib/libast/sfio/sfputm.c       |   5 +-
- src/lib/libast/sfio/sfputr.c       |  31 +++---
+ src/lib/libast/sfio/sfputr.c       |  31 +++----
  src/lib/libast/sfio/sfputu.c       |   5 +-
  src/lib/libast/sfio/sfrd.c         |  29 +++---
  src/lib/libast/sfio/sfread.c       |  33 +++----
  src/lib/libast/sfio/sfreserve.c    |   7 +-
  src/lib/libast/sfio/sfresize.c     |  13 +--
  src/lib/libast/sfio/sfscanf.c      |   5 +-
- src/lib/libast/sfio/sfseek.c       |  15 ++-
+ src/lib/libast/sfio/sfseek.c       |  15 ++--
  src/lib/libast/sfio/sfsetbuf.c     |  49 +++++-----
  src/lib/libast/sfio/sfsetfd.c      |   3 +-
- src/lib/libast/sfio/sfstrtod.c     |  11 ++-
+ src/lib/libast/sfio/sfstrtod.c     |  11 +--
  src/lib/libast/sfio/sfstrtof.h     |  17 ++--
  src/lib/libast/sfio/sfswap.c       |   5 +-
- src/lib/libast/sfio/sftable.c      |  40 ++++----
+ src/lib/libast/sfio/sftable.c      |  40 +++++----
  src/lib/libast/sfio/sftmp.c        |   2 +-
  src/lib/libast/sfio/sfungetc.c     |   6 +-
- src/lib/libast/sfio/sfvprintf.c    | 146 ++++++++++++++---------------
- src/lib/libast/sfio/sfvscanf.c     |  94 ++++++++++---------
+ src/lib/libast/sfio/sfvprintf.c    | 138 ++++++++++++++---------------
+ src/lib/libast/sfio/sfvscanf.c     |  94 ++++++++++----------
  src/lib/libast/sfio/sfwr.c         |  28 +++---
- src/lib/libast/sfio/sfwrite.c      |  32 ++++---
+ src/lib/libast/sfio/sfwrite.c      |  32 +++----
  src/lib/libast/stdio/_doprnt.c     |   5 +-
  src/lib/libast/stdio/_filbuf.c     |   5 +-
  src/lib/libast/stdio/fgets.c       |   9 +-
@@ -134,7 +134,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/stdio/fputws.c      |   5 +-
  src/lib/libast/stdio/fread.c       |   5 +-
  src/lib/libast/stdio/fwrite.c      |   5 +-
- src/lib/libast/stdio/getdelim.c    |  11 ++-
+ src/lib/libast/stdio/getdelim.c    |  11 +--
  src/lib/libast/stdio/printf.c      |   5 +-
  src/lib/libast/stdio/puts.c        |   5 +-
  src/lib/libast/stdio/setbuffer.c   |   5 +-
@@ -148,17 +148,17 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/stdio/vsnprintf.c   |  13 +--
  src/lib/libast/stdio/vswprintf.c   |   5 +-
  src/lib/libast/stdio/vswscanf.c    |   5 +-
- src/lib/libast/string/fmtelapsed.c |  11 ++-
+ src/lib/libast/string/fmtelapsed.c |  11 +--
  src/lib/libast/string/fmtmode.c    |   7 +-
  src/lib/libast/string/fmtperm.c    |   5 +-
  src/lib/libast/string/modedata.c   |   5 +-
- src/lib/libast/string/modei.c      |  11 ++-
+ src/lib/libast/string/modei.c      |  11 +--
  src/lib/libast/string/modelib.h    |  13 +--
- src/lib/libast/string/modex.c      |  11 ++-
- src/lib/libast/string/strmatch.c   |  57 ++++-------
- src/lib/libast/string/strmode.c    |  11 ++-
+ src/lib/libast/string/modex.c      |  11 +--
+ src/lib/libast/string/strmatch.c   |  57 ++++--------
+ src/lib/libast/string/strmode.c    |  11 +--
  src/lib/libast/string/strperm.c    |  16 ++--
- 115 files changed, 916 insertions(+), 844 deletions(-)
+ 115 files changed, 912 insertions(+), 840 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
 index 346f55960..fa199036d 100644
@@ -915,7 +915,7 @@ index b0d0336ca..e51365296 100644
  	return c & 0xffffffff;
  #else
 diff --git a/src/lib/libast/include/ast.h b/src/lib/libast/include/ast.h
-index 622bd26ed..e267f9c20 100644
+index 9f2897c9e..bfc29fcd6 100644
 --- a/src/lib/libast/include/ast.h
 +++ b/src/lib/libast/include/ast.h
 @@ -166,6 +166,11 @@ typedef struct
@@ -1004,7 +1004,7 @@ index 622bd26ed..e267f9c20 100644
  extern int		pathicase(const char*);
  extern int		pathinclude(const char*);
  extern size_t		pathnative(const char*, char*, size_t);
-@@ -390,12 +393,12 @@ extern int		strexp(char*, int);
+@@ -388,12 +391,12 @@ extern int		strexp(char*, int);
  extern long		streval(const char*, char**, long(*)(const char*, char**));
  extern long		strexpr(const char*, char**, long(*)(const char*, char**, void*), void*);
  extern int		strgid(const char*);
@@ -1022,7 +1022,7 @@ index 622bd26ed..e267f9c20 100644
  extern int		strnacmp(const char*, const char*, size_t);
  extern char*		strncopy(char*, const char*, size_t);
  extern int		strnpcmp(const char*, const char*, size_t);
-@@ -410,11 +413,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
+@@ -408,11 +411,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
  extern int		strnvcmp(const char*, const char*, size_t);
  extern int		stropt(const char*, const void*, int, int(*)(void*, const void*, int, const char*), void*);
  extern int		strpcmp(const char*, const char*);
@@ -1490,7 +1490,7 @@ index 0d207eb9e..eb4872bd6 100644
  .SH DESCRIPTION
  POSIX threw out the file type bit macros and replaced them with
 diff --git a/src/lib/libast/man/path.3 b/src/lib/libast/man/path.3
-index 0c51a277a..eb4391192 100644
+index 75c59f804..307b9de45 100644
 --- a/src/lib/libast/man/path.3
 +++ b/src/lib/libast/man/path.3
 @@ -52,7 +52,7 @@ char*     pathcanon(char* \fIpath\fP, int \fIflags\fP);
@@ -4296,7 +4296,7 @@ index e1bf2912a..f55e571c7 100644
  		f->data  = data;
  		f->next  = data+16;
 diff --git a/src/lib/libast/sfio/sfvprintf.c b/src/lib/libast/sfio/sfvprintf.c
-index bd6505de1..3320b172c 100644
+index bd6505de1..110371852 100644
 --- a/src/lib/libast/sfio/sfvprintf.c
 +++ b/src/lib/libast/sfio/sfvprintf.c
 @@ -2,7 +2,7 @@
@@ -4308,15 +4308,6 @@ index bd6505de1..3320b172c 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -31,7 +31,7 @@
- **	Written by Kiem-Phong Vo.
- */
- 
--#define HIGHBITI	(~((~((uint)0)) >> 1))
-+#define HIGHBITS	(~((~((ptrdiff_t)0)) >> 1))
- #define HIGHBITL	(~((~((Sfulong_t)0)) >> 1))
- 
- #define SFFMT_PREFIX	(SFFMT_MINUS|SFFMT_SIGN|SFFMT_BLANK)
 @@ -40,7 +40,7 @@
  
  #include <ccode.h>
@@ -4606,37 +4597,33 @@ index bd6505de1..3320b172c 100644
  #if _has_multibyte
  					wc = 0;
  #endif
-@@ -1061,25 +1061,25 @@ loop_fmt :
+@@ -1061,10 +1061,10 @@ loop_fmt :
  					break;
  				if(v < 0 && fmt == 'd' )
  				{	flags |= SFFMT_MINUS;
 -					if(v == HIGHBITI) /* avoid overflow */
--					{	v = (int)(HIGHBITI/base);
--						*--sp = _Sfdigits[HIGHBITI -
++					if((uint)v == HIGHBITI) /* avoid overflow */
+ 					{	v = (int)(HIGHBITI/base);
+ 						*--sp = _Sfdigits[HIGHBITI -
 -								  ((uint)v)*base];
-+					if((size_t)v == HIGHBITS) /* avoid overflow */
-+					{	v = (ptrdiff_t)(HIGHBITS/(size_t)base);
-+						*--sp = _Sfdigits[HIGHBITS -
-+								  (size_t)v*(size_t)base];
++								  (uint)v*base];
  					}
  					else	v = -v;
  				}
- 				if(n_s < 0)	/* base 10 */
--				{	sfucvt(v,sp,n,ssp,int,uint);
-+				{	sfucvt(v,sp,n,ssp,ptrdiff_t,size_t);
+@@ -1073,13 +1073,13 @@ loop_fmt :
  				}
  				else if(n_s > 0) /* base power-of-2 */
  				{	do
- 					{	*--sp = ssp[v&n_s];
+-					{	*--sp = ssp[v&n_s];
 -					} while((v = ((uint)v) >> n) );
-+					} while((v = (ptrdiff_t)(((size_t)v) >> n)) );
++					{	*--sp = ssp[(uint)v&n_s];
++					} while((v = (((uint)v) >> n)) );
  				}
  				else /* n_s == 0, general base */
  				{	do
--					{	*--sp = ssp[((uint)v)%base];
+ 					{	*--sp = ssp[((uint)v)%base];
 -					} while((v = ((uint)v)/base) );
-+					{	*--sp = ssp[((size_t)v)%(size_t)base];
-+					} while((v = (ptrdiff_t)(((size_t)v)/(size_t)base)) );
++					} while((v = (ptrdiff_t)(((uint)v)/base)) );
  				}
  			}
  
