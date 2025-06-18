@@ -90,6 +90,7 @@
 	  NULL,						/* stdio	*/ \
 	  0,						/* lpos		*/ \
 	  0,						/* iosz		*/ \
+	  0,						/* blksz	*/ \
 	  0						/* getr		*/ \
 	}
 
@@ -118,6 +119,7 @@
 	  (f)->stdio = NULL,				/* stdio	*/ \
 	  (f)->lpos = 0,				/* lpos		*/ \
 	  (f)->iosz = 0,				/* iosz		*/ \
+	  (f)->blksz = 0,				/* blksz	*/ \
 	  (f)->getr = 0					/* getr		*/ \
 	)
 

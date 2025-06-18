@@ -94,9 +94,9 @@ typedef struct Help_s
 {
 	const char*	match;		/* builtin help match name	*/
 	const char*	name;		/* builtin help name		*/
-	int		style;		/* STYLE_*			*/
 	const char*	text;		/* --? text			*/
 	unsigned int	size;		/* strlen text			*/
+	int		style;		/* STYLE_*			*/
 } Help_t;
 
 typedef struct Font_s
@@ -213,30 +213,30 @@ Note that question marks should be quoted to avoid pathanme expansion."),
 
 static const Help_t	styles[] =
 {
-	C("about"),	"-",		STYLE_match,
-	Z("Show all implementation info."),
-	C("api"),	"?api",		STYLE_api,
-	Z("Output detailed info in program readable form."),
-	C("help"),	"",		-1,
-	Z("Show detailed help option info."),
-	C("html"),	"?html",	STYLE_html,
-	Z("Output detailed info in HTML."),
-	C("keys"),	"?keys",	STYLE_keys,
-	Z("Output usage key strings for translation."),
-	C("long"),	"?long",	STYLE_long,
-	Z("Show brief usage with long options."),
-	C("man"),	"?man",		STYLE_man,
-	Z("Show detailed info as a manual page."),
-	C("nroff"),	"?nroff",	STYLE_nroff,
-	Z("Output detailed info in nroff format."),
-	C("options"),	"?options",	STYLE_options,
-	Z("List short and long option details."),
-	C("posix"),	"?posix",	STYLE_posix,
-	Z("Output POSIX-compliant getopt(3) short options string."),
-	C("short"),	"?short",	STYLE_short,
-	Z("Show brief usage with short options."),
-	C("usage"),	"?usage",	STYLE_usage,
-	Z("Output the full AST optget(3) usage string."),
+	C("about"),	"-",
+	Z("Show all implementation info."),			STYLE_match,
+	C("api"),	"?api",
+	Z("Output detailed info in program readable form."),	STYLE_api,
+	C("help"),	"",
+	Z("Show detailed help option info."),			-1,
+	C("html"),	"?html",
+	Z("Output detailed info in HTML."),			STYLE_html,
+	C("keys"),	"?keys",
+	Z("Output usage key strings for translation."),		STYLE_keys,
+	C("long"),	"?long",
+	Z("Show brief usage with long options."),		STYLE_long,
+	C("man"),	"?man",
+	Z("Show detailed info as a manual page."),		STYLE_man,
+	C("nroff"),	"?nroff",
+	Z("Output detailed info in nroff format."),		STYLE_nroff,
+	C("options"),	"?options",
+	Z("List short and long option details."),		STYLE_options,
+	C("posix"),	"?posix",
+	Z("Output POSIX-compliant getopt(3) short options string."), STYLE_posix,
+	C("short"),	"?short",
+	Z("Show brief usage with short options."),		STYLE_short,
+	C("usage"),	"?usage",
+	Z("Output the full AST optget(3) usage string."),	STYLE_usage,
 };
 
 static const List_t	help_tail[] =

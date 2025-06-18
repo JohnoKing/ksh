@@ -564,9 +564,9 @@ tst - note{ does this compiler have __builtin_unreachable() }end output{
 			__builtin_unreachable();
 		default:
 	#if _AST_release
-			printf("#   define UNREACHABLE()\t__builtin_unreachable()\n");
+			printf("#define UNREACHABLE()\t__builtin_unreachable()\n");
 	#else
-			printf("#   define UNREACHABLE()\tabort()\n");
+			printf("#define UNREACHABLE()\tabort()\n");
 	#endif
 		}
 	}
@@ -577,6 +577,35 @@ tst - note{ does this compiler have __builtin_unreachable() }end output{
 	}
 }end fail{
 	echo '#define UNREACHABLE()	abort()'
+}end
+
+tst - note{ does this compiler have __attribute__((packed)) }end output{
+	#include <stdio.h>
+	#include <stdint.h>
+	typedef struct __attribute__((packed))
+	{
+		int64_t a;
+		int32_t b;
+		int16_t c;
+		int8_t  d;
+	} packed_struct_t;
+	int main(void)
+	{
+		packed_struct_t a = {
+			.a = 4,
+			.b = 3,
+			.c = 2,
+			.d = 1
+		};
+		if(a.c == 2 && sizeof(packed_struct_t) == 15)
+		{
+			printf("#define packed\t__attribute__((packed))\n");
+			return 0;
+		}
+		return 1;
+	}
+}end fail{
+	echo '#define packed'
 }end
 
 # TODO: remove when we require C99

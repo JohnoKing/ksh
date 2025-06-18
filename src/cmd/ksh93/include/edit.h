@@ -47,7 +47,7 @@
 #define PRSIZE	256
 #define MAXLINE	1024		/* longest edit line permitted */
 
-typedef struct _edit_pos
+typedef struct packed _edit_pos
 {
 	unsigned short line;
 	unsigned short col;
@@ -56,6 +56,32 @@ typedef struct _edit_pos
 typedef struct edit
 {
 	sigjmp_buf e_env;
+	struct termios e_ttyparm;      /* initial tty parameters */
+	struct termios e_nttyparm;     /* raw tty parameters */
+	struct termios e_savetty;      /* saved terminal state */
+#if _hdr_utime
+	char	*e_tty;
+#endif
+	char	*e_outbase;	/* pointer to start of output buffer */
+	char	*e_outptr;	/* pointer to position in output buffer */
+	char	*e_outlast;	/* pointer to end of output buffer */
+	genchar	*e_inbuf;	/* pointer to input buffer */
+	char	*e_prompt;	/* pointer to trimmed final line of PS1 prompt, used when redrawing command line */
+	genchar	*e_killbuf;	/* pointer to delete buffer */
+	genchar	*e_physbuf;	/* temporary workspace buffer */
+	int	*e_globals;	/* global variables */
+	genchar	*e_window;	/* display window image */
+	void	*e_vi;		/* vi specific data */
+	void	*e_emacs;	/* emacs specific data */
+	char	*e_stkptr;	/* saved stack pointer */
+	char	**e_clist;	/* completion list after <ESC>= */
+	Namval_t *e_default;	/* variable containing default value */
+	ptrdiff_t e_stkoff;	/* saved stack offset */
+#if _hdr_utime
+	ino_t	e_tty_ino;
+	dev_t	e_tty_dev;
+#endif
+	int32_t e_col;		/* for sh_keytrap */
 	int	e_intr;
 	int	e_kill;
 	int	e_erase;
@@ -63,8 +89,6 @@ typedef struct edit
 	int	e_eof;
 	int	e_lnext;
 	int	e_plen;		/* length of prompt string */
-	char	e_crlf;		/* zero if cannot return to beginning of line */
-	char	e_keytrap;	/* set when in keytrap */
 	int	e_llimit;	/* line length limit */
 	int	e_hline;	/* current history line number */
 	int	e_hloff;	/* line number offset for command */
@@ -82,45 +106,23 @@ typedef struct edit
 #if SHOPT_MULTIBYTE
 	int	e_savedwidth;	/* saved width of a character */
 #endif /* SHOPT_MULTIBYTE */
-	char	*e_outbase;	/* pointer to start of output buffer */
-	char	*e_outptr;	/* pointer to position in output buffer */
-	char	*e_outlast;	/* pointer to end of output buffer */
-	genchar	*e_inbuf;	/* pointer to input buffer */
-	char	*e_prompt;	/* pointer to trimmed final line of PS1 prompt, used when redrawing command line */
-	genchar	*e_killbuf;	/* pointer to delete buffer */
-	char	e_search[SEARCHSIZE];	/* search string */
-	genchar	*e_physbuf;	/* temporary workspace buffer */
-	int	e_lbuf[LOOKAHEAD];/* pointer to look-ahead buffer */
 	int	e_fd;		/* file descriptor */
+	int	e_savefd;	/* file descriptor for saved terminal state */
 	int	e_ttyspeed;	/* line speed, also indicates tty parameters are valid */
 	int	e_tabcount;
-#if _hdr_utime
-	ino_t	e_tty_ino;
-	dev_t	e_tty_dev;
-	char	*e_tty;
-#endif
-	int	*e_globals;	/* global variables */
-	genchar	*e_window;	/* display window image */
-	char	e_inmacro;	/* processing macro expansion */
-	char	e_vi_insert[2];	/* for sh_keytrap */
-	int32_t e_col;		/* for sh_keytrap */
-	struct termios	e_ttyparm;      /* initial tty parameters */
-	struct termios	e_nttyparm;     /* raw tty parameters */
-	struct termios e_savetty;	/* saved terminal state */
-	int	e_savefd;	/* file descriptor for saved terminal state */
-	char	e_macro[4];	/* macro buffer */
-	void	*e_vi;		/* vi specific data */
-	void	*e_emacs;	/* emacs specific data */
-	char	*e_stkptr;	/* saved stack pointer */
-	ptrdiff_t e_stkoff;	/* saved stack offset */
-	char	**e_clist;	/* completion list after <ESC>= */
 	int	e_nlist;	/* number of elements on completion list */
 #if SHOPT_ESH || SHOPT_VSH
 	int	e_multiline;	/* allow multiple lines for editing */
 #endif
 	int	e_winsz;	/* columns in window */
+	int	e_lbuf[LOOKAHEAD];/* pointer to look-ahead buffer */
+	char	e_search[SEARCHSIZE];	/* search string */
+	char	e_macro[4];	/* macro buffer */
+	char	e_vi_insert[2];	/* for sh_keytrap */
+	char	e_crlf;		/* zero if cannot return to beginning of line */
+	char	e_keytrap;	/* set when in keytrap */
+	char	e_inmacro;	/* processing macro expansion */
 	Edpos_t	e_curpos;	/* cursor line and column */
-	Namval_t *e_default;	/* variable containing default value */
 } Edit_t;
 
 #undef MAXWINDOW

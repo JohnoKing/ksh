@@ -43,15 +43,15 @@ struct process
 	struct process *p_nxtjob;	/* next job structure */
 	struct process *p_nxtproc;	/* next process in current job */
 	int		*p_exitval;	/* place to store the exitval */
+	off_t		p_name;		/* history file offset for command */
 	pid_t		p_pid;		/* process ID */
 	pid_t		p_pgrp;		/* process group */
 	pid_t		p_fgrp;		/* process group when stopped */
 	int		p_job;		/* job number of process */
+	unsigned int	p_env;		/* subshell environment number */
 	unsigned short	p_exit;		/* exit value or signal number */
 	unsigned short	p_exitmin;	/* minimum exit value for xargs */
 	unsigned short	p_flag;		/* flags - see below */
-	unsigned int	p_env;		/* subshell environment number */
-	off_t		p_name;		/* history file offset for command */
 	struct termios	p_stty;		/* terminal state for job */
 };
 

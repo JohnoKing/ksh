@@ -87,7 +87,7 @@ typedef struct Stats_s
 	Rex_t*		y;	/* max length REX_TRIE			*/
 } Stats_t;
 
-typedef struct Token_s
+typedef struct packed Token_s
 {
 	unsigned long	min;
 	unsigned long	max;
@@ -114,9 +114,9 @@ typedef struct Cenv_s
 	int		parno;		/* number of last open paren	*/
 	int		parnest;	/* paren nest count		*/
 	int		posixkludge; 	/* to make * nonspecial		*/
+	int		terminator;	/* pattern terminator		*/
 	Token_t		token;		/* token lookahead		*/
 	Stats_t		stats;		/* RE statistics		*/
-	int		terminator;	/* pattern terminator		*/
 	Rex_t*		paren[2*(BACK_REF_MAX+2)];
 					/* paren[i]!=0 if \i defined	*/
 	regex_t*	regex;		/* user handle			*/

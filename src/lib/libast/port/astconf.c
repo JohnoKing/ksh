@@ -87,7 +87,7 @@
 static char		null[1];
 static char		root[2] = "/";
 
-typedef struct Feature_s
+typedef struct packed Feature_s
 {
 	struct Feature_s*next;
 	const char*	name;
@@ -95,12 +95,12 @@ typedef struct Feature_s
 	char*		std;
 	char*		ast;
 	ptrdiff_t	length;
-	short		standard;
 	unsigned int	flags;
+	short		standard;
 	short		op;
 } Feature_t;
 
-typedef struct Lookup_s
+typedef struct packed Lookup_s
 {
 	Conf_t*		conf;
 	const char*	name;
@@ -120,8 +120,8 @@ static Feature_t	dynamic[] =
 		0,
 		0,
 		12,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_architecture
 	},
 #define OP_conformance	1
@@ -132,8 +132,8 @@ static Feature_t	dynamic[] =
 		"standard",
 		"ast",
 		11,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_conformance
 	},
 #define OP_getconf	2
@@ -148,8 +148,8 @@ static Feature_t	dynamic[] =
 		0,
 		0,
 		7,
-		CONF_AST,
 		CONF_READONLY,
+		CONF_AST,
 		OP_getconf
 	},
 #define OP_hosttype	3
@@ -160,8 +160,8 @@ static Feature_t	dynamic[] =
 		0,
 		0,
 		8,
-		CONF_AST,
 		CONF_READONLY,
+		CONF_AST,
 		OP_hosttype
 	},
 #define OP_libpath	4
@@ -176,8 +176,8 @@ static Feature_t	dynamic[] =
 		0,
 		0,
 		7,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_libpath
 	},
 #define OP_libprefix	5
@@ -192,8 +192,8 @@ static Feature_t	dynamic[] =
 		0,
 		0,
 		9,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_libprefix
 	},
 #define OP_libsuffix	6
@@ -208,8 +208,8 @@ static Feature_t	dynamic[] =
 		0,
 		0,
 		9,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_libsuffix
 	},
 #define OP_path_attributes	7
@@ -220,8 +220,8 @@ static Feature_t	dynamic[] =
 		&null[0],
 		0,
 		15,
-		CONF_AST,
 		CONF_READONLY,
+		CONF_AST,
 		OP_path_attributes
 	},
 #define OP_path_resolve	8
@@ -232,8 +232,8 @@ static Feature_t	dynamic[] =
 		"physical",
 		"metaphysical",
 		12,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_path_resolve
 	},
 #define OP_universe	9
@@ -244,8 +244,8 @@ static Feature_t	dynamic[] =
 		"att",
 		0,
 		8,
-		CONF_AST,
 		0,
+		CONF_AST,
 		OP_universe
 	},
 	{

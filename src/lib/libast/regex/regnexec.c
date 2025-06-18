@@ -126,7 +126,7 @@ static const char* rexname(Rex_t* rex)
  * each iteration in a Group_t, and each Binary_t.
  */
 
-typedef struct
+typedef struct packed
 {
 	unsigned char*	p;		/* where in string		*/
 	size_t		length;		/* length in string		*/

@@ -71,8 +71,8 @@ struct _sffmt_s
 	va_list		args;	/* corresponding arg list		*/
 
 	int		fmt;	/* format character			*/
-	ssize_t		size;	/* object size				*/
 	int		flags;	/* formatting flags			*/
+	ssize_t		size;	/* object size				*/
 	ptrdiff_t	width;	/* width of field			*/
 	ptrdiff_t	precis;	/* precision required			*/
 	ptrdiff_t	base;	/* conversion base			*/

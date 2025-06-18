@@ -30,7 +30,7 @@
 /*
  * This structure allows for arbitrary depth nesting of (...), {...}, [...]
  */
-struct _shlex_pvt_lexstate_
+struct packed _shlex_pvt_lexstate_
 {
 	char		incase;		/* 1 for case pattern, 2 after case */
 	char		intest;		/* 1 inside [[ ... ]] */
@@ -41,26 +41,26 @@ struct _shlex_pvt_lexstate_
 	char		last_quote;	/* last multi-line quote character */
 	char		nestedbrace;	/* ${var op {...}} */
 };
-struct _shlex_pvt_lexdata_
+struct packed _shlex_pvt_lexdata_
 {
-	char		nocopy;
-	char		paren;
-	char		dolparen;	/* set during the comsub() lexical analysis hack */
-	unsigned short	dolparen_eqparen;	/* flags up =( ... ) within a comsub */
-	char		dolparen_arithexp;	/* set while comsub() is lexing an arithmetic expansion */
-	char		nest;
-	char		docword;
-	char		nested_tilde;
 	char 		*docend;
-	char		inlexskip;	/* set when sh_lex() is called from sh_lexskip() */
-	char		warn;
-	char		message;
-	char		arith;
 	char 		*first;
 	int		level;
 	int		lastc;
 	int		lex_state;
 	int		docextra;
+	unsigned short	dolparen_eqparen;	/* flags up =( ... ) within a comsub */
+	char		nocopy;
+	char		paren;
+	char		dolparen;		/* set during the comsub() lexical analysis hack */
+	char		dolparen_arithexp;	/* set while comsub() is lexing an arithmetic expansion */
+	char		nest;
+	char		docword;
+	char		nested_tilde;
+	char		inlexskip;		/* set when sh_lex() is called from sh_lexskip() */
+	char		warn;
+	char		message;
+	char		arith;
 };
 
 /*

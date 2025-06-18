@@ -58,6 +58,8 @@ typedef struct  _mac_
 	Sfio_t		*sp;		/* stream pointer for here-document */
 	struct argnod	**arghead;	/* address of head of argument list */
 	char		*ifsp;		/* pointer to IFS value */
+	void		*nvwalk;	/* for name space walking */
+	ptrdiff_t	dotdot;		/* set for .. in subscript */
 	int		fields;		/* number of fields */
 	short		quoted;		/* set when word has quotes */
 	short		atspecial;	/* quoted count at which special-casing for "$@" with no PPs has been applied */
@@ -75,8 +77,6 @@ typedef struct  _mac_
 	char		arrayok;	/* $x[] ok for arrays */
 	char		subcopy;	/* set when copying subscript */
 	char		macsub;		/* set to 1 when running mac_substitute */
-	ptrdiff_t	dotdot;		/* set for .. in subscript */
-	void		*nvwalk;	/* for name space walking */
 } Mac_t;
 
 #undef ESCAPE

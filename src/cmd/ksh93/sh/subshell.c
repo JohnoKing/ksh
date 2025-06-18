@@ -57,35 +57,35 @@ struct Link
  */
 static struct subshell
 {
+	Shopt_t		options;/* save shell options */
 	struct subshell	*prev;	/* previous subshell data */
 	struct subshell	*pipe;	/* subshell where output goes to pipe on fork */
 	struct Link	*svar;	/* save shell variable table */
 	Dt_t		*sfun;	/* function scope for subshell */
 	Dt_t		*strack;/* tracked alias scope for subshell */
 	Pathcomp_t	*pathlist; /* for PATH variable */
-	Shopt_t		options;/* save shell options */
-	pid_t		subpid;	/* child process ID */
-	Sfio_t*		saveout;/* saved standard output */
+	Sfio_t		*saveout;/* saved standard output */
 	char		*pwd;	/* present working directory */
 	void		*jobs;	/* save job info */
-	mode_t		mask;	/* saved umask */
-	int		tmpfd;	/* saved tmp file descriptor */
-	int		pipefd;	/* read fd if pipe is created */
-	char		jobcontrol;
-	unsigned char	fdstatus;
-	int		fdsaved; /* bit mask for saved file descriptors */
-	int		sig;	/* signal for $$ */
+	pid_t		subpid;	/* child process ID */
 	pid_t		bckpid;
 	pid_t		cpid;
+	mode_t		mask;	 /* saved umask */
+	int		sig;	 /* signal for $$ */
+	int		pwdfd;   /* parent shell's file descriptor for PWD */
+	int		fdsaved; /* bit mask for saved file descriptors */
 	int		coutpipe;
 	int		cpipe;
+	int		tmpfd;	 /* saved tmp file descriptor */
+	int		pipefd;	 /* read fd if pipe is created */
+	uint32_t	srand_upper_bound;  /* parent shell's upper bound for $SRANDOM */
+	int		rand_last;          /* last random number from $RANDOM in parent shell */
+	unsigned short	rand_seed[3];       /* parent shell $RANDOM seed */
+	char		rand_state;         /* 0 means sp->rand_seed hasn't been set, 1 is the opposite */
+	unsigned char	fdstatus;
+	char		jobcontrol;
 	char		subshare;
 	char		comsub;
-	unsigned short	rand_seed[3];       /* parent shell $RANDOM seed */
-	int		rand_last;          /* last random number from $RANDOM in parent shell */
-	char		rand_state;         /* 0 means sp->rand_seed hasn't been set, 1 is the opposite */
-	uint32_t	srand_upper_bound;  /* parent shell's upper bound for $SRANDOM */
-	int		pwdfd;              /* parent shell's file descriptor for PWD */
 #if !_lib_openat
 	char		pwdclose;
 #endif /* !_lib_openat */

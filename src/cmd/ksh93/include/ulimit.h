@@ -165,12 +165,12 @@
 #define LIM_SECOND	4
 #define LIM_MICROSECOND	5
 
-typedef struct Limit_s
+typedef struct packed Limit_s
 {
 	const char*	name;
 	const char*	description;
-	int		index;
 	const char*	conf;
+	int		index;
 	unsigned char	option;
 	unsigned char	type;
 } Limit_t;

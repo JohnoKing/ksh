@@ -255,15 +255,16 @@ struct Shell_s
 #if _BLD_ksh
 	/* The rest are for ksh's internal use only */
 	struct limits	lim;
-	uid_t		userid;
-	uid_t		euserid;
-	gid_t		groupid;
-	gid_t		egroupid;
-	pid_t		pid;		/* $$, the main shell's PID (invariable) */
-	pid_t		ppid;		/* $PPID, the main shell's parent's PID */
-	pid_t		current_pid;	/* ${.sh.pid}, PID of current ksh process (updates when subshell forks) */
-	pid_t		current_ppid;	/* PPID of current ksh process (updates when subshell forks) */
-	unsigned char	sigruntime[2];
+	struct sh_scoped st;		/* scoped information */
+	struct sh_scoped global;
+	Namfun_t	nvfun;
+	Shopt_t		offoptions;	/* options that were explicitly disabled by the user on the command line */
+	Shopt_t		glob_options;
+	struct checkpt	checkbase;
+	Shinit_f	userinit;
+	Shbltin_f	bltinfun;
+	Shbltin_t	bltindata;
+	Shwait_f	waitevent;
 	Namval_t	*bltin_nodes;
 	Namval_t	*bltin_cmds;
 	History_t	*hist_ptr;
@@ -271,132 +272,6 @@ struct Shell_s
 	char		**sigmsg;
 	char		**login_files;
 	void		*ed_context;
-	int		sigmax;
-	Shwait_f	waitevent;
-	unsigned int	subshell;	/* set for virtual subshell */
-	int		realsubshell;	/* ${.sh.subshell}, actual subshell level (including virtual and forked) */
-	char		nv_restore;	/* set while restoring variables upon terminating a virtual subshell */
-	int32_t		shlvl;		/* $SHLVL, non-subshell child shell level */
-	char		shcomp;		/* set when running shcomp */
-	unsigned char	trapnote;	/* set when trap/signal is pending */
-	struct sh_scoped st;		/* scoped information */
-	Stk_t		*stk;		/* stack pointer */
-	Sfio_t		*heredocs;	/* current here-doc temp file */
-	int		**fdptrs;	/* pointer to file numbers */
-	char		*lastarg;	/* $_ */
-	int		path_err;	/* last error on path search */
-	Dt_t		*var_base;	/* global level variables */
-	Dt_t		*fun_base;	/* global level functions */
-	Dt_t		*openmatch;
-	Namval_t	*namespace;	/* current active namespace */
-	Namval_t	*last_table;	/* last table used in last nv_open */
-	Namval_t	*prev_table;	/* previous table used in nv_open */
-	Sfio_t		*outpool;	/* output stream pool */
-	long		timeout;	/* read timeout */
-	unsigned int	curenv;		/* current subshell number */
-	unsigned int	jobenv;		/* subshell number for jobs */
-	int		infd;		/* input file descriptor */
-	short		nextprompt;	/* next prompt is PS<nextprompt> */
-	Namval_t	*posix_fun;	/* points to last name() function */
-	char		*outbuff;	/* pointer to output buffer */
-	char		*errbuff;	/* pointer to stderr buffer */
-	char		*prompt;	/* pointer to prompt string */
-	char		*shname;	/* shell name */
-	char		*comdiv;	/* points to sh -c argument */
-	char		*prefix;	/* prefix for compound assignment */
-	sigjmp_buf	*jmplist;	/* longjmp return stack */
-	pid_t		bckpid;		/* background process id */
-	pid_t		cpid;
-	pid_t		spid; 		/* subshell process id */
-	pid_t		pipepid;
-	pid_t		outpipepid;
-	int		topfd;
-	int		savesig;
-	unsigned char	*sigflag;	/* pointer to signal states */
-	char		intrap;		/* set while executing a trap action */
-	char		intrap_exit_n;	/* set if 'exit n' within trap */
-	uint32_t	srand_upper_bound;
-	char		forked;
-	char		binscript;
-	char		funload;
-	char		used_pos;	/* used positional parameter */
-	char		universe;
-	char		winch;		/* set upon window size change or 'set -b' notification */
-	int32_t		lines;		/* current vertical terminal size */
-	int32_t		columns;	/* current horizontal terminal size */
-	short		arithrecursion;	/* current arithmetic recursion level */
-	char		indebug; 	/* set when in debug trap */
-	unsigned char	ignsig;		/* ignored signal in subshell */
-	unsigned char	lastsig;	/* last signal received */
-	char		chldexitsig;	/* set if the last command was a child process that exited due to a signal */
-	char		pathinit;	/* pathinit called from subshell */
-	char		comsub;		/* set to 1 when in `...`, 2 when in ${ ...; }, 3 when in $(...) */
-	char		subshare;	/* set when comsub==2 (shared-state ${ ...; } command substitution) */
-	char		toomany;	/* set when out of fd's */
-	char		instance;	/* in set_instance */
-	char		radixpoint;	/* current radix point ('.' or ',') */
-	char		redir0;		/* redirect of 0 */
-	char		intrace;	/* set when trace expands PS4 */
-	char		*readscript;	/* set before reading a script */
-	int		*inpipe;	/* input pipe pointer */
-	int		*outpipe;	/* output pipe pointer */
-	int		cpipe[3];
-	int		coutpipe;
-	int		inuse_bits;
-	struct argnod	*envlist;
-	struct dolnod	*arglist;
-	int16_t		fn_depth;	/* scoped ksh-style function call depth */
-	int16_t		dot_depth;	/* dot-script and POSIX function call depth */
-	char		invoc_local;	/* set when inside of an invocation-local scope */
-	ptrdiff_t	xargmin;
-	ptrdiff_t	xargmax;
-	int		xargexit;
-	size_t		save_env_n;	/* number of saved pointers to environment variables with invalid names */
-	char		**save_env;	/* saved pointers to environment variables with invalid names */
-	mode_t		mask;
-	void		*init_context;
-	void		*mac_context;
-	void		*lex_context;
-	void		*arg_context;
-	void		*pathlist;
-	void		*cdpathlist;
-	char		cond_expan;	/* set while processing ${var=val}, ${var:=val}, ${var?err}, ${var:?err} */
-	struct sh_scoped global;
-	struct checkpt	checkbase;
-	Shinit_f	userinit;
-	Shbltin_f	bltinfun;
-	Shbltin_t	bltindata;
-	ptrdiff_t	offsets[10];
-	Sfio_t		**sftable;
-	unsigned char	*fdstatus;
-	char		*pwd;
-#if _lib_openat
-	int		pwdfd;		/* file descriptor for pwd */
-#endif /* _lib_openat */
-	void		*jmpbuffer;
-	void		*mktype;
-	Sfio_t		*strbuf;
-	Sfio_t		*strbuf2;
-	Sfio_t		*notifybuf;	/* for 'set -o notify' job notices */
-	Dt_t		*first_root;
-	Dt_t		*prefix_root;
-	Dt_t		*last_root;
-	Dt_t		*prev_root;
-	Dt_t		*fpathdict;
-	Dt_t		*typedict;
-	char		ifstable[256];
-	Shopt_t		offoptions;	/* options that were explicitly disabled by the user on the command line */
-	Shopt_t		glob_options;
-	Namval_t	*typeinit;
-	Namfun_t	nvfun;
-	char		*mathnodes;
-	char		*bltin_dir;
-	char		tilde_block;	/* set to block .sh.tilde.{get,set} discipline */
-	char		dont_optimize_builtins;
-	/* nv_putsub() hack for nv_create() to avoid double arithmetic evaluation */
-	char		nv_putsub_already_called_sh_arith;
-	int		nv_putsub_idx;	/* saves array index obtained by nv_putsub() using sh_arith() */
-	int16_t		level;		/* ${.sh.level} */
 #if SHOPT_STATS
 	int		*stats;
 #endif
@@ -411,6 +286,130 @@ struct Shell_s
 	char		*fifo;		/* FIFO name for current process substitution */
 	Dt_t		*fifo_tree;	/* for cleaning up process substitution FIFOs */
 #endif /* !SHOPT_DEVFD */
+	Stk_t		*stk;		/* stack pointer */
+	Sfio_t		*heredocs;	/* current here-doc temp file */
+	int		**fdptrs;	/* pointer to file numbers */
+	char		*lastarg;	/* $_ */
+	Dt_t		*var_base;	/* global level variables */
+	Dt_t		*fun_base;	/* global level functions */
+	Dt_t		*openmatch;
+	Namval_t	*namespace;	/* current active namespace */
+	Namval_t	*last_table;	/* last table used in last nv_open */
+	Namval_t	*prev_table;	/* previous table used in nv_open */
+	Sfio_t		*outpool;	/* output stream pool */
+	Namval_t	*posix_fun;	/* points to last name() function */
+	char		*outbuff;	/* pointer to output buffer */
+	char		*errbuff;	/* pointer to stderr buffer */
+	char		*prompt;	/* pointer to prompt string */
+	char		*shname;	/* shell name */
+	char		*comdiv;	/* points to sh -c argument */
+	char		*prefix;	/* prefix for compound assignment */
+	sigjmp_buf	*jmplist;	/* longjmp return stack */
+	void		*jmpbuffer;
+	struct argnod	*envlist;
+	struct dolnod	*arglist;
+	void		*mktype;
+	Sfio_t		*strbuf;
+	Sfio_t		*strbuf2;
+	Sfio_t		*notifybuf;	/* for 'set -o notify' job notices */
+	Dt_t		*first_root;
+	Dt_t		*prefix_root;
+	Dt_t		*last_root;
+	Dt_t		*prev_root;
+	Dt_t		*fpathdict;
+	Dt_t		*typedict;
+	Namval_t	*typeinit;
+	Sfio_t		**sftable;
+	unsigned char	*fdstatus;
+	char		*pwd;
+	char		*mathnodes;
+	char		*bltin_dir;
+	unsigned char	*sigflag;	/* pointer to signal states */
+	char		**save_env;	/* saved pointers to environment variables with invalid names */
+	void		*init_context;
+	void		*mac_context;
+	void		*lex_context;
+	void		*arg_context;
+	void		*pathlist;
+	void		*cdpathlist;
+	char		*readscript;	/* set before reading a script */
+	int		*inpipe;	/* input pipe pointer */
+	int		*outpipe;	/* output pipe pointer */
+	size_t		save_env_n;	/* number of saved pointers to environment variables with invalid names */
+	ptrdiff_t	offsets[10];
+	ptrdiff_t	xargmin;
+	ptrdiff_t	xargmax;
+	long		timeout;	/* read timeout */
+	pid_t		pid;		/* $$, the main shell's PID (invariable) */
+	pid_t		ppid;		/* $PPID, the main shell's parent's PID */
+	pid_t		current_pid;	/* ${.sh.pid}, PID of current ksh process (updates when subshell forks) */
+	pid_t		current_ppid;	/* PPID of current ksh process (updates when subshell forks) */
+	pid_t		bckpid;		/* background process id */
+	pid_t		cpid;
+	pid_t		spid; 		/* subshell process id */
+	pid_t		pipepid;
+	pid_t		outpipepid;
+	uid_t		userid;
+	uid_t		euserid;
+	gid_t		groupid;
+	gid_t		egroupid;
+	mode_t		mask;
+	uint32_t	srand_upper_bound;
+	unsigned int	curenv;		/* current subshell number */
+	unsigned int	jobenv;		/* subshell number for jobs */
+	unsigned int	subshell;	/* set for virtual subshell */
+	int		realsubshell;	/* ${.sh.subshell}, actual subshell level (including virtual and forked) */
+	int32_t		shlvl;		/* $SHLVL, non-subshell child shell level */
+	int		infd;		/* input file descriptor */
+#if _lib_openat
+	int		pwdfd;		/* file descriptor for pwd */
+#endif /* _lib_openat */
+	int		coutpipe;
+	int		inuse_bits;
+	int		nv_putsub_idx;	/* nv_putsub() hack: saves array index obtained by nv_putsub() using sh_arith() */
+	int		path_err;	/* last error on path search */
+	int		topfd;
+	int		savesig;
+	int		sigmax;
+	int		xargexit;
+	int32_t		lines;		/* current vertical terminal size */
+	int32_t		columns;	/* current horizontal terminal size */
+	int		cpipe[3];
+	int16_t		level;		/* ${.sh.level} */
+	int16_t		fn_depth;	/* scoped ksh-style function call depth */
+	int16_t		dot_depth;	/* dot-script and POSIX function call depth */
+	short		nextprompt;	/* next prompt is PS<nextprompt> */
+	short		arithrecursion;	/* current arithmetic recursion level */
+	unsigned char	ignsig;		/* ignored signal in subshell */
+	unsigned char	lastsig;	/* last signal received */
+	unsigned char	trapnote;	/* set when trap/signal is pending */
+	char		shcomp;		/* set when running shcomp */
+	char		invoc_local;	/* set when inside of an invocation-local scope */
+	char		cond_expan;	/* set while processing ${var=val}, ${var:=val}, ${var?err}, ${var:?err} */
+	char		chldexitsig;	/* set if the last command was a child process that exited due to a signal */
+	char		indebug; 	/* set when in debug trap */
+	char		pathinit;	/* pathinit called from subshell */
+	char		comsub;		/* set to 1 when in `...`, 2 when in ${ ...; }, 3 when in $(...) */
+	char		subshare;	/* set when comsub==2 (shared-state ${ ...; } command substitution) */
+	char		toomany;	/* set when out of fd's */
+	char		instance;	/* in set_instance */
+	char		radixpoint;	/* current radix point ('.' or ',') */
+	char		redir0;		/* redirect of 0 */
+	char		intrace;	/* set when trace expands PS4 */
+	char		intrap;		/* set while executing a trap action */
+	char		intrap_exit_n;	/* set if 'exit n' within trap */
+	char		nv_restore;	/* set while restoring variables upon terminating a virtual subshell */
+	char		tilde_block;	/* set to block .sh.tilde.{get,set} discipline */
+	char		dont_optimize_builtins;
+	char		forked;
+	char		binscript;
+	char		funload;
+	char		used_pos;	/* used positional parameter */
+	char		universe;
+	char		winch;		/* set upon window size change or 'set -b' notification */
+	char		nv_putsub_already_called_sh_arith;  /* nv_putsub() hack for nv_create() to avoid double arithmetic evaluation */
+	char		ifstable[256];
+	unsigned char	sigruntime[2];
 #endif /* _BLD_ksh */
 };
 
