@@ -3352,8 +3352,6 @@ static pid_t sh_ntfork(const Shnode_t *t,char *argv[],int *jobid,int topfd)
 			job_fork(-2);
 		if(spawnpid == -1)
 		{
-			if(job.jobcontrol)
-				tcsetpgrp(job.fd,sh.pid);  /* if spawnveg set tcpgrp, we must restore it ourselves */
 			switch(errno=sh.path_err)
 			{
 			    case ENOENT:
