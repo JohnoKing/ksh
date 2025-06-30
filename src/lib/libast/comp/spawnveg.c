@@ -105,7 +105,7 @@ static noreturn void exit_child(void)
  *    For glibc 2.35 -> 2.40, posix_spawn_file_actions_addtcsetpgrp_np()
  * is available, but posix_spawn itself still slower because it isn't
  * well optimized, so this method is prefered for those releases.
- *    For glibc 2.41+(?) it's performance has been optimized enough
+ *    For glibc 2.41+(?) its performance has been optimized enough
  * that using clone directly doesn't net a performance increase.
  * Additionally, there have been ruminations regarding a nascent
  * io_uring_spawn[2], which if ever implemented would certainly
