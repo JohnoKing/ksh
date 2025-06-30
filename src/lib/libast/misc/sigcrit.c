@@ -91,7 +91,7 @@ sigcritical(int op)
 	else
 	{
 		/*
-		 * a vfork() may have intervened so we
+		 * a vfork via clone(2) may have intervened so we
 		 * allow apparent nesting mismatches
 		 */
 
