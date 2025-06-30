@@ -1282,7 +1282,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		sh.path_err = errno;
 		return -1;
 	}
-	return 0;
+	UNREACHABLE();
 }
 
 /*
