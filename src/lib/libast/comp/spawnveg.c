@@ -156,7 +156,7 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 	if (!envv)
 		envv = environ;
 	sigcritical(SIG_REG_EXEC|SIG_REG_PROC|(tcfd>=0?SIG_REG_TERM:0));
-	pid = clone(exec_process, stack+STACK_SIZE, CLONE_VM|CLONE_VFORK, &args);
+	pid = clone(exec_process, stack+STACK_SIZE, CLONE_VM|CLONE_VFORK|SIGCHLD, &args);
 	if (pid == -1)
 		args.err = errno;
 	else if (args.err)
