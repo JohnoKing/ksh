@@ -97,7 +97,8 @@ to their defaults in the child process before
 is called.
 .SH CAVEATS
 If
-.IR clone (2)
+.IR clone (2),
+.IR posix_spawn_file_actions_addtcsetpgrp_np (3),
 and/or
 .I POSIX_SPAWN_SETSID
 aren't available, then
