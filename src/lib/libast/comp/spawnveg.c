@@ -96,27 +96,34 @@ static noreturn void exit_child(void)
 #include <sched.h>
 
 /*
- * This version of spawnveg uses the Linux clone(2) syscall
- * via the library wrapper provided by musl and glibc < 2.41.
- * This is more portable than posix_spawn_file_actions_addtcsetpgrp_np().
+ * This version of spawnveg uses the Linux clone(2) syscall via the
+ * frontend wrapper provided by the libc. Using clone directly is
+ * more portable than posix_spawn_file_actions_addtcsetpgrp_np().
+ * This implementation works on Linux (glibc and musl) and NetBSD.
  *
  * This function does a few things to attain better performance
  * than the glibc and musl implementations of posix_spawn:
  *   - The child stack is allocated via a function local 'char stack[]'
  *     like in musl, which is faster than using mmap ala glibc.
  *   - The errno from a failed execve is merely stored in the
- *     args->err variable, which is accessible by both the parent and
- *     pre-exec child thanks to CLONE_VM. This behavior matches glibc and
- *     93u+'s _real_vfork spawnveg, and is faster than musl (which
- *     opens a pipe for interprocess communication; we don't need that).
+ *     args->err variable, which is accessible by both the parent
+ *     and pre-exec child thanks to CLONE_VM. This behavior matches
+ *     glibc and 93u+'s _real_vfork spawnveg, and is faster than musl
+ *     (which opens a pipe for interprocess communication; we don't
+ *     need that).
  *
- * Additionally, unlike with posix_spawn we don't pay attention to error
- * conditions from setpgid, tcsetpgrp, or setsid. For ksh93 it's preferable
- * we spawn a process when possible, rather than abort prematurely. As of
- * 7d2bb8fd the posix_spawn implementation will try again without POSIX_SPAWN_SETPGROUP
- * (posix_spawn fails without spawning if any of the previous syscalls failed). In the
- * clone(2) version we don't need to check setpgid's return status because a lone
- * invocation doesn't abort the spawn attempt.
+ * Additionally, unlike with posix_spawn we don't pay attention to
+ * error conditions from setpgid, tcsetpgrp, or setsid. For ksh93
+ * it's preferable we spawn a process when possible, rather than
+ * abort prematurely. As of 7d2bb8fd the posix_spawn implementation
+ * will try again without POSIX_SPAWN_SETPGROUP (posix_spawn fails
+ * without spawning if any of the previous syscalls failed). In the
+ * clone(2) version we don't need to abort our spawn attempt if
+ * the process group couldn't be set.
+ *
+ * We also avoid cruft by assuming ksh93 is single-threaded.
+ * Implementations of posix_spawn try to be thread-safe, which we
+ * don't care about.
  */
 
 struct cargs
