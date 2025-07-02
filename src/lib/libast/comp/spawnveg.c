@@ -91,14 +91,32 @@ static noreturn void exit_child(void)
 }
 
 #if _lib_clone
-#define _fast_spawnveg 2
-#define STACK_SIZE 1024*1024
+#define _fast_spawnveg 1
+#define STACK_SIZE 1024*56
 #include <sched.h>
 
 /*
  * This version of spawnveg uses the Linux clone(2) syscall
  * via the library wrapper provided by musl and glibc < 2.41.
  * This is more portable than posix_spawn_file_actions_addtcsetpgrp_np().
+ *
+ * This function does a few things to attain better performance
+ * than the glibc and musl implementations of posix_spawn:
+ *   - The child stack is allocated via a function local 'char stack[]'
+ *     like in musl, which is faster than using mmap ala glibc.
+ *   - The errno from a failed execve is merely stored in the
+ *     args->err variable, which is accessible by both the parent and
+ *     pre-exec child thanks to CLONE_VM. This behavior matches glibc and
+ *     93u+'s _real_vfork spawnveg, and is faster than musl (which
+ *     opens a pipe for interprocess communication; we don't need that).
+ *
+ * Additionally, unlike with posix_spawn we don't pay attention to error
+ * conditions from setpgid, tcsetpgrp, or setsid. For ksh93 it's preferable
+ * we spawn a process when possible, rather than abort prematurely. As of
+ * 7d2bb8fd the posix_spawn implementation will try again without POSIX_SPAWN_SETPGROUP
+ * (posix_spawn fails without spawning if any of the previous syscalls failed). In the
+ * clone(2) version we don't need to check setpgid's return status because a lone
+ * invocation doesn't abort the spawn attempt.
  */
 
 struct cargs
@@ -150,11 +168,7 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 }
 
 #elif _lib_posix_spawn > 1	/* reports underlying exec() errors */
-#if _lib_posix_spawn_file_actions_addtcsetpgrp_np
-#define _fast_spawnveg 2
-#else
 #define _fast_spawnveg 1
-#endif
 
 /*
  * This version runs commands via posix_spawn(3) when possible
@@ -170,12 +184,7 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 	short				flags = 0;
 	pid_t				pid;
 	posix_spawnattr_t		attr;
-#if _lib_posix_spawn_file_actions_addtcsetpgrp_np
-	sigset_t			tcmask;
-	posix_spawn_file_actions_t	actions;
-#else
 	NOT_USED(tcfd);
-#endif
 
 	if (err = posix_spawnattr_init(&attr))
 		goto nope;
@@ -185,10 +194,6 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 #endif
 	if (pgid && pgid != -1)
 		flags |= POSIX_SPAWN_SETPGROUP;
-#if _lib_posix_spawn_file_actions_addtcsetpgrp_np
-	if (tcfd >= 0)
-		flags |= POSIX_SPAWN_SETSIGDEF;
-#endif
 	if (flags && (err = posix_spawnattr_setflags(&attr, flags)))
 		goto bad;
 	if (pgid && pgid != -1)
@@ -198,43 +203,14 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 		if (err = posix_spawnattr_setpgroup(&attr, pgid))
 			goto bad;
 	}
-#if _lib_posix_spawn_file_actions_addtcsetpgrp_np
-	if (tcfd >= 0)
-	{
-		/* set the terminal signals to SIG_DFL in the child */
-		sigemptyset(&tcmask);
-		sigaddset(&tcmask, SIGTTIN);
-		sigaddset(&tcmask, SIGTTOU);
-		sigaddset(&tcmask, SIGTSTP);
-		if (err = posix_spawnattr_setsigdefault(&attr, &tcmask))
-			goto bad;
-		/* set the child's terminal process group */
-		if (err = posix_spawn_file_actions_init(&actions))
-			goto bad;
-		if (err = posix_spawn_file_actions_addtcsetpgrp_np(&actions, tcfd))
-			goto fail;
-	}
-	/* spawn the process to run the given command */
-	if (err = posix_spawn(&pid, path, (tcfd >= 0) ? &actions : NULL, &attr, argv, envv ? envv : environ))
-#else
 	if (err = posix_spawn(&pid, path, NULL, &attr, argv, envv ? envv : environ))
-#endif
 	{
 		if ((err != EPERM) || (err = posix_spawn(&pid, path, NULL, NULL, argv, envv ? envv : environ)))
-			goto fail;
+			goto bad;
 	}
-#if _lib_posix_spawn_file_actions_addtcsetpgrp_np
-	if (tcfd >= 0)
-		posix_spawn_file_actions_destroy(&actions);
-#endif
 	posix_spawnattr_destroy(&attr);
 	return pid;
 	/* cleanup for different fail states */
- fail:
-#if _lib_posix_spawn_file_actions_addtcsetpgrp_np
-	if (tcfd >= 0)
-		posix_spawn_file_actions_destroy(&actions);
-#endif
  bad:
 	posix_spawnattr_destroy(&attr);
  nope:
@@ -376,7 +352,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 pid_t
 spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid, int tcfd)
 {
-#if _fast_spawnveg != 2
+#if !_lib_clone
 	if(tcfd >= 0)
 		return spawnveg_slow(path, argv, envv, pgid, tcfd);
 #endif

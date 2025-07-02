@@ -36,7 +36,7 @@ lib	rand_r
 lib	rewinddir,setlocale
 lib	setpgrp,setpgrp2,setreuid,setuid
 lib	socketpair
-lib	clone,posix_spawn_file_actions_addtcsetpgrp_np,spawn,spawnve
+lib	clone,spawn,spawnve
 lib	strcoll,strlcat,strlcpy
 lib	strmode,strxfrm,strftime,symlink,sysconf,sysinfo
 lib	telldir,tmpnam,tzset,universe,unlink,utime,wctype
