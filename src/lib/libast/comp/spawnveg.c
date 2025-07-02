@@ -90,7 +90,7 @@ static noreturn void exit_child(void)
 	_exit(EXIT_NOEXEC);
 }
 
-#if _lib_clone && !(_lib_posix_spawn_file_actions_addtcsetpgrp_np && __GLIBC_MAJOR__ >= 2 && __GLIBC_MINOR__ >= 41)
+#if _lib_clone
 #define _fast_spawnveg 2
 #define STACK_SIZE 1024*1024
 #include <sched.h>
@@ -98,26 +98,7 @@ static noreturn void exit_child(void)
 /*
  * This version of spawnveg uses the Linux clone(2) syscall
  * via the library wrapper provided by musl and glibc < 2.41.
- *    For musl, posix_spawn is strictly slower than invoking clone
- * ourselves. This is primarily because musl opens a pipe for interprocess
- * communication and atomicity[1] in case pthreads are involved, which is
- * unnecessary and detrimental as far as single-threaded ksh93 is concerned.
- *    For glibc 2.35 -> 2.40, posix_spawn_file_actions_addtcsetpgrp_np()
- * is available, but posix_spawn itself still slower because it isn't
- * well optimized, so this method is prefered for those releases.
- *    For glibc 2.41+(?) its performance has been optimized enough
- * that using clone directly doesn't net a performance increase.
- * Additionally, there have been ruminations regarding a nascent
- * io_uring_spawn[2], which if ever implemented would certainly
- * make this implementation disadvantageous, so for future-proofing
- * we continue to use posix_spawn_file_actions_addtcsetpgrp_np()
- * with modern glibc.
- *
- * [1]: https://git.musl-libc.org/cgit/musl/tree/src/process/posix_spawn.c?id=d3a61059#n157
- * [2]: https://lwn.net/Articles/908268/
- *
- * TODO: Benchmark glibc releases 2.37 -> 2.40 (at the moment
- * I only compared 2.36 and 2.41 + musl).
+ * This is more portable than posix_spawn_file_actions_addtcsetpgrp_np().
  */
 
 struct cargs
