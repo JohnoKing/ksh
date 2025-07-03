@@ -52,9 +52,11 @@ combines
 and
 .IR setsid (2)
 into a single call.
-If
+If one of either
 .IR posix_spawn (3)
-is available, that function is preferred over
+or
+.IR clone (2)
+is available, those functions are preferred over
 .IR fork .
 .PP
 .LR command ,
@@ -97,7 +99,7 @@ to their defaults in the child process before
 is called.
 .SH CAVEATS
 If
-.IR posix_spawn_file_actions_addtcsetpgrp_np (3)
+.I clone
 and/or
 .I POSIX_SPAWN_SETSID
 aren't available, then
@@ -110,4 +112,4 @@ or
 .IR tcsetpgrp (3)
 is required.
 .SH "SEE ALSO"
-fork(2), posix_spawn(3), exec(2), setpgid(2), setsid(2), sigaction(2), spawnve(2), tcsetpgrp(3)
+fork(2), posix_spawn(3), clone(2), exec(2), setpgid(2), setsid(2), sigaction(2), spawnve(2), tcsetpgrp(3)
