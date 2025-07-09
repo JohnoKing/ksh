@@ -16,7 +16,7 @@
 *                                                                      *
 ***********************************************************************/
 /*
- * umask [-S] [mask]
+ * umask [-pS] [mask]
  *
  *   David Korn
  *   AT&T Labs
@@ -40,12 +40,15 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
 {
 	char *mask;
 	mode_t flag = 0;
-	int sflag = 0;
+	int pflag = 0, sflag = 0;
 	NOT_USED(context);
 	while((argc = optget(argv,sh_optumask))) switch(argc)
 	{
+		case 'p':
+			pflag = 1;
+			break;
 		case 'S':
-			sflag++;
+			sflag = 1;
 			break;
 		case ':':
 			errormsg(SH_DICT,2, "%s", opt_info.arg);
@@ -95,11 +98,12 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
 	}
 	else
 	{
+		char *prefix = pflag ? "umask " : "";
 		umask(flag=umask(0));
 		if(sflag)
-			sfprintf(sfstdout,"%s\n",fmtperm(~flag&0777));
+			sfprintf(sfstdout,"%s%s\n",prefix,fmtperm(~flag&0777));
 		else
-			sfprintf(sfstdout,"%0#4o\n",flag);
+			sfprintf(sfstdout,"%s%0#4o\n",prefix,flag);
 	}
 	return 0;
 }
