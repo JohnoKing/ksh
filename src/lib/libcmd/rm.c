@@ -296,7 +296,7 @@ rm(State_t* state, FTSENT* ent)
 					c -= (ptrdiff_t)sizeof(state->buf);
 				}
 				fsync(n);
-				close(n);
+				ast_close(n);
 			}
 		}
 #endif

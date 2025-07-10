@@ -330,7 +330,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 	}
 	if (err[0] != -1)
 	{
-		close(err[1]);
+		ast_close(err[1]);
 		if (pid != -1)
 		{
 			m = 0;
@@ -347,7 +347,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 				n = m;
 			}
 		}
-		close(err[0]);
+		ast_close(err[0]);
 	}
 	fork_cleanup(pid, pgid, n);
 	return pid;
