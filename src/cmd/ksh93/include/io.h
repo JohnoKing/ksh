@@ -76,7 +76,7 @@
 
 extern int	sh_iocheckfd(int);
 extern void 	sh_ioinit(void);
-extern int 	sh_iomovefd(int);
+extern int 	sh_iomovefd(int,int);
 extern int	sh_iorenumber(int,int);
 extern void 	sh_pclose(int[]);
 extern int	sh_rpipe(int[],int);
