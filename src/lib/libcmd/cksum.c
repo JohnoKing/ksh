@@ -24,7 +24,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: sum (AT&T Research) 2012-04-20 $\n]"
+"[-?\n@(#)$Id: sum (ksh 93u+m) 2025-06-10 $\n]"
 "[--catalog?" ERROR_CATALOG "]"
 "[+NAME?cksum,md5sum,sum - print file checksum and block count]"
 "[+DESCRIPTION?\bsum\b lists the checksum, and for most methods the block"
@@ -77,12 +77,12 @@ static const char usage[] =
 "[S:silent|status?No output for \b--check\b; 0 exit status means all sums"
 "	matched, non-0 means at least one sum failed to match. Ignored for"
 "	\b--permissions\b.]"
-"[t:total?List only the total checksum and block count of all files."
+"[T:total?List only the total checksum and block count of all files."
 "	\b--all\b \b--total\b lists each checksum and the total. The"
 "	total checksum and block count may be different from the checksum"
 "	and block count of the catenation of all files due to partial"
 "	blocks that may occur when the files are treated separately.]"
-"[T:text?Read files in text mode (i.e., treat \b\\r\\n\b as \b\\n\b).]"
+"[t:text?Read files in text mode (i.e., treat \b\\r\\n\b as \b\\n\b).]"
 "[w!:warn?Warn about invalid \b--check\b lines.]"
 "[x:method|algorithm?Specifies the checksum \amethod\a to"
 "	apply. Parenthesized method options are readonly implementation"

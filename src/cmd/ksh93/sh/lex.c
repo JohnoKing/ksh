@@ -1832,7 +1832,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 		/* skip over leading tabs in document */
 		if(iop->iofile&IOLSEEK)
 		{
-			iop->iofile &= ~IOLSEEK;
+			iop->iofile &= (unsigned)~IOLSEEK;
 			while((c = fcgetc())=='\t' || c==' ')
 			{
 				if(c==' ')

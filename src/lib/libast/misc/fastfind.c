@@ -354,10 +354,7 @@ findopen(const char* file, const char* pattern, const char* type, Finddisc_t* di
 			pattern = "*";
 		i += (j = 2 * ((ptrdiff_t)strlen(pattern) + 1));
 		if (!(fp = vmnewof(vm, 0, Find_t, 1, (size_t)i)))
-		{
-			vmclose(vm);
-			return NULL;
-		}
+			goto nomemory;
 		fp->vm = vm;
 		fp->id = lib;
 		fp->disc = disc;

@@ -105,9 +105,9 @@ void	sh_subtmpfile(void)
 		struct checkpt	*pp = (struct checkpt*)sh.jmplist;
 		struct subshell *sp = subshell_data->pipe;
 		/* save file descriptor 1 if open */
-		if((sp->tmpfd = fd = sh_fcntl(1,F_dupfd_cloexec,10)) >= 0)
+		if((sp->tmpfd = fd = sh_fcntl(1,F_DUPFD_CLOEXEC,10)) >= 0)
 		{
-			if(F_dupfd_cloexec == F_DUPFD)
+			if(F_DUPFD_CLOEXEC == F_DUPFD)
 				sh_fcntl(fd,F_SETFD,FD_CLOEXEC);
 			ast_close(1);
 		}
@@ -602,13 +602,13 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		}
 		if(sp->pwdfd<0)
 		{
-			int n = sh_open(e_dot,O_SEARCH|O_cloexec);
+			int n = sh_open(e_dot,O_SEARCH|O_CLOEXEC);
 			if(n>=0)
 			{
 				sp->pwdfd = n;
 				if(n<10)
 				{
-					sp->pwdfd = sh_fcntl(n,F_dupfd_cloexec,10);
+					sp->pwdfd = sh_fcntl(n,F_DUPFD_CLOEXEC,10);
 					sh_close(n);
 				}
 				if(sp->pwdfd>0)

@@ -163,7 +163,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 				value = 0;
 				if (tab == top || (flags & HASH_SCOPE))
 				{
-					if (flags & HASH_OPAQUE) b->hash &= ~HASH_OPAQUED;
+					if (flags & HASH_OPAQUE) b->hash &= (unsigned long)~HASH_OPAQUED;
 					else if (!(tab->root->flags & HASH_BUCKET))
 					{
 						if (tab->root->local->free && b->value)
@@ -232,7 +232,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 				}
 				if (name && (b->hash & HASH_FREENAME))
 				{
-					b->hash &= ~HASH_FREENAME;
+					b->hash &= (unsigned long)~HASH_FREENAME;
 					if (tab->root->local->region) (*tab->root->local->region)(tab->root->local->handle, (char*)name, 0, 0);
 					else free((void*)name);
 				}

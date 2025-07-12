@@ -79,9 +79,6 @@ static int	(*fdnotify)(int,int);
 #   include <sys/socket.h>
 #   include <netdb.h>
 #   include <netinet/in.h>
-#   ifndef SOCK_CLOEXEC
-#      define SOCK_CLOEXEC 0
-#   endif
 #   if !defined(htons) && !_lib_htons
 #      define htons(x)	(x)
 #   endif
@@ -94,6 +91,9 @@ static int	(*fdnotify)(int,int);
 #      endif
 #      ifndef SHUT_WR
 #         define SHUT_WR         1
+#      endif
+#      ifndef SOCK_CLOEXEC
+#         define SOCK_CLOEXEC 0
 #      endif
 #      if _socketpair_shutdown_mode
 #         define socketpipe(v,f) ((socketpair(AF_UNIX,SOCK_STREAM|((f)?SOCK_CLOEXEC:0),0,v)<0||shutdown((v)[1],SHUT_RD)<0||fchmod((v)[1],S_IWUSR)<0||shutdown((v)[0],SHUT_WR)<0||fchmod((v)[0],S_IRUSR)<0)?(-1):0)
@@ -211,7 +211,7 @@ static int	onintr(struct addrinfo*);
 
 /*
  * return <protocol>/<host>/<service> fd
- * If called with flags==O_NONBLOCK return 1 if protocol is supported
+ * If called with flags&O_NONBLOCK return 1 if protocol is supported
  */
 static int
 inetopen(const char* path, int flags)
@@ -263,7 +263,7 @@ inetopen(const char* path, int flags)
 		errno = ENOTDIR;
 		return -1;
 	}
-	if(flags==O_NONBLOCK)
+	if(flags&O_NONBLOCK)
 		return 1;
 	s = sh_strdup(path);
 	if (t = strchr(s, '/'))
@@ -295,7 +295,7 @@ inetopen(const char* path, int flags)
 			p->ai_protocol = hint.ai_protocol;
 		if (!p->ai_socktype)
 			p->ai_socktype = hint.ai_socktype;
-		if (flags & O_cloexec)
+		if (flags & O_CLOEXEC)
 			p->ai_socktype |= SOCK_CLOEXEC;
 		while ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) >= 0)
 		{
@@ -756,7 +756,7 @@ onintr(struct addrinfo* addr)
 int sh_open(const char *path, int flags, ...)
 {
 	Sfio_t		*sp;
-	int		fd = -1;
+	int		fd = -1, dupflag = (flags&O_CLOEXEC) ? F_DUPFD_CLOEXEC : F_DUPFD;
 	mode_t		mode;
 	char		*e;
 	va_list		ap;
@@ -781,7 +781,7 @@ int sh_open(const char *path, int flags, ...)
 		case 'f':
 			if (path[6]=='d' && path[7]=='/')
 			{
-				if(flags==O_NONBLOCK)
+				if(flags&O_NONBLOCK)
 					return 1;
 				fd = (int)strtol(path+8, &e, 10);
 				if (*e)
@@ -811,12 +811,12 @@ int sh_open(const char *path, int flags, ...)
 		{
 			if ((fd = inetopen(path+5, flags)) < 0 && errno != ENOTDIR)
 				return -1;
-			if(flags==O_NONBLOCK)
+			if(flags&O_NONBLOCK)
 				return fd>=0;
 			if (fd >= 0)
 				goto ok;
 		}
-		if(flags==O_NONBLOCK)
+		if(flags&O_NONBLOCK)
 			return 0;
 #endif
 	}
@@ -839,12 +839,14 @@ int sh_open(const char *path, int flags, ...)
 		if((mode=(mode_t)sh_iocheckfd(fd))==IOCLOSE)
 			return -1;
 		flags &= O_ACCMODE;
-		if(!(mode&IOWRITE) && ((flags==O_WRONLY) || (flags==O_RDWR)))
+		if(!(mode&IOWRITE) && ((flags&O_WRONLY) || (flags&O_RDWR)))
 			return -1;
-		if(!(mode&IOREAD) && ((flags==O_RDONLY) || (flags==O_RDWR)))
+		if(!(mode&IOREAD) && ((flags&O_RDONLY) || (flags&O_RDWR)))
 			return -1;
-		if((fd=dup(fd))<0)
+		if((fd=fcntl(fd, dupflag, 0))<0)
 			return -1;
+		if((flags&O_CLOEXEC) && F_DUPFD_CLOEXEC==F_DUPFD)
+			fcntl(fd,F_SETFD,FD_CLOEXEC);
 	}
 	else
 	{
@@ -854,9 +856,9 @@ int sh_open(const char *path, int flags, ...)
  	}
  ok:
 	flags &= O_ACCMODE;
-	if(flags==O_WRONLY)
+	if(flags&O_WRONLY)
 		mode = IOWRITE;
-	else if(flags==O_RDWR)
+	else if(flags&O_RDWR)
 		mode = (IOREAD|IOWRITE);
 	else
 		mode = IOREAD;
@@ -865,17 +867,16 @@ int sh_open(const char *path, int flags, ...)
 	if((sp = sh.sftable[fd]) && (sfset(sp,0,0) & SFIO_STRING))
 	{
 		int n,err=errno;
-		int dupflag = (flags&O_cloexec) ? F_dupfd_cloexec : F_DUPFD;
 		if((n = fcntl(fd,dupflag,10)) >= 10)
 		{
 			while(close(fd) < 0 && errno == EINTR)
 				errno = err;
 			fd = n;
-			if((flags&O_cloexec) && F_dupfd_cloexec == F_DUPFD)
+			if((flags&O_CLOEXEC) && F_DUPFD_CLOEXEC == F_DUPFD)
 				fcntl(fd,F_SETFD,FD_CLOEXEC);
 		}
 	}
-	if(flags&O_cloexec)
+	if(flags&O_CLOEXEC)
 		mode |= IOCLEX;
 	sh.fdstatus[fd] = mode;
 	return fd;
@@ -907,11 +908,11 @@ int sh_iomovefd(int fdold, int minfd)
 	if(fdold<0 || fdold>=minfd)
 		return fdold;
 	if(sh.fdstatus[fdold]&IOCLEX)
-		dupflags = F_dupfd_cloexec;
+		dupflags = F_DUPFD_CLOEXEC;
 	else
 		dupflags = F_DUPFD;
 	fdnew = sh_iomovefd(fcntl(fdold,dupflags,minfd),minfd);
-	if((sh.fdstatus[fdold]&IOCLEX) && F_dupfd_cloexec == F_DUPFD)
+	if((sh.fdstatus[fdold]&IOCLEX) && F_DUPFD_CLOEXEC == F_DUPFD)
 		fcntl(fdnew,F_SETFD,FD_CLOEXEC);
 	sh.fdstatus[fdnew] = sh.fdstatus[fdold];
 	ast_close(fdold);
@@ -937,12 +938,10 @@ int	sh_pipe(int pv[], int cloexec)
 	}
 	if(cloexec)
 		cloexec = IOCLEX;
-#if !SOCK_CLOEXEC
-	if(pv[0]>2 && cloexec)
+	if(pv[0]>2 && cloexec && SOCK_CLOEXEC==0)
 		fcntl(pv[0],F_SETFD,FD_CLOEXEC);
-	if(pv[1]>2 && cloexec)
+	if(pv[1]>2 && cloexec && SOCK_CLOEXEC==0)
 		fcntl(pv[1],F_SETFD,FD_CLOEXEC);
-#endif
 	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD|cloexec;
 	sh.fdstatus[pv[1]] = IONOSEEK|IOWRITE|cloexec;
 	if(pv[0]<=2)
@@ -955,21 +954,21 @@ int	sh_pipe(int pv[], int cloexec)
 #endif /* socketpipe */
 }
 
-#if !_lib_pipe2 || !O_cloexec
+#if !_lib_pipe2 || !O_CLOEXEC
 #    define pipe2(a,b)	pipe(a)
 #endif
 /* create a real pipe when pipe() is socketpair */
 int	sh_rpipe(int pv[], int cloexec)
 {
 	int fd[2];
-	if(pipe2(fd,cloexec?O_cloexec:0)<0 || (pv[0]=fd[0])<0 || (pv[1]=fd[1])<0)
+	if(pipe2(fd,cloexec?O_CLOEXEC:0)<0 || (pv[0]=fd[0])<0 || (pv[1]=fd[1])<0)
 	{
 		errormsg(SH_DICT,ERROR_system(1),e_pipe);
 		UNREACHABLE();
 	}
 	if(cloexec)
 		cloexec = IOCLEX;
-#if !_lib_pipe2 || !O_cloexec
+#if !_lib_pipe2 || !O_CLOEXEC
 	if(pv[0]>2 && cloexec)
 		fcntl(pv[0],F_SETFD,FD_CLOEXEC);
 	if(pv[1]>2 && cloexec)
@@ -1145,7 +1144,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 	if(flag==2 && !sh_isoption(SH_POSIX))
 	{
 		clexec = 1;
-		dupflags = F_dupfd_cloexec;
+		dupflags = F_DUPFD_CLOEXEC;
 	}
 	else
 		dupflags = F_DUPFD;
@@ -1722,7 +1721,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
 		savefd = -1;
 	else
 	{
-		if((savefd = sh_fcntl(origfd, F_dupfd_cloexec, 10)) < 0 && errno!=EBADF)
+		if((savefd = sh_fcntl(origfd, F_DUPFD_CLOEXEC, 10)) < 0 && errno!=EBADF)
 		{
 			sh.toomany=1;
 			((struct checkpt*)sh.jmplist)->mode = SH_JMPERREXIT;
@@ -1738,7 +1737,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
 	{
 		Sfio_t* sp = sh.sftable[origfd];
 		/* make saved file close-on-exec */
-		if(F_dupfd_cloexec == F_DUPFD)
+		if(F_DUPFD_CLOEXEC == F_DUPFD)
 			sh_fcntl(savefd,F_SETFD,FD_CLOEXEC);
 		if(origfd==job.fd)
 			job.fd = savefd;
@@ -2136,7 +2135,7 @@ int sh_iocheckfd(int fd)
 			S_ISSOCK(statb.st_mode) ||
 #endif /* S_ISSOCK */
 			/* The following is for sockets on the sgi */
-			(statb.st_ino==0 && (statb.st_mode & ~(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH|S_ISUID|S_ISGID))==0) ||
+			(statb.st_ino==0 && (statb.st_mode & (mode_t)~(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH|S_ISUID|S_ISGID))==0) ||
 			(S_ISCHR(statb.st_mode) && (statb.st_ino!=null_ino || statb.st_dev!=null_dev))
 		))
 			n |= IONOSEEK;
@@ -2579,14 +2578,14 @@ int sh_fcntl(int fd, int op, ...)
 	if(newfd>=0) switch(op)
 	{
 	    case F_DUPFD:
-#if F_dupfd_cloexec != F_DUPFD
-	    case F_dupfd_cloexec:
+#if F_DUPFD_CLOEXEC != F_DUPFD
+	    case F_DUPFD_CLOEXEC:
 #endif
 		if(sh.fdstatus[fd] == IOCLOSE)
 			sh.fdstatus[fd] = 0;
 		if(newfd>=sh.lim.open_max)
 			sh_iovalidfd(newfd);
-#if F_dupfd_cloexec != F_DUPFD
+#if F_DUPFD_CLOEXEC != F_DUPFD
 		if(op==F_DUPFD)
 			sh.fdstatus[newfd] = (sh.fdstatus[fd]&~IOCLEX);
 		else

@@ -67,7 +67,7 @@ done:
 	if(*argv)
 	{
 		int r;
-		intmax_t l = strtoll(*argv, NULL, 10);
+		long long l = strtoll(*argv, NULL, 10);
 		if(do_exit)
 		{
 			n = (int)(l & SH_EXITMASK);	/* exit: apply bitmask before conversion to avoid undefined int overflow */

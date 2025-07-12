@@ -182,8 +182,6 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 				while ((name = *files++) && !sh_source(iop, sh_mactry(name)));
 			}
 		}
-		/* make sure PWD is set up correctly */
-		path_pwd();
 		if(!sh_isoption(SH_NOEXEC))
 		{
 			if(!sh_isoption(SH_NOUSRPROFILE) && !sh_isoption(SH_PRIVILEGED) && sh_isoption(SH_RC))
@@ -241,7 +239,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 				{
 					char *sp;
 					int isdir = 0;
-					if((fdin=sh_open(name,O_RDONLY|O_cloexec,0))>=0 &&(fstat(fdin,&statb)<0 || S_ISDIR(statb.st_mode)))
+					if((fdin=sh_open(name,O_RDONLY|O_CLOEXEC,0))>=0 &&(fstat(fdin,&statb)<0 || S_ISDIR(statb.st_mode)))
 					{
 						sh_close(fdin);
 						isdir = 1;
@@ -256,7 +254,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 							sp = stkptr(sh.stk,PATH_OFFSET);
 						if(sp)
 						{
-							if((fdin=sh_open(sp,O_RDONLY|O_cloexec,0))>=0)
+							if((fdin=sh_open(sp,O_RDONLY|O_CLOEXEC,0))>=0)
 								sh.st.filename = path_fullname(sp);
 						}
 					}
@@ -367,10 +365,10 @@ static void	exfile(Sfio_t *iop,int fno)
 			{
 				if(fno < 10)
 				{
-					int r = sh_fcntl(fno,F_dupfd_cloexec,10);
+					int r = sh_fcntl(fno,F_DUPFD_CLOEXEC,10);
 					if(r >= 10)
 					{
-						if(F_dupfd_cloexec != F_DUPFD)
+						if(F_DUPFD_CLOEXEC != F_DUPFD)
 							sh.fdstatus[r] = sh.fdstatus[fno]|IOCLEX;
 						else
 							sh.fdstatus[r] = sh.fdstatus[fno];

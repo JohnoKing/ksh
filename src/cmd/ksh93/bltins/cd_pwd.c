@@ -54,7 +54,7 @@ static void rehash(Namval_t *np,void *data)
 int sh_diropenat(int dir, const char *path)
 {
 	int fd, needs_cloexec = 0;
-	if((fd = openat(dir, path, O_DIRECTORY|O_NONBLOCK|O_cloexec|O_SEARCH)) < 0)
+	if((fd = openat(dir, path, O_DIRECTORY|O_NONBLOCK|O_CLOEXEC|O_SEARCH)) < 0)
 	{
 #if !_openat_enotdir
 		struct stat fs;
@@ -70,15 +70,15 @@ int sh_diropenat(int dir, const char *path)
 	if(fd < 10)
 	{
 		/* Duplicate the fd */
-		int shfd = fcntl(fd, F_dupfd_cloexec, 10);
+		int shfd = fcntl(fd, F_DUPFD_CLOEXEC, 10);
 		ast_close(fd);
 		if(shfd < 0)
 			return shfd;
-		if(F_dupfd_cloexec == F_DUPFD)
+		if(F_DUPFD_CLOEXEC == F_DUPFD)
 			needs_cloexec = 1;
 		fd = shfd;
 	}
-	else if(O_cloexec == 0)
+	else if(O_CLOEXEC == 0)
 		needs_cloexec = 1;
 	if(needs_cloexec)
 		fcntl(fd,F_SETFD,FD_CLOEXEC);

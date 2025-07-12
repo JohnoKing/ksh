@@ -1649,7 +1649,7 @@ int sh_exec(const Shnode_t *t, int flags)
 				for (i = t->fork.forkio; i; i = i->ionxt)
 				{
 					unsigned f = i->iofile;
-					if ((f & ~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
+					if ((f & (unsigned)~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
 					{
 						sh_subfork();
 						break;
@@ -3283,10 +3283,10 @@ static void coproc_init(int pipes[])
 		sh_pipe(sh.cpipe,1);
 		if((outfd=sh.cpipe[1]) < 10)
 		{
-		        int fd=sh_fcntl(sh.cpipe[1],F_dupfd_cloexec,10);
+		        int fd=sh_fcntl(sh.cpipe[1],F_DUPFD_CLOEXEC,10);
 			if(fd>=10)
 			{
-				if(F_dupfd_cloexec != F_DUPFD)
+				if(F_DUPFD_CLOEXEC != F_DUPFD)
 					sh.fdstatus[fd] = sh.fdstatus[outfd]|IOCLEX;
 				else
 					sh.fdstatus[fd] = (sh.fdstatus[outfd]&~IOCLEX);

@@ -134,7 +134,7 @@ tvtouch(const char* path, const Tv_t* av, const Tv_t* mv, const Tv_t* cv, int fl
 			return -1;
 		umask(mode = umask(0));
 		mode = (~mode) & (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-		if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_cloexec, mode)) < 0)
+		if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, mode)) < 0)
 			return -1;
 		ast_close(fd);
 		errno = oerrno;
@@ -238,7 +238,7 @@ tvtouch(const char* path, const Tv_t* av, const Tv_t* mv, const Tv_t* cv, int fl
 			errno = EINVAL;
 			return -1;
 		}
-		if ((fd = open(path, O_RDWR|O_cloexec)) >= 0)
+		if ((fd = open(path, O_RDWR|O_CLOEXEC)) >= 0)
 		{
 			char	c;
 
@@ -259,7 +259,7 @@ tvtouch(const char* path, const Tv_t* av, const Tv_t* mv, const Tv_t* cv, int fl
 		return -1;
 	umask(mode = umask(0));
 	mode = (~mode) & (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-	if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_cloexec, mode)) < 0)
+	if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, mode)) < 0)
 		return -1;
 	ast_close(fd);
 	errno = oerrno;

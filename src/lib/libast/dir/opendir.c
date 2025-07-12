@@ -48,10 +48,10 @@ opendir(const char* path)
 	int		fd;
 	struct stat	st;
 
-	if ((fd = open(path, O_RDONLY|O_cloexec)) < 0) return NULL;
+	if ((fd = open(path, O_RDONLY|O_CLOEXEC)) < 0) return NULL;
 	if (fstat(fd, &st) < 0 ||
 	   !S_ISDIR(st.st_mode) && (errno = ENOTDIR) ||
-#if !O_cloexec
+#if !O_CLOEXEC
 	   fcntl(fd, F_SETFD, FD_CLOEXEC) ||
 #endif
 	   !(dirp = freedirp ? freedirp :

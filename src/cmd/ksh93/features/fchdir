@@ -16,9 +16,9 @@ tst	fchdir_osearch_compat note{ can fchdir(2) use file descriptors obtained usin
 		if(child==0)
 		{
 	#if _lib_openat
-			if((n = openat(AT_FDCWD, dirname, O_DIRECTORY|O_NONBLOCK|O_cloexec|O_SEARCH)) < 0)
+			if((n = openat(AT_FDCWD, dirname, O_DIRECTORY|O_NONBLOCK|O_CLOEXEC|O_SEARCH)) < 0)
 	#else
-			if((n = open(dirname, O_DIRECTORY|O_cloexec|O_SEARCH)) < 0)  /* vulnerable to race, but that's not a concern */
+			if((n = open(dirname, O_DIRECTORY|O_CLOEXEC|O_SEARCH)) < 0)  /* vulnerable to race, but that's not a concern */
 	#endif
 				return 1;  /* couldn't even obtain a file descriptor */
 			if(fchdir(n) < 0)
@@ -50,7 +50,7 @@ tst	openat_enotdir note{ does openat set ENOTDIR when it fails because the file 
 		pid_t	child;
 		sprintf(filename,".file.%u",(unsigned int)getpid());
 		open(filename,O_RDWR|O_CREAT);  /* let the OS close the fd after completion */
-		openat(AT_FDCWD, filename, O_DIRECTORY|O_NONBLOCK|O_cloexec|O_SEARCH);
+		openat(AT_FDCWD, filename, O_DIRECTORY|O_NONBLOCK|O_CLOEXEC|O_SEARCH);
 		saverrno = errno;
 		unlink(filename);
 		if(saverrno != ENOTDIR)

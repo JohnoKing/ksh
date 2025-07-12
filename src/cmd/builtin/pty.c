@@ -257,13 +257,13 @@ mkpty(int* master, int* minion)
 #endif
 	tty.c_oflag |= (ONLCR | OPOST);
 #ifdef OCRNL
-	tty.c_oflag &= ~OCRNL;
+	tty.c_oflag &= (tcflag_t)~OCRNL;
 #endif
 #ifdef ONLRET
-	tty.c_oflag &= ~ONLRET;
+	tty.c_oflag &= (tcflag_t)~ONLRET;
 #endif
 	tty.c_iflag |= BRKINT;
-	tty.c_iflag &= ~IGNBRK;
+	tty.c_iflag &= (tcflag_t)~IGNBRK;
 	tty.c_cc[VTIME] = 0;
 	tty.c_cc[VMIN] = CMIN;
 #ifdef B115200
@@ -311,13 +311,13 @@ mkpty(int* master, int* minion)
 #endif
 	if ((*master = posix_openpt(O_RDWR)) < 0)
 		return -1;
-	if (grantpt(*master) || unlockpt(*master) || !(sname = ptsname(*master)) || (*minion = open(sname, O_RDWR|O_cloexec)) < 0)
+	if (grantpt(*master) || unlockpt(*master) || !(sname = ptsname(*master)) || (*minion = open(sname, O_RDWR|O_CLOEXEC)) < 0)
 	{
 		ast_close(*master);
 		return -1;
 	}
 #else
-	if (!(sname = ptymopen(master)) || (*minion = open(sname, O_RDWR|O_cloexec)) < 0)
+	if (!(sname = ptymopen(master)) || (*minion = open(sname, O_RDWR|O_CLOEXEC)) < 0)
 		return -1;
 #endif
 #ifdef I_PUSH
@@ -339,7 +339,7 @@ mkpty(int* master, int* minion)
 		error(ERROR_warn(0), "unable to set pty window size");
 #endif
 	fcntl(*master, F_SETFD, FD_CLOEXEC);
-#if !O_cloexec
+#if !O_CLOEXEC
 	fcntl(*minion, F_SETFD, FD_CLOEXEC);
 #endif
 #ifdef SIGTTOU
@@ -761,8 +761,6 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 /*
  * execute dialogue script on stdin
  */
-
-#define NESTING	64
 
 #define ELSE	0x01
 #define IF	0x02

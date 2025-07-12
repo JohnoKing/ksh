@@ -114,7 +114,7 @@ aso_init_fcntl(void* data, const char* details)
 	}
 	if (!(apl = newof(0, APL_t, 1, strlen(path))))
 		goto bad;
-	if (fd >= 0 || (fd = open(path, O_RDWR|O_cloexec)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_cloexec, perm)) >= 0)
+	if (fd >= 0 || (fd = open(path, O_RDWR|O_CLOEXEC)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_CLOEXEC, perm)) >= 0)
 	{
 		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
 			goto bad;

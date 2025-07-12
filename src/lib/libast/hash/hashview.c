@@ -74,7 +74,7 @@ hashview(Hash_table_t* top, Hash_table_t* bot)
 			for (b = *sp++; b; b = b->next)
 				if (b->hash & HASH_HIDES)
 				{
-					b->hash &= ~HASH_HIDES;
+					b->hash &= (unsigned long)~HASH_HIDES;
 					b->name = ((Hash_bucket_t*)b->name)->name;
 				}
 		top->scope = 0;

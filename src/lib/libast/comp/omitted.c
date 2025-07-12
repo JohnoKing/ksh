@@ -291,6 +291,7 @@ chmod(const char* path, mode_t mode)
 	int	oerrno;
 	char	buf[PATH_MAX];
 
+	oerrno = errno;
 	if ((r = syschmod(path, mode)) && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
 		errno = oerrno;
@@ -1005,6 +1006,7 @@ ctime_now(const char* path)
 	int		oerrno;
 	char		tmp[MAX_PATH];
 
+	oerrno = errno;
 	if (sysstat(path, &fs) || (fs.st_mode & S_IWUSR) || syschmod(path, (fs.st_mode | S_IWUSR) & S_IPERM))
 		fs.st_mode = 0;
 	cygwin_conv_to_win32_path(path, tmp);

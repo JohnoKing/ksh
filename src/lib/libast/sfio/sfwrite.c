@@ -49,7 +49,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 		   (!f->rsrv || f->rsrv->data != (uchar*)buf) )
 			return -1;
 
-		f->mode &= ~SFIO_PEEK;
+		f->mode &= (uint32_t)~SFIO_PEEK;
 
 		if(f->mode&SFIO_PKRD)
 		{	/* read past peeked data */
@@ -66,7 +66,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 				else	w -= r;
 			}
 
-			f->mode &= ~SFIO_PKRD;
+			f->mode &= (uint32_t)~SFIO_PKRD;
 			f->endb = f->data + n;
 			f->here += n;
 		}
@@ -76,7 +76,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 	}
 
 	s = begs = (uchar*)buf;
-	for(;; f->mode &= ~SFIO_LOCK)
+	for(;; f->mode &= (uint32_t)~SFIO_LOCK)
 	{	/* check stream mode */
 		if(SFMODE(f,local) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,local) < 0 )
 		{	w = s > begs ? s-begs : -1;

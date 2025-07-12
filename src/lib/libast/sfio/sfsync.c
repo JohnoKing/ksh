@@ -75,7 +75,8 @@ static int _sfall(void)
 
 int sfsync(Sfio_t* f)
 {
-	int	local, rv, lock;
+	int		local, rv;
+	uint32_t	lock;
 	Sfio_t*	origf;
 
 	if(!(origf = f) )
@@ -110,7 +111,7 @@ int sfsync(Sfio_t* f)
 
 		/* pretend that this stream is not on a stack */
 		mode = f->mode&SFIO_PUSH;
-		f->mode &= ~SFIO_PUSH;
+		f->mode &= (uint32_t)~SFIO_PUSH;
 
 		/* these streams do not need synchronization */
 		if((f->flags&SFIO_STRING) || (f->mode&SFIO_SYNCED))
@@ -119,7 +120,7 @@ int sfsync(Sfio_t* f)
 		if((f->mode&SFIO_WRITE) && (f->next > f->data || (f->bits&SFIO_HOLE)) )
 		{	/* sync the buffer, make sure pool doesn't move */
 			unsigned int pool = f->mode&SFIO_POOL;
-			f->mode &= ~SFIO_POOL;
+			f->mode &= (uint32_t)~SFIO_POOL;
 			if(f->next > f->data && (SFWRALL(f), SFFLSBUF(f,-1)) < 0)
 				rv = -1;
 			if(!SFISNULL(f) && (f->bits&SFIO_HOLE) )
@@ -142,7 +143,7 @@ int sfsync(Sfio_t* f)
 			if((f->flags&SFIO_SHARE) && !(f->flags&SFIO_PUBLIC) &&
 			   !(f->bits&SFIO_MMAP) )
 			{	f->endb = f->next = f->data;
-				f->mode &= ~SFIO_SYNCED;
+				f->mode &= (uint32_t)~SFIO_SYNCED;
 			}
 		}
 

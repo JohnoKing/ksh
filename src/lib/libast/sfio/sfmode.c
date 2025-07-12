@@ -83,7 +83,7 @@ static void _sfcleanup(void)
 
 			/* from now on, write streams are unbuffered */
 			pool = f->mode&SFIO_POOL;
-			f->mode &= ~SFIO_POOL;
+			f->mode &= (uint32_t)~SFIO_POOL;
 			if((f->flags&SFIO_WRITE) && !(f->mode&SFIO_WRITE))
 				(void)_sfmode(f,SFIO_WRITE,1);
 			if(f->data &&
@@ -299,10 +299,10 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 
 
 	if(wanted&SFIO_SYNCED) /* for (SFIO_SYNCED|SFIO_READ) stream, just junk data */
-	{	wanted &= ~SFIO_SYNCED;
+	{	wanted &= (uint32_t)~SFIO_SYNCED;
 		if((f->mode&(SFIO_SYNCED|SFIO_READ)) == (SFIO_SYNCED|SFIO_READ) )
 		{	f->next = f->endb = f->endr = f->data;
-			f->mode &= ~SFIO_SYNCED;
+			f->mode &= (uint32_t)~SFIO_SYNCED;
 		}
 	}
 
@@ -328,7 +328,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 	}
 
 	if(f->mode&SFIO_GETR)
-	{	f->mode &= ~SFIO_GETR;
+	{	f->mode &= (uint32_t)~SFIO_GETR;
 #ifdef MAP_TYPE
 		if(f->bits&SFIO_MMAP)
 		{
@@ -342,7 +342,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 		}
 #endif
 		if(f->getr)
-		{	f->next[-1] = (char)f->getr;
+		{	f->next[-1] = (uchar)f->getr;
 			f->getr = 0;
 		}
 	}
@@ -362,7 +362,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 		{	local = 1;
 			goto err_notify;
 		}
-		f->mode &= ~SFIO_POOL;
+		f->mode &= (uint32_t)~SFIO_POOL;
 	}
 
 	SFLOCK(f,local);
@@ -383,7 +383,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 			goto err_notify;
 
 		if((f->flags&SFIO_STRING) && f->size >= 0 && f->data)
-		{	f->mode &= ~SFIO_INIT;
+		{	f->mode &= (uint32_t)~SFIO_INIT;
 			f->extent = ((f->flags&SFIO_READ) || (f->bits&SFIO_BOTH)) ?
 					f->size : 0;
 			f->here = 0;

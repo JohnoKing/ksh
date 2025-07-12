@@ -49,8 +49,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 				else	f->bits &= ~SFIO_BOTH;
 
 				if(f->flags&SFIO_READ)
-					f->mode = (f->mode&~SFIO_WRITE)|SFIO_READ;
-				else	f->mode = (f->mode&~SFIO_READ)|SFIO_WRITE;
+					f->mode = (f->mode&(uint32_t)~SFIO_WRITE)|SFIO_READ;
+				else	f->mode = (f->mode&(uint32_t)~SFIO_READ)|SFIO_WRITE;
 			}
 		}
 		else /* make sure there is no buffered data */
@@ -65,7 +65,7 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 				ctl = (ctl & ~(O_TEXT|O_BINARY|O_APPEND)) | oflags;
 				fcntl(f->file, F_SETFL, ctl);
 			}
-#if !O_cloexec
+#if !O_CLOEXEC
 			if (fflags & SFIO_FD_CLOEXEC)
 				SETCLOEXEC(f->file);
 #endif
@@ -145,7 +145,7 @@ int _sftype(const char* mode, int* oflagsp, int* fflagsp)
 		oflags |= O_BINARY;
 		continue;
 	case 'e' :
-		oflags |= O_cloexec;
+		oflags |= O_CLOEXEC;
 		fflags |= SFIO_FD_CLOEXEC;
 		continue;
 	case 'r' :

@@ -324,6 +324,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 				beep();
 				continue;
 			}
+			/* FALLTHROUGH */
 		do_default_processing:
 		default:
 			/* ordinary typing: insert one character, 'count' times */

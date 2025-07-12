@@ -44,7 +44,7 @@ Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
 	if(f2 == SFIO_POPSTACK)
 	{	if(!(f2 = f1->push))
 			return NULL;
-		f2->mode &= ~SFIO_PUSH;
+		f2->mode &= (uint32_t)~SFIO_PUSH;
 	}
 	else
 	{	if(f2->push)
@@ -81,7 +81,7 @@ Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
 	}
 	else
 	{	/* unfreeze the just exposed stream */
-		f1->mode &= ~SFIO_PUSH;
+		f1->mode &= (uint32_t)~SFIO_PUSH;
 		f2->push = NULL;
 		rf = f2;
 	}

@@ -189,15 +189,15 @@ int tty_raw(int fd, int echomode)
 		echo = 0;
 	}
 #ifdef FLUSHO
-	ttyparm.c_lflag &= ~FLUSHO;
+	ttyparm.c_lflag &= (tcflag_t)~FLUSHO;
 #endif /* FLUSHO */
 	nttyparm = ttyparm;
-	nttyparm.c_iflag &= ~(IGNPAR|PARMRK|INLCR|IGNCR|ICRNL);
+	nttyparm.c_iflag &= (tcflag_t)~(IGNPAR|PARMRK|INLCR|IGNCR|ICRNL);
 	nttyparm.c_iflag |= BRKINT;
 	if(echo)
-		nttyparm.c_lflag &= ~(ICANON);
+		nttyparm.c_lflag &= (tcflag_t)~(ICANON);
 	else
-		nttyparm.c_lflag &= ~(ICANON|ISIG|ECHO|ECHOK);
+		nttyparm.c_lflag &= (tcflag_t)~(ICANON|ISIG|ECHO|ECHOK);
 	nttyparm.c_cc[VTIME] = 0;
 	nttyparm.c_cc[VMIN] = 1;
 #ifdef VREPRINT

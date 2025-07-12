@@ -3,7 +3,7 @@ ref	-D_def_map_ast=1
 cmd	universe
 
 sys	mman
-hdr	fcntl,dirent,direntry,filio,fmtmsg,fnmatch,jioctl,libgen,limits
+hdr	dirent,direntry,filio,fmtmsg,fnmatch,jioctl,libgen,limits
 hdr	locale,ndir,nl_types,process,spawn,utime
 hdr	linux/fs,linux/msdos_fs
 hdr	wctype

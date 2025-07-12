@@ -148,7 +148,6 @@ static noreturn int exec_process(void *data)
 pid_t
 spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pgid, int tcfd)
 {
-	int		n = errno;
 	pid_t		pid;
 	char		stack[STACK_SIZE];
 	struct cargs	args = {
@@ -274,6 +273,8 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 #define _fast_spawnveg 0
 #endif  /* _lib_posix_spawn */
 
+#if !_lib_clone
+
 #if _lib_spawnve && _hdr_process
 #include <process.h>
 #if defined(P_NOWAIT) || defined(_P_NOWAIT)
@@ -281,8 +282,8 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 #endif
 #endif
 
-#if _lib_pipe2 && O_cloexec
-#define pipe(a)  pipe2(a,O_cloexec)
+#if _lib_pipe2 && O_CLOEXEC
+#define pipe(a)  pipe2(a,O_CLOEXEC)
 #endif
 
 /*
@@ -306,7 +307,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 	n = errno;
 	if (pipe(err) < 0)
 		err[0] = -1;
-#if !(_lib_pipe2 && O_cloexec)
+#if !(_lib_pipe2 && O_CLOEXEC)
 	else
 	{
 		fcntl(err[0], F_SETFD, FD_CLOEXEC);
@@ -353,6 +354,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 	return pid;
 }
 
+#endif /* !_lib_clone */
 
 pid_t
 spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid, int tcfd)

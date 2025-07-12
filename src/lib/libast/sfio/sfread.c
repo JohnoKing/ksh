@@ -50,16 +50,16 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
 		{	if(((uchar*)buf + f->val) != f->next &&
 			   (!f->rsrv || f->rsrv->data != (uchar*)buf) )
 				return -1;
-			f->mode &= ~SFIO_PEEK;
+			f->mode &= (uint32_t)~SFIO_PEEK;
 			return 0;
 		}
 		else
 		{	if((uchar*)buf != f->next)
 				return -1;
-			f->mode &= ~SFIO_PEEK;
+			f->mode &= (uint32_t)~SFIO_PEEK;
 			if(f->mode&SFIO_PKRD)
 			{	/* actually read the data now */
-				f->mode &= ~SFIO_PKRD;
+				f->mode &= (uint32_t)~SFIO_PKRD;
 				if(n > 0)
 					n = (r = read(f->file,f->data,n)) < 0 ? 0 : (size_t)r;
 				f->endb = f->data+n;
@@ -72,7 +72,7 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
 	}
 
 	s = begs = (uchar*)buf;
-	for(;; f->mode &= ~SFIO_LOCK)
+	for(;; f->mode &= (uint32_t)~SFIO_LOCK)
 	{	/* check stream mode */
 		if(SFMODE(f,local) != SFIO_READ && _sfmode(f,SFIO_READ,local) < 0)
 		{	n = s > begs ? (size_t)(s-begs) : (size_t)(-1);

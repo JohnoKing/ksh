@@ -34,9 +34,7 @@
 #define getpagesize	______getpagesize
 #define ioctl		______ioctl
 
-#if _hdr_fcntl
 #include <fcntl.h>
-#endif
 #include <unistd.h>
 
 #include <sys/stat.h>
@@ -187,10 +185,8 @@ main(void)
 	}
 	printf("\n");
 #endif
-#ifdef F_DUPFD_CLOEXEC
-	printf("#define F_dupfd_cloexec	F_DUPFD_CLOEXEC\n");
-#else
-	printf("#define F_dupfd_cloexec	F_DUPFD\n");
+#ifndef F_DUPFD_CLOEXEC
+	printf("#define F_DUPFD_CLOEXEC	F_DUPFD\n");
 #endif
 
 #ifndef	O_APPEND
@@ -288,10 +284,8 @@ main(void)
 #ifndef	O_BINARY
 	printf("#define O_BINARY		0\n");
 #endif
-#ifdef	O_CLOEXEC
-	printf("#define O_cloexec		O_CLOEXEC\n");
-#else
-	printf("#define O_cloexec		0\n");
+#ifndef	O_CLOEXEC
+	printf("#define O_CLOEXEC		0\n");
 #endif
 #ifndef O_SEARCH
 #ifdef O_PATH

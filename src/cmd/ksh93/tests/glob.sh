@@ -417,7 +417,9 @@ set --noglobstar
 
 mkdir BUG_BRACQUOT
 cd BUG_BRACQUOT
-: > b > \\
+if [[ ${ uname -s ;} != CYGWIN* ]]
+then	: > b > \\
+fi
 test_glob '<[a-c]>' [a'-'c]
 test_glob '<[!N]>' ['!'N]
 test_glob '<[^N]>' ['^'N]

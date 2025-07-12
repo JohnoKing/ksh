@@ -47,7 +47,7 @@ char*          astconf(const char* \fIname\fP, const char* \fIpath\fP, const cha
 long           astconf_long(\fIarg\fP);
 unsigned long  astconf_ulong(\fIarg\fP);
 Ast_confdisc_t astconfdisc(Ast_confdisc_t new_notify);
-void           astconflist(Sfio_t* stream, const char* path, int flags);
+void           astconflist(Sfio_t* stream, const char* path, int flags, const char* pattern);
 int            astquery(int \fIfd\fP, const char* \fIformat\fP , ...);
 void           astwinsize(int \fIfd\fP, int* \fIrows\fP, int* \fIcols\fP);
 .EE

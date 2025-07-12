@@ -615,7 +615,6 @@ static char*
 format(Feature_t* fp, const char* path, const char* value, unsigned int flags, Error_f conferror)
 {
 	Feature_t*		sp;
-	int			n;
 	static struct utsname	uts;
 
 #if DEBUG_astconf
@@ -624,7 +623,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 	NOT_USED(flags);
 #endif
 	if (value)
-		fp->flags &= ~CONF_GLOBAL;
+		fp->flags &= (unsigned)~CONF_GLOBAL;
 	else if (fp->flags & CONF_GLOBAL)
 		return fp->value;
 	switch (fp->op)
@@ -685,7 +684,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 			setuniverse(value);
 #else
 #ifdef UNIV_MAX
-		n = 0;
+		int n = 0;
 		if (value)
 		{
 			while (n < univ_max && !streq(value, univ_name[n]))
@@ -1099,7 +1098,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 		call = 0;
 		if (p->standard == CONF_AST)
 		{
-			if (streq(p->name, "RELEASE") && (i = open("/proc/version", O_RDONLY|O_cloexec)) >= 0)
+			if (streq(p->name, "RELEASE") && (i = open("/proc/version", O_RDONLY|O_CLOEXEC)) >= 0)
 			{
 				ssize_t n = read(i, buf, sizeof(buf) - 1);
 				ast_close(i);
@@ -1146,7 +1145,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 			s = p->limit.string;
 			break;
 		}
-		flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+		flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		v = -1;
 		errno = EINVAL;
 		defined = 0;
@@ -1157,10 +1156,10 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 		if (!errno)
 		{
 			if ((p->flags & CONF_FEATURE) || !(p->flags & (CONF_LIMIT|CONF_MINMAX)))
-				flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+				flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		}
 		else if (flags & CONF_PREFIXED)
-			flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+			flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		else if (errno != EINVAL || !i)
 		{
 			if (!sp)
@@ -1176,7 +1175,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 			}
 			else
 			{
-				flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+				flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 				flags |= CONF_ERROR;
 			}
 		}

@@ -94,6 +94,23 @@ main(void)
 	printf("#undef	strdup\n");
 	printf("#define strdup		_ast_strdup\n");
 	printf("extern char*		strdup(const char*);\n");
+	/* override the native FTS library */
+	printf("#undef	fts_children\n");
+	printf("#define	fts_children	_ast_fts_children\n");
+	printf("#undef	fts_close\n");
+	printf("#define	fts_close	_ast_fts_close\n");
+	printf("#undef	fts_flags\n");
+	printf("#define	fts_flags	_ast_fts_flags\n");
+	printf("#undef	fts_local\n");
+	printf("#define	fts_local	_ast_fts_local\n");
+	printf("#undef	fts_notify\n");
+	printf("#define	fts_notify	_ast_fts_notify\n");
+	printf("#undef	fts_open\n");
+	printf("#define	fts_open	_ast_fts_open\n");
+	printf("#undef	fts_read\n");
+	printf("#define	fts_read	_ast_fts_read\n");
+	printf("#undef	fts_set\n");
+	printf("#define	fts_set		_ast_fts_set\n");
 
 	/*
 	 * overriding <stdlib.h> strto*() is problematic to say the least
@@ -152,7 +169,7 @@ main(void)
 #if _npt_strtold && !_std_strtold
 	printf("#ifndef _ISOC99_SOURCE\n");
 #endif
-	printf("extern _ast_fltmax_t	strtold(const char*, char**);\n");
+	printf("extern long double	strtold(const char*, char**);\n");
 #if _npt_strtold && !_std_strtold
 	printf("#endif\n");
 #endif
@@ -161,7 +178,7 @@ main(void)
 #if _npt_strtoll && !_std_strtol
 	printf("#ifndef _ISOC99_SOURCE\n");
 #endif
-	printf("extern _ast_intmax_t		strtoll(const char*, char**, int);\n");
+	printf("extern long long	strtoll(const char*, char**, int);\n");
 #if _npt_strtoll && !_std_strtol
 	printf("#endif\n");
 #endif
@@ -170,7 +187,7 @@ main(void)
 #if _npt_strtoull && !_std_strtol
 	printf("#ifndef _ISOC99_SOURCE\n");
 #endif
-	printf("extern unsigned _ast_intmax_t	strtoull(const char*, char**, int);\n");
+	printf("extern unsigned long long	strtoull(const char*, char**, int);\n");
 #if _npt_strtoull && !_std_strtoul
 	printf("#endif\n");
 #endif

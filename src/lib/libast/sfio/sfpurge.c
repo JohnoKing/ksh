@@ -56,7 +56,7 @@ int sfpurge(Sfio_t* f)
 	}
 #endif
 
-	switch(f->mode&~SFIO_LOCK)
+	switch(f->mode&(uint32_t)~SFIO_LOCK)
 	{
 	default :
 		SFOPEN(f,0);

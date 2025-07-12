@@ -59,6 +59,7 @@ static const char usage_cp[] =
     "point to.]"
 "[P|d:physical|nodereference|no-dereference?Don't follow symbolic links; copy symbolic "
     "links rather than the files they point to.]"
+"[R|r:recursive?Operate on the contents of directories recursively.]"
 ;
 
 static const char usage_ln[] =
@@ -68,6 +69,7 @@ static const char usage_ln[] =
     "Otherwise, if only two files are given, \bln\b links the first onto the "
     "second. It is an error if the last argument is not a directory and more "
     "than two files are given. By default directories are not linked.]"
+"[R:recursive?Operate on the contents of directories recursively.]"
 ;
 
 static const char usage_mv[] =
@@ -80,6 +82,7 @@ static const char usage_mv[] =
     "on different filesystems then \bmv\b copies the file contents to the "
     "destination and then deletes the source file.]"
 
+"[R|r:recursive?Operate on the contents of directories recursively.]"
 "[U:remove-destination?Remove existing destination files before moving.]"
 ;
 
@@ -89,7 +92,6 @@ static const char usage_tail[] =
     "files. An affirmative response (\by\b or \bY\b) replaces the file, a "
     "quit response (\bq\b or \bQ\b) exits immediately, and all other "
     "responses skip the file.]"
-"[r|R:recursive?Operate on the contents of directories recursively.]"
 "[s:symlink|symbolic-link?Make symbolic links to destination files.]"
 "[u:update?Replace a destination file only if its modification time is "
     "older than the corresponding source file modification time.]"
@@ -427,7 +429,7 @@ visit(State_t* state, FTSENT* ent)
 		}
 		if (!rm || !state->force)
 		{
-			if (S_ISLNK(st.st_mode) && (n = -1) || (n = open(state->path, O_RDWR|O_BINARY|O_cloexec)) >= 0)
+			if (S_ISLNK(st.st_mode) && (n = -1) || (n = open(state->path, O_RDWR|O_BINARY|O_CLOEXEC)) >= 0)
 			{
 				if (n >= 0)
 					ast_close(n);
@@ -573,12 +575,12 @@ visit(State_t* state, FTSENT* ent)
 		{
 			int	rfd = -1;
 			int	wfd = -1;
-			if (ent->fts_statp->st_size > 0 && (rfd = open(ent->fts_path, O_RDONLY|O_BINARY|O_cloexec)) < 0)
+			if (ent->fts_statp->st_size > 0 && (rfd = open(ent->fts_path, O_RDONLY|O_BINARY|O_CLOEXEC)) < 0)
 			{
 				error(ERROR_SYSTEM|2, "%s: cannot read", ent->fts_path);
 				return 0;
 			}
-			else if ((wfd = open(state->path, (st.st_mode ? (state->wflags & ~O_EXCL) : state->wflags)|O_cloexec, ent->fts_statp->st_mode & state->perm)) < 0)
+			else if ((wfd = open(state->path, (st.st_mode ? (state->wflags & ~O_EXCL) : state->wflags)|O_CLOEXEC, ent->fts_statp->st_mode & state->perm)) < 0)
 			{
 				error(ERROR_SYSTEM|2, "%s: cannot write", state->path);
 				if (ent->fts_statp->st_size > 0)
@@ -806,7 +808,7 @@ b_cp(int argc, char** argv, Shbltin_t* context)
 		case 'p':
 			state->preserve = PRESERVE_IDS|PRESERVE_PERM|PRESERVE_TIME;
 			continue;
-		case 'r':
+		case 'R':
 			state->recursive = 1;
 			if (path_resolve < 1)
 			{

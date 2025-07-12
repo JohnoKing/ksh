@@ -58,7 +58,7 @@ static union _u_	v;
 int
 main(void)
 {
-	int		i;
+	int		i = 0;
 	int		j;
 	int		k;
 

@@ -139,7 +139,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 			return NULL;
 
 		/* turn off the SFIO_SYNCED bit because buffer is changing */
-		f->mode &= ~SFIO_SYNCED;
+		f->mode &= (uint32_t)~SFIO_SYNCED;
 	}
 
 	SFLOCK(f,local);

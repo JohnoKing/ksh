@@ -1249,13 +1249,13 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 
 2022-09-24:
 
-- The down arrow key can now be used to perform a backwards reverse search,
+- [v1.1] The down arrow key can now be used to perform a backwards reverse search,
   similar to how the up arrow key functions.
 
-- The Page Up and Page Down keys can now also be used to perform reverse
+- [v1.1] The Page Up and Page Down keys can now also be used to perform reverse
   searches forwards and backwards.
 
-- A new arrowkeysearch shell option can be used to disable backwards reverse
+- [v1.1] A new arrowkeysearch shell option can be used to disable backwards reverse
   search using the arrow keys. (Page Up and Page Down will still search).
 
 - In the emacs line editor, the Ctrl+R reverse-search prompt is now visually
@@ -1282,7 +1282,7 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 
 2022-08-30:
 
-- When printing a function definition, 'typeset -f function_name' now
+- [v1.1] When printing a function definition, 'typeset -f function_name' now
   regenerates the code from the parse tree instead of dumping the literal
   code from the source file. This avoids corrupted or missing output if the
   source file is edited or (re)moved after loading the function. It also
@@ -1509,7 +1509,7 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 
 2022-06-12:
 
-- The 'time' keyword and 'times' built-in now display three digits after the
+- [v1.1] The 'time' keyword and 'times' built-in now display three digits after the
   decimal point by default; up to six remain configurable (see 2022-06-06).
 
 - The POSIX mode now disables zero-padding of seconds in 'time'/'times' output.
@@ -1543,12 +1543,12 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 
 2022-06-06:
 
-- The 'time' reserved word now displays seconds with six digits after the
-  decimal point by default. Its TIMEFORMAT variable supports a new %C
+- [v1.1] The 'time' reserved word now displays seconds with six digits after
+  the decimal point by default. Its TIMEFORMAT variable supports a new %C
   specifier that yields the the total number of CPU seconds, i.e. the sum
   of the time spent in user and system mode.
 
-- The 'times' special built-in command now displays seconds with six digits
+- [v1.1] The 'times' special built-in command now displays seconds with six digits
   after the decimal point.
 
 2022-06-05:
