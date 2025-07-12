@@ -16,6 +16,25 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
 - Fixed a bug that could cause ksh to reopen stdout or stderr during
   init in spite of a 1>&- or 2>&- redirect.
 
+- Added support for the following C23 math functions:
+  - acospi
+  - asinpi
+  - atan2pi
+  - atanpi
+  - compoundn
+  - cospi
+  - exp2m1
+  - exp10m1
+  - log10p1
+  - log2p1
+  - logp1
+  - pown
+  - powr
+  - rootn
+  - rsqrt
+  - sinpi
+  - tanpi
+
 2025-07-10:
 
 - Fixed a file descriptor leak introduced in 93u+ 2012-07-27 that occurred
