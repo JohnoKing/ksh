@@ -141,11 +141,9 @@ static int	exitval;
 
 int    b_printf(int argc, char *argv[],Shbltin_t *context)
 {
-	struct print prdata;
+	struct print prdata = { .options = sh_optprintf };
 	NOT_USED(argc);
 	NOT_USED(context);
-	memset(&prdata,0,sizeof(prdata));
-	prdata.options = sh_optprintf;
 	return b_print(-1,argv,(Shbltin_t*)&prdata);
 }
 
@@ -176,11 +174,11 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 #endif /* !SHOPT_SCRIPTONLY */
 	int nflag=0, rflag=0, vflag=0;
 	Namval_t *vname=0;
-	Optdisc_t disc;
+	Optdisc_t disc = {
+		.version = OPT_VERSION,
+		.infof = infof
+	};
 	exitval = 0;
-	memset(&disc, 0, sizeof(disc));
-	disc.version = OPT_VERSION;
-	disc.infof = infof;
 	if(argc>0)
 	{
 		options = sh_optprint;
@@ -371,12 +369,14 @@ printf_v:
 	{
 		/* printf style print */
 		Sfio_t *pool;
-		struct printf pdata;
-		memset(&pdata, 0, sizeof(pdata));
-		pdata.hdr.version = SFIO_VERSION;
-		pdata.hdr.extf = extend;
-		pdata.hdr.reloadf = reload;
-		pdata.nextarg = argv;
+		struct printf pdata = {
+			.hdr = {
+				.version = SFIO_VERSION,
+				.extf = extend,
+				.reloadf = reload
+			},
+			.nextarg = argv
+		};
 		sh_offstate(SH_STOPOK);
 		pool=sfpool(sfstderr,NULL,SFIO_WRITE);
 		do

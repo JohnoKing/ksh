@@ -44,9 +44,7 @@ strftime(char* buf, size_t len, const char* format, const struct tm* tm)
 {
 	char*	s;
 	time_t		t;
-	Tm_t		tl;
-
-	memset(&tl, 0, sizeof(tl));
+	Tm_t		tl = {0};
 
 	/*
 	 * nl_langinfo() may call strftime() with bogus tm except for

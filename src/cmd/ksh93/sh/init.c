@@ -1405,13 +1405,12 @@ static void freeup_tree(Dt_t *tree)
  */
 void sh_reinit(void)
 {
-	Shopt_t opt;
+	Shopt_t opt = {0};
 	Namval_t *np,*npnext;
 	Dt_t	*dp;
 	sh_onstate(SH_INIT);
 	sh_offstate(SH_FORKED);
 	/* Reset shell options; inherit some */
-	memset(&opt,0,sizeof(opt));
 	if(sh_isoption(SH_POSIX))
 		on_option(&opt,SH_POSIX);
 #if SHOPT_ESH

@@ -1353,8 +1353,8 @@ Namval_t *nv_open(const char *name, Dt_t *root, nvflag_t flags)
 {
 	char			*cp=(char*)name;
 	ptrdiff_t		c;
-	Namval_t		*np=0;
-	Namfun_t		fun;
+	Namval_t		*np = 0;
+	Namfun_t		fun = {0};
 	nvflag_t		append=0;
 	const char		*msg = e_varname;
 	char			*fname = 0;
@@ -1364,7 +1364,6 @@ Namval_t *nv_open(const char *name, Dt_t *root, nvflag_t flags)
 	struct Cache_entry	*xp;
 #endif
 	sh_stats(STAT_NVOPEN);
-	memset(&fun,0,sizeof(fun));
 	sh.openmatch = 0;
 	sh.last_table = 0;
 	if(!root)

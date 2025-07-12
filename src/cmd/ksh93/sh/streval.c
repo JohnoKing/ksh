@@ -885,15 +885,15 @@ again:
 
 Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const char**,struct lval*,int,Sfdouble_t),int emode)
 {
-	struct vars cur;
 	Arith_t *ep;
 	ptrdiff_t offset;
-	memset(&cur,0,sizeof(cur));
-     	cur.expr = cur.nextchr = string;
-	cur.convert = fun;
-	cur.emode = emode;
-	cur.errmsg.value = 0;
-	cur.errmsg.emode = emode;
+	struct vars cur = {
+		.expr = string,
+		.nextchr = string,
+		.convert = fun,
+		.emode = emode,
+		.errmsg = { .emode = emode }
+	};
 	stkseek(sh.stk,(ptrdiff_t)sizeof(Arith_t));
 	if(!expr(&cur,0) && cur.errmsg.value)
 	{

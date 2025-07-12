@@ -43,18 +43,17 @@ strptime(const char* s, const char* format, struct tm* ts)
 	char*	e;
 	char*	f;
 	time_t	t;
-	Tm_t	tm;
-
-	memset(&tm, 0, sizeof(tm));
-	tm.tm_sec = ts->tm_sec;
-	tm.tm_min = ts->tm_min;
-	tm.tm_hour = ts->tm_hour;
-	tm.tm_mday = ts->tm_mday;
-	tm.tm_mon = ts->tm_mon;
-	tm.tm_year = ts->tm_year;
-	tm.tm_wday = ts->tm_wday;
-	tm.tm_yday = ts->tm_yday;
-	tm.tm_isdst = ts->tm_isdst;
+	Tm_t	tm = {
+		.tm_sec = ts->tm_sec,
+		.tm_min = ts->tm_min,
+		.tm_hour = ts->tm_hour,
+		.tm_mday = ts->tm_mday,
+		.tm_mon = ts->tm_mon,
+		.tm_year = ts->tm_year,
+		.tm_wday = ts->tm_wday,
+		.tm_yday = ts->tm_yday,
+		.tm_isdst = ts->tm_isdst
+	};
 	t = tmtime(&tm, TM_LOCALZONE);
 	t = tmscan(s, &e, format, &f, &t, 0);
 	if (e == (char*)s || *f)

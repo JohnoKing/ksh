@@ -32,7 +32,7 @@
 Sig_handler_t
 signal(int sig, Sig_handler_t fun)
 {
-	struct sigaction	na;
+	struct sigaction	na = { .sa_handler = fun };
 	struct sigaction	oa;
 	int			unblock;
 #ifdef SIGNO_MASK
@@ -50,8 +50,6 @@ signal(int sig, Sig_handler_t fun)
 	flags = sig & ~SIGNO_MASK;
 	sig &= SIGNO_MASK;
 #endif
-	memzero(&na, sizeof(na));
-	na.sa_handler = fun;
 #if defined(SA_INTERRUPT) || defined(SA_RESTART)
 	switch (sig)
 	{

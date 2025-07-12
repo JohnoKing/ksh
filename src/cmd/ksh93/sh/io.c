@@ -220,13 +220,11 @@ inetopen(const char* path, int flags)
 	char*		t;
 	int			fd;
 	int			oerrno;
-	struct addrinfo		hint;
+	struct addrinfo		hint = { .ai_family = PF_UNSPEC };
 	struct addrinfo*	addr;
 	struct addrinfo*	p;
 	int			server = !!(flags&O_SERVICE);
 
-	memset(&hint, 0, sizeof(hint));
-	hint.ai_family = PF_UNSPEC;
 	switch (path[0])
 	{
 #ifdef IPPROTO_SCTP
@@ -1032,13 +1030,15 @@ static Sfoff_t	file_offset(int fn, char *fname)
 	Sfio_t		*sp = sh.sftable[fn];
 	char		*cp;
 	Sfoff_t		off;
-	struct Eof	endf;
 	Namval_t	*mp = nv_open("EOF",sh.var_tree,0);
 	Namval_t	*pp = nv_open("CUR",sh.var_tree,0);
-	memset(&endf,0,sizeof(struct Eof));
-	endf.fd = fn;
-	endf.hdr.disc = &EOF_disc;
-	endf.hdr.nofree = 1;
+	struct Eof	endf = {
+		.fd = fn,
+		.hdr = {
+			.disc = &EOF_disc,
+			.nofree = 1
+		}
+	};
 	if(mp)
 		nv_stack(mp, &endf.hdr);
 	if(pp)

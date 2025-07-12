@@ -24,7 +24,7 @@ dat	_tzname,tzname
 
 lib	BSDsetpgrp
 lib	_cleanup
-lib	bcopy,bzero,confstr,dirread
+lib	confstr,dirread
 lib	fchmod,fcntl,fmtmsg,fnmatch,fork,fsync
 lib	getconf,getdents,getdirentries,getdtablesize
 lib	gethostname,getpagesize,getrlimit,getuniverse
