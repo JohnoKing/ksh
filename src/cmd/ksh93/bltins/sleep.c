@@ -163,7 +163,7 @@ void sh_delay(double t, int sflag)
 	 * As a workaround, make it impossible to suspend sleep in that case, by ignoring SIGTSTP.
 	 */
 	if (sh_isstate(SH_INTERACTIVE))
-		signal(SIGTSTP,SIG_IGN);
+		ast_signal(SIGTSTP,SIG_IGN);
 #endif
 	while(tvsleep(&ts, &tx) < 0)
 	{
@@ -175,6 +175,6 @@ void sh_delay(double t, int sflag)
 	}
 #if __APPLE__ && __MACH__
 	if (sh_isstate(SH_INTERACTIVE))
-		signal(SIGTSTP,SIG_DFL);
+		ast_signal(SIGTSTP,SIG_DFL);
 #endif
 }

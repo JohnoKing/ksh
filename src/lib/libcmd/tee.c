@@ -132,7 +132,7 @@ b_tee(int argc, char** argv, Shbltin_t* context)
 			oflag |= O_APPEND;
 			continue;
 		case 'i':
-			signal(SIGINT, SIG_IGN);
+			ast_signal(SIGINT, SIG_IGN);
 			continue;
 		case 'l':
 			line = sfset(sfstdout, 0, 0) & SFIO_LINE;

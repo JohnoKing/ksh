@@ -41,9 +41,6 @@ main(void)
 	printf("#define glob		_ast_glob\n");
 	printf("#undef	globfree\n");
 	printf("#define globfree	_ast_globfree\n");
-	/* always rename AST signal(3) to _ast_signal; this avoids breakage when using ASan */
-	printf("#undef	signal\n");
-	printf("#define signal      	_ast_signal\n");
 	/* do the same with sigunblock(), just to be sure (e.g., native QNX sigunblock() is different) */
 	printf("#undef	sigunblock\n");
 	printf("#define sigunblock      _ast_sigunblock\n");

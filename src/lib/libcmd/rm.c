@@ -71,7 +71,6 @@ static const char usage[] =
 #define beenhere(f)	(((f)->fts_number>>1)==((signed)((f)->fts_statp->st_nlink)))
 #define isempty(f)	(!((f)->fts_number&RM_ENTRY))
 #define nonempty(f)	((f)->fts_parent->fts_number|=RM_ENTRY)
-#define pathchunk(n)	roundof(n,1024)
 #define retry(f)	((f)->fts_number=((long)(((f)->fts_statp->st_nlink<<1))))
 
 typedef struct State_s			/* program state		*/

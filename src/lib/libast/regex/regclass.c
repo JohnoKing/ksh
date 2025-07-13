@@ -145,12 +145,6 @@ static Ctype_t ctype[] =
 	{ 0, 0,        Is_wc_15 },
 	{ 0, 0,        Is_wc_16 },
 
-#define WTYPES		16
-
-#else
-
-#define WTYPES		0
-
 #endif
 };
 

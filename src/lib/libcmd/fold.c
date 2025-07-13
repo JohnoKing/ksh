@@ -76,7 +76,6 @@ static const char usage[] =
 #define WIDTH	80
 #define TABSIZE	8
 
-#define T_EOF	1
 #define T_NL	2
 #define T_BS	3
 #define T_TAB	4

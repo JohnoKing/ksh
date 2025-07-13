@@ -467,7 +467,7 @@ int job_reap(int sig)
 	}
 	sh.waitevent = waitevent;
 	if(sig)
-		signal(sig, job_waitsafe);
+		ast_signal(sig, job_waitsafe);
 	/*
 	 * Always restore errno, because this code is run during signal handling which may interrupt loops like:
 	 *	while((fd = open(path, flags, mode)) < 0)
@@ -500,7 +500,7 @@ void job_init(void)
 {
 	int ntry=0;
 	job.fd = JOBTTY;
-	signal(SIGCHLD,job_waitsafe);
+	ast_signal(SIGCHLD,job_waitsafe);
 	if(njob_savelist < NJOB_SAVELIST)
 		init_savelist();
 	if(!sh_isoption(SH_INTERACTIVE))
@@ -532,7 +532,7 @@ void job_init(void)
 			if(job.mytgid <= 0)
 				return;
 			/* Stop this shell until continued */
-			signal(SIGTTIN,SIG_DFL);
+			ast_signal(SIGTTIN,SIG_DFL);
 			kill(sh.pid,SIGTTIN);
 			/* resumes here after continue tries again */
 			if(ntry++ > IOMAXTRY)
@@ -556,10 +556,10 @@ void job_init(void)
 #   	endif
 	sigflag(SIGCHLD, SA_NOCLDSTOP|SA_NOCLDWAIT, 0);
 #endif /* SA_NOCLDSTOP || SA_NOCLDWAIT */
-	signal(SIGTTIN,SIG_IGN);
-	signal(SIGTTOU,SIG_IGN);
+	ast_signal(SIGTTIN,SIG_IGN);
+	ast_signal(SIGTTOU,SIG_IGN);
 	/* The shell now handles ^Z */
-	signal(SIGTSTP,sh_fault);
+	ast_signal(SIGTSTP,sh_fault);
 	tcsetpgrp(JOBTTY,sh.pid);
 #ifdef CNSUSP
 	/* set the switch character */

@@ -194,8 +194,8 @@ int _sfpopen(Sfio_t* f, int fd, int pid, int stdio)	/* stdio popen() does not re
 	if(p->sigp)
 	{	Sfsignal_f	handler;
 
-		if((handler = signal(SIGPIPE, SIG_IGN)) != SIG_DFL && handler != SIG_IGN)
-			signal(SIGPIPE, handler); /* honor user handler */
+		if((handler = ast_signal(SIGPIPE, SIG_IGN)) != SIG_DFL && handler != SIG_IGN)
+			ast_signal(SIGPIPE, handler); /* honor user handler */
 		_Sfsigp += 1;
 	}
 
@@ -234,8 +234,8 @@ int _sfpclose(Sfio_t* f)
 		sigcritical(0);
 		if(p->sigp && (_Sfsigp -= 1) <= 0)
 		{	Sfsignal_f	handler;
-			if((handler = signal(SIGPIPE,SIG_DFL)) != SIG_DFL && handler != SIG_IGN)
-				signal(SIGPIPE,handler); /* honor user handler */
+			if((handler = ast_signal(SIGPIPE,SIG_DFL)) != SIG_DFL && handler != SIG_IGN)
+				ast_signal(SIGPIPE,handler); /* honor user handler */
 			_Sfsigp = 0;
 		}
 	}

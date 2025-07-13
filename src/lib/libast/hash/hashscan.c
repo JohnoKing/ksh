@@ -65,7 +65,7 @@ hashscan(Hash_table_t* tab, int flags)
 
 				while (sp < sx)
 					for (b = *sp++; b; b = b->next)
-						b->hash &= ~HASH_HIDDEN;
+						b->hash &= (unsigned long)~HASH_HIDDEN;
 			}
 		} while (tab = tab->scope);
 		tab = pos->tab;
@@ -114,7 +114,7 @@ hashnext(Hash_position_t* pos)
 				if (!(b->hash & HASH_DELETED)) break;
 			}
 		}
-		else b->hash &= ~HASH_HIDDEN;
+		else b->hash &= (unsigned long)~HASH_HIDDEN;
 	}
 	return pos->tab->root->last.bucket = pos->bucket = b;
 }

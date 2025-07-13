@@ -157,18 +157,6 @@
 #define PATH_TOUCH_VERBATIM	02
 
 /*
- * pathcheck() info
- */
-
-typedef struct
-{
-	unsigned long	date;
-	char*		feature;
-	char*		host;
-	char*		user;
-} Pathcheck_t;
-
-/*
  * regex flags type (included here for the strgrpmatch() family)
  */
 typedef uint32_t regflags_t;
@@ -368,7 +356,6 @@ extern char*		pathcanon_20100601(char*, size_t, int);
 extern char*		pathcat(char*, const char*, int, const char*, const char*);
 extern char*		pathcat_20100601(const char*, int, const char*, const char*, char*, size_t);
 extern int		pathcd(const char*, const char*);
-extern int		pathcheck(const char*, const char*, Pathcheck_t*);
 extern int		pathexists(char*, int);
 extern char*		pathfind(const char*, const char*, const char*, char*, size_t);
 extern ssize_t		pathgetlink(const char*, char*, size_t);

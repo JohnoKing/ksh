@@ -30,22 +30,17 @@
 
 #define C_ESC			(-1)
 #define C_MB			(-2)
-#define ZERO			((unsigned char)0)
 
 #if _AST_REGEX_DEBUG
 
 #define DEBUG_TEST(f,y,n)	((debug&(debug_flag=f))?(y):(n))
-#define DEBUG_CODE(f,y,n)	do if(debug&(f)){y}else{n} while(0)
-#define DEBUG_INIT()		do { char* t; if (!debug) { debug = 0x80000000; if (t = getenv("_AST_regex_comp_debug")) debug |= strtoul(t, NULL, 0); } } while (0)
 
 static unsigned long	debug;
 static unsigned long	debug_flag;
 
 #else
 
-#define DEBUG_INIT()
 #define DEBUG_TEST(f,y,n)	(n)
-#define DEBUG_CODE(f,y,n)	do {n} while(0)
 
 #endif
 
@@ -1443,7 +1438,7 @@ bra(Cenv_t* env)
 					dtinsert(dt, cc);
 				}
 				for (i = 0; i < elementsof(cc->key); i++)
-					cc->key[i] = ~ZERO;
+					cc->key[i] = ~0U;
 				dtinsert(dt, cc);
 				LCINFO(AST_LC_COLLATE)->data = dt;
 			}

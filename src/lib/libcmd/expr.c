@@ -113,7 +113,6 @@ static const char usage[] =
 #define T_ADD	0x100
 #define T_MULT	0x200
 #define T_CMP	0x400
-#define T_FUN	0x800
 #define T_OP	7
 #define T_NUM	1
 #define T_STR	2
@@ -129,11 +128,6 @@ static const char usage[] =
 #define OP_MULT		(T_MULT|0)
 #define OP_DIV		(T_MULT|1)
 #define OP_MOD		(T_MULT|2)
-#define OP_INDEX	(T_FUN|0)
-#define OP_LENGTH	(T_FUN|1)
-#define OP_MATCH	(T_FUN|2)
-#define OP_QUOTE	(T_FUN|3)
-#define OP_SUBSTR	(T_FUN|4)
 
 #define numeric(np)	((np)->type&T_NUM)
 

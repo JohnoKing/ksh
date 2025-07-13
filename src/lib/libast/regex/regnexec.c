@@ -194,7 +194,6 @@ typedef struct
 #define stkold(s,p)	stkset(s,(p)->base,(ptrdiff_t)(p)->offset)
 
 #define stkframe(s)	(*((Stk_frame_t**)stktop(s)-1))
-#define stkdata(s,t)	((t*)stkframe(s)->data)
 #define stkpop(s)	stkold(s,&(stkframe(s)->pos))
 
 static void*

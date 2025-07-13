@@ -147,7 +147,6 @@ static const char usage_tail[] =
 #define PRESERVE_PERM	0x2		/* preserve permissions		*/
 #define PRESERVE_TIME	0x4		/* preserve times		*/
 
-#define BAK_replace	0		/* no backup -- just replace	*/
 #define BAK_existing	1		/* number if already else simple*/
 #define BAK_number	2		/* append .suffix number suffix	*/
 #define BAK_simple	3		/* append suffix		*/

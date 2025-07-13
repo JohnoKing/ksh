@@ -55,9 +55,9 @@ static void setup_child(pid_t pgid, int tcfd)
 		if(pgid == -1)
 			pgid = getpid();
 		tcsetpgrp(tcfd, pgid);
-		signal(SIGTTIN,SIG_DFL);
-		signal(SIGTTOU,SIG_DFL);
-		signal(SIGTSTP,SIG_DFL);
+		ast_signal(SIGTTIN,SIG_DFL);
+		ast_signal(SIGTTOU,SIG_DFL);
+		ast_signal(SIGTSTP,SIG_DFL);
 	}
 }
 

@@ -1519,8 +1519,8 @@ int sh_exec(const Shnode_t *t, int flags)
 				if((type&FINT) && !sh_isstate(SH_MONITOR))
 				{
 					/* default std input for & */
-					signal(SIGINT,SIG_IGN);
-					signal(SIGQUIT,SIG_IGN);
+					ast_signal(SIGINT,SIG_IGN);
+					ast_signal(SIGQUIT,SIG_IGN);
 					if(!sh.st.ioset)
 					{
 						if(sh_close(0)>=0)
@@ -2793,9 +2793,9 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
 	}
 	if(job.jobcontrol)
 	{
-		signal(SIGTTIN,SIG_DFL);
-		signal(SIGTTOU,SIG_DFL);
-		signal(SIGTSTP,SIG_DFL);
+		ast_signal(SIGTTIN,SIG_DFL);
+		ast_signal(SIGTTOU,SIG_DFL);
+		ast_signal(SIGTSTP,SIG_DFL);
 	}
 	job.jobcontrol = 0;
 	job.toclear = 1;
@@ -3320,7 +3320,7 @@ static void sigreset(int mode)
 		if(sig==SIGCHLD)
 			continue;
 		if((trap=sh.st.trapcom[sig]) && *trap==0)
-			signal(sig,mode?sh_fault:SIG_IGN);
+			ast_signal(sig,mode?sh_fault:SIG_IGN);
 	}
 }
 

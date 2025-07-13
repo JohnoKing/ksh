@@ -38,9 +38,9 @@ typedef struct _direct_s
 } Direct_t;
 
 /* convert a pointer to an int */
-#define P2I(p)	(Sfulong_t)((char*)(p) - (char*)0)
 
 #ifdef F_DIOINFO
+#define P2I(p)	((uintptr_t)(p))
 
 static ssize_t diordwr(Sfio_t* f, void* buf, size_t n, Direct_t* di, int type)
 {

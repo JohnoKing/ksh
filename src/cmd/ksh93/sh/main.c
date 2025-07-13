@@ -164,10 +164,10 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 		if(sh_isoption(SH_INTERACTIVE))
 		{
 #ifdef SIGXCPU
-			signal(SIGXCPU,SIG_DFL);
+			ast_signal(SIGXCPU,SIG_DFL);
 #endif /* SIGXCPU */
 #ifdef SIGXFSZ
-			signal(SIGXFSZ,SIG_DFL);
+			ast_signal(SIGXFSZ,SIG_DFL);
 #endif /* SIGXFSZ */
 			sh_onoption(SH_MONITOR);
 		}
@@ -323,7 +323,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 	{
 		/* keep $COLUMNS and $LINES up to date even for scripts that don't trap SIGWINCH */
 #ifdef SIGWINCH
-		signal(SIGWINCH,sh_fault);
+		ast_signal(SIGWINCH,sh_fault);
 #endif /* SIGWINCH */
 	}
 	/* (Re)set PS4 and IFS, but don't export these now even if allexport is on. */

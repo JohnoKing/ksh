@@ -64,9 +64,9 @@ procclose(Proc_t* p)
 			else
 			{
 				if (p->sigint != SIG_IGN)
-					signal(SIGINT, p->sigint);
+					ast_signal(SIGINT, p->sigint);
 				if (p->sigquit != SIG_IGN)
-					signal(SIGQUIT, p->sigquit);
+					ast_signal(SIGQUIT, p->sigquit);
 				sigprocmask(SIG_SETMASK, &p->mask, NULL);
 			}
 			status = status == -1 ?

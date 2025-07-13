@@ -50,7 +50,7 @@ typedef TYPE (*Sig_handler_t)(ARG);
 Sig_handler_t f(void)
 {
 	Sig_handler_t	handler;
-	handler = signal(1, SIG_IGN);
+	handler = ast_signal(1, SIG_IGN);
 	return handler;
 }" > $tmp.c
 if	$cc -c $tmp.c >/dev/null
@@ -106,4 +106,4 @@ extern int		sigflag(int, int, int);
 #endif
 extern int		sigcritical(int);
 extern int		sigunblock(int);
-extern Sig_handler_t	_ast_signal(int, Sig_handler_t);'
+extern Sig_handler_t	ast_signal(int, Sig_handler_t);'

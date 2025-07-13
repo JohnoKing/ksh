@@ -64,10 +64,6 @@ extern int		mblen(const char*, size_t);
 #undef	strxfrm
 #undef	valid
 
-#ifndef AST_LC_CANONICAL
-#define AST_LC_CANONICAL	LC_abbreviated
-#endif
-
 static void
 header(void)
 {

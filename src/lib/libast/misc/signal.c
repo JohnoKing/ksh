@@ -30,7 +30,7 @@
 #include <ast_map.h>
 
 Sig_handler_t
-signal(int sig, Sig_handler_t fun)
+ast_signal(int sig, Sig_handler_t fun)
 {
 	struct sigaction	na = { .sa_handler = fun };
 	struct sigaction	oa;

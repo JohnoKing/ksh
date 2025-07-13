@@ -148,7 +148,7 @@ typedef struct Mod_s
 static void
 ignoresig(int sig)
 {
-	signal(sig, ignoresig);
+	ast_signal(sig, ignoresig);
 }
 
 /*
@@ -207,10 +207,10 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 				ast_close((int)arg2);
 			break;
 		case PROC_sig_dfl:
-			signal((int)arg1, SIG_DFL);
+			ast_signal((int)arg1, SIG_DFL);
 			break;
 		case PROC_sig_ign:
-			signal((int)arg1, SIG_IGN);
+			ast_signal((int)arg1, SIG_IGN);
 			break;
 		case PROC_sys_pgrp:
 			if (arg1 < 0)
@@ -280,12 +280,12 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 			}
 			break;
 		case PROC_sig_dfl:
-			if ((m->arg.handler = signal(arg1, SIG_DFL)) == SIG_DFL)
+			if ((m->arg.handler = ast_signal(arg1, SIG_DFL)) == SIG_DFL)
 				break;
 			m->save = (short)arg1;
 			return 0;
 		case PROC_sig_ign:
-			if ((m->arg.handler = signal(arg1, SIG_IGN)) == SIG_IGN)
+			if ((m->arg.handler = ast_signal(arg1, SIG_IGN)) == SIG_IGN)
 				break;
 			m->save = (short)arg1;
 			return 0;
@@ -359,7 +359,7 @@ restore(Proc_t* proc)
 			break;
 		case PROC_sig_dfl:
 		case PROC_sig_ign:
-			signal(m->save, m->arg.handler);
+			ast_signal(m->save, m->arg.handler);
 			break;
 		case PROC_sys_umask:
 			umask(m->save);
@@ -371,10 +371,6 @@ restore(Proc_t* proc)
 	}
 	errno = oerrno;
 }
-
-#else
-
-#define restore(p)
 
 #endif /* _use_spawnveg */
 
@@ -494,8 +490,8 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 		else
 		{
 			signalled = 1;
-			proc->sigint = signal(SIGINT, SIG_IGN);
-			proc->sigquit = signal(SIGQUIT, SIG_IGN);
+			proc->sigint = ast_signal(SIGINT, SIG_IGN);
+			proc->sigquit = ast_signal(SIGQUIT, SIG_IGN);
 			sigemptyset(&mask);
 			sigaddset(&mask, SIGCHLD);
 			sigprocmask(SIG_BLOCK, &mask, &proc->mask);
@@ -510,12 +506,12 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 			if (proc->sigint != SIG_IGN)
 			{
 				proc->sigint = SIG_DFL;
-				signal(SIGINT, proc->sigint);
+				ast_signal(SIGINT, proc->sigint);
 			}
 			if (proc->sigquit != SIG_IGN)
 			{
 				proc->sigquit = SIG_DFL;
-				signal(SIGQUIT, proc->sigquit);
+				ast_signal(SIGQUIT, proc->sigquit);
 			}
 			sigprocmask(SIG_SETMASK, &proc->mask, NULL);
 		}
@@ -742,8 +738,8 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 			if (flags & PROC_FOREGROUND)
 			{
 				signalled = 1;
-				proc->sigint = signal(SIGINT, SIG_IGN);
-				proc->sigquit = signal(SIGQUIT, SIG_IGN);
+				proc->sigint = ast_signal(SIGINT, SIG_IGN);
+				proc->sigquit = ast_signal(SIGQUIT, SIG_IGN);
 				sigemptyset(&mask);
 				sigaddset(&mask, SIGCHLD);
 				sigprocmask(SIG_BLOCK, &mask, &proc->mask);
@@ -775,8 +771,8 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 			{
 				Handler_t	handler;
 
-				if ((handler = signal(SIGPIPE, ignoresig)) != SIG_DFL && handler != ignoresig)
-					signal(SIGPIPE, handler);
+				if ((handler = ast_signal(SIGPIPE, ignoresig)) != SIG_DFL && handler != ignoresig)
+					ast_signal(SIGPIPE, handler);
 			}
 			switch (procfd)
 			{
@@ -817,9 +813,9 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 	if (signalled)
 	{
 		if (proc->sigint != SIG_IGN)
-			signal(SIGINT, proc->sigint);
+			ast_signal(SIGINT, proc->sigint);
 		if (proc->sigquit != SIG_IGN)
-			signal(SIGQUIT, proc->sigquit);
+			ast_signal(SIGQUIT, proc->sigquit);
 		sigprocmask(SIG_SETMASK, &proc->mask, NULL);
 	}
 	if ((flags & PROC_CLEANUP) && modv)

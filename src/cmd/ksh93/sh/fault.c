@@ -52,7 +52,7 @@ void	sh_fault(int sig)
 	int		save_errno = errno;
 	/* reset handler */
 	if(!(sig&SH_TRAP))
-		signal(sig, sh_fault);
+		ast_signal(sig, sh_fault);
 	sig &= ~SH_TRAP;
 #ifdef SIGWINCH
 	if(sig==SIGWINCH)
@@ -286,16 +286,16 @@ void	sh_sigtrap(int sig)
 	else if(!((flag=sh.sigflag[sig])&(SH_SIGFAULT|SH_SIGOFF)))
 	{
 		/* don't set signal if already set or off by parent */
-		if((fun=signal(sig,sh_fault))==SIG_IGN)
+		if((fun=ast_signal(sig,sh_fault))==SIG_IGN)
 		{
-			signal(sig,SIG_IGN);
+			ast_signal(sig,SIG_IGN);
 			flag |= SH_SIGOFF;
 		}
 		else
 		{
 			flag |= SH_SIGFAULT;
 			if(sig==SIGALRM && fun!=SIG_DFL && fun!=sh_fault)
-				signal(sig,fun);
+				ast_signal(sig,fun);
 		}
 		flag &= ~(SH_SIGSET|SH_SIGTRAP);
 		sh.sigflag[sig] = (unsigned char)flag;
@@ -346,7 +346,7 @@ void	sh_sigreset(int mode)
 			else if(sig && mode>1)
 			{
 				if(sig!=SIGCHLD)
-					signal(sig,SIG_IGN);
+					ast_signal(sig,SIG_IGN);
 				flag &= ~SH_SIGFAULT;
 				flag |= SH_SIGOFF;
 			}
@@ -676,7 +676,7 @@ noreturn void sh_done(int sig)
 			vlimit(RLIMIT_CORE,0);
 #endif
 		}
-		signal(sig,SIG_DFL);
+		ast_signal(sig,SIG_DFL);
 		sigrelease(sig);
 		kill(sh.current_pid,sig);
 		pause();

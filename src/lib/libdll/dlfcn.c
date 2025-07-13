@@ -27,8 +27,6 @@
 #include <dlldefs.h>
 #include <error.h>
 
-#define T(x)	ERROR_dictionary(x)
-
 #if _hdr_dlfcn && _lib_dlopen
 
 	/*
@@ -320,11 +318,11 @@
 
 	static const char*	dlmessage = "no error";
 
-	static const char	e_cover[] = T("cannot access covered library");
-	static const char	e_handle[] = T("invalid handle");
-	static const char	e_nomemory[] = T("out of memory");
-	static const char	e_static[] = T("image statically linked");
-	static const char	e_undefined[] = T("undefined symbol");
+	static const char	e_cover[] = ERROR_dictionary("cannot access covered library");
+	static const char	e_handle[] = ERROR_dictionary("invalid handle");
+	static const char	e_nomemory[] = ERROR_dictionary("out of memory");
+	static const char	e_static[] = ERROR_dictionary("image statically linked");
+	static const char	e_undefined[] = ERROR_dictionary("undefined symbol");
 
 	static Dll_t global = { DL_MAGIC };
 
@@ -492,6 +490,8 @@
 
 	extern void* dlopen(const char* path, int mode)
 	{
+		NOT_USED(path);
+		NOT_USED(mode);
 		err = 1;
 		return NULL;
 	}
@@ -504,6 +504,8 @@
 
 	extern void* dlsym(void* handle, const char* name)
 	{
+		NOT_USED(handle);
+		NOT_USED(name);
 		err = 1;
 		return NULL;
 	}

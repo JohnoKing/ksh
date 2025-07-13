@@ -73,9 +73,9 @@ static const char usage[] =
 
 #include "FEATURE/utsname"
 
-#define MAXHOSTNAME	64
-
-#if _lib_uname && _sys_utsname
+#if !_lib_uname || !_sys_utsname
+# define MAXHOSTNAME	64
+#elif _lib_uname && _sys_utsname
 # include <sys/utsname.h>
 #endif
 

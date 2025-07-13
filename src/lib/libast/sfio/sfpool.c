@@ -263,7 +263,7 @@ Sfio_t* sfpool(Sfio_t* f, Sfio_t* pf, int mode)
 	}
 
 	if(pf->pool && pf->pool != &_Sfpool) /* always use current mode */
-		mode = pf->pool->mode;
+		mode = (int)pf->pool->mode;
 
 	if(mode&SFIO_SHARE) /* can only have write streams */
 	{	if(SFMODE(f,1) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,1) < 0)

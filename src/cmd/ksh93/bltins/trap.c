@@ -160,7 +160,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
 			{
 				sh_sigclear(sig);
 				if(dflag)
-					signal(sig,SIG_DFL);
+					ast_signal(sig,SIG_DFL);
 			}
 			else
 			{

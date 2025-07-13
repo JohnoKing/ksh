@@ -139,7 +139,7 @@ static void sigalrm(int sig)
 		if(tpmin && (left==0 || (tp && tpmin->wakeup < (now+left))))
 		{
 			if(left==0)
-				signal(SIGALRM,sigalrm);
+				ast_signal(SIGALRM,sigalrm);
 			left = setalarm(tpmin->wakeup-now);
 			if(left && (now+left) < tpmin->wakeup)
 				setalarm(left);
@@ -161,7 +161,7 @@ static void sigalrm(int sig)
 			break;
 	}
 	if(!tpmin)
-		signal(SIGALRM,(sh.sigflag[SIGALRM]&SH_SIGFAULT)?sh_fault:SIG_DFL);
+		ast_signal(SIGALRM,(sh.sigflag[SIGALRM]&SH_SIGFAULT)?sh_fault:SIG_DFL);
 	time_state &= ~IN_SIGALRM;
 	errno = EINTR;
 }
@@ -195,7 +195,7 @@ void *sh_timeradd(Sfulong_t msec,int flags,void (*action)(void*),void *handle)
 	if(!tpmin || tp->wakeup < tpmin->wakeup)
 	{
 		tpmin = tp;
-		fn = (Handler_t)signal(SIGALRM,sigalrm);
+		fn = (Handler_t)ast_signal(SIGALRM,sigalrm);
 		if((t= setalarm(t))>0 && fn  && fn!=(Handler_t)sigalrm)
 		{
 			Handler_t *hp = (Handler_t*)sh_malloc(sizeof(Handler_t));
@@ -234,6 +234,6 @@ void	sh_timerdel(void *handle)
 			tpmin = 0;
 			setalarm((Sfdouble_t)0);
 		}
-		signal(SIGALRM,(sh.sigflag[SIGALRM]&SH_SIGFAULT)?sh_fault:SIG_DFL);
+		ast_signal(SIGALRM,(sh.sigflag[SIGALRM]&SH_SIGFAULT)?sh_fault:SIG_DFL);
 	}
 }

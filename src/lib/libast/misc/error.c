@@ -580,7 +580,7 @@ errorv(const char* id, int level, va_list ap)
 #endif
 #endif
 #ifdef	SIGABRT
-			signal(SIGABRT, SIG_DFL);
+			ast_signal(SIGABRT, SIG_DFL);
 			kill(getpid(), SIGABRT);
 			pause();
 #else

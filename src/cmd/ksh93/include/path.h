@@ -68,7 +68,7 @@ typedef struct pathcomp
 extern void		path_newdir(Pathcomp_t*);
 extern Pathcomp_t	*path_dirfind(Pathcomp_t*,const char*,int);
 extern Pathcomp_t	*path_unsetfpath(void);
-extern Pathcomp_t	*path_addpath(Pathcomp_t*,const char*,int);
+extern Pathcomp_t	*path_addpath(Pathcomp_t*,const char*,uint16_t);
 extern Pathcomp_t	*path_dup(Pathcomp_t*);
 extern void		path_delete(Pathcomp_t*);
 extern void 		path_settrackedalias(const char*,Pathcomp_t*);

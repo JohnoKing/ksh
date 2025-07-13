@@ -116,7 +116,6 @@ static const char usage[] =
 #include "FEATURE/pty"
 
 #define MODE_666	(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#define MAXNAME		64
 
 #ifndef CMIN
 #define CMIN		1
@@ -133,6 +132,7 @@ static noreturn void outofmemory(size_t size)
 
 #if !_lib_openpty && !_lib__getpty && !defined(_pty_clone)
 # if !_lib_grantpt || !_lib_unlock
+#   define MAXNAME		64
 #   if !_lib_ptsname
 	static char *minionname(const char *name)
 	{
@@ -521,9 +521,6 @@ typedef struct Master_s
 /*
  * read one line from the master
  */
-
-#define MASTER_EOF	(-1)
-#define MASTER_TIMEOUT	(-2)
 
 static char*
 masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t* bp)
