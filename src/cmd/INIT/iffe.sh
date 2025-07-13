@@ -94,7 +94,7 @@ is_hdr() # [ - ] [ file.c ] hdr
 	_is_hdr_status=$?
 	case $_is_hdr_status in
 	0)	if	test -s $tmp.e
-		then	case $(grep '#.*error:' $tmp.e) in
+		then	case $(grep 'error:' $tmp.e) in
 			?*)	_is_hdr_status=1 ;;
 			esac
 		fi

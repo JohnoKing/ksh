@@ -47,6 +47,7 @@ echo "#include <signal.h>
 #ifdef TYPE
 typedef TYPE (*Sig_handler_t)(ARG);
 #endif
+extern Sig_handler_t    ast_signal(int, Sig_handler_t);
 Sig_handler_t f(void)
 {
 	Sig_handler_t	handler;
@@ -55,12 +56,12 @@ Sig_handler_t f(void)
 }" > $tmp.c
 if	$cc -c $tmp.c >/dev/null
 then	:
-else	e=`wc -l $tmp.e`
+else	e=$(wc -l $tmp.e)
 	i1= j1=
-	for i in void int
+	for i in int void
 	do	for j in int,... ... int
 		do	$cc -c -DTYPE=$i -DARG=$j $tmp.c >/dev/null 2>$tmp.e || continue
-			case `wc -l $tmp.e` in
+			case $(wc -l $tmp.e) in
 			$e)	i1= j1=; break 2 ;;
 			esac
 			case $i1 in
