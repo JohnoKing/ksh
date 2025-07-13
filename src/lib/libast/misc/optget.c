@@ -327,7 +327,7 @@ static Msg_t		C_LC_MESSAGES_libast[] =
  *	      to allow future Opt_t growth
  */
 
-static Opt_t	_opt_info_ = { 0,0,0,0,0,0,0,{0},{0},0,0,0,{0},{0},&state };
+static Opt_t	_opt_info_ = { NULL,NULL,0,0,NULL,0,{0},{0},0,0,NULL,0,&state };
 Opt_t*		_opt_infop_ = &_opt_info_;
 
 Optstate_t*

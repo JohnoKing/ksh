@@ -107,14 +107,14 @@ typedef struct _vi_
 	int lastrepeat;		/* last repeat count for motion cmds */
 	int u_column;		/* undo current column */
 	int U_saved;		/* original virtual saved */
-	genchar *U_space;	/* used for U command */
-	genchar *u_space;	/* used for u command */
-	unsigned char del_word;	/* used for Ctrl-Delete */
 #ifdef FIORDCHK
 	clock_t typeahead;	/* typeahead occurred */
 #else
 	int typeahead;		/* typeahead occurred */
 #endif	/* FIORDCHK */
+	genchar *U_space;	/* used for U command */
+	genchar *u_space;	/* used for u command */
+	unsigned char del_word;	/* used for Ctrl-Delete */
 #if SHOPT_MULTIBYTE
 	int bigvi;
 #endif

@@ -216,15 +216,15 @@ struct sh_scoped
 	int32_t		tmout;		/* value for TMOUT */
 	short		optchar;
 	short		opterror;
-	int		ioset;
-	unsigned short	trapmax;	/* highest currently trapped signal number, plus one (!) */
-	char		trapdontexec;	/* stop exec optimization if any non-DEBUG/SIGKILL/SIGSTOP trap is set and non-empty */
+	struct Ufunction *real_fun;	/* current 'function name' function */
+	void		*timetrap;	/* for the 'alarm' built-in */
 	char		*trap[SH_DEBUGTRAP+1];	/* pseudosignals (except EXIT) */
 	char		**otrap;	/* save parent pseudosignals for v=$(trap) */
 	char		**trapcom;	/* EXIT and signals */
 	char		**otrapcom;	/* save parent EXIT and signals for v=$(trap) */
-	void		*timetrap;	/* for the 'alarm' built-in */
-	struct Ufunction *real_fun;	/* current 'function name' function */
+	int		ioset;
+	unsigned short	trapmax;	/* highest currently trapped signal number, plus one (!) */
+	char		trapdontexec;	/* stop exec optimization if any non-DEBUG/SIGKILL/SIGSTOP trap is set and non-empty */
 };
 
 struct limits

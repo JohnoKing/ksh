@@ -101,10 +101,10 @@ typedef struct _emacs_
 	char	overflow;	/* Screen overflow flag set */
 	char	scvalid;	/* Screen is up to date */
 	char	lastdraw;	/* last update type */
-	int	offset;		/* Screen offset */
 	char	ehist;		/* hist handling required */
-	Histloc_t _location;
+	int	offset;		/* Screen offset */
 	int	prevdirection;
+	Histloc_t _location;
 	Edit_t	*ed;	/* pointer to edit data */
 } Emacs_t;
 
