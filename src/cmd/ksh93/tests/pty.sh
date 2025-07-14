@@ -1413,5 +1413,19 @@ I print
 r ^1\r\n$
 !
 
+((SHOPT_MULTIBYTE && SHOPT_ESH)) &&
+[[ ${LC_ALL:-${LC_CTYPE:-${LANG:-}}} =~ [Uu][Tt][Ff]-?8 ]] &&
+tst $LINENO << "!"
+L editor modes not aware of multibyte spaces
+
+d 40
+p :test-1:
+w set -o emacs
+p :test-2:
+w echo foo　baz\Eb\Edbar
+r ^:test-2: echo foo　bar\r\n$
+r ^foo　bar\r\n$
+!
+
 # ======
 exit $((Errors<125?Errors:125))

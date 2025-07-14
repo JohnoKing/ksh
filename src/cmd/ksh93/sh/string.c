@@ -32,10 +32,6 @@
 #   include <wctype.h>
 #endif
 
-#if !_lib_iswprint && !defined(iswprint)
-#   define iswprint(c)		(((c)&~0377) || isprint(c))
-#endif
-
 /*
  *  Table lookup routine
  *  <table> is searched for string <sp> and corresponding value is returned
@@ -297,13 +293,28 @@ static char	*sh_fmtcsv(const char *string)
 	return stkptr(sh.stk,offset);
 }
 
+static int nonprint_fallback(int c)
+{
+	return (c <= 0x001F ||			/* control characters */
+		c >= 0x007F && c <= 0x009F ||	/* control characters */
+		c == 0x00A0 ||			/* non-breaking space */
+		c == 0x061C ||			/* arabic letter mark */
+		c == 0x1680 ||			/* ogham space mark */
+		c == 0x180E ||			/* mongolian vowel separator */
+		c >= 0x2000 && c <= 0x200F ||	/* spaces and format characters */
+		c >= 0x2028 && c <= 0x202F ||	/* separators and format characters */
+		c >= 0x205F && c <= 0x206F ||	/* various format characters */
+		c == 0x3000 ||			/* ideographic space */
+		c == 0xFEFF);			/* zero-width non-breaking space */
+}
+
 /*
  * Returns false if c is an invisible Unicode character, excluding ASCII space.
  * Use iswgraph(3) if possible. In the ksh-specific C.UTF-8 locale, this is
  * generally not possible as the OS-provided iswgraph(3) doesn't support that
  * locale. So do a quick test and do our best with a fallback if necessary.
  */
-static int	sh_isprint(int c)
+int	sh_isprint(int c)
 {
 	if(!mbwide() || c<=127)				/* not in multibyte locale, or multibyte but c is ASCII? */
 		return isprint(c);			/* use plain isprint(3) */
@@ -312,17 +323,20 @@ static int	sh_isprint(int c)
 	else if(iswgraph(0x5E38) && !iswgraph(0xFEFF))	/* can we use iswgraph(3)? */
 		return iswgraph((wint_t)c);		/* use iswgraph(3) */
 	else						/* fallback: */
-		return !(c <= 0x001F ||			/* control characters */
-			c >= 0x007F && c <= 0x009F ||	/* control characters */
-			c == 0x00A0 ||			/* non-breaking space */
-			c == 0x061C ||			/* arabic letter mark */
-			c == 0x1680 ||			/* ogham space mark */
-			c == 0x180E ||			/* mongolian vowel separator */
-			c >= 0x2000 && c <= 0x200F ||	/* spaces and format characters */
-			c >= 0x2028 && c <= 0x202F ||	/* separators and format characters */
-			c >= 0x205F && c <= 0x206F ||	/* various format characters */
-			c == 0x3000 ||			/* ideographic space */
-			c == 0xFEFF);			/* zero-width non-breaking space */
+		return !nonprint_fallback(c);
+}
+
+int	sh_isspace(int c)
+{
+	if(!mbwide() || c<=127)				/* not in multibyte locale, or multibyte but c is ASCII? */
+		return isspace(c);			/* use plain isprint(3) */
+	else if(!(ast.locale.set & AST_LC_utf8))	/* not in UTF-8 locale? */
+		return iswspace((wint_t)c);		/* the test below would not be valid */
+	else if(iswspace(0x3000) && !iswspace(0x009F))	/* can we use iswspace(3)? */
+		return iswspace((wint_t)c);		/* use iswspace(3) */
+	else						/* fallback: */
+		return nonprint_fallback(c);
+
 }
 
 /*
