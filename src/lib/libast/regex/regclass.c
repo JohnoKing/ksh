@@ -44,24 +44,6 @@ static Ctype_t*		ctypes;
  * and any local extensions that may not even have functions or macros
  */
 
-#if _need_iswblank
-
-int
-_reg_iswblank(wint_t wc)
-{
-	static int	initialized;
-	static wctype_t	wt;
-
-	if (!initialized)
-	{
-		initialized = 1;
-		wt = wctype("blank");
-	}
-	return iswctype(wc, wt);
-}
-
-#endif
-
 static int  Isalnum(int c) { return  iswalnum((wint_t)c); }
 static int  Isalpha(int c) { return  iswalpha(c); }
 static int  Isblank(int c) { return  iswblank((wint_t)c); }

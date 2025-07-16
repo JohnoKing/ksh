@@ -2120,7 +2120,7 @@ utf8_alpha(wchar_t c)
 
 #endif /* !AST_NOMULTIBYTE */
 
-#if !_hdr_wchar || !_lib_wctype || !_lib_iswctype
+#if !_hdr_wchar || !_lib_wctype
 #undef	iswalpha
 #define iswalpha	default_iswalpha
 static int

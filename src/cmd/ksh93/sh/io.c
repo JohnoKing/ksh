@@ -1401,11 +1401,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 						UNREACHABLE();
 					}
 					if(perm>0)
-#if _lib_fchmod
 						fchmod(fd,(mode_t)perm);
-#else
-						chmod(tname,(mode_t)perm);
-#endif
 				}
 			}
 		traceit:

@@ -85,17 +85,8 @@
 #       include <wctype.h>
 #       undef  isalpha
 #       define isalpha(x)      iswalpha(x)
-#       if defined(iswblank) || _lib_iswblank
-#           undef  isblank
-#           define isblank(x)      iswblank(x)
-#       else
-#           if _lib_wctype && _lib_iswctype
-#               define _lib_iswblank	-1
-#               undef  isblank
-#	        define isblank(x)	local_iswblank(x)
-	        extern int		local_iswblank(wchar_t);
-#           endif
-#       endif
+#       undef  isblank
+#       define isblank(x)      iswblank(x)
 #   endif
 #endif
 #ifndef isblank

@@ -298,7 +298,10 @@ static char *dotpaths_lib(Pathcomp_t *pp, char *path)
 		*last = 0;
 	else
 		path = (char*)e_dot;
-	r = stat(path,&statb);
+	if(path==e_dot && sh.pwdfd>-1)
+		r = fstat(sh.pwdfd,&statb);
+	else
+		r = stat(path,&statb);
 	if(last)
 		*last = '/';
 	if(r>=0)

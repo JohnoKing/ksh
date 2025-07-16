@@ -2,7 +2,7 @@
 #                                                                      #
 #              This file is part of the ksh 93u+m package              #
 #          Copyright (c) 1982-2012 AT&T Intellectual Property          #
-#          Copyright (c) 2021-2024 Contributors to ksh 93u+m           #
+#          Copyright (c) 2021-2025 Contributors to ksh 93u+m           #
 #                      and is licensed under the                       #
 #                 Eclipse Public License, Version 2.0                  #
 #                                                                      #
@@ -12,6 +12,7 @@
 #                                                                      #
 #         hyenias <58673227+hyenias@users.noreply.github.com>          #
 #                  Martijn Dekker <martijn@inlv.org>                   #
+#            Johnothan King <johnothanking@protonmail.com>             #
 #                                                                      #
 ########################################################################
 
