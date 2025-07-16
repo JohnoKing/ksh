@@ -22,8 +22,8 @@
 
 command=shtests
 
-setslocale='*@(locale).sh'
-timesensitive='*@(options|sigchld|subshell).sh'
+setslocale='*@(locale).ksh'
+timesensitive='*@(options|sigchld|subshell).ksh'
 valgrindflags='--xml=yes --log-file=/dev/null --track-origins=yes --read-var-info=yes'
 
 USAGE=$'
@@ -65,9 +65,9 @@ USAGE=$'
 [x:trace?Enable script execution trace.]
 [+?If none of the \b--posix\b \b--utf8\b \b--compile\b options are specified,
     then all three are enabled for most tests, whereas only \b--posix\b
-    \b--utf8\b are enabled for the \blocale.sh\b and \bpty.sh\b tests.]
+    \b--utf8\b are enabled for the \blocale.ksh\b and \bpty.ksh\b tests.]
 
-[ test.sh ... ] [ name=value ... ]
+[ test.ksh ... ] [ name=value ... ]
 
 [+SEE ALSO?\bksh\b(1), \bregress\b(1)]
 '
@@ -365,18 +365,18 @@ then	if	[[ -x $SHELL-g ]]
 fi
 typeset -A tests
 typeset -i total_e=0
-for i in ${*-*.sh}
-do	[[ $i == *.sh ]] || i+='.sh'
+for i in ${*-*.ksh}
+do	[[ $i == *.ksh ]] || i+='.ksh'
 	if	[[ ! -r $i ]]
 	then	echo $0: $i: not found >&2
 		(( ++total_e ))
 		continue
 	fi
 	t=$(	case $i in
-		glob.sh)	grep -c '^[[:blank:]]*test_[a-z]\{3,\}' $i ;;
-		leaks.sh)	grep -c ^TEST $i ;;
-		printf.sh)	grep -c -E '([[:blank:]]err_exit|^[[:blank:]]*T)[[:blank:]]' $i ;;
-		pty.sh)		grep -c 'tst ' $i ;;
+		glob.ksh)	grep -c '^[[:blank:]]*test_[a-z]\{3,\}' $i ;;
+		leaks.ksh)	grep -c ^TEST $i ;;
+		printf.ksh)	grep -c -E '([[:blank:]]err_exit|^[[:blank:]]*T)[[:blank:]]' $i ;;
+		pty.ksh)	grep -c 'tst ' $i ;;
 		*)		grep -c err_exit $i ;;
 		esac	)
 	tests[$i]=$t
@@ -385,7 +385,7 @@ do	[[ $i == *.sh ]] || i+='.sh'
 	then	T=${T}s
 	fi
 	u=${i##*/}
-	u=${u%.sh}
+	u=${u%.ksh}
 	if	(( posix || utf8 ))
 	then	locales=
 		(( posix )) && locales+=" ${LANG:-C}"
