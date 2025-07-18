@@ -10,7 +10,7 @@ cat{
 	#endif
 }end
 
-lib	mbstowcs,wctomb,wcrtomb,wcslen,wcstombs,wcwidth stdlib.h stdio.h wchar.h
+lib	mbstowcs,wctomb,wcrtomb,wcstombs,wcwidth stdlib.h stdio.h wchar.h
 lib	towlower,towupper stdlib.h stdio.h wchar.h
 typ	mbstate_t stdlib.h stdio.h wchar.h
 nxt	wchar
@@ -130,9 +130,6 @@ run{
 	#endif
 	#if !_lib_wcrtomb
 	extern size_t		wcrtomb(char*, wchar_t, mbstate_t*);
-	#endif
-	#if !_lib_wcslen
-	extern size_t		wcslen(const wchar_t*);
 	#endif
 	#if !_lib_wcstombs
 	extern size_t		wcstombs(char*, const wchar_t*, size_t);

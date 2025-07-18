@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -98,19 +98,6 @@ wcrtomb(char* s, wchar_t c, mbstate_t* q)
 	*q = 0;
 	return 1;
 #endif
-}
-#endif
-
-#if !_lib_wcslen
-#undef	STUB
-size_t
-wcslen(const wchar_t* s)
-{
-	const wchar_t*	p = s;
-
-	while (*p)
-		p++;
-	return p - s;
 }
 #endif
 

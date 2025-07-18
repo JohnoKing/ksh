@@ -931,7 +931,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 	nq = nv_namptr(pp->nodes,0);
 	nq->nvname = cp;
 	nv_onattr(nq,NV_MINIMAL);
-	cp = strcopy(cp,NV_DATA);
+	cp = stpcpy(cp,NV_DATA);
 	*cp++ = 0;
 	for(name=0, offset=0, k=i=1; i < numnodes; i++)
 	{

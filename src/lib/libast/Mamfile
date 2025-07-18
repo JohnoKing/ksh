@@ -967,6 +967,14 @@ make install virtual
 			exec - compile %{<}
 		done
 
+		make stpcpy.o
+			make string/stpcpy.c
+				prev ast_map.h
+				prev include/ast.h
+			done
+			exec - compile %{<}
+		done
+
 		make strlook.o
 			make string/strlook.c
 				prev include/ast.h

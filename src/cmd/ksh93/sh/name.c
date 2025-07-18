@@ -2120,7 +2120,7 @@ static char *staknam(Namval_t *np, char *value)
 {
 	char *p,*q;
 	q = stkalloc(sh.stk,strlen(nv_name(np))+(value?strlen(value):0)+2);
-	p=strcopy(q,nv_name(np));
+	p=stpcpy(q,nv_name(np));
 	*p++ = '=';
 	strcpy(p,value);
 	return q;

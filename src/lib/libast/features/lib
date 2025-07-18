@@ -34,7 +34,7 @@ lib	rewinddir,setlocale
 lib	setreuid,setuid
 lib	socketpair
 lib	clone,spawn,spawnve
-lib	strcoll,strlcat,strlcpy
+lib	strcoll,strlcat,strlcpy,stpcpy
 lib	strmode,strxfrm,strftime,sysconf,sysinfo
 lib	tzset,universe,utime,wctype
 lib	ftruncate

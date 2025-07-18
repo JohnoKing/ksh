@@ -1406,7 +1406,7 @@ static noreturn void exscript(char *path,char *argv[])
 		before = times(&buffer);
 		sabuf.ac_uid = sh.userid;
 		sabuf.ac_gid = sh.groupid;
-		strncpy(sabuf.ac_comm, (char*)path_basename(cmdname),
+		strlcpy(sabuf.ac_comm, (char*)path_basename(cmdname),
 			sizeof(sabuf.ac_comm));
 		shaccton = 1;
 	}
