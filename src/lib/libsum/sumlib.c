@@ -268,17 +268,15 @@ match(const char* s, const char* p)
 Sum_t*
 sumopen(const char* name)
 {
-	size_t	n;
-
 	if (!name || !name[0] || name[0] == '-' && !name[1])
 		name = "default";
-	for (n = 0; n < elementsof(maps); n++)
+	for (size_t n = 0; n < elementsof(maps); n++)
 		if (match(name, maps[n].match))
 		{
 			name = maps[n].map;
 			break;
 		}
-	for (n = 0; n < elementsof(methods); n++)
+	for (size_t n = 0; n < elementsof(methods); n++)
 		if (match(name, methods[n].match))
 			return (*methods[n].open)(&methods[n], name);
 	return NULL;
@@ -356,16 +354,15 @@ sumclose(Sum_t* p)
 int
 sumusage(Sfio_t* sp)
 {
-	size_t	i;
 	int	n = 0;
 
-	for (i = 0; i < elementsof(methods); i++)
+	for (size_t i = 0; i < elementsof(methods); i++)
 	{
 		n += sfprintf(sp, "[+%s?%s]", methods[i].match, methods[i].description);
 		if (methods[i].options)
 			n += sfprintf(sp, "{\n%s\n}", methods[i].options);
 	}
-	for (i = 0; i < elementsof(maps); i++)
+	for (size_t i = 0; i < elementsof(maps); i++)
 		n += sfprintf(sp, "[+%s?%s Shorthand for \b%s\b.]", maps[i].match, maps[i].description, maps[i].map);
 	return n;
 }

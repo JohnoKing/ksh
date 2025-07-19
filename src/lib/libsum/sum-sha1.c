@@ -270,10 +270,9 @@ static int
 sha1_done(Sum_t* p)
 {
 	Sha1_t*	sha = (Sha1_t*)p;
-	unsigned int i;
 	unsigned char finalcount[8];
 
-	for (i = 0; i < 8; i++) {
+	for (unsigned int i = 0; i < 8; i++) {
 		/* Endian independent */
 		finalcount[i] = (unsigned char)
 			((sha->count[(i >= 4 ? 0 : 1)]
@@ -286,7 +285,7 @@ sha1_done(Sum_t* p)
 	/* The next Update should cause a sha1_transform() */
 	sha1_block(p, finalcount, 8);
 
-	for (i = 0; i < elementsof(sha->digest); i++)
+	for (unsigned int i = 0; i < elementsof(sha->digest); i++)
 	{
 		sha->digest[i] = (unsigned char)((sha->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
 		sha->digest_sum[i] ^= sha->digest[i];
@@ -302,11 +301,10 @@ sha1_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
 	Sha1_t*	sha = (Sha1_t*)p;
 	unsigned char*	d;
-	size_t		n;
 
 	NOT_USED(scale);
 	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
-	for (n = 0; n < elementsof(sha->digest); n++)
+	for (size_t n = 0; n < elementsof(sha->digest); n++)
 		sfprintf(sp, "%02x", d[n]);
 	return 0;
 }

@@ -57,7 +57,6 @@ att_block(Sum_t* p, const void* s, size_t n)
 	const unsigned char*	b = (const unsigned char*)s;
 	const unsigned char*	e = b + n;
 	uint32_t s0, s1, s2, s3, s4, s5, s6, s7;
-	unsigned int i;
 
 	s0=s1=s2=s3=s4=s5=s6=s7=0U;
 
@@ -71,7 +70,7 @@ att_block(Sum_t* p, const void* s, size_t n)
 #if defined(__clang__)
 		#pragma clang loop unroll_count(16)
 #endif
-		for (i=0 ; i < (CBLOCK_SIZE/8) ; i++)
+		for (unsigned int i=0 ; i < (CBLOCK_SIZE/8) ; i++)
 		{
 			/*
 			 * use s0-s7 to decouple calculations (this improves pipelining)

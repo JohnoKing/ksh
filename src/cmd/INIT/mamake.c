@@ -364,8 +364,6 @@ static void identify(FILE * sp)
 
 static void report(int level, char *text, char *item, Rule_t *r)
 {
-	int	i;
-
 	if (level >= state.debug)
 	{
 		if (level)
@@ -373,7 +371,7 @@ static void report(int level, char *text, char *item, Rule_t *r)
 		if (level < 0)
 		{
 			fprintf(stderr, "debug%d: ", level);
-			for (i = 0; i < state.indent; i++)
+			for (int i = 0; i < state.indent; i++)
 				fprintf(stderr, "  ");
 		}
 		else
@@ -2547,7 +2545,6 @@ static bool initializer(char *name)
 
 static void update(Rule_t *r)
 {
-	List_t	*x;
 	Buf_t	*buf;
 	char	*args = getval(state.vars, "MAMAKEARGS");
 	bool	testing = !strcmp(args, "test");
@@ -2556,7 +2553,7 @@ static void update(Rule_t *r)
 	r->flags |= RULE_made;
 	if (r->leaf)
 		r->leaf->flags |= RULE_made;
-	for (x = r->prereqs; x; x = x->next)
+	for (List_t *x = r->prereqs; x; x = x->next)
 		if (x->rule->leaf && !(x->rule->flags & RULE_made))
 			update(x->rule);
 
@@ -2753,7 +2750,7 @@ static void recurse(void)
 
 int main(int argc, char **argv)
 {
-	char		**e, *s, *t, *v;
+	char		*s, *t, *v;
 	Buf_t		*tmp;
 	int		c;
 
@@ -3001,7 +2998,7 @@ int main(int argc, char **argv)
 	 * load the environment
 	 */
 
-	for (e = environ; s = *e; e++)
+	for (char **e = environ; s = *e; e++)
 	{
 		for (t = s; *t; t++)
 		{

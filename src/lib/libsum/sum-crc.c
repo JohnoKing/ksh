@@ -119,8 +119,6 @@ crc_open(const Method_t* method, const char* name)
 	const char*	s;
 	const char*	t;
 	const char*	v;
-	size_t		i;
-	int		j;
 	ptrdiff_t	k;
 	Crcnum_t	polynomial;
 	Crcnum_t	x;
@@ -175,13 +173,13 @@ crc_open(const Method_t* method, const char* name)
 		Crcnum_t	p[8];
 
 		p[0] = polynomial;
-		for (i = 1; i < 8; i++)
+		for (size_t i = 1; i < 8; i++)
 			p[i] = (p[i-1] << 1) ^ ((p[i-1] & 0x80000000) ? polynomial : 0);
-		for (i = 0; i < elementsof(sum->tabdata); i++)
+		for (size_t i = 0; i < elementsof(sum->tabdata); i++)
 		{
 			t = 0;
 			x = (Crcnum_t)i;
-			for (j = 0; j < 8; j++)
+			for (size_t j = 0; j < 8; j++)
 			{
 				if (x & 1)
 					t ^= p[j];
@@ -192,10 +190,10 @@ crc_open(const Method_t* method, const char* name)
 	}
 	else
 	{
-		for (i = 0; i < elementsof(sum->tabdata); i++)
+		for (size_t i = 0; i < elementsof(sum->tabdata); i++)
 		{
 			x = (Crcnum_t)i;
-			for (j = 0; j < 8; j++)
+			for (size_t j = 0; j < 8; j++)
 				x = (x>>1) ^ ((x & 1) ? polynomial : 0);
 			sum->tabdata[i] = x;
 		}
@@ -314,7 +312,6 @@ crc_done(Sum_t* p)
 	Crc_t*		sum = (Crc_t*)p;
 	Crcnum_t	c;
 	uintmax_t	n;
-	int		i;
 	int		j;
 
 	c = sum->sum;
@@ -328,7 +325,7 @@ crc_done(Sum_t* p)
 				n >>= 8;
 			}
 		else
-			for (i = 0, j = 32; i < 4; i++)
+			for (size_t i = 0, j = 32; i < 4; i++)
 			{
 				j -= 8;
 				CRC(sum, c, n >> j);

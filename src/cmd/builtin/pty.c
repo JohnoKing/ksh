@@ -148,7 +148,7 @@ static noreturn void outofmemory(size_t size)
     static char *master_name(char *name)
     {
 	static char sname[MAXNAME];
-	int n;
+	size_t n;
 	if(!name)
 	{
 		strcpy(sname,_pty_first);
@@ -1009,7 +1009,6 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 	int		master;
 	int		minion;
 	int		fd;
-	int		drop;
 	int		n;
 	char*		s;
 	Proc_t*		proc;
@@ -1120,13 +1119,13 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 	ast_close(minion);
 	if (messages)
 	{
-		drop = 1;
+		bool drop = true;
 		if (strneq(messages, "/dev/fd/", 8))
 			fd = atoi(messages + 8);
 		else if (streq(messages, "/dev/stdout"))
 			fd = 1;
 		else if ((fd = open(messages, O_CREAT|O_WRONLY, MODE_666)) >= 0)
-			drop = 0;
+			drop = false;
 		else
 		{
 			error(ERROR_system(1), "%s: cannot redirect messages", messages);

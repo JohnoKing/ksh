@@ -610,7 +610,6 @@ sha256_done(Sum_t* p)
 {
 	Sha256_t*	sha = (Sha256_t*)p;
 	unsigned int	usedspace;
-	int		i;
 
 	/* Sanity check: */
 	assert(sha != NULL);
@@ -653,9 +652,8 @@ sha256_done(Sum_t* p)
 #if BYTE_ORDER == LITTLE_ENDIAN
 	{
 		/* Convert TO host byte order */
-		int		j;
 		sha2_word32*	d = (sha2_word32*)sha->digest;
-		for (j = 0; j < 8; j++) {
+		for (size_t j = 0; j < 8; j++) {
 			REVERSE32(sha->state[j],sha->state[j]);
 			*d++ = sha->state[j];
 		}
@@ -665,7 +663,7 @@ sha256_done(Sum_t* p)
 #endif
 
 	/* accumulate the digests */
-	for (i = 0; i < SHA256_DIGEST_LENGTH; i++)
+	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
 		sha->digest_sum[i] ^= sha->digest[i];
 
 	/* Clean up state data: */
@@ -974,7 +972,6 @@ sha512_done(Sum_t* p)
 {
 	Sha512_t*	sha = (Sha512_t*)p;
 	unsigned int	usedspace;
-	int		i;
 
 	usedspace = (sha->bitcount[1] >> 3) % SHA512_BLOCK_LENGTH;
 #if BYTE_ORDER == LITTLE_ENDIAN
@@ -1016,8 +1013,7 @@ sha512_done(Sum_t* p)
 	{
 		/* Convert TO host byte order */
 		sha2_word64*	d = (sha2_word64*)sha->digest;
-		int		j;
-		for (j = 0; j < 8; j++) {
+		for (size_t j = 0; j < 8; j++) {
 			REVERSE64(sha->state[j],sha->state[j]);
 			*d++ = sha->state[j];
 		}
@@ -1027,7 +1023,7 @@ sha512_done(Sum_t* p)
 #endif
 
 	/* accumulate the digests */
-	for (i = 0; i < SHA512_DIGEST_LENGTH; i++)
+	for (size_t i = 0; i < SHA512_DIGEST_LENGTH; i++)
 		sha->digest_sum[i] ^= sha->digest[i];
 
 	/* Clean up state data: */
