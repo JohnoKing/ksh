@@ -663,28 +663,27 @@ static void *getval(Dict_t *dict, char *name)
  * low level for walk()
  */
 
-static int apply(Dict_t *dict, Dict_item_t *item, int (*func)(Dict_item_t *))
+static void apply(Dict_t *dict, Dict_item_t *item, void (*func)(Dict_item_t *))
 {
 	Dict_item_t	*right;
 
 	do
 	{
 		right = item->right;
-		if (item->left && apply(dict, item->left, func))
-			return -1;
-		if ((*func)(item))
-			return -1;
+		if (item->left)
+			apply(dict, item->left, func);
+		(*func)(item);
 	} while (item = right);
-	return 0;
 }
 
 /*
  * apply func to each dictionary item
  */
 
-static int walk(Dict_t *dict, int (*func)(Dict_item_t *))
+static void walk(Dict_t *dict, void (*func)(Dict_item_t *))
 {
-	return dict->root ? apply(dict, dict->root, func) : 0;
+	if(dict->root)
+		apply(dict, dict->root, func);
 }
 
 /*
@@ -876,9 +875,9 @@ static void substitute(Buf_t *buf, char *s)
 	char	*v;		/* variable's value */
 	char	*b;		/* beginning: the literal expansion starting at % (or $) */
 	int	c, n;
-	int	found_AR = 0;	/* 1 if ${AR} encountered */
-	int	valid_sh_name;	/* if set, the variable name is valid in sh(1) */
-	int	newexp;		/* if set, %{...}, otherwise ${...} */
+	bool	found_AR = false;/* 1 if ${AR} encountered */
+	bool	valid_sh_name;	/* if set, the variable name is valid in sh(1) */
+	bool	newexp;		/* if set, %{...}, otherwise ${...} */
 	char	*vnterm;	/* pointer to byte following variable name */
 	char	**argv;		/* argument list for %{variable@sh script} */
 
@@ -902,7 +901,7 @@ static void substitute(Buf_t *buf, char *s)
 			{
 				s++;
 				if (valid_sh_name && !isalnum(c) && c != '_')
-					valid_sh_name = 0;
+					valid_sh_name = false;
 			}
 			vnterm = s;
 
@@ -942,7 +941,7 @@ static void substitute(Buf_t *buf, char *s)
 			/* A really absurd hack, see check for found_AR further below */
 
 			if (!newexp && strcmp(t, "AR") == 0)
-				found_AR = 1;
+				found_AR = true;
 
 			/* Un-terminate the variable name */
 
@@ -1033,7 +1032,7 @@ static void substitute(Buf_t *buf, char *s)
 					static char	in[] = ".mamake.in";
 					static char	out[] = ".mamake.out";
 					FILE		*f;
-					int		final_newline = 0;
+					bool		final_newline = false;
 					Buf_t		*scr;
 					if (!argv)
 					{	/* write value to temp file, converting whitespace to newlines */
@@ -1324,7 +1323,7 @@ static int pop(void)
  * push file onto the input stack
  */
 
-static int push(char *file, FILE *fp, int flags)
+static bool push(char *file, FILE *fp, int flags)
 {
 	char		*path;
 	Buf_t		*buf;
@@ -1360,12 +1359,12 @@ static int push(char *file, FILE *fp, int flags)
 			pop();
 			if (flags & STREAM_MUST)
 				error_out("not found", file);
-			return 0;
+			return false;
 		}
 	}
 	state.sp->flags = flags;
 	state.sp->line = 0;
-	return 1;
+	return true;
 }
 
 /*
@@ -1501,20 +1500,18 @@ static void reap(Rule_t *r, int flag)
  * reap one rule's bg job (if any) via walk()
  */
 
-static int wreap(Dict_item_t *item)
+static void wreap(Dict_item_t *item)
 {
 	reap(item->value, 0);
-	return 0;
 }
 
 /*
  * reap one rule's bg job (if any, and if finished) via walk()
  */
 
-static int wreap_nowait(Dict_item_t *item)
+static void wreap_nowait(Dict_item_t *item)
 {
 	reap(item->value, WNOHANG);
-	return 0;
 }
 
 /*
@@ -1752,9 +1749,9 @@ static void run(Rule_t *r, char *s)
  * include file in rule r
  */
 
-static int include(Rule_t *r, Makestate_t *stp, char *file, int pushflags)
+static bool include(Rule_t *r, Makestate_t *stp, char *file, int pushflags)
 {
-	int	rv;
+	bool	rv;
 	if (rv = push(file, NULL, pushflags))
 	{
 		report(-1, file, "include", NULL);
@@ -2413,7 +2410,7 @@ static void make(Rule_t *r, Makestate_t *parentstate)
 		case KEY('m','a','k','p'):
 		case KEY('p','r','e','v'):
 		{
-			const int makp = (u[0] == 'm');
+			const bool makp = (u[0] == 'm');
 			q = getval(state.rules, t);
 			if (!q && !makp && !state.strict)
 				q = rule(t); /* for backward compat */
@@ -2521,20 +2518,19 @@ static void make(Rule_t *r, Makestate_t *parentstate)
  * verify that active targets were made
  */
 
-static int verify(Dict_item_t *item)
+static void verify(Dict_item_t *item)
 {
 	Rule_t	*r = item->value;
 
 	if ((r->flags & (RULE_active|RULE_error|RULE_made)) == RULE_active)
 		error_making(r, 0);
-	return 0;
 }
 
 /*
  * return 1 if name is an initializer
  */
 
-static int initializer(char *name)
+static bool initializer(char *name)
 {
 	char	*s;
 
@@ -2549,12 +2545,12 @@ static int initializer(char *name)
  * update recursion leaf r and its prerequisites
  */
 
-static int update(Rule_t *r)
+static void update(Rule_t *r)
 {
 	List_t	*x;
 	Buf_t	*buf;
 	char	*args = getval(state.vars, "MAMAKEARGS");
-	int	testing = !strcmp(args, "test");
+	bool	testing = !strcmp(args, "test");
 
 	/* topological sort */
 	r->flags |= RULE_made;
@@ -2589,14 +2585,13 @@ static int update(Rule_t *r)
 	append(buf, args);
 	run(r, use(buf));
 	drop(buf);
-	return 0;
 }
 
 /*
  * scan Mamfile prereqs
  */
 
-static int scan(Dict_item_t *item)
+static void scan(Dict_item_t *item)
 {
 	Rule_t	*r = item->value;
 	char	*s, *t;
@@ -2608,7 +2603,7 @@ static int scan(Dict_item_t *item)
 	 */
 
 	if (!r->leaf)
-		return 0;
+		return;
 
 	/*
 	 * always make initializers
@@ -2618,7 +2613,7 @@ static int scan(Dict_item_t *item)
 	{
 		if (!(r->flags & RULE_made))
 			update(r);
-		return 0;
+		return;
 	}
 	buf = buffer();
 	append(buf, r->name);
@@ -2648,27 +2643,27 @@ static int scan(Dict_item_t *item)
 		pop();
 	}
 	drop(buf);
-	return 0;
 }
 
 /*
  * descend into op and its prereqs
  */
 
-static int descend(Dict_item_t *item)
+static void descend(Dict_item_t *item)
 {
 	Rule_t	*r = item->value;
 
 	if (!state.active && (!(r->flags & RULE_active) || !(r = getval(state.leaf, r->name))))
-		return 0;
-	return r->leaf && !(r->flags & RULE_made) ? update(r) : 0;
+		return;
+	if(r->leaf && !(r->flags & RULE_made))
+		update(r);
 }
 
 /*
  * append the non-leaf active targets to state.opt
  */
 
-static int active(Dict_item_t *item)
+static void active(Dict_item_t *item)
 {
 	Rule_t *r = item->value;
 
@@ -2682,7 +2677,6 @@ static int active(Dict_item_t *item)
 			append(state.opt, r->name);
 		}
 	}
-	return 0;
 }
 
 /*

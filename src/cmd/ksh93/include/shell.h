@@ -443,7 +443,7 @@ extern void		sh_subfork(void);
 extern Shell_t		*sh_init(int,char*[],Shinit_f);
 extern void		sh_reinit(void);
 extern int 		sh_eval(Sfio_t*,int);
-extern void 		sh_delay(double,int);
+extern void 		sh_delay(double,bool);
 extern void		*sh_parse(Sfio_t*,int);
 extern int 		sh_trap(const char*,int);
 extern int 		sh_fun(Namval_t*,Namval_t*, char*[]);

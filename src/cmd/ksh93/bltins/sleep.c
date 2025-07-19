@@ -35,8 +35,8 @@
 int	b_sleep(int argc,char *argv[],Shbltin_t *context)
 {
 	char *cp;
-	double d=0;
-	int sflag=0;
+	double d = 0;
+	bool sflag = false;
 	time_t tloc = 0;
 	char *last;
 	NOT_USED(context);
@@ -45,7 +45,7 @@ int	b_sleep(int argc,char *argv[],Shbltin_t *context)
 	while((argc = optget(argv,sh_optsleep))) switch(argc)
 	{
 		case 's':
-			sflag=1;
+			sflag = true;
 			break;
 		case ':':
 			errormsg(SH_DICT,2, "%s", opt_info.arg);
@@ -135,10 +135,10 @@ skip:
 
 /*
  * Delay execution for time <t>.
- * If sflag==1, stop sleeping when any signal is received
+ * If sflag==true, stop sleeping when any signal is received
  * (such as SIGWINCH in an interactive shell).
  */
-void sh_delay(double t, int sflag)
+void sh_delay(double t, bool sflag)
 {
 	uint32_t n;
 	Tv_t ts, tx;

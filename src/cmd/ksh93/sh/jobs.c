@@ -950,7 +950,7 @@ int job_kill(struct process *pw,int sig)
 					job_unstop(pw,0);
 				else if(also_send_sigcont(pw,sig))
 					job_unstop(pw,1);
-				sh_delay(.05,0);
+				sh_delay(.05,false);
 			}
 		}
 		while(pw && pw->p_pgrp==0 && (r=kill(pw->p_pid,sig))>=0)
@@ -975,7 +975,7 @@ int job_kill(struct process *pw,int sig)
 		sfprintf(sfstderr,"kill: %s: %s\n",job_string, msg);
 		r = 2;
 	}
-	sh_delay(.001,0);
+	sh_delay(.001,false);
 	job_unlock();
 	return r;
 }
