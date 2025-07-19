@@ -729,7 +729,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	struct argnod *ap;
 	int fd, pv[3];
 	int savestates = sh_getstate();
-	char savejobcontrol = job.jobcontrol;
+	bool savejobcontrol = job.jobcontrol;
 	unsigned int savesubshell = sh.subshell;
 	ap = stkseek(sh.stk,ARGVAL);
 	ap->argflag |= ARG_MAKE;
@@ -764,7 +764,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	/* turn off job control */
 	sh_offstate(SH_INTERACTIVE);
 	sh_offstate(SH_MONITOR);
-	job.jobcontrol = 0;
+	job.jobcontrol = false;
 	/* run the process substitution */
 	sh.subshell = 0;
 	if(fd)

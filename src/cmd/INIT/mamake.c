@@ -133,6 +133,7 @@ static const char usage[] =
 #if !_PACKAGE_ast
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #endif
@@ -201,11 +202,7 @@ typedef struct Dict_item_s		/* dictionary item		*/
 	struct Dict_item_s	*left;	/* left child			*/
 	struct Dict_item_s	*right;	/* right child			*/
 	void			*value;	/* user defined value		*/
-#if __STDC_VERSION__ >= 199901L
 	char			name[];	/* 0 terminated name		*/
-#else
-	char			name[1];/* 0 terminated name		*/
-#endif
 } Dict_item_t;
 
 typedef struct Dict_s			/* dictionary handle		*/
@@ -248,11 +245,7 @@ typedef struct View_s			/* viewpath level		*/
 {
 	struct View_s	*next;		/* next level in viewpath	*/
 	size_t		node;		/* viewpath node path length	*/
-#if __STDC_VERSION__ >= 199901L
 	char		dir[];		/* viewpath level dir prefix	*/
-#else
-	char		dir[1];		/* viewpath level dir prefix	*/
-#endif
 } View_t;
 
 typedef struct Makestate_s		/* make() shareable state	*/
@@ -285,21 +278,21 @@ static struct				/* program state		*/
 	char		*packageroot;	/* %{PACKAGEROOT}		*/
 
 	int		active;		/* targets currently active	*/
-	int		chaos;		/* don't save up parallel logs	*/
 	int		debug;		/* negative of debug level	*/
 	int		exitstatus;	/* > 0 if error(s) occurred	*/
-	int		exec;		/* execute actions		*/
-	int		explain;	/* explain actions		*/
-	int		force;		/* all targets out of date	*/
-	int		ignore;		/* ignore command errors	*/
 	int		indent;		/* debug indent			*/
-	int		keepgoing;	/* do siblings on error		*/
-	int		never;		/* never execute		*/
-	int		probed;		/* probe already done		*/
-	int		verified;	/* don't bother with verify()	*/
 	int		jobs, maxjobs;	/* for parallel sh execution	*/
 	size_t		installrootlen;	/* strlen of %{INSTALLROOT}	*/
 	size_t		packagerootlen;	/* strlen of %{PACKAGEROOT}	*/
+	bool		explain:1;	/* explain actions		*/
+	bool		ignore:1;	/* ignore command errors	*/
+	bool		keepgoing:1;	/* do siblings on error		*/
+	bool		force:1;	/* all targets out of date	*/
+	bool		exec:1;		/* execute actions		*/
+	bool		never:1;	/* never execute		*/
+	bool		probed:1;	/* probe already done		*/
+	bool		verified:1;	/* don't bother with verify()	*/
+	bool		chaos:1;	/* don't save up parallel logs	*/
 
 	Stream_t	streams[4];	/* input file stream stack	*/
 	Stream_t	*sp;		/* input stream stack pointer	*/
@@ -401,11 +394,7 @@ static void report(int level, char *text, char *item, Rule_t *r)
 			fprintf(stderr, "%s: ", item);
 		fprintf(stderr, "%s", text);
 		if (r && r->time && state.debug <= -2)
-#if __STDC_VERSION__ >= 199901L
 			fprintf(stderr, " %llu", (unsigned long long)r->time);
-#else
-			fprintf(stderr, " %lu", (unsigned long)r->time);
-#endif
 		fprintf(stderr, "\n");
 		if (level > 2)
 			exit_wait(level - 2);
@@ -1602,7 +1591,8 @@ static void run(Rule_t *r, char *s)
 {
 	Rule_t	*q;
 	char	*t;
-	int	c, i, j, x;
+	int	c, i, j;
+	bool	x;
 	Buf_t	*buf;
 
 	if (r->flags & RULE_error)
@@ -1610,7 +1600,7 @@ static void run(Rule_t *r, char *s)
 	buf = buffer();
 	if (!strncmp(s, "mamake -r ", 10))
 	{
-		state.verified = 1;
+		state.verified = true;
 		x = !state.never;
 	}
 	else
@@ -2069,7 +2059,7 @@ static void propagate(Rule_t *q, Rule_t *r, time_t *modtime)
 
 static void exit_wait(int e)
 {
-	state.keepgoing = 1;
+	state.keepgoing = true;
 	walk(state.rules, wreap);
 	if (state.exitstatus > e)
 		e = state.exitstatus;
@@ -2479,7 +2469,7 @@ static void make(Rule_t *r, Makestate_t *parentstate)
 			}
 			if (!state.probed && strcmp(t, "CC") == 0)
 			{
-				state.probed = 1;
+				state.probed = true;
 				probe(r, &st);
 			}
 			continue;
@@ -2781,7 +2771,7 @@ int main(int argc, char **argv)
 
 	state.id = argv[0];
 	state.active = 1;
-	state.exec = 1;
+	state.exec = true;
 	state.file = mamfile;
 	state.opt = buffer();
 	state.shim_buf = buffer();
@@ -2801,15 +2791,15 @@ int main(int argc, char **argv)
 		{
 		case 'c':
 			append(state.opt, " -c");
-			state.chaos = 1;
+			state.chaos = true;
 			continue;
 		case 'e':
 			append(state.opt, " -e");
-			state.explain = 1;
+			state.explain = true;
 			continue;
 		case 'i':
 			append(state.opt, " -i");
-			state.ignore = 1;
+			state.ignore = true;
 			continue;
 		case 'j':
 			append(state.opt, " -j");
@@ -2818,18 +2808,18 @@ int main(int argc, char **argv)
 			continue;
 		case 'k':
 			append(state.opt, " -k");
-			state.keepgoing = 1;
+			state.keepgoing = true;
 			continue;
 		case 'N':
-			state.never = 1;
+			state.never = true;
 			/* FALLTHROUGH */
 		case 'n':
 			append(state.opt, " -n");
-			state.exec = 0;
+			state.exec = false;
 			continue;
 		case 'F':
 			append(state.opt, " -F");
-			state.force = 1;
+			state.force = true;
 			continue;
 		case 'V':
 			return !(write(1, id + 10, strlen(id) - 12) > 0 && putchar('\n') == '\n');
@@ -2918,30 +2908,30 @@ int main(int argc, char **argv)
 				break;
 			case 'c':
 				append(state.opt, " -c");
-				state.chaos = 1;
+				state.chaos = true;
 				continue;
 			case 'e':
 				append(state.opt, " -e");
-				state.explain = 1;
+				state.explain = true;
 				continue;
 			case 'i':
 				append(state.opt, " -i");
-				state.ignore = 1;
+				state.ignore = true;
 				continue;
 			case 'k':
 				append(state.opt, " -k");
-				state.keepgoing = 1;
+				state.keepgoing = true;
 				continue;
 			case 'N':
-				state.never = 1;
+				state.never = true;
 				/* FALLTHROUGH */
 			case 'n':
 				append(state.opt, " -n");
-				state.exec = 0;
+				state.exec = false;
 				continue;
 			case 'F':
 				append(state.opt, " -F");
-				state.force = 1;
+				state.force = true;
 				continue;
 			case 'G':
 				append(state.opt, " -G");
@@ -3009,7 +2999,7 @@ int main(int argc, char **argv)
 	 */
 
 	if (state.force)
-		state.explain = 0;
+		state.explain = false;
 	if (state.recurse)
 		state.maxjobs = 0;
 
@@ -3133,7 +3123,7 @@ int main(int argc, char **argv)
 
 	if (!state.active && !state.verified)
 	{
-		state.keepgoing = 1;
+		state.keepgoing = true;
 		walk(state.rules, verify);
 	}
 

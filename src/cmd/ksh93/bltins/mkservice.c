@@ -256,7 +256,7 @@ static int waitnotify(int fd, long timeout, int rw)
 	}
 }
 
-static int service_init(void)
+static bool service_init(void)
 {
 	size_t n = 20;
 	file_list = (int*)sh_newof(NULL,short,n,0);
@@ -264,12 +264,12 @@ static int service_init(void)
 	service_list = sh_newof(NULL,Service_t*,n,0);
 	covered_fdnotify = sh_fdnotify(fdnotify);
 	sh_waitnotify(waitnotify);
-	return 1;
+	return true;
 }
 
 void service_add(Service_t *sp)
 {
-	static int init;
+	static bool init;
 	if (!init)
 		init = service_init();
 	service_list[sp->fd] = sp;
@@ -378,7 +378,7 @@ static void putval(Namval_t* np, const char* val, nvflag_t flag, Namfun_t* fp)
 	if (!val)
 	{
 		int i;
-		for(i=0; i< sh.lim.open_max; i++)
+		for(i=0; i < sh.lim.open_max; i++)
 		{
 			if(service_list[i]==sp)
 			{

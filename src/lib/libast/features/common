@@ -74,6 +74,8 @@ cat{
 	#else
 	#define noreturn /* empty */
 	#endif /* _std_noreturn */
+
+	#include <stdbool.h>
 }end
 
 if	tst - note{ <stdarg.h>+<wchar.h> works }end compile{

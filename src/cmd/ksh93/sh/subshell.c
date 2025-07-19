@@ -81,9 +81,9 @@ static struct subshell
 	uint32_t	srand_upper_bound;  /* parent shell's upper bound for $SRANDOM */
 	int		rand_last;          /* last random number from $RANDOM in parent shell */
 	unsigned short	rand_seed[3];       /* parent shell $RANDOM seed */
+	bool		jobcontrol;
 	char		rand_state;         /* 0 means sp->rand_seed hasn't been set, 1 is the opposite */
 	unsigned char	fdstatus;
-	char		jobcontrol;
 	char		subshare;
 	char		comsub;
 #if !_lib_openat
@@ -666,7 +666,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 			/* disable job control */
 			sh.spid = 0;
 			sp->jobcontrol = job.jobcontrol;
-			job.jobcontrol=0;
+			job.jobcontrol = false;
 			sh_offstate(SH_MONITOR);
 			sp->pipe = sp;
 			/* save sfstdout and status */

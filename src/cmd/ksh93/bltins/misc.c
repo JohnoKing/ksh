@@ -78,7 +78,7 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
 {
 	int	n;
 	const char *pname;
-	int	clear = 0;
+	bool	clear = false;
 	char	*arg0 = 0;
 	NOT_USED(context);
 	sh.st.ioset = 0;
@@ -88,7 +88,7 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
 		arg0 = opt_info.arg;
 		break;
 	    case 'c':
-		clear=1;
+		clear = true;
 		break;
 	    case ':':
 		errormsg(SH_DICT,2, "%s", opt_info.arg);

@@ -53,7 +53,8 @@ static void rehash(Namval_t *np,void *data)
  */
 int sh_diropenat(int dir, const char *path)
 {
-	int fd, needs_cloexec = 0;
+	int fd;
+	bool needs_cloexec = false;
 	if((fd = openat(dir, path, O_DIRECTORY|O_NONBLOCK|O_CLOEXEC|O_SEARCH)) < 0)
 	{
 #if !_openat_enotdir
@@ -75,11 +76,11 @@ int sh_diropenat(int dir, const char *path)
 		if(shfd < 0)
 			return shfd;
 		if(F_DUPFD_CLOEXEC == F_DUPFD)
-			needs_cloexec = 1;
+			needs_cloexec = true;
 		fd = shfd;
 	}
 	else if(O_CLOEXEC == 0)
-		needs_cloexec = 1;
+		needs_cloexec = true;
 	if(needs_cloexec)
 		fcntl(fd,F_SETFD,FD_CLOEXEC);
 	sh.fdstatus[fd] = (IOREAD|IOCLEX);
@@ -92,8 +93,9 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 	char *dir;
 	Pathcomp_t *cdpath = 0;
 	const char *dp;
-	int saverrno=0;
-	int rval,pflag=0,eflag=0,ret=1,saverr;
+	int saverrno = 0;
+	int rval,ret=1,saverr;
+	bool eflag = false, pflag = false;
 	char *oldpwd, *cp;
 	Namval_t *opwdnod, *pwdnod;
 #if _lib_openat
@@ -103,13 +105,13 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 	while((rval = optget(argv,sh_optcd))) switch(rval)
 	{
 		case 'e':
-			eflag = 1;
+			eflag = true;
 			break;
 		case 'L':
-			pflag = 0;
+			pflag = false;
 			break;
 		case 'P':
-			pflag = 1;
+			pflag = true;
 			break;
 		case ':':
 			if(sh_isoption(SH_RESTRICTED))
@@ -344,17 +346,18 @@ success:
 
 int	b_pwd(int argc, char *argv[],Shbltin_t *context)
 {
-	int n, flag = 0;
+	int n;
+	bool physical = false;
 	char *cp;
 	NOT_USED(argc);
 	NOT_USED(context);
 	while((n = optget(argv,sh_optpwd))) switch(n)
 	{
 		case 'L':
-			flag = 0;
+			physical = false;
 			break;
 		case 'P':
-			flag = 1;
+			physical = true;
 			break;
 		case ':':
 			errormsg(SH_DICT,2, "%s", opt_info.arg);
@@ -374,7 +377,7 @@ int	b_pwd(int argc, char *argv[],Shbltin_t *context)
 		errormsg(SH_DICT,ERROR_system(1), e_pwd);
 		UNREACHABLE();
 	}
-	if(flag)
+	if(physical)
 	{
 		cp = strcpy(stkseek(sh.stk,(ptrdiff_t)strlen(cp)+PATH_MAX),cp);
 		pathcanon(cp,PATH_PHYSICAL);

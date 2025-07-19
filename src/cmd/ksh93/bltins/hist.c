@@ -47,13 +47,13 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
 	Sfio_t *outfile;
 	char *fname;
 	int range[2], incr, index2, indx= -1;
-	char *edit = 0;		/* name of editor */
-	char *replace = 0;	/* replace old=new */
-	int lflag = 0, nflag = 0, rflag = 0;
+	char *edit = NULL;	/* name of editor */
+	char *replace = NULL;	/* replace old=new */
+	bool lflag = false, nflag = false, rflag = false;
 #if SHOPT_HISTEXPAND
 	int pflag = 0;
 #endif
-	int checktime = 0;
+	bool checktime = false;
 	Histloc_t location;
 	NOT_USED(argc);
 	NOT_USED(context);
@@ -66,19 +66,19 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
 	while((flag = optget(argv,sh_opthist))) switch(flag)
 	{
 	    case 'E':
-		checktime = 1;
+		checktime = true;
 		break;
 	    case 'e':
 		edit = opt_info.arg;
 		break;
 	    case 'n':
-		nflag++;
+		nflag = true;
 		break;
 	    case 'l':
-		lflag = 1;
+		lflag = true;
 		break;
 	    case 'r':
-		rflag++;
+		rflag = true;
 		break;
 	    case 's':
 		edit = "-";
@@ -162,7 +162,7 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
 		}
 		argv++;
 	}
-	if(flag <0)
+	if(flag < 0)
 	{
 		/* set default starting range */
 		if(lflag)
@@ -197,7 +197,7 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
 	}
 	/* now list commands from range[flag] to range[1-flag] */
 	incr = 1;
-	flag = rflag>0;
+	flag = rflag == true;
 	if(range[1-flag] < range[flag])
 		incr = -1;
 	if(lflag)
@@ -219,11 +219,11 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
 		}
 		outfile= sfnew(NULL,sh.outbuff,IOBSIZE,fdo,SFIO_WRITE);
 		arg = "\n";
-		nflag++;
+		nflag = true;
 	}
 	while(1)
 	{
-		if(nflag==0)
+		if(!nflag)
 			sfprintf(outfile,"%d\t",range[flag]);
 		else if(lflag)
 			sfputc(outfile,'\t');

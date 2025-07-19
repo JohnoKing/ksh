@@ -33,10 +33,10 @@
  *  difference and set/check them in a manner consistent with their purpose.
  *
  *  1. The job.jobcontrol flag is for job control on interactive shells.
- *     It is set to nonzero by job_init() if, and only if, the shell is
+ *     It is set to true by job_init() if, and only if, the shell is
  *     interactive *and* managed to get control of the terminal. Therefore,
  *     any changing of terminal settings (tcsetpgrp(3), tty_set()) should
- *     only be done if job.jobcontrol is nonzero.
+ *     only be done if job.jobcontrol is true.
  *
  *  2. The state flag, sh_isstate(SH_MONITOR), determines whether the bits
  *     of job control that are relevant for both scripts and interactive
@@ -572,7 +572,7 @@ void job_init(void)
 	}
 #endif /* CNSUSP */
 	sh_onoption(SH_MONITOR);
-	job.jobcontrol++;
+	job.jobcontrol = true;
 	return;
 }
 
@@ -630,7 +630,7 @@ int job_close(void)
 		tty_set(job.fd,TCSAFLUSH,&my_stty);
 	}
 #   endif /* CNSUSP */
-	job.jobcontrol = 0;
+	job.jobcontrol = false;
 	return 0;
 }
 
@@ -1070,7 +1070,7 @@ void	job_clear(void)
 #endif /* SHOPT_BGX */
 	job.waitall = 0;
 	job.curpgid = 0;
-	job.toclear = 0;
+	job.toclear = false;
 	if(!job.freejobs)
 		job.freejobs = (unsigned char*)sh_malloc((unsigned)(j+1));
 	while(j >=0)

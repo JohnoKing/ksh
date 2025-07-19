@@ -81,7 +81,7 @@ static const struct printmap  Pmap[] =
 };
 
 
-static int		echolist(Sfio_t*, int, char**);
+static bool		echolist(Sfio_t*, bool, char**);
 static int		extend(Sfio_t*,void*, Sffmt_t*);
 static ptrdiff_t	reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe);
 static char		*genformat(char*);
@@ -90,8 +90,8 @@ static ssize_t		fmtbase64(Sfio_t*, char*, int);
 struct print
 {
 	const char	*options;
-	char		raw;
-	char		echon;
+	bool		raw;
+	bool		echon;
 };
 
 static char* 	nullarg[] = { 0, 0 };
@@ -100,10 +100,8 @@ static int	exitval;
 #if !SHOPT_ECHOPRINT
    int    B_echo(int argc, char *argv[],Shbltin_t *context)
    {
-	static char bsd_univ;
-	struct print prdata;
-	prdata.options = sh_optecho+5;
-	prdata.raw = prdata.echon = 0;
+	static bool bsd_univ;
+	struct print prdata = { .options = sh_optecho + 5 };
 	NOT_USED(argc);
 	NOT_USED(context);
 	/* This mess is because /bin/echo on BSD is different */
@@ -117,18 +115,18 @@ static int	exitval;
 	if(!bsd_univ)
 		return b_print(0,argv,(Shbltin_t*)&prdata);
 	prdata.options = sh_optecho;
-	prdata.raw = 1;
+	prdata.raw = true;
 	while(argv[1] && *argv[1]=='-')
 	{
 		if(strcmp(argv[1],"-n")==0)
-			prdata.echon = 1;
+			prdata.echon = true;
 #if !SHOPT_NOECHOE
 		else if(strcmp(argv[1],"-e")==0)
-			prdata.raw = 0;
+			prdata.raw = false;
 		else if(strcmp(argv[1],"-ne")==0 || strcmp(argv[1],"-en")==0)
 		{
-			prdata.raw = 0;
-			prdata.echon = 1;
+			prdata.raw = false;
+			prdata.echon = true;
 		}
 #endif /* SHOPT_NOECHOE */
 		else
@@ -170,9 +168,10 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 	const char *options, *msg = e_file+4;
 	char *format = 0;
 #if !SHOPT_SCRIPTONLY
-	int sflag = 0;
+	bool sflag = false;
 #endif /* !SHOPT_SCRIPTONLY */
-	int nflag=0, rflag=0, vflag=0;
+	bool nflag = false, rflag = false;
+	char vflag = 0;
 	Namval_t *vname=0;
 	Optdisc_t disc = {
 		.version = OPT_VERSION,
@@ -182,7 +181,6 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 	if(argc>0)
 	{
 		options = sh_optprint;
-		nflag = rflag = 0;
 		format = 0;
 	}
 	else
@@ -209,7 +207,7 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 	while((n = optget(argv,options))) switch(n)
 	{
 		case 'n':
-			nflag++;
+			nflag = true;
 			break;
 		case 'p':
 		coprocess:
@@ -230,14 +228,14 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 			}
 			fd = sffileno(sh.hist_ptr->histfp);
 			sh_onstate(SH_HISTORY);
-			sflag++;
+			sflag = true;
 			break;
 #endif /* !SHOPT_SCRIPTONLY */
 		case 'e':
-			rflag = 0;
+			rflag = false;
 			break;
 		case 'r':
-			rflag = 1;
+			rflag = true;
 			break;
 		case 'u':
 			if(opt_info.arg[0]=='p' && opt_info.arg[1]==0)
@@ -284,16 +282,16 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 			/* The following is for backward compatibility */
 			if(strcmp(opt_info.name,"-R")==0)
 			{
-				rflag = 1;
+				rflag = true;
 				if(error_info.errors==0)
 				{
 					argv += opt_info.index+1;
 					/* special case test for -Rn */
 					if(strchr(argv[-1],'n'))
-						nflag++;
+						nflag = true;
 					if(*argv && strcmp(*argv,"-n")==0)
 					{
-						nflag++;
+						nflag = true;
 						argv++;
 					}
 					opt_info.disc = NULL;
@@ -438,10 +436,10 @@ printf_v:
 
 /*
  * echo the argument list onto <outfile>
- * if <raw> is non-zero then \ is not a special character.
- * returns 0 for \c otherwise 1.
+ * if <raw> is true then \ is not a special character.
+ * returns false for \c otherwise true.
  */
-static int echolist(Sfio_t *outfile, int raw, char *argv[])
+static bool echolist(Sfio_t *outfile, bool raw, char *argv[])
 {
 	char	*cp;
 	ptrdiff_t n;
@@ -692,9 +690,10 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
 	}
 }
 
-static int varname(const char *str, ptrdiff_t n)
+static bool varname(const char *str, ptrdiff_t n)
 {
-	int c,dot=1;
+	int c;
+	bool dot=true;
 	ptrdiff_t len=1;
 	if(n < 0)
 	{
@@ -712,7 +711,7 @@ static int varname(const char *str, ptrdiff_t n)
 #endif
 		if(dot && !(isalpha(c)||c=='_'))
 			break;
-		else if(dot==0 && !(isalnum(c) || c=='_' || c == '.'))
+		else if(!dot && !(isalnum(c) || c=='_' || c == '.'))
 			break;
 		dot = (c=='.');
 	}
@@ -1156,9 +1155,8 @@ static ptrdiff_t reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe)
 static ptrdiff_t fmtvecho(const char *string, struct printf *pp)
 {
 	const char *cp = string, *cpmax;
-	int c;
 	ptrdiff_t offset = stktell(sh.stk), d;
-	int chlen;
+	int c, chlen;
 	if(mbwide())
 	{
 		while(1)

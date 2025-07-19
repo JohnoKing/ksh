@@ -130,7 +130,7 @@ static void	trap_timeout(void* handle)
 	struct tevent *tp = (struct tevent*)handle;
 	sh.trapnote |= SH_SIGALRM;
 	if(!(tp->flags&R_FLAG))
-		tp->timeout = 0;
+		tp->timeout = NULL;
 	tp->flags |= L_FLAG;
 	if(sh_isstate(SH_TTYWAIT))
 		sh_timetraps();
@@ -160,13 +160,13 @@ void	sh_timetraps(void)
 					int		states = sh.st.states;
 					char		*dbg = sh.st.trap[SH_DEBUGTRAP];
 					Lex_t		*lexp = sh.lex_context, savelex = *lexp;
-					char		jc = job.jobcontrol;
+					bool		jc = job.jobcontrol;
 					int		savesig = job.savesig;
 					struct process	*pw = job.pwlist;
 					Fcin_t		savefc;
 					int		oerrno = errno;
 					fcsave(&savefc);
-					job.jobcontrol = 0;
+					job.jobcontrol = false;
 					job.pwlist = NULL;	/* avoid external commands in the disc funct affecting job list */
 					sh_lexopen(lexp,0);	/* fully reset lexer state */
 					sh_offoption(SH_XTRACE);

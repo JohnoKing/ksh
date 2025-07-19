@@ -57,7 +57,8 @@ int	b_getopts(int argc,char *argv[],Shbltin_t *context)
 {
 	char *options=error_info.context->id;
 	Namval_t *np;
-	int flag, mode;
+	int flag;
+	bool mode;
 	char value[2], key[2];
 	int jmpval;
 	volatile int extended, r= -1;
@@ -106,7 +107,7 @@ int	b_getopts(int argc,char *argv[],Shbltin_t *context)
 	}
 	opt_info.index = sh.st.optindex;
 	opt_info.offset = sh.st.optchar;
-	if(mode= (*options==':'))
+	if((mode=(*options==':')))
 		options++;
 	extended = *options=='\n' && *(options+1)=='[' || *options=='[' && *(options+1)=='-';
 	sh_pushcontext(&buff,1);
@@ -125,7 +126,7 @@ int	b_getopts(int argc,char *argv[],Shbltin_t *context)
 	switch(opt_info.index>=0 && opt_info.index<=argc?(opt_info.num= LONG_MIN,flag=optget(argv,options)):0)
 	{
 	    case '?':
-		if(mode==0)
+		if(!mode)
 		{
 			/* a ksh script's self-doc: write to standard output and force script to exit with status 0 */
 			error(ERROR_USAGE|ERROR_OUTPUT, STDOUT_FILENO, "%s", opt_info.arg);

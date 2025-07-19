@@ -104,7 +104,7 @@ struct Enum
 {
 	Namfun_t	hdr;
 	ptrdiff_t	nelem;
-	char		iflag;
+	bool		iflag;
 	const char	*values[1];
 };
 
@@ -212,7 +212,7 @@ const Namdisc_t ENUM_disc = { 0, put_enum, get_enum, nv_getn, 0, 0, clone_enum }
 int b_enum(int argc, char** argv, Shbltin_t *context)
 {
 	int			i;
-	char			iflag = 0;
+	bool			iflag = false;
 	size_t			sz,n;
 	Namval_t		*np, *tp;
 	Namarr_t		*ap;
@@ -229,7 +229,7 @@ int b_enum(int argc, char** argv, Shbltin_t *context)
 		switch (optget(argv, sh_optenum))
 		{
 		case 'i':
-			iflag = 'i';
+			iflag = true;
 			continue;
 		case '?':
 			/* self-doc: write to standard output */

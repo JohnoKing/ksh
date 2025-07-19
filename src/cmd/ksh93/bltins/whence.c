@@ -256,7 +256,7 @@ static int whence(char **argv, int flags)
 		pp = 0;
 		do
 		{
-			int maybe_undef_fn = 0;  /* flag for possible undefined (i.e. autoloadable) function */
+			bool maybe_undef_fn = false;  /* flag for possible undefined (i.e. autoloadable) function */
 			/*
 			 * See comments in sh/path.c for info on what path_search()'s true/false return values mean
 			 */
@@ -268,7 +268,7 @@ static int whence(char **argv, int flags)
 					if(flags&(P_FLAG|F_FLAG)) /* Ignore functions when passed -f or -p */
 						cp = 0;
 					else
-						maybe_undef_fn = 1;
+						maybe_undef_fn = true;
 				}
 			}
 			else
@@ -300,7 +300,7 @@ static int whence(char **argv, int flags)
 			}
 			else if(cp)
 			{
-				int is_pathbound_builtin = 0;
+				bool is_pathbound_builtin = false;
 				cp = path_fullname(cp);  /* resolve '.' & '..' */
 				if(flags&(V_FLAG|T_FLAG))
 				{
@@ -310,7 +310,7 @@ static int whence(char **argv, int flags)
 					if(nv_search(cp,sh.bltin_tree,0))
 					{
 						if(flags&T_FLAG)
-							is_pathbound_builtin = 1;
+							is_pathbound_builtin = true;
 						else
 							msg = sh_translate(is_builtver);
 					}

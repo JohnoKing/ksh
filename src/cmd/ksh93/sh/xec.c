@@ -1589,7 +1589,7 @@ int sh_exec(const Shnode_t *t, int flags)
 						_sh_fork(parent, 0, NULL);
 					if(parent)
 					{
-						job.toclear = 0;
+						job.toclear = false;
 						job_post(parent,0);
 						job_wait(parent);
 						sh_iorestore(topfd,SH_JMPCMD);
@@ -2800,8 +2800,8 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
 		ast_signal(SIGTTOU,SIG_DFL);
 		ast_signal(SIGTSTP,SIG_DFL);
 	}
-	job.jobcontrol = 0;
-	job.toclear = 1;
+	job.jobcontrol = false;
+	job.toclear = true;
 	sh_offoption(SH_LOGIN_SHELL);
 	sh_onstate(SH_FORKED);
 #if SHOPT_ACCT
