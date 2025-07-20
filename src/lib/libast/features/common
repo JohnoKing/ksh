@@ -572,7 +572,6 @@ tst - note{ does this compiler have __builtin_unreachable() }end output{
 	 * executing it, put it in a test function that is called with argc as the argument.
 	 * argc should never be zero on init, but hopefully optimizers aren't that smart.
 	 */
-	#include <stdio.h>
 	#include "ast_release.h"
 	void testfn(int a)
 	{
@@ -597,10 +596,9 @@ tst - note{ does this compiler have __builtin_unreachable() }end output{
 	echo '#define UNREACHABLE()	abort()'
 }end
 
-tst - note{ does this compiler have __attribute__((packed)) }end output{
-	#include <stdio.h>
+tst - -Werror=attributes note{ does this compiler have __attribute__((__packed__)) }end output{
 	#include <stdint.h>
-	typedef struct __attribute__((packed))
+	typedef struct __attribute__((__packed__))
 	{
 		int64_t a;
 		int32_t b;
@@ -617,39 +615,13 @@ tst - note{ does this compiler have __attribute__((packed)) }end output{
 		};
 		if(a.c == 2 && sizeof(packed_struct_t) == 15)
 		{
-			printf("#define packed\t__attribute__((packed))\n");
+			printf("#define packed\t__attribute__((__packed__))\n");
 			return 0;
 		}
 		return 1;
 	}
 }end fail{
 	echo '#define packed'
-}end
-
-# TODO: remove when we require C99
-tst	has___func__ note{ does this compiler have __func__ }end execute{
-	#include <string.h>
-	int testfn(void)
-	{
-		return strcmp(__func__,"testfn")==0;
-	}
-	int main(void)
-	{
-		return !(testfn && strcmp(__func__,"main")==0);
-	}
-}end
-
-# TODO: remove when we require C99 (use __func__)
-tst	has___FUNCTION__ note{ does this compiler have __FUNCTION__ }end execute{
-	#include <string.h>
-	int testfn(void)
-	{
-		return strcmp(__FUNCTION__,"testfn")==0;
-	}
-	int main(void)
-	{
-		return !(testfn && strcmp(__FUNCTION__,"main")==0);
-	}
 }end
 
 tst	has__Static_assert note{ does this compiler have _Static_assert }end execute{
