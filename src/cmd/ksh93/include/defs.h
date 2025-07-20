@@ -131,8 +131,6 @@ extern Sfio_t		*sh_sfeval(char*[]);
 extern void		sh_setmatch(const char*,ptrdiff_t,ptrdiff_t,ssize_t[],int);
 extern void             sh_scope(struct argnod*, int);
 extern Namval_t		*sh_scoped(Namval_t*);
-extern Dt_t		*sh_subtracktree(int);
-extern Dt_t		*sh_subfuntree(int);
 extern void		sh_subjobcheck(pid_t);
 extern int		sh_subsavefd(int);
 extern void		sh_subtmpfile(void);
@@ -144,6 +142,8 @@ extern void		sh_trim(char*);
 extern int		sh_type(const char*);
 extern void             sh_unscope(void);
 extern void		sh_clear_subshell_pwdfd(void);
+extern returns_nonnull Dt_t	*sh_subtracktree(int);
+extern returns_nonnull Dt_t	*sh_subfuntree(int);
 #if _lib_openat
     extern int		sh_diropenat(int,const char *);
     extern void		sh_pwdupdate(int);
@@ -154,12 +154,12 @@ extern void		sh_clear_subshell_pwdfd(void);
 #endif /* SHOPT_NAMESPACE */
 
 /* malloc related wrappers */
-extern void		*sh_malloc(size_t size);
-extern void		*sh_realloc(void *ptr, size_t size);
-extern void		*sh_calloc(size_t nmemb, size_t size);
-extern char		*sh_strdup(const char *s);
-extern void		*sh_memdup(const void *s, size_t n);
-extern char		*sh_getcwd(void);
+extern returns_nonnull void	*sh_malloc(size_t size);
+extern returns_nonnull void	*sh_realloc(void *ptr, size_t size);
+extern returns_nonnull void	*sh_calloc(size_t nmemb, size_t size);
+extern returns_nonnull char	*sh_strdup(const char *s);
+extern returns_nonnull void	*sh_memdup(const void *s, size_t n);
+extern char			*sh_getcwd(void);
 #define new_of(type,x)	((type*)sh_malloc(sizeof(type)+(x)))
 #define sh_newof(p,t,n,x)	((p)?(t*)sh_realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)sh_calloc(1,sizeof(t)*(n)+(x)))
 

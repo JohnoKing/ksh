@@ -397,7 +397,7 @@ static void nv_restore(struct subshell *sp)
  * Return pointer to tracked alias tree (a.k.a. hash table, i.e. cached $PATH search results).
  * Create new one if in a subshell and one doesn't exist and 'create' is non-zero.
  */
-Dt_t *sh_subtracktree(int create)
+returns_nonnull Dt_t *sh_subtracktree(int create)
 {
 	struct subshell *sp = subshell_data;
 	if(create && sh.subshell && !sh.subshare)
@@ -416,7 +416,7 @@ Dt_t *sh_subtracktree(int create)
  * return pointer to function tree
  * create new one if in a subshell and one doesn't exist and create is non-zero
  */
-Dt_t *sh_subfuntree(int create)
+returns_nonnull Dt_t *sh_subfuntree(int create)
 {
 	struct subshell *sp = subshell_data;
 	if(create && sh.subshell && !sh.subshare)

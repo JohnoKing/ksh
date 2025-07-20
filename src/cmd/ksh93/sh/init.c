@@ -231,7 +231,7 @@ static noreturn void *nomemory(size_t s)
  * The following are wrapper functions for memory allocation.
  * These functions will error out if the allocation fails.
  */
-void *sh_malloc(size_t size)
+returns_nonnull void *sh_malloc(size_t size)
 {
 	void *cp;
 	cp = malloc(size);
@@ -240,7 +240,7 @@ void *sh_malloc(size_t size)
 	return cp;
 }
 
-void *sh_realloc(void *ptr, size_t size)
+returns_nonnull void *sh_realloc(void *ptr, size_t size)
 {
 	void *cp;
 	cp = realloc(ptr, size);
@@ -253,7 +253,7 @@ void *sh_realloc(void *ptr, size_t size)
 	return cp;
 }
 
-void *sh_calloc(size_t nmemb, size_t size)
+returns_nonnull void *sh_calloc(size_t nmemb, size_t size)
 {
 	void *cp;
 	cp = calloc(nmemb, size);
@@ -262,7 +262,7 @@ void *sh_calloc(size_t nmemb, size_t size)
 	return cp;
 }
 
-char *sh_strdup(const char *s)
+returns_nonnull char *sh_strdup(const char *s)
 {
 	char *dup;
 	dup = strdup(s);
@@ -271,7 +271,7 @@ char *sh_strdup(const char *s)
 	return dup;
 }
 
-void *sh_memdup(const void *s, size_t n)
+returns_nonnull void *sh_memdup(const void *s, size_t n)
 {
 	void *dup;
 	dup = memdup(s, n);

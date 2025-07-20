@@ -9,6 +9,20 @@ std	noreturn note{ noreturn ok }end compile{
 	int main(void) { foo(); }
 }end
 
+tst	returns_nonnull - -Werror=attributes note{ returns_nonnull ok }end compile{
+	#include <stdlib.h>
+	__attribute__((__returns_nonnull__)) char *foobar(void)
+	{
+		return "barfoo";
+	}
+	int main(void)
+	{
+		if(foobar())
+			return 0;
+		return 1;
+	}
+}end
+
 cat{
 	#if __clang__
 	#pragma clang diagnostic ignored "-Wmissing-braces"
@@ -76,6 +90,12 @@ cat{
 	#endif /* _std_noreturn */
 
 	#include <stdbool.h>
+
+	#if _returns_nonnull
+	#define returns_nonnull __attribute__((__returns_nonnull__))
+	#else
+	#define returns_nonnull
+	#endif
 }end
 
 if	tst - note{ <stdarg.h>+<wchar.h> works }end compile{
