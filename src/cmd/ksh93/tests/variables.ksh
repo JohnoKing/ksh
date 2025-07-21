@@ -384,7 +384,7 @@ set -- "${@-}"
 if	(( $# !=1 ))
 then	err_exit	'"${@-}" not expanding to null string'
 fi
-for i in : % + / 3b '**' '***' '@@' '{' '[' '}' !!  '*a' '$foo'
+for i in : % + / 3b '**' '***' '@@' '{' '[' '}' !!  '*a' '$$'
 do      (eval : \${"$i"} 2> /dev/null) && err_exit "\${$i} not an syntax error"
 done
 
@@ -1768,6 +1768,51 @@ got=$(./issue861.sh 2>&1)
 [[ e=$? -eq 0 && -z $got ]] || err_exit "variable name length corrupted when reading across buffer boundary" \
 	"(got status $e, $(printf %q "$got"))"
 unset i
+
+# ======
+# Tests for the ${$var} feature backported from ksh93v-
+unset foo bar
+bar=correct
+foo=bar
+[[ ${$foo} == correct ]] || err_exit "\${\$foo} doesn't point to \$bar" \
+	"(expected '$bar', got $(printf %q "${$foo}"))"
+
+set abc def
+abc=foo
+def=bar
+[[ ${$2:1:1} == a ]] || err_exit '${$2:1:1} not correct with $2=def and def=bar'
+OPTIND=2
+[[ ${$OPTIND:1:1} == e ]] || err_exit '${$OPTIND:1:1} not correct with OPTIND=2 and $2=def'
+
+# If bar is set and expands to a variable that isn't set, we should get an empty string
+got=$("$SHELL" -c '
+	function foo {
+		print ${$bar}
+		print ${$bar:1:1}
+	}
+	bar=set_paramater_is_not_a_var
+	foo
+	exit 0
+')
+[[ -z "$got" ]] || err_exit "\${\$bar} produces unexpected results when \$bar expands to the name of an unset variable" \
+	"(got $(printf %q "$got"))"
+
+# If bar is not set and the syntax is valid, we should get an empty string
+got=$("$SHELL" -c '
+	unset bar
+	echo ${$bar}
+	echo ${$bar:0:1}
+')
+[[ -z $got ]] || err_exit "\${\$bar} should produce an empty string when the variable bar is not set" \
+	"(got $(printf %q "$got"))"
+
+# If bar is not set and the syntax is invalid, we should get a syntax error
+got=$(set +x; "$SHELL" -c '
+	unset bar
+	echo ${$bar:^&^&garbage*^&^}
+' 2>&1)
+(($? == 1)) || err_exit "\${\$bar:^&^&garbage*^&^} should produce a syntax error" \
+	"(got $(printf %q "$got"))"
 
 # ======
 exit $((Errors<125?Errors:125))
