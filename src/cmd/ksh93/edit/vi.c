@@ -56,7 +56,7 @@
 #   define gencpy(a,b)	ed_gencpy(a,b)
 #   define genncpy(a,b,n)	ed_genncpy(a,b,n)
 #   define genlen(str)	ed_genlen(str)
-#   define digit(c)	iswdigit(c)
+#   define digit(c)	iswdigit((wint_t)(c))
     static int _isalph(int);
     static int _isblank(int);
 #   undef  isblank
@@ -2579,7 +2579,7 @@ yankeol:
 #if SHOPT_MULTIBYTE
     static int _isalph(int v)
     {
-	return iswalnum(v) || v=='_';
+	return iswalnum((wint_t)v) || v=='_';
     }
 
 

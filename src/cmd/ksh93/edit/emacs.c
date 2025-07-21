@@ -78,7 +78,7 @@ One line screen editor for any program
 #   define genlen(str)	ed_genlen(str)
     static int	_isword(int);
 #   define  isword(c)	_isword(out[c])
-#   define digit(c)	iswdigit(c)
+#   define digit(c)	iswdigit((wint_t)(c))
 
 #else
 #   define gencpy(a,b)	strcopy((char*)(a),(char*)(b))
@@ -1582,7 +1582,7 @@ static void setcursor(Emacs_t *ep,int newp,int c)
 #if SHOPT_MULTIBYTE
 static int _isword(int c)
 {
-	return iswalnum(c) || c=='_';
+	return iswalnum((wint_t)c) || c=='_';
 }
 #endif /* SHOPT_MULTIBYTE */
 

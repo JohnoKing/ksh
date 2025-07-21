@@ -84,9 +84,9 @@
 #   if _hdr_wctype
 #       include <wctype.h>
 #       undef  isalpha
-#       define isalpha(x)      iswalpha(x)
+#       define isalpha(x)      iswalpha((wint_t)(x))
 #       undef  isblank
-#       define isblank(x)      iswblank(x)
+#       define isblank(x)      iswblank((wint_t)(x))
 #   endif
 #endif
 #ifndef isblank
