@@ -47,7 +47,7 @@
  * malloc'd space returned by successful pathtemp() calls
  * must be freed by the caller
  *
- * generated names are pseudo-randomized to avoid both
+ * generated names are pseudorandomized to avoid both
  * collisions and predictions (same alg in sfio/sftmp.c)
  *
  * / as first pfx char provides tmp file generation control
@@ -60,17 +60,14 @@
  *	/prefix		dir specifies the default prefix (default AST)
  *	/private	private file/dir modes
  *	/public		public file/dir modes
- *	/seed		dir specifies pseudo-random generator seed
- *			0 or "0" to re-initialize
  *	/TMPPATH	dir overrides the env value
  *	/TMPDIR		dir overrides the env value
  */
 
 #include <ast.h>
 #include <ls.h>
-#include <tv.h>
-#include <tm.h>
 #include <error.h>
+#include "FEATURE/random"
 
 #define ATTEMPT		10
 
@@ -116,18 +113,14 @@ err:
 
 static struct
 {
-	mode_t		mode;
 	char**		vec;
 	char**		dir;
-	uint32_t	key;
-	uint32_t	rng;
-	pid_t		pid;
+	mode_t		mode;
 	int		manual;
-	int		seed;
 	char*		pfx;
 	char*		tmpdir;
 	char*		tmppath;
-} tmp = { S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH };
+} tmp = { .mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH };
 
 char*
 pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
@@ -136,15 +129,14 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	char*		b;
 	char*		s;
 	char*		x;
-	uint32_t	key;
+	uint32_t	num;
 	int		n;
 	ptrdiff_t	m;
 	ptrdiff_t	l;
 	ptrdiff_t	r;
 	int		z;
 	int		attempt;
-	Tv_t		tv;
-	char		keybuf[16];
+	char		numbuf[16];
 
 	if (pfx && *pfx == '/')
 	{
@@ -178,11 +170,6 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 			tmp.mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH;
 			return (char*)pfx;
 		}
-		else if (streq(pfx, "seed"))
-		{
-			tmp.key = (tmp.seed = (tmp.rng = dir ? (uint32_t)strtoul(dir, NULL, 0) : (uint32_t)1) != 0)? (uint32_t)0x63c63cd9L : 0;
-			return (char*)pfx;
-		}
 		else if (streq(pfx, TMP_ENV))
 		{
 			if (tmp.vec)
@@ -209,10 +196,6 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 		}
 		return NULL;
 	}
-	if (tmp.seed)
-		tv.tv_nsec = 0;
-	else
-		tvgettime(&tv);
 	if (!(d = (char*)dir) || (*d && xaccess(d, W_OK|X_OK)))
 	{
 		if (!tmp.vec)
@@ -320,38 +303,13 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	len -= (size_t)(s - b);
 	for (attempt = 0; attempt < ATTEMPT; attempt++)
 	{
-		if (!tmp.rng || !tmp.seed && (attempt || tmp.pid != getpid()))
-		{
-			uint32_t r;
-
-			/*
-			 * get a quasi-random coefficient
-			 */
-
-			tmp.pid = getpid();
-			tmp.rng = (uint32_t)tmp.pid * ((uint32_t)time(NULL) ^ (((uint32_t)integralof(&attempt)) >> 3) ^ (((uint32_t)integralof(tmp.dir)) >> 3));
-			if (!tmp.key)
-				tmp.key = (tmp.rng >> 16) | ((tmp.rng & 0xffff) << 16);
-			tmp.rng ^= tmp.key;
-
-			/*
-			 * Knuth vol.2, page.16, Thm.A
-			 */
-
-			if ((r = (tmp.rng - 1) & 03))
-				tmp.rng += 4 - r;
-		}
-
 		/*
-		 * generate a pseudo-random name
+		 * generate a pseudorandom name using arc4random(3)
 		 */
 
-		key = tmp.rng * tmp.key + tv.tv_nsec;
-		if (!tmp.seed)
-			tvgettime(&tv);
-		tmp.key = tmp.rng * key + tv.tv_nsec;
-		sfsprintf(keybuf, sizeof(keybuf), "%07.7.32I*u%07.7.32I*u", sizeof(key), key, sizeof(tmp.key), tmp.key);
-		sfsprintf(s, len, "%-.*s%s%-.*s", l, keybuf, z ? "." : "", r, keybuf + sizeof(keybuf) / 2);
+		num = arc4random();
+		sfsprintf(numbuf, sizeof(numbuf), "%07.7.32I*u%07.7.32I*u", sizeof(num), num, sizeof(num), (num >> 16) | ((num & 0xffff) << 16));
+		sfsprintf(s, len, "%-.*s%s%-.*s", l, numbuf, z ? "." : "", r, numbuf + sizeof(numbuf) / 2);
 		if (fdp)
 		{
 			if ((n = open(b, O_CREAT|O_RDWR|O_EXCL|O_TEMPORARY, tmp.mode)) >= 0)

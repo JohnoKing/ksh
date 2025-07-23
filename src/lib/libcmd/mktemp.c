@@ -18,7 +18,7 @@
 ***********************************************************************/
 
 static const char usage[] =
-"[-?\n@(#)$Id: mktemp (AT&T Research) 2010-03-05 $\n]"
+"[-?\n@(#)$Id: mktemp (ksh 93u+m) 2025-07-23 $\n]"
 "[--catalog?" ERROR_CATALOG "]"
 "[+NAME?mktemp - make temporary file or directory]"
 "[+DESCRIPTION?\bmktemp\b creates a temporary file with optional base "
@@ -30,13 +30,13 @@ static const char usage[] =
     "have these attributes:]"
     "{"
 	"[+*?Lower case to avoid clashes on case ignorant filesystems.]"
-	"[+*?Pseudo-random part to deter denial of service attacks.]"
-	"[+*?Default pseudo-random part (no specific \bX...\b template) "
+	"[+*?Pseudorandom part to deter denial of service attacks.]"
+	"[+*?Default pseudorandom part (no specific \bX...\b template) "
 	    "formatted to accommodate 8.3 filesystems.]"
     "}"
 "[+?A consecutive trailing sequence of \bX\b's in \aprefix\a is replaced "
-    "by the pseudo-random part. If there are no \bX\b's then the "
-    "pseudo-random part is appended to the prefix.]"
+    "by the pseudorandom part. If there are no \bX\b's then the "
+    "pseudorandom part is appended to the prefix.]"
 "[d:directory?Create a directory instead of a regular file.]"
 "[m:mode]:[mode?Set the mode of the created temporary to \amode\a. "
     "\amode\a is symbolic or octal mode as in \bchmod\b(1). Relative modes "
@@ -44,9 +44,6 @@ static const char usage[] =
 "[p:default?Use \adirectory\a if the \bTMPDIR\b environment variable is "
     "not defined. Implies \b--tmp\b.]:[directory]"
 "[q:quiet?Suppress file and directory error diagnostics.]"
-"[R:regress?The pseudo random generator is seeded with \aseed\a instead "
-    "of process/system specific transient data. Use for testing "
-    "only. A seed of \b0\b is silently changed to \b1\b.]#[seed]"
 "[t:tmp|temporary-directory?Create a path rooted in a temporary "
     "directory.]"
 "[u:unsafe|dry-run?Check for file/directory existence but do not create. "
@@ -103,10 +100,6 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
 		case 'u':
 			unsafe = 1;
 			fdp = 0;
-			continue;
-		case 'R':
-			if (!pathtemp(NULL, 0, opt_info.arg, "/seed", NULL))
-				error(2, "%s: regression test initialization failed", opt_info.arg);
 			continue;
 		case ':':
 			error(2, "%s", opt_info.arg);

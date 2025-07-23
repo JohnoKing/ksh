@@ -1166,8 +1166,7 @@ make install virtual
 		make pathtemp.o
 			make path/pathtemp.c
 				prev include/error.h
-				prev include/tm.h
-				prev tv.h
+				prev FEATURE/random
 				prev include/ls.h
 				prev include/ast.h
 			done
