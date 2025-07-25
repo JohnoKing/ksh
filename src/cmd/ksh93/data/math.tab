@@ -46,20 +46,38 @@ f 1 exp10
 f 1 expm1
 f 1 exp2m1
 f 1 exp10m1
+f 2 fadd
 f 1 fabs abs
 f 2 fdim
+f 2 fdiv
+f 3 ffma
 i 1 finite
 f 1 float
 f 1 floor
 f 3 fma
 f 2 fmax
+f 2 fmaximum
+f 2 fmaximum_mag
+f 2 fmaximum_mag_num
+f 2 fmaximum_num
+f 2 fmaxmag
 f 2 fmin
+f 2 fminimum
+f 2 fminimum_mag
+f 2 fminimum_mag_num
+f 2 fminimum_num
+f 2 fminmag
 f 2 fmod
+f 2 fmul
 i 1 fpclassify
 i 1 fpclass
+f 2 fsqrt
+f 2 fsub
 f 2 hypot
 i 1 ilogb
 f 1 int
+i 1 iscanonical
+i 2 iseqsig
 i 1 isfinite
 i 2 isgreater
 i 2 isgreaterequal
@@ -70,6 +88,7 @@ i 2 islessequal
 i 2 islessgreater
 i 1 isnan
 i 1 isnormal
+i 1 issignaling
 i 1 issubnormal fpclassify=FP_SUBNORMAL
 i 2 isunordered
 i 1 iszero fpclassify=FP_ZERO fpclass=FP_NZERO|FP_PZERO {return a1==0.0||a1==-0.0;}
@@ -88,7 +107,9 @@ f 1 logb
 f 1 logp1
 f 1 nearbyint
 f 2 nextafter
+f 1 nextdown
 f 2 nexttoward
+f 1 nextup
 f 2 pow
 f 2 pown
 f 2 powr
@@ -96,9 +117,11 @@ f 2 remainder
 f 1 rint
 f 2 rootn
 f 1 round {Sfdouble_t r;Sflong_t y;y=floor(2*a1);r=rint(a1);if(2*a1==y)r+=(r<a1)-(a1<0);return r;}
+f 1 roundeven
 f 1 rsqrt
 f 2 scalb
 f 2 scalbn
+f 2 scalbln
 i 1 signbit
 f 1 sin
 f 1 sinh
