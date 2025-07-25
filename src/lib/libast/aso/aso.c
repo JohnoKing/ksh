@@ -165,7 +165,6 @@ Asometh_t*
 _asometh(int type, void* data)
 {
 	size_t		n;
-	size_t		i;
 	char*		e;
 	Asometh_t*	meth;
 	char*		name;
@@ -174,14 +173,14 @@ _asometh(int type, void* data)
 	{
 		if (!(meth = (Asometh_t*)data))
 			return method[0];
-		for (i = 0; i < elementsof(method) - 1; i++)
+		for (size_t i = 0; i < elementsof(method) - 1; i++)
 			if (meth == method[i])
 				return method[i+1];
 		return NULL;
 	}
 	if (type)
 	{
-		for (i = 0; i < elementsof(method); i++)
+		for (size_t i = 0; i < elementsof(method); i++)
 			if (method[i]->type & type)
 			{
 				method[i]->details = (char*)data;
@@ -192,7 +191,7 @@ _asometh(int type, void* data)
 	if (!(name = (char*)data))
 		return state.meth;
 	n = (e = strchr(name, ',')) ? (size_t)(e - name) : strlen(name);
-	for (i = 0; i < elementsof(method); i++)
+	for (size_t i = 0; i < elementsof(method); i++)
 		if (strncmp(name, method[i]->name, n) == 0)
 		{
 			if (e)
@@ -598,7 +597,6 @@ asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 		U16_8_t		v;
 		U16_8_t*	a;
 		ptrdiff_t	s;
-		ptrdiff_t	i;
 
 		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U16_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
@@ -610,7 +608,7 @@ asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 			v.c[s] = n;
 			if (_aso_cas16(&a->i, u.i, v.i) == u.i)
 				break;
-			for (i = 0;; i++)
+			for (ptrdiff_t i = 0;; i++)
 				if (i >= elementsof(u.c))
 					return a->c[s];
 				else if (i != s && u.c[i] != a->c[i])
@@ -625,7 +623,6 @@ asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 		U32_8_t		v;
 		U32_8_t*	a;
 		ptrdiff_t	s;
-		ptrdiff_t	i;
 
 		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U32_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
@@ -637,7 +634,7 @@ asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 			v.c[s] = n;
 			if (_aso_cas32(&a->i, u.i, v.i) == u.i)
 				break;
-			for (i = 0;; i++)
+			for (ptrdiff_t i = 0;; i++)
 				if (i >= elementsof(u.c))
 					return a->c[s];
 				else if (i != s && u.c[i] != a->c[i])
@@ -652,7 +649,6 @@ asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 		U64_8_t		v;
 		U64_8_t*	a;
 		ptrdiff_t	s;
-		ptrdiff_t	i;
 
 		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1));
 		a = (U64_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
@@ -664,7 +660,7 @@ asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
 			v.c[s] = n;
 			if (_aso_cas64(&a->i, u.i, v.i) == u.i)
 				break;
-			for (i = 0;; i++)
+			for (ptrdiff_t i = 0;; i++)
 				if (i >= elementsof(u.c))
 					return a->c[s];
 				else if (i != s && u.c[i] != a->c[i])
@@ -697,7 +693,6 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 		U32_16_t	v;
 		U32_16_t*	a;
 		ptrdiff_t	s;
-		ptrdiff_t	i;
 
 		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
 		a = (U32_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
@@ -709,7 +704,7 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 			v.c[s] = n;
 			if (_aso_cas32(&a->i, u.i, v.i) == u.i)
 				break;
-			for (i = 0;; i++)
+			for (ptrdiff_t i = 0;; i++)
 				if (i >= elementsof(u.c))
 					return a->c[s];
 				else if (i != s && u.c[i] != a->c[i])
@@ -724,7 +719,6 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 		U64_16_t	v;
 		U64_16_t*	a;
 		ptrdiff_t	s;
-		ptrdiff_t	i;
 
 		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
 		a = (U64_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
@@ -736,7 +730,7 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
 			v.c[s] = n;
 			if (_aso_cas64(&a->i, u.i, v.i) == u.i)
 				break;
-			for (i = 0;; i++)
+			for (ptrdiff_t i = 0;; i++)
 				if (i >= elementsof(u.c))
 					return a->c[s];
 				else if (i != s && u.c[i] != a->c[i])
@@ -769,7 +763,6 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
 		U64_32_t	v;
 		U64_32_t*	a;
 		ptrdiff_t	s;
-		ptrdiff_t	i;
 
 		s = (ptrdiff_t)(integralof(p) & (sizeof(u.i) - 1)) / 4;
 		a = (U64_32_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
@@ -781,7 +774,7 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
 			v.c[s] = n;
 			if (_aso_cas64(&a->i, u.i, v.i) == u.i)
 				break;
-			for (i = 0;; i++)
+			for (ptrdiff_t i = 0;; i++)
 				if (i >= elementsof(u.c))
 					return a->c[s];
 				else if (i != s && u.c[i] != a->c[i])

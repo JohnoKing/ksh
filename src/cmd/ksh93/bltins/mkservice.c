@@ -135,11 +135,10 @@ static int		(*covered_fdnotify)(int, int);
 
 static int fdclose(Service_t *sp, int fd)
 {
-	int i;
 	service_list[fd] = 0;
 	if(sp->fd==fd)
 		sp->fd = -1;
-	for(i=0; i < npoll; i++)
+	for(int i=0; i < npoll; i++)
 	{
 		if(file_list[i]==fd)
 		{
@@ -159,10 +158,9 @@ static int fdnotify(int fd1, int fd2)
 		(*covered_fdnotify)(fd1, fd2);
 	if(fd2!=SH_FDCLOSE)
 	{
-		int i;
 		service_list[fd2] = service_list[fd1];
 		service_list[fd1] = 0;
-		for(i=0; i < npoll; i++)
+		for(int i=0; i < npoll; i++)
 		{
 			if(file_list[i]==fd1)
 			{
@@ -211,7 +209,6 @@ static void process_stream(Sfio_t* iop)
 static int waitnotify(int fd, long timeout, int rw)
 {
 	Sfio_t	*special=0, **pstream;
-	int	i;
 
 	if (fd >= 0)
 		special = sh_fd2sfio(fd);
@@ -222,29 +219,29 @@ static int waitnotify(int fd, long timeout, int rw)
 			process_stream(pstream[ready++]);
 		if(special)
 			*pstream++ = special;
-		for(i=0; i < npoll; i++)
+		for(int i=0; i < npoll; i++)
 		{
 			if(service_list[file_list[i]])
 				*pstream++ = sh_fd2sfio(file_list[i]);
 		}
-		for(i=0; i < pstream-poll_list; i++)
+		for(int i=0; i < pstream-poll_list; i++)
 			sfset(poll_list[i],SFIO_WRITE,0);
 		nready = ready = 0;
 		errno = 0;
 #ifdef DEBUG
 		sfprintf(sfstderr,"before poll npoll=%d",pstream-poll_list);
-		for(i=0; i < pstream-poll_list; i++)
+		for(int i=0; i < pstream-poll_list; i++)
 			sfprintf(sfstderr," %d",sffileno(poll_list[i]));
 		sfputc(sfstderr,'\n');
 #endif
 		nready = sfpoll(poll_list,(int)(pstream-poll_list),(int)timeout);
 #ifdef DEBUG
 		sfprintf(sfstderr,"after poll nready=%d",nready);
-		for(i=0; i < nready; i++)
+		for(int i=0; i < nready; i++)
 			sfprintf(sfstderr," %d",sffileno(poll_list[i]));
 		sfputc(sfstderr,'\n');
 #endif
-		for(i=0; i < pstream-poll_list; i++)
+		for(int i=0; i < pstream-poll_list; i++)
 			sfset(poll_list[i],SFIO_WRITE,1);
 		if(nready<=0)
 			return errno? -1: 0;
@@ -344,11 +341,10 @@ static char* setdisc(Namval_t* np, const char* event, Namval_t* action, Namfun_t
 {
 	Service_t*	sp = (Service_t*)fp;
 	const char*	cp;
-	int		i;
 	size_t		n = strlen(event) - 1;
 	Namval_t*	nq;
 
-	for (i = 0; cp = disctab[i]; i++)
+	for (size_t i = 0; cp = disctab[i]; i++)
 	{
 		if (strncmp(event, cp, n))
 			continue;
@@ -377,8 +373,7 @@ static void putval(Namval_t* np, const char* val, nvflag_t flag, Namfun_t* fp)
 	nv_putv(np, val, flag, fp);
 	if (!val)
 	{
-		int i;
-		for(i=0; i < sh.lim.open_max; i++)
+		for(int i=0; i < sh.lim.open_max; i++)
 		{
 			if(service_list[i]==sp)
 			{

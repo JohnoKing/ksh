@@ -26,7 +26,7 @@
 
 Sfdouble_t sfgetd(Sfio_t* f)
 {
-	uchar		*s, *ends, c;
+	uchar		*s, c;
 	int		sign, exp;
 	ptrdiff_t	p;
 	Sfdouble_t	v;
@@ -48,7 +48,7 @@ Sfdouble_t sfgetd(Sfio_t* f)
 			goto done;
 		}
 
-		for(ends = s+p; s < ends; )
+		for(uchar *ends = s+p; s < ends; )
 		{	c = *s++;
 			v += SFUVALUE(c);
 			v = ldexpl(v,-SFIO_PRECIS);

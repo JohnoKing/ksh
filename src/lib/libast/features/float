@@ -953,17 +953,15 @@ tst	- note{ double exponent bitfoolery }end output{
 	int
 	main(void)
 	{
-		int			i;
-		int			j;
 		unsigned _ast_int4_t	e;
 		_ast_dbl_exp_t		a;
 		_ast_dbl_exp_t		b;
 		a.f = 1;
 		b.f = 2;
-		for (i = 0; i < sizeof(a.e) / sizeof(a.e[0]); i++)
+		for (int i = 0; i < (int)(sizeof(a.e) / sizeof(a.e[0])); i++)
 			if (e = a.e[i] ^ b.e[i])
 			{
-				for (j = i + 1; j < sizeof(a.e) / sizeof(a.e[0]); j++)
+				for (int j = i + 1; j < (int)(sizeof(a.e) / sizeof(a.e[0])); j++)
 					if (a.e[j] ^ b.e[j])
 						return 0;
 				printf("typedef union _ast_dbl_exp_u\n{\n\tuint32_t\t\te[sizeof(double)/4];\n\tdouble\t\t\tf;\n} _ast_dbl_exp_t;\n\n");
@@ -990,17 +988,15 @@ tst	- note{ long double exponent bitfoolery }end output{
 	int
 	main(void)
 	{
-		int			i;
-		int			j;
 		unsigned _ast_int4_t	e;
 		_ast_fltmax_exp_t	a;
 		_ast_fltmax_exp_t	b;
 		a.f = 1;
 		b.f = 2;
-		for (i = 0; i < sizeof(a.e) / sizeof(a.e[0]); i++)
+		for (int i = 0; i < (int)(sizeof(a.e) / sizeof(a.e[0])); i++)
 			if (e = a.e[i] ^ b.e[i])
 			{
-				for (j = i + 1; j < sizeof(a.e) / sizeof(a.e[0]); j++)
+				for (int j = i + 1; j < (int)(sizeof(a.e) / sizeof(a.e[0])); j++)
 					if (a.e[j] ^ b.e[j])
 						return 0;
 				printf("typedef union _fltmax_exp_u\n{\n\tuint32_t\t\te[sizeof(_ast_fltmax_t)/4];\n\t_ast_fltmax_t\t\tf;\n} _ast_fltmax_exp_t;\n\n");

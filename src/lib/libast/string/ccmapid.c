@@ -132,7 +132,6 @@ ccmaplist(Ccmap_t* mp)
 int
 ccmapid(const char* name)
 {
-	const Ccmap_t*	mp;
 	int		c;
 	const Ccmap_t*	bp;
 	ptrdiff_t	n;
@@ -140,7 +139,7 @@ ccmapid(const char* name)
 
 	bp = 0;
 	n = 0;
-	for (mp = maps; mp->name; mp++)
+	for (const Ccmap_t *mp = maps; mp->name; mp++)
 		if (strgrpmatch(name, mp->match, sub, elementsof(sub) / 2, STR_MAXIMAL|STR_LEFT|STR_ICASE))
 		{
 			if (!(c = name[sub[1]]))
@@ -161,9 +160,7 @@ ccmapid(const char* name)
 char*
 ccmapname(int id)
 {
-	const Ccmap_t*	mp;
-
-	for (mp = maps; mp->name; mp++)
+	for (const Ccmap_t *mp = maps; mp->name; mp++)
 		if (id == mp->ccode)
 			return (char*)mp->name;
 	return NULL;

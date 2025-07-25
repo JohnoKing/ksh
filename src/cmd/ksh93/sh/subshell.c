@@ -194,12 +194,9 @@ void sh_subfork(void)
 
 int nv_subsaved(Namval_t *np, nvflag_t flags)
 {
-	struct subshell	*sp;
-	struct Link		*lp, *lpprev;
-	for(sp = (struct subshell*)subshell_data; sp; sp=sp->prev)
+	for(struct subshell *sp = (struct subshell*)subshell_data; sp; sp=sp->prev)
 	{
-		lpprev = 0;
-		for(lp=sp->svar; lp; lpprev=lp, lp=lp->next)
+		for(struct Link *lp=sp->svar, *lpprev=NULL; lp; lpprev=lp, lp=lp->next)
 		{
 			if(lp->node==np)
 			{
@@ -535,7 +532,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		.pwdfd = -1	/* pwdfd should not be initialized to stdin */
 	};
 	struct subshell *sp = &sub_data;
-	int jmpval,isig,nsig=0,fatalerror=0,saveerrno=0;
+	int jmpval,nsig=0,fatalerror=0,saveerrno=0;
 	unsigned int savecurenv = sh.curenv;
 	int savejobpgid = job.curpgid;
 	int *saveexitval = job.exitval;
@@ -591,8 +588,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		sp->pwd = sh_strdup(sh.pwd);
 		sp->pwdfd = sh.pwdfd;
 #else
-		struct subshell *xp;
-		for(xp=sp->prev; xp; xp=xp->prev)
+		for(struct subshell *xp=sp->prev; xp; xp=xp->prev)
 		{
 			if(xp->pwdfd>0 && xp->pwd && strcmp(xp->pwd,sh.pwd)==0)
 			{
@@ -634,7 +630,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 			 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
 			 * so sh.st.trapcom needs a "deep copy" to properly save/restore pointers.
 			 */
-			for (isig = 0; isig < nsig; ++isig)
+			for (int isig = 0; isig < nsig; ++isig)
 			{
 				if(sh.st.trapcom[isig] == Empty)
 					savsig[isig] = Empty;
@@ -872,7 +868,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		sh.st.otrap = 0;
 		if(nsig)
 		{
-			for (isig = 0; isig < nsig; ++isig)
+			for (int isig = 0; isig < nsig; ++isig)
 				if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
 					free(sh.st.trapcom[isig]);
 			memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));

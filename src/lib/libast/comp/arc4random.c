@@ -212,10 +212,8 @@ _rs_rekey(unsigned char *dat, size_t datlen)
 	/* mix in optional user provided data */
 	if (dat)
 	{
-		size_t i, m;
-
-		m = minimum(datlen, KEYSZ + IVSZ);
-		for (i = 0; i < m; i++)
+		size_t m = minimum(datlen, KEYSZ + IVSZ);
+		for (size_t i = 0; i < m; i++)
 			rsx->rs_buf[i] ^= dat[i];
 	}
 	/* immediately reinit for backtracking resistance */
@@ -325,11 +323,10 @@ arc4random_buf(void *_buf, size_t n)
 void
 arc4random_buf(void *_buf, size_t n)
 {
-	size_t i;
 	u_int32_t r = 0;
 	char *buf = (char *)_buf;
 
-	for (i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	{
 		if (i % 4 == 0)
 			r = arc4random();

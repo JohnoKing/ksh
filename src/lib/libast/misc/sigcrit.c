@@ -57,7 +57,6 @@ signals[] =		/* held inside critical region	*/
 int
 sigcritical(int op)
 {
-	size_t			i;
 	static int		region;
 	static int		level;
 	static sigset_t		mask;
@@ -71,7 +70,7 @@ sigcritical(int op)
 			if (op & SIG_REG_SET)
 				level--;
 			sigemptyset(&nmask);
-			for (i = 0; i < elementsof(signals); i++)
+			for (size_t i = 0; i < elementsof(signals); i++)
 				if (op & signals[i].op)
 					sigaddset(&nmask, signals[i].sig);
 			sigprocmask(SIG_BLOCK, &nmask, &mask);
@@ -81,7 +80,7 @@ sigcritical(int op)
 	else if (op < 0)
 	{
 		sigpending(&nmask);
-		for (i = 0; i < elementsof(signals); i++)
+		for (size_t i = 0; i < elementsof(signals); i++)
 			if (region & signals[i].op)
 			{
 				if (sigismember(&nmask, signals[i].sig))

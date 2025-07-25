@@ -510,11 +510,10 @@ static void copyto(Mac_t *mp,int endch, char newquote)
 				first = fcseek(cp-first);
 				if(mbwide() && c > UCHAR_MAX)
 				{
-					ptrdiff_t	i;
 					unsigned char	mb[8];
 
 					n = mbconv((char*)mb, (wchar_t)c);
-					for(i=0;i<n;i++)
+					for(ptrdiff_t i=0;i<n;i++)
 						sfputc(stkp,mb[i]);
 				}
 				else
@@ -2080,9 +2079,8 @@ retry2:
 					}
 					else /* no multibyte */
 					{
-						char	*cp, *cq, *buf;
-						buf = sh_malloc((size_t)(match[1] - match[0]));
-						for (cp = v + match[0], cq = buf; cp < v + match[1]; cp++, cq++)
+						char *buf = sh_malloc((size_t)(match[1] - match[0]));
+						for (char *cp = v + match[0], *cq = buf; cp < v + match[1]; cp++, cq++)
 							*cq = (char)(c == '^' ? toupper(*cp) : tolower(*cp));
 						mac_copy(mp, buf, match[1] - match[0]);
 						free(buf);

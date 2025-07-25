@@ -166,7 +166,6 @@ dllnext(int flags)
 	void*			dll;
 #ifndef RTLD_NEXT
 #if _dll_DYNAMIC
-	struct link_map*	map;
 	char*			s;
 	char*			b;
 #endif
@@ -182,7 +181,7 @@ dllnext(int flags)
 #else
 	path = next;
 #if _dll_DYNAMIC
-	for (map = _DYNAMIC.ld_un.ld_1->ld_loaded; map; map = map->lm_next)
+	for (struct link_map *map = _DYNAMIC.ld_un.ld_1->ld_loaded; map; map = map->lm_next)
 	{
 		b = 0;
 		s = map->lm_name;

@@ -182,7 +182,6 @@
 		struct ldsym*	ldsym;
 		ulong		datareloc;
 		ulong		textreloc;
-		int		i;
 
 		/* data is relocated by the difference between
 		 * its virtual origin and where it was
@@ -196,7 +195,7 @@
 		ldhdr = ((char*)hdr+ hdr->s[hdr->a.o_snloader-1].s_scnptr);
 		ldsym =  (ldhdr+1);
 		/* search the exports symbols */
-		for(i=0; i < ldhdr->l_nsyms;ldsym++,i++)
+		for(int i=0; i < ldhdr->l_nsyms;ldsym++,i++)
 		{
 			char *symname,symbuf[9];
 			char *loc;

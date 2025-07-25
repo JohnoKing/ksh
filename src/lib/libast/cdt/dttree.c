@@ -35,7 +35,8 @@ typedef struct _dttree_s
 #ifdef CDT_DEBUG
 int dttreeprint(Dt_t* dt, Dtlink_t* here, int lev, char* (*objprintf)(void*) )
 {
-	int		k, rv;
+	int		rv;
+	size_t		k;
 	char		*obj, *endb, buf[1024];
 	Dtdisc_t	*disc = dt->disc;
 	Dttree_t	*tree = (Dttree_t*)dt->data;
@@ -44,7 +45,7 @@ int dttreeprint(Dt_t* dt, Dtlink_t* here, int lev, char* (*objprintf)(void*) )
 		return -1;
 
 	endb = buf; /* indentation */
-	for(k = 0; k < lev; ++k)
+	for(k = 0; (int)k < lev; ++k)
 		{ *endb++ = ' '; *endb++ = ' '; }
 
 	*endb++ = '(';
@@ -129,7 +130,7 @@ static void* tclear(Dt_t* dt)
 static void* tlist(Dt_t* dt, Dtlink_t* list, int type)
 {
 	void		*obj;
-	Dtlink_t	*last, *r, *t;
+	Dtlink_t	*last, *t;
 	Dttree_t	*tree = (Dttree_t*)dt->data;
 	Dtdisc_t	*disc = dt->disc;
 
@@ -137,7 +138,7 @@ static void* tlist(Dt_t* dt, Dtlink_t* list, int type)
 	{	if((list = tree->root) )
 		{	while((t = list->_left) ) /* make smallest object root */
 				RROTATE(list, t);
-			for(r = (last = list)->_rght; r; r = (last = r)->_rght)
+			for(Dtlink_t *r = (last = list)->_rght; r; r = (last = r)->_rght)
 			{	while((t = r->_left) ) /* no left children */
 					RROTATE(r,t);
 				last->_rght = r;
@@ -153,7 +154,7 @@ static void* tlist(Dt_t* dt, Dtlink_t* list, int type)
 	}
 	else /* if(type&DT_RESTORE) */
 	{	dt->data->size = 0;
-		for(r = list; r; r = t)
+		for(Dtlink_t *r = list; r; r = t)
 		{	t = r->_rght;
 			obj = _DTOBJ(disc,r);
 			if((*dt->meth->searchf)(dt, r, DT_RELINK) == obj )

@@ -422,8 +422,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		{
 			if (strip && !cmd_completion)
 			{
-				char **ptrcom;
-				for(ptrcom=com;*ptrcom;ptrcom++)
+				for(char **ptrcom=com;*ptrcom;ptrcom++)
 					/* trim directory prefix */
 					*ptrcom = path_basename(*ptrcom);
 			}

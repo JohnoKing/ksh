@@ -30,7 +30,6 @@
 void
 systrace(const char* id)
 {
-	size_t		n;
 	char*		out;
 	char*		s;
 	char		buf[PATH_MAX];
@@ -56,7 +55,7 @@ systrace(const char* id)
 	ov[0] = PROC_FD_DUP(open("/dev/null", O_WRONLY), 2, PROC_FD_PARENT|PROC_FD_CHILD);
 	ov[1] = 0;
 	sfsprintf(out, (size_t)(&buf[sizeof(buf)] - out), ".%d", (int)getpid());
-	for (n = 0; n < elementsof(trace); n++)
+	for (size_t n = 0; n < elementsof(trace); n++)
 		if (!procfree(procopen(trace[n], av + 1, NULL, ov, PROC_ARGMOD|PROC_GID|PROC_UID|(n == (elementsof(trace) - 1) ? PROC_CLEANUP : 0))))
 		{
 			sleep(1);

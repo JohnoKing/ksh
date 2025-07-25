@@ -336,7 +336,6 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 ptrdiff_t
 sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
 {
-	size_t		i;
 	ptrdiff_t	r;
 	Fmt_t		fmt = {
 		.handle = handle,
@@ -350,10 +349,10 @@ sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup
 	};
 
 	r = sfprintf(sp, "%!", &fmt) - fmt.invisible;
-	for (i = 0; i < elementsof(fmt.tmp); i++)
+	for (size_t i = 0; i < elementsof(fmt.tmp); i++)
 		if (fmt.tmp[i])
 			sfclose(fmt.tmp[i]);
-	for (i = 0; i < elementsof(fmt.re); i++)
+	for (size_t i = 0; i < elementsof(fmt.re); i++)
 		if (fmt.re[i])
 			regfree(fmt.re[i]);
 	return r;

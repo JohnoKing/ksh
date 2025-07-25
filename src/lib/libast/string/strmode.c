@@ -31,13 +31,10 @@ mode_t
 strmode(const char* s)
 {
 	int		c;
-	char*		t;
-	struct modeop*	p;
-	mode_t		mode;
+	mode_t		mode = 0;
 
-	mode = 0;
-	for (p = modetab; (c = *s++) && p < &modetab[MODELEN]; p++)
-		for (t = p->name; *t; t++)
+	for (struct modeop *p = modetab; (c = *s++) && p < &modetab[MODELEN]; p++)
+		for (char *t = p->name; *t; t++)
 			if (*t == c)
 			{
 				c = (int)(t - p->name);

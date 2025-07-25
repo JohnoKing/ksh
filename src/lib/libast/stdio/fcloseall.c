@@ -24,21 +24,18 @@
 int
 fcloseall(void)
 {
-	Sfpool_t*	p;
 	Sfpool_t*	next;
-	int		n;
 	int		nclose;
 	int		count;
-	int		loop;
 
-	for(loop = 0; loop < MAXLOOP; ++loop)
+	for(int loop = 0; loop < MAXLOOP; ++loop)
 	{	nclose = count = 0;
-		for(p = &_Sfpool; p; p = next)
+		for(Sfpool_t *p = &_Sfpool; p; p = next)
 		{	/* find the next legitimate pool */
 			for(next = p->next; next; next = next->next)
 				if(next->n_sf > 0)
 					break;
-			for(n = 0; n < ((p == &_Sfpool) ? p->n_sf : 1); ++n)
+			for(int n = 0; n < ((p == &_Sfpool) ? p->n_sf : 1); ++n)
 			{	count += 1;
 				if(sfclose(p->sf[n]) >= 0)
 					nclose += 1;

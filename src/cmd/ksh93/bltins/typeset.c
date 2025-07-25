@@ -1074,13 +1074,12 @@ static int		maxlib;
  */
 int sh_addlib(void* dll, char* name, Pathcomp_t* pp)
 {
-	int		n;
 	int		r;
 	Libinit_f	initfn;
 	Shbltin_t	*sp = &sh.bltindata;
 
 	sp->nosfio = 0;
-	for (n = r = 0; n < nlib; n++)
+	for (int n = r = 0; n < nlib; n++)
 	{
 		if (r)
 			liblist[n-1] = liblist[n];
@@ -1111,9 +1110,7 @@ int sh_addlib(void* dll, char* name, Pathcomp_t* pp)
 
 Shbltin_f sh_getlib(char* sym, Pathcomp_t* pp)
 {
-	int	n;
-
-	for (n = 0; n < nlib; n++)
+	for (int n = 0; n < nlib; n++)
 		if (liblist[n].ino == pp->ino && liblist[n].dev == pp->dev)
 			return (Shbltin_f)dlllook(liblist[n].dll, sym);
 	return 0;
@@ -1128,7 +1125,7 @@ Shbltin_f sh_getlib(char* sym, Pathcomp_t* pp)
 int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 {
 	char *arg=0, *name;
-	int n, r=0;
+	int r=0;
 	ptrdiff_t offset;
 	nvflag_t flag=0;
 	Namval_t *np;
@@ -1145,7 +1142,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 	stkp = sh.stk;
 	if(!sh.pathlist)
 		path_absolute(argv[0],NULL,0);
-	while (n = optget(argv,sh_optbuiltin)) switch (n)
+	while (r = optget(argv,sh_optbuiltin)) switch (r)
 	{
 	    case 's':
 		flag = BLT_SPC;
@@ -1214,7 +1211,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 	{
 #if SHOPT_DYNAMIC
 		if(tdata.prefix)
-			for(n = 0; n < nlib; n++)
+			for(int n = 0; n < nlib; n++)
 				sfprintf(sfstdout, "%s -f %s\n", tdata.prefix, liblist[n].lib);
 #endif
 		print_scan(sfstdout, flag, sh.bltin_tree, 1, &tdata);
@@ -1243,14 +1240,14 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
 		addr = 0;
 #if SHOPT_DYNAMIC
 		if(dlete || liblist)
-			for(n=(nlib?nlib:dlete); --n>=0;)
+			for(int n=(nlib?nlib:dlete); --n>=0;)
 			{
 				if(!dlete && !liblist[n].dll)
 					continue;
 				if(dlete || (addr = (Shbltin_f)dlllook(liblist[n].dll,stkptr(stkp,offset))))
 #else
 		if(dlete)
-			for(n=dlete; --n>=0;)
+			for(int n=dlete; --n>=0;)
 			{
 				if(dlete)
 #endif /* SHOPT_DYNAMIC */
@@ -1557,9 +1554,8 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
 			sfwrite(file,"()",2);
 		else if(rp)
 		{
-			int i;
 			/* output function reference list (for .sh.math.* functions) */
-			for(i = 0; i < rp->argc; i++)
+			for(int i = 0; i < rp->argc; i++)
 				sfprintf(file," %s",rp->argv[i]);
 		}
 		if(rp && rp->ptree)

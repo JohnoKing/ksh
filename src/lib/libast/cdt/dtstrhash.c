@@ -41,8 +41,8 @@ uint dtstrhash(uint h, void* args, ssize_t n)
 			h = (h ^ s[0]) * FNV_PRIME;
 	}
 	else
-	{	unsigned char*	ends;
-		for(ends = s+n; s < ends; ++s)
+	{
+		for(unsigned char *ends = s+n; s < ends; ++s)
 			h = (h ^ s[0]) * FNV_PRIME;
 	}
 

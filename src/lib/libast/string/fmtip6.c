@@ -51,7 +51,6 @@ fmtip6(const unsigned char* addr, int bits)
 {
 	const unsigned char*	a = addr;
 	int			n = IP6ADDR;
-	int			i;
 	int			z;
 	int			k;
 	int			m;
@@ -71,7 +70,7 @@ fmtip6(const unsigned char* addr, int bits)
 		s = dec(s, ".", a[4]);
 		s = dec(s, ".", a[5]);
 	}
-	for (i = z; i < n; i += 2)
+	for (int i = z; i < n; i += 2)
 	{
 		for (k = i; i < n - 1 && !a[i] && !a[i + 1]; i += 2);
 		if ((r[k] = (unsigned char)(i - k)) > r[m] || r[k] == r[m] && i >= (n - 1))
@@ -105,7 +104,7 @@ fmtip6(const unsigned char* addr, int bits)
 			}
 			break;
 		}
-	for (i = z; i < n; i++)
+	for (int i = z; i < n; i++)
 	{
 		if (i == m)
 		{

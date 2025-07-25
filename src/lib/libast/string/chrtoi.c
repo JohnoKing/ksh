@@ -31,11 +31,10 @@ chrtoi(const char* s)
 {
 	int	c;
 	int	x;
-	size_t	n;
 	char*	p;
 
 	c = 0;
-	for (n = 0; n < sizeof(int) * CHAR_BIT; n += CHAR_BIT)
+	for (size_t n = 0; n < sizeof(int) * CHAR_BIT; n += CHAR_BIT)
 	{
 		switch (x = *((unsigned char*)s++))
 		{

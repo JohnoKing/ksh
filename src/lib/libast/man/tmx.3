@@ -629,7 +629,6 @@ Low level support functions and data are described in
 .EX
 #include <tm.h>
 int main(void) {
-    int       i;
     time_t    t;
     char      buf[128];
     struct {
@@ -642,7 +641,7 @@ int main(void) {
         "last December 25",    "%A",
         0,                     0
     };
-    for (i = 0; x[i].date; i++) {
+    for (size_t i = 0; x[i].date; i++) {
         t = tmdate(x[i].date, NULL, NULL);
         (void)tmform(buf, x[i].format, &t);
         puts(buf);

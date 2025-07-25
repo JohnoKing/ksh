@@ -434,7 +434,6 @@ static const Section_t	sections[] =
 static char*
 secname(char* section)
 {
-	size_t		i;
 	char*		b;
 	char*		t;
 	const char*	s;
@@ -458,7 +457,7 @@ secname(char* section)
 			t = stpcpy(t, s);
 	}
 	s = NULL;
-	for (i = 0; i < elementsof(sections); i++)
+	for (size_t i = 0; i < elementsof(sections); i++)
 	{
 		if (section[0] == sections[i].section[0] && (section[1] == sections[i].section[1] || !sections[i].section[1]))
 		{
@@ -657,11 +656,10 @@ match(char* s, char* t, int version, const char* id, const char* catalog)
 	char*	x;
 	char*	xw;
 	char*	ww;
-	int	n;
 	int	v;
 	int	j;
 
-	for (n = 0; n < 2; n++)
+	for (int n = 0; n < 2; n++)
 	{
 		if (n)
 			x = t;
@@ -772,9 +770,8 @@ static void*
 search(const void* tab, size_t num, size_t siz, char* s)
 {
 	char*	p;
-	char*	e;
 
-	for (e = (p = (char*)tab) + num * siz; p < e; p += siz)
+	for (char *e = (p = (char*)tab) + num * siz; p < e; p += siz)
 		if (match(s, *((char**)p), -1, NULL, NULL))
 			return p;
 	return NULL;
@@ -876,14 +873,12 @@ expand(char* s, char* e, char** p, Sfio_t* ip, char* id)
 static void
 initdict(void)
 {
-	size_t	n;
-
 	state.vp = sfstropen();
 	state.msgdisc.key = offsetof(Msg_t, text);
 	state.msgdisc.size = -1;
 	state.msgdisc.link = offsetof(Msg_t, link);
 	if (state.msgdict = dtopen(&state.msgdisc, Dtset))
-		for (n = 0; n < elementsof(C_LC_MESSAGES_libast); n++)
+		for (size_t n = 0; n < elementsof(C_LC_MESSAGES_libast); n++)
 			dtinsert(state.msgdict, C_LC_MESSAGES_libast + n);
 }
 

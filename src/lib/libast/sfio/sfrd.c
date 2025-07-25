@@ -27,12 +27,10 @@
 
 /* synchronize unseekable write streams */
 static void _sfwrsync(void)
-{	Sfpool_t*	p;
-	Sfio_t*		f;
-	int		n;
+{	Sfio_t*		f;
 
 	/* sync all pool heads */
-	for(p = _Sfpool.next; p; p = p->next)
+	for(Sfpool_t *p = _Sfpool.next; p; p = p->next)
 	{	if(p->n_sf <= 0)
 			continue;
 		f = p->sf[0];
@@ -42,7 +40,7 @@ static void _sfwrsync(void)
 	}
 
 	/* and all the ones in the discrete pool */
-	for(n = 0; n < _Sfpool.n_sf; ++n)
+	for(int n = 0; n < _Sfpool.n_sf; ++n)
 	{	f = _Sfpool.sf[n];
 
 		if(!SFFROZEN(f) && f->next > f->data &&
@@ -55,7 +53,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 {
 	Sfoff_t		r;
 	Sfdisc_t*	dc;
-	int		local, dosync, oerrno;
+	int		local, oerrno;
 	uint32_t	rcrv;
 
 	if(!f)
@@ -89,7 +87,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 		}
 	}
 
-	for(dosync = 0;;)
+	for(int dosync = 0;;)
 	{	/* stream locked by sfsetfd() */
 		if(!(f->flags&SFIO_STRING) && f->file < 0)
 			return 0;

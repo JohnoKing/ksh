@@ -36,7 +36,6 @@
 ptrdiff_t
 swapop(const void* internal, const void* external, ptrdiff_t size)
 {
-	int	op;
 	ptrdiff_t z;
 	char	tmp[sizeof(intmax_t)];
 
@@ -45,7 +44,7 @@ swapop(const void* internal, const void* external, ptrdiff_t size)
 	if (z <= 1)
 		return 0;
 	if (z <= (ptrdiff_t)sizeof(intmax_t))
-		for (op = 0; op < z; op++)
+		for (int op = 0; op < z; op++)
 			if (!memcmp(internal, swapmem(op, external, tmp, (size_t)z), (size_t)z))
 			{
 				if (size < 0 && z == 4 && op == 3)

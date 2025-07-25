@@ -49,10 +49,10 @@ tst	lib_mmap note{ standard mmap interface that works }end execute{
 		if ((fd = open(file, O_CREAT|O_TRUNC|O_WRONLY, 0666)) < 0)
 			return 1;
 
-		for (i = 0; i < sizeof(buf); ++i)
+		for (i = 0; i < (int)sizeof(buf); ++i)
 			buf[i] = '0' + (i%10);
 		for (i = 0; i < WRITE; ++i)
-			if (write(fd,buf,sizeof(buf)) != sizeof(buf))
+			if (write(fd,buf,sizeof(buf)) != (ssize_t)sizeof(buf))
 				return Failed(file);
 		close(fd);
 
@@ -177,7 +177,8 @@ tst	note{ mmap is fast enough to be worth using }end output{
 	{
 		caddr_t		mm;
 		char		*t, *f;
-		int		i, fd, k, run;
+		int		fd;
+		size_t		i;
 		char		file[1024], buf[MAPSIZE];
 		struct tms	stm, etm;
 		clock_t		rdtm, mmtm;
@@ -193,17 +194,17 @@ tst	note{ mmap is fast enough to be worth using }end output{
 		for (i = 0; i < sizeof(buf); ++i)
 			buf[i] = '0' + (i%10);
 		for (i = 0; i < WRITE; ++i)
-			if (write(fd,buf,sizeof(buf)) != sizeof(buf))
+			if (write(fd,buf,sizeof(buf)) != (ssize_t)sizeof(buf))
 				return Failed(file);
 		close(fd);
 
 		/* read time */
 		times(&stm);
-		for(run = 0; run < RUN; ++run)
+		for(int run = 0; run < RUN; ++run)
 		{	if((fd = open(file, O_RDWR)) < 0)
 				return Failed(file);
 			for (i = 0; i < WRITE; ++i)
-			{	for(k = 0; k < MAPSIZE; k += BUFSIZE)
+			{	for(int k = 0; k < MAPSIZE; k += BUFSIZE)
 					if (read(fd,buf,BUFSIZE) != BUFSIZE)
 						return Failed(file);
 			}
@@ -214,10 +215,10 @@ tst	note{ mmap is fast enough to be worth using }end output{
 
 		/* mmap time */
 		times(&stm);
-		for(run = 0; run < RUN; ++run)
+		for(int run = 0; run < RUN; ++run)
 		{	if ((fd = open(file, O_RDWR)) < 0)
 				return Failed(file);
-			for(i = 0, mm = NULL; i < WRITE; ++i)
+			for (i = 0, mm = NULL; i < WRITE; ++i)
 			{	if(mm)
 					munmap(mm, MAPSIZE);
 				mm = (caddr_t)mmap(NULL, MAPSIZE,
@@ -231,7 +232,7 @@ tst	note{ mmap is fast enough to be worth using }end output{
 				   not do buffer copying.
 				*/
 				t = (char*)mm;
-				for(k = 0; k < MAPSIZE; k += BUFSIZE, t += BUFSIZE)
+				for(int k = 0; k < MAPSIZE; k += BUFSIZE, t += BUFSIZE)
 					memcpy(buf,t,(3*BUFSIZE)/4);
 			}
 			close(fd);
@@ -245,7 +246,6 @@ tst	note{ mmap is fast enough to be worth using }end output{
 			printf("#define _mmap_worthy	2	/* mmap is great */\n");
 		else if(4*mmtm <= 5*rdtm)
 			printf("#define _mmap_worthy	1	/* mmap is good */\n");
-
 		else
 			return 1;
 		return 0;

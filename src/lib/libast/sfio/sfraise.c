@@ -28,7 +28,7 @@ static int _sfraiseall(int	type,	/* type of event	*/
 {
 	Sfio_t		*f;
 	Sfpool_t	*p, *next;
-	int		n, rv;
+	int		rv;
 
 	rv = 0;
 	for(p = &_Sfpool; p; p = next)
@@ -36,7 +36,7 @@ static int _sfraiseall(int	type,	/* type of event	*/
 		for(next = p->next; next; next = next->next)
 			if(next->n_sf > 0)
 				break;
-		for(n = 0; n < p->n_sf; ++n)
+		for(int n = 0; n < p->n_sf; ++n)
 		{	f = p->sf[n];
 			if(sfraise(f, type, data) < 0)
 				rv -= 1;
@@ -49,7 +49,7 @@ int sfraise(Sfio_t*	f,	/* stream		*/
 	    int		type,	/* type of event	*/
 	    void*	data)	/* associated data	*/
 {
-	Sfdisc_t	*disc, *next, *d;
+	Sfdisc_t	*next, *d;
 	int		local, rv;
 
 	if(!f)
@@ -64,7 +64,7 @@ int sfraise(Sfio_t*	f,	/* stream		*/
 		return -1;
 	SFLOCK(f,local);
 
-	for(disc = f->disc; disc; )
+	for(Sfdisc_t *disc = f->disc; disc; )
 	{	next = disc->disc;
 		if(type == SFIO_FINAL)
 			f->disc = next;

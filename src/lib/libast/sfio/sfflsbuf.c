@@ -28,7 +28,7 @@
 ptrdiff_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
 		  ptrdiff_t	c)	/* if c>=0, c is also written out */
 {
-	ssize_t		n, w, written;
+	ssize_t		n, w;
 	uchar*		data;
 	uchar		outc;
 	int		local, isall;
@@ -39,7 +39,7 @@ ptrdiff_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream 
 
 	GETLOCAL(f,local);
 
-	for(written = 0;; f->mode &= (uint32_t)~SFIO_LOCK)
+	for(ssize_t written = 0;; f->mode &= (uint32_t)~SFIO_LOCK)
 	{	/* check stream mode */
 		if(SFMODE(f,local) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,local) < 0)
 			return -1;

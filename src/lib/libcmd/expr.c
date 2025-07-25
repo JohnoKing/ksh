@@ -180,7 +180,6 @@ static int getnode(State_t* state, Node_t *np)
 	ptrdiff_t i;
 	ptrdiff_t j;
 	ptrdiff_t k;
-	size_t	l;
 	int	tok;
 	char*	ep;
 
@@ -306,7 +305,7 @@ static int getnode(State_t* state, Node_t *np)
 	if (!(cp = *state->arglist))
 		return 0;
 	state->arglist++;
-	for (l=0; l < sizeof(optable)/sizeof(*optable); l++)
+	for (size_t l=0; l < sizeof(optable)/sizeof(*optable); l++)
 		if (*cp==optable[l].opname[0] && cp[1]==optable[l].opname[1])
 			return optable[l].op;
 	error(ERROR_exit(2),"%s: unknown operator argument",cp);

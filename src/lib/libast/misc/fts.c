@@ -669,13 +669,12 @@ toplist(FTS* fts, char* const* pathnames)
 static void
 order(FTS* fts)
 {
-	FTSENT*	f;
 	FTSENT*	root;
 	FTSENT*			top;
 	FTSENT*			bot;
 
 	top = bot = root = 0;
-	for (f = fts->todo; f; f = f->fts_link)
+	for (FTSENT *f = fts->todo; f; f = f->fts_link)
 		root = search(f, root, fts->comparf, 1);
 	getlist(&top, &bot, root);
 	fts->todo = top;
@@ -807,7 +806,6 @@ fts_read(FTS* fts)
 	struct dirent*	d;
 	size_t		i;
 	FTSENT*		t;
-	Notify_t*	p;
 #ifdef verify
 	struct stat	sb;
 #endif
@@ -1400,7 +1398,7 @@ fts_read(FTS* fts)
 
 		}
  note:
-	for (p = notify; p; p = p->next)
+	for (Notify_t *p = notify; p; p = p->next)
 		if ((n = (*p->notifyf)(fts, f, p->context)) > 0)
 			break;
 		else if (n < 0)
@@ -1513,7 +1511,6 @@ fts_local(FTSENT* ent)
 int
 fts_close(FTS* fts)
 {
-	FTSENT*	f;
 	FTSENT*	x;
 
 	if (fts->dir)
@@ -1528,12 +1525,12 @@ fts_close(FTS* fts)
 		fts->bot->fts_link = fts->todo;
 		fts->todo = fts->top;
 	}
-	for (f = fts->todo; f; f = x)
+	for (FTSENT *f = fts->todo; f; f = x)
 	{
 		x = f->fts_link;
 		free(f);
 	}
-	for (f = fts->free; f; f = x)
+	for (FTSENT *f = fts->free; f; f = x)
 	{
 		x = f->fts_link;
 		free(f);

@@ -177,7 +177,6 @@ triedrop(regdisc_t* disc, Trie_node_t* e)
 void
 drop(regdisc_t* disc, Rex_t* e)
 {
-	int	i;
 	Rex_t*	x;
 
 	if (e && !(disc->re_flags & REG_NOFREE))
@@ -201,7 +200,7 @@ drop(regdisc_t* disc, Rex_t* e)
 				drop(disc, e->re.group.expr.rex);
 				break;
 			case REX_TRIE:
-				for (i = 0; i <= UCHAR_MAX; i++)
+				for (int i = 0; i <= UCHAR_MAX; i++)
 					triedrop(disc, e->re.trie.root[i]);
 				break;
 			}
@@ -1736,7 +1735,6 @@ bra(Cenv_t* env)
 static Rex_t*
 ccl(Cenv_t* env, int type)
 {
-	int		i;
 	Rex_t*		e;
 	Celt_t*		ce;
 	regclass_t	f;
@@ -1750,7 +1748,7 @@ ccl(Cenv_t* env, int type)
 	{
 		if (!(e = node(env, REX_CLASS, 1, 1, sizeof(Set_t))))
 			return NULL;
-		for (i = 0; i <= UCHAR_MAX; i++)
+		for (int i = 0; i <= UCHAR_MAX; i++)
 			if ((*f)(i))
 				setadd(e->re.charclass, i);
 		if (env->explicit >= 0)
@@ -2926,8 +2924,6 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 	Rex_t*			f;
 	regdisc_t*		disc;
 	unsigned char*		fold;
-	int			i;
-	size_t			j;
 	Cenv_t			env;
 
 	if (!p)
@@ -2947,14 +2943,14 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 	if (!state.initialized)
 	{
 		state.initialized = 1;
-		for (j = 0; j < elementsof(state.escape); j++)
+		for (size_t j = 0; j < elementsof(state.escape); j++)
 			state.magic[state.escape[j].key] = state.escape[j].val;
 	}
 	if (!(fold = (unsigned char*)LCINFO(AST_LC_CTYPE)->data))
 	{
 		if (!(fold = newof(0, unsigned char, UCHAR_MAX, 1)))
 			return fatal(disc, REG_ESPACE, pattern);
-		for (i = 0; i <= UCHAR_MAX; i++)
+		for (int i = 0; i <= UCHAR_MAX; i++)
 			fold[i] = (unsigned char)toupper(i);
 		LCINFO(AST_LC_CTYPE)->data = fold;
 	}
@@ -2977,7 +2973,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 	{
 		env.map = disc->re_map;
 		env.MAP = p->env->fold;
-		for (i = 0; i <= UCHAR_MAX; i++)
+		for (int i = 0; i <= UCHAR_MAX; i++)
 		{
 			env.MAP[i] = fold[env.map[i]];
 			if (env.map[i] == '.')

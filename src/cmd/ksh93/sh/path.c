@@ -111,7 +111,6 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 {
 	char *cp, **av, **xv;
 	char **avlast= &argv[sh.xargmax], **saveargs=0;
-	char *const *ev;
 	ptrdiff_t size, left;
 	size_t nlast=1,n;
 	int exitval=0;
@@ -122,7 +121,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 	if((size = astconf_long(CONF_ARG_MAX)) < 0)
 		size = 131072;
 	/* leave fairly generous space for the environment */
-	for(ev=envp; cp= *ev; ev++)
+	for(char *const *ev=envp; cp= *ev; ev++)
 	{
 		n = strlen(cp) + 1 + arg_extra;
 		size -= n + n / 2;
@@ -138,7 +137,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 		errno = E2BIG;
 		return -2;
 	}
-	av =  &argv[sh.xargmin];
+	av = &argv[sh.xargmin];
 	if(!spawn)
 		job_clear();
 	sh.exitval = 0;
@@ -333,7 +332,7 @@ static char *dotpaths_lib(Pathcomp_t *pp, char *path)
 static void checkdup(Pathcomp_t *pp)
 {
 	char		*name = pp->name;
-	Pathcomp_t	*oldpp,*first;
+	Pathcomp_t	*first;
 	int		flag=0;
 	struct stat	statb;
 	if(stat(name,&statb)<0 || !S_ISDIR(statb.st_mode))
@@ -348,7 +347,7 @@ static void checkdup(Pathcomp_t *pp)
 	if(*name=='/' && ondefpath(name))
 		flag = PATH_STD_DIR;
 	first = (pp->flags&PATH_CDPATH)?(Pathcomp_t*)sh.cdpathlist:path_get(Empty);
-	for(oldpp=first; oldpp && oldpp!=pp; oldpp=oldpp->next)
+	for(Pathcomp_t *oldpp=first; oldpp && oldpp!=pp; oldpp=oldpp->next)
 	{
 		if(pp->ino==oldpp->ino && pp->dev==oldpp->dev && pp->mtime==oldpp->mtime)
 		{
@@ -1519,7 +1518,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 	int fd;
 	ptrdiff_t n,m;
 	size_t k, l;
-	char *sp,*cp,*ep;
+	char *sp,*cp;
 	stkseek(sh.stk,offset+(ptrdiff_t)pp->len);
 	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
 		stkseek(sh.stk,offset);
@@ -1540,7 +1539,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 		n=read(fd,cp=sp,l);
 		sp[n] = 0;
 		ast_close(fd);
-		for(ep=0; n--; cp++)
+		for(char *ep=NULL; n--; cp++)
 		{
 			if(*cp=='=')
 			{
@@ -1670,9 +1669,9 @@ Pathcomp_t *path_dup(Pathcomp_t *first)
  */
 void path_newdir(Pathcomp_t *first)
 {
-	Pathcomp_t *pp=first, *next, *pq;
+	Pathcomp_t *next;
 	struct stat statb;
-	for(pp=first; pp; pp=pp->next)
+	for(Pathcomp_t *pp=first; pp; pp=pp->next)
 	{
 		pp->flags &= ~PATH_SKIP;
 		if(*pp->name=='/')
@@ -1693,12 +1692,12 @@ void path_newdir(Pathcomp_t *first)
 		pp->dev = statb.st_dev;
 		pp->ino = statb.st_ino;
 		pp->mtime = statb.st_mtime;
-		for(pq=first;pq!=pp;pq=pq->next)
+		for(Pathcomp_t *pq=first;pq!=pp;pq=pq->next)
 		{
 			if(pp->ino==pq->ino && pp->dev==pq->dev)
 				pp->flags |= PATH_SKIP;
 		}
-		for(pq=pp;pq=pq->next;)
+		for(Pathcomp_t *pq=pp;pq=pq->next;)
 		{
 			if(pp->ino==pq->ino && pp->dev==pq->dev)
 				pq->flags |= PATH_SKIP;

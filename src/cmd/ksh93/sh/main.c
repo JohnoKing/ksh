@@ -102,7 +102,6 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 	Sfio_t		*iop;
 	struct stat	statb;
 	int		i;
-	size_t		j;
 	int		rshflag;	/* set for restricted shell */
 	char		*command;
 #ifdef	_hdr_nc
@@ -138,11 +137,10 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 			sh_onoption(SH_INTERACTIVE);
 		if(sh_isoption(SH_INTERACTIVE))
 		{
-			const struct shtable2 *tp;
 			sh_onoption(SH_BGNICE);
 			sh_onoption(SH_RC);
 			/* preset aliases for interactive ksh/sh */
-			for(tp = shtab_aliases; *tp->sh_name; tp++)
+			for(const struct shtable2 *tp = shtab_aliases; *tp->sh_name; tp++)
 			{
 				Namval_t *np = sh_calloc(1,sizeof(Namval_t));
 				np->nvname = (char*)tp->sh_name;	/* alias name */
@@ -159,7 +157,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 		if(!sh_isoption(SH_RC) && !fstat(0, &statb) && REMOTE(statb.st_mode))
 			sh_onoption(SH_RC);
 #endif
-		for(j=0; j<elementsof(sh.offoptions.v); j++)
+		for(size_t j=0; j<elementsof(sh.offoptions.v); j++)
 			sh.options.v[j] &= ~sh.offoptions.v[j];
 		if(sh_isoption(SH_INTERACTIVE))
 		{
@@ -634,7 +632,7 @@ static void chkmail(char *files)
 {
 	char		*cp,*sp,*qp;
 	char		save;
-	struct argnod	*arglist=0;
+	struct argnod	*arglist=NULL;
 	ptrdiff_t	offset = stktell(sh.stk);
 	char	 	*savstak = stkptr(sh.stk,0);
 	struct stat	statb;
@@ -644,8 +642,8 @@ static void chkmail(char *files)
 	do
 	{
 		/* skip to : or end of string saving first '?' */
-		for(qp=0;*sp && *sp != ':';sp++)
-			if((*sp == '?' || *sp=='%') && qp == 0)
+		for(qp=NULL;*sp && *sp != ':';sp++)
+			if((*sp == '?' || *sp=='%') && !qp)
 				qp = sp;
 		save = *sp;
 		*sp = 0;
@@ -783,14 +781,13 @@ static void fixargs(char **argv, int mode)
 	static char *buff;
 	if(mode==0)
 	{
-		ptrdiff_t i;
 		buff = argv[0];
-		for(i=0; argv[i]; i++)
+		for(size_t i=0; argv[i]; i++)
 			buffsize += strlen(argv[i]) + 1;
 		if(buffsize < 128 && buff + buffsize == *environ)
 		{
 			/* Move the environment to make space for a larger command line buffer */
-			for(i=0; environ[i]; i++)
+			for(size_t i=0; environ[i]; i++)
 			{
 				buffsize += strlen(environ[i]) + 1;
 				environ[i] = sh_strdup(environ[i]);

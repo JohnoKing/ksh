@@ -38,14 +38,11 @@ modex(mode_t i)
 #if _S_IDPERM && _S_IDTYPE
 	return i;
 #else
-	mode_t	x;
-	mode_t	c;
-
-	x = 0;
+	mode_t	x = 0;
 #if _S_IDPERM
 	x |= (i & 07777);
 #else
-	for (c = 0; c < PERMLEN; c++)
+	for (mode_t c = 0; c < PERMLEN; c++)
 		if (i & permmap[c++])
 			x |= permmap[c];
 #endif

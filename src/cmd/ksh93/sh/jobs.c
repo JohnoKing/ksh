@@ -583,7 +583,6 @@ void job_init(void)
  */
 int job_close(void)
 {
-	struct process *pw;
 	int count = 0, running = 0;
 	if(possible && !job.jobcontrol)
 		return 0;
@@ -594,7 +593,7 @@ int job_close(void)
 	job_lock();
 	if(!tty_check(0))
 		beenhere++;
-	for(pw=job.pwlist;pw;pw=pw->p_nxtjob)
+	for(struct process *pw=job.pwlist;pw;pw=pw->p_nxtjob)
 	{
 		if(!(pw->p_flag&P_STOPPED))
 		{
@@ -986,7 +985,6 @@ int job_kill(struct process *pw,int sig)
  */
 int job_hup(struct process *pw, int sig)
 {
-	struct process	*px;
 	NOT_USED(sig);
 	if(pw->p_pgrp == 0 || (pw->p_flag & P_DISOWN))
 		return 0;
@@ -995,7 +993,7 @@ int job_hup(struct process *pw, int sig)
 	 * Only kill process group if we still have at least one process. If all the processes are P_DONE,
 	 * then our process group is already gone and its p_pgrp may now be used by an unrelated process.
 	 */
-	for(px = pw; px; px = px->p_nxtproc)
+	for(struct process *px = pw; px; px = px->p_nxtproc)
 	{
 		if(!(px->p_flag & P_DONE))
 		{
@@ -1204,9 +1202,8 @@ int job_post(pid_t pid, pid_t join)
  */
 static struct process *job_bypid(pid_t pid)
 {
-	struct process  *pw, *px;
-	for(pw=job.pwlist; pw; pw=pw->p_nxtjob)
-		for(px=pw; px; px=px->p_nxtproc)
+	for(struct process *pw=job.pwlist; pw; pw=pw->p_nxtjob)
+		for(struct process *px=pw; px; px=px->p_nxtproc)
 		{
 			if(px->p_pid==pid)
 				return px;
@@ -1518,9 +1515,8 @@ static void job_fgrp(struct process *pw, int newgrp)
  */
 static void job_unstop(struct process *px, int send_sigcont)
 {
-	struct process *pw;
 	int num = 0;
-	for(pw=px ;pw ;pw=pw->p_nxtproc)
+	for(struct process *pw=px ;pw ;pw=pw->p_nxtproc)
 	{
 		if(pw->p_flag&P_STOPPED)
 		{
@@ -1606,14 +1602,13 @@ static struct process *job_unpost(struct process *pwtop,int notify)
  */
 static void job_unlink(struct process *pw)
 {
-	struct process *px;
 	if(pw==job.pwlist)
 	{
 		job.pwlist = pw->p_nxtjob;
 		job.curpgid = 0;
 		return;
 	}
-	for(px=job.pwlist;px;px=px->p_nxtjob)
+	for(struct process *px=job.pwlist;px;px=px->p_nxtjob)
 		if(px->p_nxtjob == pw)
 		{
 			px->p_nxtjob = pw->p_nxtjob;
@@ -1749,12 +1744,11 @@ void *job_subsave(void)
 
 void job_subrestore(void* ptr)
 {
-	struct jobsave *jp;
 	struct back_save *bp = (struct back_save*)ptr;
 	struct process *pw, *px, *pwnext;
 	struct jobsave *end=NULL;
 	job_lock();
-	for(jp=bck.list; jp; jp=jp->next)
+	for(struct jobsave *jp=bck.list; jp; jp=jp->next)
 	{
 		if (!jp->next)
 			end = jp;

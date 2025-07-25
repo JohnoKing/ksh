@@ -151,17 +151,15 @@ context_line(Context_t* cp)
 int
 context_show(Context_t* cp)
 {
-	size_t		i;
-	size_t		j;
+	size_t		j = cp->curline;
 
-	j = cp->curline;
-	for (i = 0; i < cp->after; i++)
+	for (size_t i = 0; i < cp->after; i++)
 	{
 		if (++j >= cp->total)
 			j = 0;
 		cp->line[j].show = '-';
 	}
-	for (i = 0; i < cp->before; i++)
+	for (size_t i = 0; i < cp->before; i++)
 	{
 		if (++j >= cp->total)
 			j = 0;
@@ -179,9 +177,7 @@ context_show(Context_t* cp)
 int
 context_close(Context_t* cp)
 {
-	size_t		j;
-
-	for (j = 0; j < cp->total; j++)
+	for (size_t j = 0; j < cp->total; j++)
 	{
 		if (cp->line[j].drop)
 			free(cp->line[j].drop);

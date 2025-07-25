@@ -139,11 +139,10 @@ size_t path_expand(const char *pattern, struct argnod **arghead, int musttrim)
  */
 static size_t scantree(Dt_t *tree, const char *pattern, struct argnod **arghead)
 {
-	Namval_t *np;
 	struct argnod *ap;
 	size_t nmatch=0;
 	char *cp;
-	for(np=(Namval_t*)dtfirst(tree); np; np=(Namval_t*)dtnext(tree,np))
+	for(Namval_t *np=(Namval_t*)dtfirst(tree); np; np=(Namval_t*)dtnext(tree,np))
 	{
 		if(nv_isnull(np))
 			continue;

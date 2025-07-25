@@ -135,12 +135,11 @@ void hist_setchars(char *hc)
 {
 	Namval_t *np;
 	char *cp;
-	int i;
 	hc[0] = '!';
 	hc[1] = '^';
 	hc[2] = '#';
 	if((np = nv_open("histchars",sh.var_tree,NV_NOADD)) && (cp = nv_getval(np)))
-		for(i=0; i<3 && cp[i]; i++)
+		for(size_t i=0; i<3 && cp[i]; i++)
 			hc[i] = cp[i];
 }
 

@@ -31,7 +31,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 	ssize_t		n, now, sz, iosz;
 	Sfrsrv_t*	rsrv;
 	void*		data;
-	int		mode, local;
+	int		mode;
 
 	if(!f)
 		return NULL;
@@ -82,7 +82,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 	}
 
 	/* iterate until get to a stream that has data or buffer space */
-	for(local = 0;; local = SFIO_LOCAL)
+	for(int local = 0;; local = SFIO_LOCAL)
 	{	_Sfi = f->val = -1;
 
 		if(!mode && !(mode = f->flags&SFIO_READ) )

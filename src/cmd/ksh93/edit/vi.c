@@ -356,14 +356,12 @@ done:
 
 static void append(Vi_t *vp,int c, int mode)
 {
-	int i,j;
-
 	if( last_virt<max_col && last_phys<max_col )
 	{
 		if( mode==APPEND || (cur_virt==last_virt  && last_virt>=0))
 		{
-			j = (cur_virt>=0?cur_virt:0);
-			for(i = ++last_virt;  i > j; --i)
+			int j = (cur_virt>=0?cur_virt:0);
+			for(int i = ++last_virt;  i > j; --i)
 				virtual[i] = virtual[i-1];
 		}
 		virtual[++cur_virt] = (genchar)c;
@@ -1979,11 +1977,11 @@ static void save_v(Vi_t *vp)
 static int curline_search(Vi_t *vp, const char *string)
 {
 	size_t len=strlen(string);
-	const char *dp,*cp=string, *dpmax;
+	const char *cp=string;
 #if SHOPT_MULTIBYTE
 	ed_external(vp->u_space,(char*)vp->u_space);
 #endif /* SHOPT_MULTIBYTE */
-	for(dp=(char*)vp->u_space,dpmax=dp+strlen(dp)-len; dp<=dpmax; dp++)
+	for(const char *dp=(char*)vp->u_space,*dpmax=dp+strlen(dp)-len; dp<=dpmax; dp++)
 	{
 		if(strncmp(cp,dp,len)==0)
 			return (int)(dp - (char*)vp->u_space);

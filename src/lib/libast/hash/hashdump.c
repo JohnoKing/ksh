@@ -49,24 +49,22 @@ dumpflags(int flags)
 static void
 dumpbucket(Hash_table_t* tab, int flags)
 {
-	Hash_bucket_t**		sp;
-	Hash_bucket_t*		b;
 	Hash_bucket_t**		sx;
 	size_t			n;
 	unsigned char*		s;
 
 	NoP(flags);
 	sx = tab->table + tab->size;
-	for (sp = tab->table; sp < sx; sp++)
+	for (Hash_bucket_t **sp = tab->table; sp < sx; sp++)
 	{
 		n = 0;
-		for (b = *sp; b; b = b->next)
+		for (Hash_bucket_t *b = *sp; b; b = b->next)
 			if (!(b->hash & HASH_DELETED) && (!(tab->flags & HASH_VALUE) || b->value))
 				n++;
 		if (n)
 		{
 			sfprintf(sfstderr, "%5td %2zu :", sp - tab->table, n);
-			for (b = *sp; b; b = b->next)
+			for (Hash_bucket_t *b = *sp; b; b = b->next)
 				if (!(b->hash & HASH_DELETED) && (!(tab->flags & HASH_VALUE) || b->value))
 				{
 					if (n = tab->root->namesize)
@@ -130,8 +128,6 @@ dumptable(Hash_table_t* tab, int flags)
 static void
 dumproot(Hash_root_t* root, int flags)
 {
-	Hash_table_t*	tab;
-
 	sfprintf(sfstderr, "    root\n");
 	sfprintf(sfstderr, "        address:     0x%08lx\n", (unsigned long)root);
 	sfprintf(sfstderr, "        flags:       ");
@@ -147,7 +143,7 @@ dumproot(Hash_root_t* root, int flags)
 	sfprintf(sfstderr, "        accesses:    %d\n", root->accesses);
 	sfprintf(sfstderr, "        collisions:  %d\n", root->collisions);
 	sfprintf(sfstderr, "\n");
-	for (tab = root->references; tab; tab = tab->next)
+	for (Hash_table_t *tab = root->references; tab; tab = tab->next)
 		dumptable(tab, flags);
 }
 
@@ -160,11 +156,9 @@ dumproot(Hash_root_t* root, int flags)
 void
 hashdump(Hash_table_t* tab, int flags)
 {
-	Hash_root_t*	root;
-
 	sfprintf(sfstderr, "\nhash table information:\n\n");
 	if (tab) dumproot(tab->root, flags);
-	else for (root = hash_info.list; root; root = root->next)
+	else for (Hash_root_t *root = hash_info.list; root; root = root->next)
 		dumproot(root, flags);
 	sfsync(sfstderr);
 }

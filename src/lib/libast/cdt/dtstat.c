@@ -26,7 +26,7 @@
 
 ssize_t dtstat(Dt_t* dt, Dtstat_t* dtst)
 {
-	ssize_t	sz, k, maxk;
+	ssize_t	sz, maxk;
 	char	*str;
 	char	*end;
 
@@ -37,12 +37,12 @@ ssize_t dtstat(Dt_t* dt, Dtstat_t* dtst)
 	str += sfsprintf(str, (size_t)(end - str), "Objects=%zd Levels=%zd(Largest:", dtst->size, dtst->mlev+1);
 
 	/* print top 3 levels */
-	for(k = maxk = 0; k <= dtst->mlev; ++k)
+	for(ssize_t k = maxk = 0; k <= dtst->mlev; ++k)
 		if(dtst->lsize[k] > dtst->lsize[maxk])
 			maxk = k;
 	if(maxk > 0)
 		maxk -= 1;
-	for(k = 0; k < 3 && maxk <= dtst->mlev; ++k, ++maxk)
+	for(ssize_t k = 0; k < 3 && maxk <= dtst->mlev; ++k, ++maxk)
 		str += sfsprintf(str, (size_t)(end - str), " lev[%zd]=%zd", maxk, dtst->lsize[maxk] );
 	if (str < end)
 		*str++ = ')';

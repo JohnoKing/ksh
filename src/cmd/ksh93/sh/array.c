@@ -920,7 +920,7 @@ static Namarr_t *nv_changearray(Namval_t *np, void *(*fun)(Namval_t*,const char*
 {
 	Namarr_t *ap;
 	char numbuff[NUMSIZE+1];
-	unsigned dot, digit, n;
+	unsigned digit, n;
 	void **vpp;	/* pointer to value pointer */
 	struct index_array *save_ap;
 	char *string_index=&numbuff[NUMSIZE];
@@ -936,7 +936,7 @@ static Namarr_t *nv_changearray(Namval_t *np, void *(*fun)(Namval_t*,const char*
 	ap->fun = fun;
 	nv_onattr(np,NV_ARRAY);
 
-	for(dot = 0; dot < (unsigned)save_ap->maxi; dot++)
+	for(unsigned dot = 0; dot < (unsigned)save_ap->maxi; dot++)
 	{
 		if(save_ap->val[dot])
 		{
@@ -1207,14 +1207,13 @@ Namval_t *nv_putsub(Namval_t *np,char *sp,long mode)
 		{
 			if(!(mode&ARRAY_ADD))
 			{
-				ptrdiff_t n;
 				if(mode&ARRAY_SETSUB)
 				{
-					for(n=0; n <= ap->maxi; n++)
+					for(ptrdiff_t n=0; n <= ap->maxi; n++)
 						ap->val[n] = NULL;
 					ap->header.nelem = 0;
 				}
-				for(n=0; n <= size; n++)
+				for(ptrdiff_t n=0; n <= size; n++)
 				{
 					if(!ap->val[n])
 					{
@@ -1332,12 +1331,11 @@ ptrdiff_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 {
 	Namarr_t		*ap =  nv_arrayptr(np);
 	struct fixed_array	*fp = (struct fixed_array*)ap->fixed;
-	size_t			n;
 	if(flag)
 	{
 		if(out)
 		{
-			for(n=0; n < fp->dim; n++)
+			for(size_t n=0; n < fp->dim; n++)
 				sfprintf(out,"[%td]",fp->cur[n]);
 		}
 		if(dim)
@@ -1346,7 +1344,7 @@ ptrdiff_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 	}
 	if(out)
 	{
-		for(n=0; n < fp->ndim; n++)
+		for(size_t n=0; n < fp->ndim; n++)
 			sfprintf(out,"[%td]",fp->max[n]);
 	}
 	fp->dim = 0;

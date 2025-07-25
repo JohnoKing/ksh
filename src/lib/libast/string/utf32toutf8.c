@@ -51,13 +51,12 @@ static const Utf8_t	ops[] =
 size_t
 utf32toutf8(char* s, uint32_t w)
 {
-	size_t	i;
 	char*	b;
 	char	tmp[UTF8_LEN_MAX];
 
 	if (!s)
 		s = tmp;
-	for (i = 0; i < elementsof(ops); i++)
+	for (size_t i = 0; i < elementsof(ops); i++)
 	{
 		if (w < ops[i].range)
 		{

@@ -51,7 +51,6 @@
 
 Wc_t* wc_init(int mode)
 {
-	int	n;
 	int	w;
 	Wc_t*	wp;
 
@@ -66,12 +65,12 @@ Wc_t* wc_init(int mode)
 	else
 		wp->mb = -1;
 	w = mode & WC_WORDS;
-	for (n = (1<<CHAR_BIT); --n >= 0;)
+	for (int n = (1<<CHAR_BIT); --n >= 0;)
 		wp->type[n] = (w && isspace(n)) ? WC_SP : 0;
 	wp->type['\n'] = WC_SP|WC_NL;
 	if ((mode & (WC_MBYTE|WC_WORDS)) && wp->mb > 0)
 	{
-		for (n = 0; n < 64; n++)
+		for (int n = 0; n < 64; n++)
 		{
 			wp->type[0x80+n] |= WC_MB;
 			if (n<32)

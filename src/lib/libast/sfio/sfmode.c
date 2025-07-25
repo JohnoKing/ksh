@@ -56,9 +56,7 @@ static int		_Sfsigp = 0; /* # of streams needing SIGPIPE protection */
 /* done at exiting time */
 static void _sfcleanup(void)
 {
-	Sfpool_t*	p;
 	Sfio_t*		f;
-	int		n;
 	unsigned int	pool;
 
 	f = (Sfio_t*)Version; /* shut compiler warning */
@@ -68,8 +66,8 @@ static void _sfcleanup(void)
 
 	sfsync(NULL);
 
-	for(p = &_Sfpool; p; p = p->next)
-	{	for(n = 0; n < p->n_sf; ++n)
+	for(Sfpool_t *p = &_Sfpool; p; p = p->next)
+	{	for(int n = 0; n < p->n_sf; ++n)
 		{	if(!(f = p->sf[n]) || SFFROZEN(f) )
 				continue;
 

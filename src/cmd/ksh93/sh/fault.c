@@ -307,11 +307,10 @@ void	sh_sigtrap(int sig)
  */
 void	sh_sigdone(void)
 {
-	int 	flag, sig = sh.sigmax;
 	sh.sigflag[0] |= SH_SIGFAULT;
-	for(sig=sh.sigmax; sig>0; sig--)
+	for(int sig=sh.sigmax; sig>0; sig--)
 	{
-		flag = sh.sigflag[sig];
+		int flag = sh.sigflag[sig];
 		if((flag&(SH_SIGDONE|SH_SIGIGNORE|SH_SIGINTERACTIVE)) && !(flag&(SH_SIGFAULT|SH_SIGOFF)))
 			sh_sigtrap(sig);
 	}

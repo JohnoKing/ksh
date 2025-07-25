@@ -153,10 +153,10 @@ tst	- -lm - - output{
 			i = -1;
 		else
 		{
-			for (i = 0; i < sizeof(local) / sizeof(local[0]); i++)
+			for (i = 0; i < (int)(sizeof(local) / sizeof(local[0])); i++)
 				if (dlsym(dll, local[i]))
 					break;
-			if (i >= sizeof(local) / sizeof(local[0]))
+			if (i >= (int)(sizeof(local) / sizeof(local[0])))
 				i = -1;
 		}
 		if (i >= 0)

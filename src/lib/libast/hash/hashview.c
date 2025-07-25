@@ -39,10 +39,9 @@
 Hash_table_t*
 hashview(Hash_table_t* top, Hash_table_t* bot)
 {
-	Hash_bucket_t*		b;
 	Hash_bucket_t*		p;
-	Hash_bucket_t**	sp;
-	Hash_bucket_t**	sx;
+	Hash_bucket_t**		sp;
+	Hash_bucket_t**		sx;
 
 	if (!top || top->frozen)
 		bot = 0;
@@ -57,7 +56,7 @@ hashview(Hash_table_t* top, Hash_table_t* bot)
 			sx = &top->table[top->size];
 			sp = &top->table[0];
 			while (sp < sx)
-				for (b = *sp++; b; b = b->next)
+				for (Hash_bucket_t *b = *sp++; b; b = b->next)
 					if (p = (Hash_bucket_t*)hashlook(bot, b->name, HASH_LOOKUP, NULL))
 					{
 						b->name = (p->hash & HASH_HIDES) ? p->name : (char*)b;
@@ -72,7 +71,7 @@ hashview(Hash_table_t* top, Hash_table_t* bot)
 		sx = &top->table[top->size];
 		sp = &top->table[0];
 		while (sp < sx)
-			for (b = *sp++; b; b = b->next)
+			for (Hash_bucket_t *b = *sp++; b; b = b->next)
 				if (b->hash & HASH_HIDES)
 				{
 					b->hash &= (unsigned long)~HASH_HIDES;

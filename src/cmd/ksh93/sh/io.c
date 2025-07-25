@@ -222,7 +222,6 @@ inetopen(const char* path, int flags)
 	int			oerrno;
 	struct addrinfo		hint = { .ai_family = PF_UNSPEC };
 	struct addrinfo*	addr;
-	struct addrinfo*	p;
 	int			server = !!(flags&O_SERVICE);
 
 	switch (path[0])
@@ -283,7 +282,7 @@ inetopen(const char* path, int flags)
 	oerrno = errno;
 	errno = 0;
 	fd = -1;
-	for (p = addr; p; p = p->ai_next)
+	for (struct addrinfo *p = addr; p; p = p->ai_next)
 	{
 		/*
 		 * some APIs don't take the hint
@@ -1162,8 +1161,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 	 */
 	if(sh.subshell && sh.comsub && sh.redir0==1)
 	{
-		struct ionod *i;
-		for(i = iop; i; i = i->ionxt)
+		for(struct ionod *i = iop; i; i = i->ionxt)
 		{
 			if((i->iofile & IOUFD) != 1)
 				continue;
@@ -1777,10 +1775,10 @@ void	sh_iounsave(void)
  */
 void	sh_iorestore(int last, int jmpval)
 {
-	int origfd, savefd, fd;
+	int origfd, savefd;
 	int flag = (last&IOSUBSHELL);
 	last &= ~IOSUBSHELL;
-	for (fd = sh.topfd - 1; fd >= last; fd--)
+	for (int fd = sh.topfd - 1; fd >= last; fd--)
 	{
 		if(!flag && filemap[fd].subshell)
 			continue;
@@ -1836,7 +1834,7 @@ void	sh_iorestore(int last, int jmpval)
 	if(!flag)
 	{
 		/* keep file descriptors for subshell restore */
-		for (fd = last ; fd < sh.topfd; fd++)
+		for (int fd = last; fd < sh.topfd; fd++)
 		{
 			if(filemap[fd].subshell)
 				filemap[last++] = filemap[fd];
@@ -2302,8 +2300,7 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
 		sh.fdstatus[fd]=IOCLOSE;
 		if(pp=(struct checkpt*)sh.jmplist)
 		{
-			struct openlist *item;
-			for(item=pp->olist; item; item=item->next)
+			for(struct openlist *item=pp->olist; item; item=item->next)
 			{
 				if(item->strm == sp)
 				{

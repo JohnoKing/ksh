@@ -222,7 +222,6 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	Namval_t		*np;
 	char			*name, *val;
 	Sfio_t			*iop;
-	Namfun_t		*nfp;
 	char			*ifs;
 	unsigned char		*cpmax;
 	unsigned char		*del;
@@ -336,7 +335,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		}
 	}
 	sfclrerr(iop);
-	for(nfp=np->nvfun; nfp; nfp = nfp->next)
+	for(Namfun_t *nfp=np->nvfun; nfp; nfp = nfp->next)
 	{
 		if(nfp->disc && nfp->disc->readf)
 		{

@@ -120,7 +120,7 @@ static uchar* _sfsetclass(uchar*	form,	/* format string			*/
 			 Accept_t*	ac,	/* values of accepted characters	*/
 			 int		flags)	/* SFFMT_LONG for wchar_t		*/
 {
-	int		c, endc, n;
+	int		c, endc;
 	SFMBDCL(mbs)
 
 	if(*form == '^') /* complementing this set */
@@ -140,7 +140,7 @@ static uchar* _sfsetclass(uchar*	form,	/* format string			*/
 
 	if(flags&SFFMT_LONG)
 		SFMBCLR(&mbs);
-	for(n = 1; *form != ']'; form += n)
+	for(int n = 1; *form != ']'; form += n)
 	{	if((c = *((uchar*)form)) == 0)
 			return NULL;
 
@@ -173,13 +173,12 @@ static uchar* _sfsetclass(uchar*	form,	/* format string			*/
 static int _sfwaccept(wchar_t wc, Accept_t* ac)
 {
 	int	endc, c;
-	size_t	n;
 	wchar_t	fwc;
 	uchar	*form = ac->form;
 	SFMBDCL(mbs)
 
 	SFMBCLR(&mbs);
-	for(n = 1; *form != ']'; form += n)
+	for(size_t n = 1; *form != ']'; form += n)
 	{	if((c = *form) == 0)
 			return 0;
 

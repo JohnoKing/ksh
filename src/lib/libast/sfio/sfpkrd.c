@@ -54,8 +54,8 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 				*/
 {
 	ssize_t		r, q;
-	int		ntry, t;
-	char		*buf = (char*)argbuf, *endbuf;
+	int		t;
+	char		*buf = (char*)argbuf;
 
 	if(rc < 0 && tm < 0 && action <= 0)
 		return read(fd,buf,n);
@@ -68,7 +68,7 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 	t &= ~SOCKET_PEEK;
 #endif
 
-	for(ntry = 0; ntry < 2; ++ntry)
+	for(int ntry = 0; ntry < 2; ++ntry)
 	{
 		r = -1;
 #if _stream_peek
@@ -191,7 +191,7 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 			r = 0;
 			while((q = read(fd,buf,(size_t)action)) > 0)
 			{	r += q;
-				for(endbuf = buf+q; buf < endbuf;)
+				for(char *endbuf = buf+q; buf < endbuf;)
 					if(*buf++ == rc)
 						action -= 1;
 				if(action == 0 || ((int)n-(int)r) < action)
@@ -206,7 +206,7 @@ ssize_t sfpkrd(int	fd,	/* file descriptor */
 	{	char*	sp;
 
 		t = action == 0 ? 1 : action < 0 ? -action : action;
-		for(endbuf = (sp = buf)+r; sp < endbuf; )
+		for(char *endbuf = (sp = buf)+r; sp < endbuf; )
 			if(*sp++ == rc)
 				if((t -= 1) == 0)
 					break;

@@ -101,7 +101,6 @@ chacha_encrypt_bytes(chacha_ctx *x, const uint8_t *m, uint8_t *c, uint32_t bytes
 	uint32_t j0, j1, j2, j3, j4, j5, j6, j7, j8, j9, j10, j11, j12, j13, j14, j15;
 	uint8_t *ctarget = NULL;
 	uint8_t tmp[64];
-	uint32_t i;
 
 	if (!bytes)
 		return;
@@ -127,7 +126,7 @@ chacha_encrypt_bytes(chacha_ctx *x, const uint8_t *m, uint8_t *c, uint32_t bytes
 	{
 		if (bytes < 64)
 		{
-			for (i = 0; i < bytes; ++i)
+			for (uint32_t i = 0; i < bytes; ++i)
 				tmp[i] = m[i];
 			m = tmp;
 			ctarget = c;
@@ -149,7 +148,7 @@ chacha_encrypt_bytes(chacha_ctx *x, const uint8_t *m, uint8_t *c, uint32_t bytes
 		x13 = j13;
 		x14 = j14;
 		x15 = j15;
-		for (i = 20; i > 0; i -= 2)
+		for (uint32_t i = 20; i > 0; i -= 2)
 		{
 			QUARTERROUND( x0, x4, x8,x12)
 			QUARTERROUND( x1, x5, x9,x13)
@@ -223,7 +222,7 @@ chacha_encrypt_bytes(chacha_ctx *x, const uint8_t *m, uint8_t *c, uint32_t bytes
 		if (bytes <= 64)
 		{
 			if (bytes < 64)
-				for (i = 0; i < bytes; ++i)
+				for (uint32_t i = 0; i < bytes; ++i)
 					ctarget[i] = c[i];
 			x->input[12] = j12;
 			x->input[13] = j13;

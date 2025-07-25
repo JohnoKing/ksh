@@ -206,7 +206,6 @@ static int _sfpmove(Sfio_t*	f,
 
 Sfio_t* sfpool(Sfio_t* f, Sfio_t* pf, int mode)
 {
-	int		k;
 	Sfpool_t*	p;
 	Sfio_t*		rv;
 
@@ -245,7 +244,7 @@ Sfio_t* sfpool(Sfio_t* f, Sfio_t* pf, int mode)
 
 	if(!pf)	/* deleting f from its current pool */
 	{	if((p = f->pool) != NULL && p != &_Sfpool)
-			for(k = 0; k < p->n_sf && pf == NULL; ++k)
+			for(int k = 0; k < p->n_sf && pf == NULL; ++k)
 				if(p->sf[k] != f) /* a stream != f represents the pool */
 					pf = p->sf[k];
 		if(!pf) /* already isolated */

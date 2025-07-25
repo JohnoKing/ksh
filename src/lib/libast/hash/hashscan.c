@@ -57,15 +57,13 @@ hashscan(Hash_table_t* tab, int flags)
 		pos->flags = HASH_SCOPE;
 		do
 		{
-			Hash_bucket_t*	b;
-
 			if (tab->frozen)
 			{
 				Hash_bucket_t**	sp = tab->table;
 				Hash_bucket_t**	sx = tab->table + tab->size;
 
 				while (sp < sx)
-					for (b = *sp++; b; b = b->next)
+					for (Hash_bucket_t *b = *sp++; b; b = b->next)
 						b->hash &= (unsigned long)~HASH_HIDDEN;
 			}
 		} while (tab = tab->scope);

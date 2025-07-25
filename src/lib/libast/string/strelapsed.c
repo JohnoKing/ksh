@@ -40,7 +40,6 @@ strelapsed(const char* s, char** e, int n)
 	unsigned long	f = 0;
 	int		p = 0;
 	int		z = 1;
-	unsigned long	m;
 	const char*	last;
 
 	for (;;)
@@ -63,7 +62,7 @@ strelapsed(const char* s, char** e, int n)
 			v = v * 10 + (unsigned long)c - '0';
 		v *= (unsigned long)n;
 		if (c == '.')
-			for (m = (unsigned long)n; (c = *s++) >= '0' && c <= '9';)
+			for (unsigned long m = (unsigned long)n; (c = *s++) >= '0' && c <= '9';)
 				f += (m /= 10) * ((unsigned long)c - '0');
 		if (c == '%')
 		{

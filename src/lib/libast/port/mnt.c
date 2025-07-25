@@ -284,7 +284,6 @@ Mnt_t*
 mntread(void* handle)
 {
 	Handle_t*	mp = (Handle_t*)handle;
-	size_t		i;
 	ptrdiff_t	n;
 	unsigned long	flags;
 
@@ -292,7 +291,7 @@ mntread(void* handle)
 	{
 		flags = mp->next->f_flags;
 		n = 0;
-		for (i = 0; i < elementsof(options); i++)
+		for (size_t i = 0; i < elementsof(options); i++)
 			if (flags & options[i].flag)
 				n += sfsprintf(mp->opt + n, sizeof(mp->opt) - (size_t)n - 1, ",%s", options[i].name);
 		set(&mp->hdr, mp->next->f_mntfromname, mp->next->f_mntonname, TYPE(mp->next), n ? (mp->opt + 1) : NULL);

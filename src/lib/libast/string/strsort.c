@@ -32,17 +32,15 @@
 void
 strsort(char** argv, int n, int(*fn)(const char*, const char*))
 {
-	int 	i;
 	int 	j;
-	int 	m;
 	char**	ap;
 	char*		s;
 	int 		k;
 
 	for (j = 1; j <= n; j *= 2);
-	for (m = 2 * j - 1; m /= 2;)
+	for (int m = 2 * j - 1; m /= 2;)
 		for (j = 0, k = n - m; j < k; j++)
-			for (i = j; i >= 0; i -= m)
+			for (int i = j; i >= 0; i -= m)
 			{
 				ap = &argv[i];
 				if ((*fn)(ap[m], ap[0]) >= 0) break;

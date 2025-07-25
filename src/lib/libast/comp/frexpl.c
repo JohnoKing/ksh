@@ -47,11 +47,10 @@ static long double	pow2tab[LDBL_MAX_EXP + 1];
 static int
 init(void)
 {
-	int		x;
 	long double	g;
 
 	g = 1;
-	for (x = 0; x < elementsof(pow2tab); x++)
+	for (int x = 0; x < elementsof(pow2tab); x++)
 	{
 		pow2tab[x] = g;
 		g *= 2;

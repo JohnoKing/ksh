@@ -316,7 +316,6 @@ compile(State_t* state)
 	char*	s;
 	char*	t;
 	char*	file = NULL;
-	Item_t*	x;
 	Sfio_t*	f = NULL;
 
 	r = 1;
@@ -325,13 +324,13 @@ compile(State_t* state)
 		error(ERROR_SYSTEM|2, "out of memory");
 		goto done;
 	}
-	for (x = state->patterns.head; x; x = x->next)
+	for (Item_t *x = state->patterns.head; x; x = x->next)
 		if (addre(state, x->string))
 			return r;
 	file = error_info.file;
 	line = error_info.line;
 	f = 0;
-	for (x = state->files.head; x; x = x->next)
+	for (Item_t *x = state->files.head; x; x = x->next)
 	{
 		s = x->string;
 		if (!(f = sfopen(NULL, s, "r")))

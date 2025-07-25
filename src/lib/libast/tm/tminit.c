@@ -199,7 +199,6 @@ tmlocal(time_t now)
 	int			n;
 	char*			s;
 	char*			e = NULL;
-	int			i;
 	int			m;
 	int			isdst;
 	char*			t;
@@ -254,7 +253,7 @@ tmlocal(time_t now)
 	 * through the last 12 months until tzwest() changes
 	 */
 
-	for (i = 0; i < 12; i++)
+	for (int i = 0; i < 12; i++)
 	{
 		now -= 31 * 24 * 60 * 60;
 		if ((m = tzwest(&now, &isdst)) != n)

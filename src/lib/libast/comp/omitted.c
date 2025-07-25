@@ -358,9 +358,8 @@ convert(const char* d, const char* s)
 {
 	const char*	t;
 	const char*	v;
-	size_t		i;
 
-	for (i = 0; i < elementsof(convertvars); i++)
+	for (size_t i = 0; i < elementsof(convertvars); i++)
 	{
 		for (v = convertvars[i], t = s; *t && *t == *v; t++, v++);
 		if (*t == '=' && *v == 0)
@@ -387,12 +386,11 @@ getuid(void)
 	char*		d;
 	char*		s;
 	char*		t;
-	char**		e;
 	int		n;
 	int		m;
 
 	if (!convertinit++ && (d = getenv(convertvars[0])))
-		for (e = environ; s = *e; e++)
+		for (char **e = environ; s = *e; e++)
 			if ((n = convert(d, s)) && (m = cygwin_win32_to_posix_path_list_buf_size(s + n)) > 0)
 			{
 				if (!(t = malloc(n + m + 1)))

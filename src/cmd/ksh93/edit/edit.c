@@ -733,7 +733,6 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 	int c;
 #if SHOPT_MULTIBYTE
 	char *endp, *p=string;
-	ptrdiff_t size;
 	ptrdiff_t offset = ep->e_lookahead + nbyte;
 	*(endp = &p[nbyte]) = 0;
 	endp = &p[nbyte];
@@ -793,7 +792,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 	/* shift lookahead buffer if necessary */
 	if(offset -= ep->e_lookahead)
 	{
-		for(size=offset;size < nbyte;size++)
+		for(ptrdiff_t size=offset;size < nbyte;size++)
 			ep->e_lbuf[ep->e_lookahead+size-offset] = ep->e_lbuf[ep->e_lookahead+size];
 	}
 	ep->e_lookahead += nbyte-offset;
@@ -936,12 +935,12 @@ void		ed_putchar(Edit_t *ep,int c)
 void	ed_putchar(Edit_t *ep,int c)
 {
 	char buf[8];
-	int size, i;
+	int size;
 	/* check for placeholder */
 	if(c == MARKER)
 		return;
 	size = mbconv(buf, (wchar_t)c);
-	for (i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 		ed_putbyte(ep,buf[i]);
 }
 #endif /* SHOPT_MULTIBYTE */

@@ -57,7 +57,6 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 	short		os;
 	size_t		ns;
 	size_t		nd;
-	FTSENT*		x;
 	FTSENT*		dd[2];
 
 	flags ^= FTS_ONEPATH;
@@ -90,7 +89,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 	if (children && (e = fts_children(f, 0)))
 	{
 		nd = 0;
-		for (x = e; x; x = x->link)
+		for (FTSENT *x = e; x; x = x->link)
 			if (x->info & FTS_DD)
 			{
 				x->statb = *x->fts_statp;
@@ -104,7 +103,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 		e->parent->link = 0;
 		while (nd > 0)
 			dd[--nd]->info |= FTS_DD;
-		for (x = e; x; x = x->link)
+		for (FTSENT *x = e; x; x = x->link)
 			if (!(x->info & FTS_D))
 				x->status = FTS_SKIP;
 	}
@@ -119,7 +118,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 		case FTS_D:
 		case FTS_DNX:
 			if (children)
-				for (x = fts_children(f, 0); x; x = x->link)
+				for (FTSENT *x = fts_children(f, 0); x; x = x->link)
 					if (x->info & FTS_DD)
 					{
 						x->statb = *x->fts_statp;

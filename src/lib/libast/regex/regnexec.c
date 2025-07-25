@@ -1728,13 +1728,11 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
 static void
 listnode(Rex_t* e, int level)
 {
-	int	i;
-
 	if (e)
 	{
 		do
 		{
-			for (i = 0; i < level; i++)
+			for (int i = 0; i < level; i++)
 				sfprintf(sfstderr, "  ");
 			sfprintf(sfstderr, "%s\n", rexname(e));
 			switch (e->type)
@@ -1917,13 +1915,12 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
 	if (oldmatch)
 	{
 		regmatch_t*	match;
-		size_t		i;
 		int		r;
 
 		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
 			return -1;
 		if (!(r = regnexec_20120528(p, s, len, nmatch, match, flags)))
-			for (i = 0; i < nmatch; i++)
+			for (size_t i = 0; i < nmatch; i++)
 			{
 				oldmatch[i].rm_so = (int)match[i].rm_so;
 				oldmatch[i].rm_eo = (int)match[i].rm_eo;

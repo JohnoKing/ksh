@@ -147,12 +147,11 @@ int    b_printf(int argc, char *argv[],Shbltin_t *context)
 
 static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 {
-	const struct printmap *pm;
 	char c='%';
 	NOT_USED(op);
 	NOT_USED(s);
 	NOT_USED(dp);
-	for(pm=Pmap;pm->size>0;pm++)
+	for(const struct printmap *pm=Pmap;pm->size>0;pm++)
 		sfprintf(sp, "[+%c(%s)q?Equivalent to %s.]",c,pm->name,pm->equivalent);
 	return 1;
 }

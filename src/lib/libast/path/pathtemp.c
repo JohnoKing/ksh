@@ -135,7 +135,6 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	ptrdiff_t	l;
 	ptrdiff_t	r;
 	int		z;
-	int		attempt;
 	char		numbuf[16];
 
 	if (pfx && *pfx == '/')
@@ -301,7 +300,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	}
 	*s = 0;
 	len -= (size_t)(s - b);
-	for (attempt = 0; attempt < ATTEMPT; attempt++)
+	for (size_t attempt = 0; attempt < ATTEMPT; attempt++)
 	{
 		/*
 		 * generate a pseudorandom name using arc4random(3)

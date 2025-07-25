@@ -109,11 +109,10 @@ static const Namdisc_t treedisc =
 
 static char *nextdot(const char *str)
 {
-	char *cp;
 	int c;
 	if(*str=='.')
 		str++;
-	for(cp=(char*)str;c= *cp; cp++)
+	for(char *cp=(char*)str;c= *cp; cp++)
 	{
 		if(c=='[')
 		{
@@ -128,10 +127,9 @@ static char *nextdot(const char *str)
 
 static  Namfun_t *nextdisc(Namval_t *np)
 {
-	Namfun_t *fp;
 	if(nv_isref(np))
 		return NULL;
-	for(fp=np->nvfun;fp;fp=fp->next)
+	for(Namfun_t *fp=np->nvfun;fp;fp=fp->next)
 	{
 		if(fp && fp->disc && fp->disc->nextf)
 			return fp;
@@ -378,11 +376,10 @@ static void outtype(Namval_t *np, Namfun_t *fp, Sfio_t* out, const char *prefix)
  */
 void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 {
-	const Shtable_t *tp;
 	char *cp;
 	nvflag_t val,mask,attr;
 	char *ip=0;
-	Namfun_t *fp=0;
+	Namfun_t *fp;
 	Namval_t *typep=0;
 #if SHOPT_FIXEDARRAY
 	int fixed=0;
@@ -397,7 +394,7 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 		fp = 0;
 		typep = 0;
 	}
-	if(!fp  && !nv_isattr(np,~(NV_MINIMAL|NV_NOFREE)))
+	if(!fp && !nv_isattr(np,~(NV_MINIMAL|NV_NOFREE)))
 	{
 		if(prefix && *prefix)
 		{
@@ -409,7 +406,7 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 		return;
 	}
 
-	if ((attr=nv_isattr(np,~NV_NOFREE)) || fp)
+	if((attr=nv_isattr(np,~NV_NOFREE)) || fp)
 	{
 		if((attr&(NV_NOPRINT|NV_INTEGER))==NV_NOPRINT)
 			attr &= ~NV_NOPRINT;
@@ -434,7 +431,7 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 		}
 		else if(prefix && *prefix)
 			sfputr(out,prefix,' ');
-		for(tp = shtab_attributes; *tp->sh_name;tp++)
+		for(const Shtable_t *tp = shtab_attributes; *tp->sh_name;tp++)
 		{
 			val = tp->sh_number;
 			mask = val;

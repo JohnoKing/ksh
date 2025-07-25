@@ -196,12 +196,11 @@ tst	execve_ignores_argv0 note{ does execve(3) ignore the specified argv[0] }end 
 	int main(int argc, char *argv[])
 	{
 		char *orig0 = argv[0], *newenv[2], b[64];
-		int i;
 		sprintf(b,"_KSH_EXECVE_TEST_%d=y",(int)getpid());
 		newenv[0] = b;
 		newenv[1] = NULL;
 		/* check if we've already been re-exec'ed */
-		for (i = 0; environ[i]; i++)
+		for (size_t i = 0; environ[i]; i++)
 			if (strcmp(environ[i],newenv[0])==0)
 				return !(strcmp(argv[0],"TEST_OK")!=0);
 		/* exec self */

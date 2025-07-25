@@ -614,7 +614,6 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
 static char*
 format(Feature_t* fp, const char* path, const char* value, unsigned int flags, Error_f conferror)
 {
-	Feature_t*		sp;
 	static struct utsname	uts;
 
 #if DEBUG_astconf
@@ -653,7 +652,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 		if (!state.std && value == fp->std)
 		{
 			state.std = 1;
-			for (sp = state.features; sp; sp = sp->next)
+			for (Feature_t *sp = state.features; sp; sp = sp->next)
 				if (sp->std && sp->op && sp->op != OP_conformance)
 					feature(sp, 0, path, sp->std, 0, 0);
 		}
@@ -818,7 +817,6 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
 	int		v = 0;
 	int		c;
 	char*		e;
-	const Prefix_t*	p;
 
 	static Conf_t	num;
 
@@ -829,7 +827,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
 	while (*name == '_')
 		name++;
  again:
-	for (p = prefix; p < &prefix[prefix_elements]; p++)
+	for (const Prefix_t *p = prefix; p < &prefix[prefix_elements]; p++)
 		if (strneq(name, p->name, (size_t)p->length) && ((c = name[p->length] == '_' || name[p->length] == '(' || name[p->length] == '#') || (v = isdigit(name[p->length]) && name[p->length + 1] == '_')))
 		{
 			if (p->call < 0)

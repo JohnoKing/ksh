@@ -627,7 +627,6 @@ _ccmap(int i, int o)
 	unsigned char*	m;
 	unsigned char*	z;
 	Map_t*		map;
-	int		n;
 	int		op;
 
 	if (!i && !o)
@@ -665,9 +664,9 @@ _ccmap(int i, int o)
 	a = (unsigned char*)tab + MAP * (2 * (o - 1));
 	z = (unsigned char*)tab + MAP * (2 * (i - 1) + 1);
 	m = map->map;
-	for (n = 0; n < MAP; n++)
+	for (int n = 0; n < MAP; n++)
 		m[n] = (unsigned char)n;
-	for (n = MAP - 1; n >= 0; n--)
+	for (int n = MAP - 1; n >= 0; n--)
 		m[n] = a[z[n]];
 	map->next = maps;
 	maps = map;
@@ -698,10 +697,9 @@ void*
 _ccmapstr(unsigned char* m, void* b, size_t n)
 {
 	unsigned char*	s;
-	unsigned char*	e;
 
 	if (m)
-		for (e = (s = (unsigned char*)b) + n; s < e; s++)
+		for (unsigned char *e = (s = (unsigned char*)b) + n; s < e; s++)
 			*s = m[*s];
 	return b;
 }
@@ -712,12 +710,10 @@ static void
 dump(int from, int to)
 {
 	const unsigned char*	m;
-	int			c;
-	int			i;
 
 	m = ccmap(from, to);
 	sfprintf(sfstdout, "\n /* %s => %s */\n\n", ccmapname(from), ccmapname(to));
-	for (c = i = 0; c <= UCHAR_MAX; c++)
+	for (int c = 0, i = 0; c <= UCHAR_MAX; c++)
 	{
 		sfprintf(sfstdout, " 0x%02x,", m ? m[c] : c);
 		if (!(++i & 0x7))
@@ -731,9 +727,7 @@ dump(int from, int to)
 int
 main(int argc, char** argv)
 {
-	int			i;
-
-	for (i = 1; i <= CC_MAPS; i++)
+	for (int i = 1; i <= CC_MAPS; i++)
 	{
 		dump(CC_ASCII, i);
 		dump(i, CC_ASCII);

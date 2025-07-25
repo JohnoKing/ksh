@@ -150,7 +150,6 @@ int
 b_fds(int argc, char** argv, Shbltin_t* context)
 {
 	char*			s;
-	int			i;
 	char*			m;
 	char*			x;
 	int			flags;
@@ -220,7 +219,7 @@ b_fds(int argc, char** argv, Shbltin_t* context)
 		error(ERROR_SYSTEM|3, "%d: cannot write to file descriptor");
 		UNREACHABLE();
 	}
-	for (i = 0; i <= open_max; i++)
+	for (int i = 0; i <= open_max; i++)
 	{
 		if (fstat(i, &st))
 		{

@@ -186,12 +186,11 @@ static struct blocked	*blist;
  */
 static struct blocked *block_info(Namval_t *np, struct blocked *pp)
 {
-	struct blocked	*bp;
 	void		*sub=0;
 	int		isub=0;
 	if(nv_isarray(np) && (isub=nv_aindex(np)) < 0)
 		sub = nv_associative(np,NULL,NV_ACURRENT);
-	for(bp=blist ; bp; bp=bp->next)
+	for(struct blocked *bp=blist ; bp; bp=bp->next)
 	{
 		if(bp->np==np && bp->sub==sub && bp->isub==isub)
 			return bp;
@@ -340,7 +339,6 @@ static void	assign(Namval_t *np,const char* val,nvflag_t flags,Namfun_t *handle)
 	{
 		Dt_t *root = sh_subfuntree(1);
 		Namval_t *pp=0;
-		size_t n;
 		Namarr_t *ap;
 		block(bp,type);
 		nv_disc(np,handle,NV_POP);
@@ -353,7 +351,7 @@ static void	assign(Namval_t *np,const char* val,nvflag_t flags,Namfun_t *handle)
 			goto done;
 		if(nv_isarray(np) && (ap=nv_arrayptr(np)) && ap->nelem>0)
 			goto done;
-		for(n=0; n < sizeof(vp->disc)/sizeof(*vp->disc); n++)
+		for(size_t n=0; n < sizeof(vp->disc)/sizeof(*vp->disc); n++)
 		{
 			if((nq=vp->disc[n]) && !nv_isattr(nq,NV_NOFREE))
 			{
@@ -651,8 +649,7 @@ static void putdisc(Namval_t* np, const char* val, nvflag_t flag, Namfun_t* fp)
 	if(!val && !(flag&NV_NOFREE))
 	{
 		Nambfun_t *vp = (Nambfun_t*)fp;
-		int i;
-		for(i=0; vp->bnames[i]; i++)
+		for(int i=0; vp->bnames[i]; i++)
 		{
 			Namval_t *mp;
 			if((mp=vp->bltins[i]) && !nv_isattr(mp,NV_NOFREE))
@@ -810,8 +807,7 @@ Namfun_t *nv_disc(Namval_t *np, Namfun_t* fp, nvflag_t mode)
  */
 Namfun_t *nv_hasdisc(Namval_t *np, const Namdisc_t *dp)
 {
-	Namfun_t *fp;
-	for(fp=np->nvfun; fp; fp = fp->next)
+	for(Namfun_t *fp=np->nvfun; fp; fp = fp->next)
 	{
 		if(fp->disc== dp)
 			return fp;
@@ -1038,13 +1034,13 @@ Namval_t *nv_bfsearch(const char *name, Dt_t *root, Namval_t **var, char **last)
 {
 	char		c;
 	ptrdiff_t	offset = stktell(sh.stk);
-	char		*sp, *cp=0;
+	char		*cp=0;
 	Namval_t	*np, *nq;
 	char		*dname=0;
 	if(var)
 		*var = 0;
 	/* check for . in the name before = */
-	for(sp=(char*)name+1; *sp; sp++)
+	for(char *sp=(char*)name+1; *sp; sp++)
 	{
 		if(*sp=='=')
 			return NULL;
@@ -1418,10 +1414,9 @@ const Namdisc_t *nv_discfun(int which)
  */
 int nv_hasget(Namval_t *np)
 {
-	Namfun_t	*fp;
 	if(np==sh_scoped(IFSNOD))
 		return 0;	/* avoid BUG_IFSISSET: always return false for IFS */
-	for(fp=np->nvfun; fp; fp=fp->next)
+	for(Namfun_t *fp=np->nvfun; fp; fp=fp->next)
 	{
 		if(!fp->disc || (!fp->disc->getnum && !fp->disc->getval))
 			continue;

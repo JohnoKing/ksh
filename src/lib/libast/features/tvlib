@@ -54,9 +54,8 @@ tst	prefer_poll note{ is select less precise than 1 ms }end execute{
 	main(void)
 	{
 		struct timeval tvSleep = { 0, 1 }, tvBefore, tvAfter;
-		int i;
 		/* Take a few measurements to prevent a fluke. */
-		for (i = 0; i < 5; ++i)
+		for (size_t i = 0; i < 5; ++i)
 		{
 			gettimeofday(&tvBefore, NULL);
 			select(0, NULL, NULL, NULL, &tvSleep);

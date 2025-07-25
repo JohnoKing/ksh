@@ -27,7 +27,7 @@
 Sflong_t sfgetl(Sfio_t* f)
 {
 	Sflong_t	v;
-	uchar		*s, *ends, c;
+	uchar		*s, c;
 	ptrdiff_t	p;
 
 	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
@@ -40,7 +40,7 @@ Sflong_t sfgetl(Sfio_t* f)
 			v = (Sflong_t)(-1);
 			goto done;
 		}
-		for(ends = s+p; s < ends;)
+		for(uchar *ends = s+p; s < ends;)
 		{	c = *s++;
 			if(c&SFIO_MORE)
 				v = ((Sfulong_t)v << SFIO_UBITS) | SFUVALUE(c);

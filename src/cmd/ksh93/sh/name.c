@@ -2148,7 +2148,6 @@ char **sh_envgen(void)
 	char **er;
 	int namec;
 	struct adata data;
-	size_t i;
 	data.tp = 0;
 	data.mapname = 0;
 	/* L_ARGNOD gets generated automatically as full path name of command */
@@ -2158,7 +2157,7 @@ char **sh_envgen(void)
 	er = stkalloc(sh.stk,((size_t)namec+4)*sizeof(char*));
 	data.argnam = (er+=2) + sh.save_env_n;
 	/* Physically copy the saved non-importable env vars, as the old environ[] may be freed by exscript() */
-	for (i = 0; i < sh.save_env_n; i++)
+	for (size_t i = 0; i < sh.save_env_n; i++)
 	{
 		size_t sz = strlen(sh.save_env[i]) + 1;
 		char *cp = stkalloc(sh.stk, sz);
@@ -2239,7 +2238,6 @@ void nv_rehash(Namval_t *np,void *data)
  */
 int nv_scan(Dt_t *root, void (*fn)(Namval_t*,void*), void *data,nvflag_t mask, nvflag_t flags)
 {
-	Namval_t *np;
 	Dt_t *base=0;
 	struct scan sdata;
 	sdata.scanmask = mask;
@@ -2249,7 +2247,7 @@ int nv_scan(Dt_t *root, void (*fn)(Namval_t*,void*), void *data,nvflag_t mask, n
 	sdata.scandata = data;
 	if(flags&NV_NOSCOPE)
 		base = dtview((Dt_t*)root,0);
-	for(np=(Namval_t*)dtfirst(root);np; np=(Namval_t*)dtnext(root,np))
+	for(Namval_t *np=(Namval_t*)dtfirst(root);np; np=(Namval_t*)dtnext(root,np))
 		scanfilter(np, &sdata);
 	if(base)
 		dtview((Dt_t*)root,base);
@@ -2509,8 +2507,7 @@ static void optimize_clear(Namval_t* np, Namfun_t *fp)
 
 void nv_optimize_clear(Namval_t *np)
 {
-	Namfun_t *fp;
-	for(fp = np->nvfun; fp; fp = fp->next)
+	for(Namfun_t *fp = np->nvfun; fp; fp = fp->next)
 	{
 		if(fp->disc == &OPTIMIZE_disc)
 		{
@@ -2539,7 +2536,6 @@ const Namdisc_t OPTIMIZE_disc  = {sizeof(struct optimize),put_optimize,0,0,0,0,c
 
 void nv_optimize(Namval_t *np)
 {
-	Namfun_t *fp;
 	struct optimize *op, *xp = 0;
 	if(nv_getoptimize())
 	{
@@ -2548,7 +2544,7 @@ void nv_optimize(Namval_t *np)
 			nv_setoptimize(NULL);
 			return;
 		}
-		for(fp=np->nvfun; fp; fp = fp->next)
+		for(Namfun_t *fp=np->nvfun; fp; fp = fp->next)
 		{
 			if(fp->disc && (fp->disc->getnum || fp->disc->getval))
 			{
@@ -2561,12 +2557,9 @@ void nv_optimize(Namval_t *np)
 		if(xp && xp->ptr==nv_getoptimize())
 			return;
 		if(xp && xp->next)
-		{
-			struct optimize *xpn;
-			for(xpn = xp->next; xpn; xpn = xpn->next)
+			for(struct optimize *xpn = xp->next; xpn; xpn = xpn->next)
 				if(xpn->ptr == nv_getoptimize() && xpn->np == np)
 					return;
-		}
 		if(op = opt_free)
 			opt_free = op->next;
 		else
@@ -3471,7 +3464,6 @@ void nv_unref(Namval_t *np)
 char *nv_name(Namval_t *np)
 {
 	Namval_t *table;
-	Namfun_t *fp;
 #if SHOPT_FIXEDARRAY
 	Namarr_t *ap = NULL;
 #endif /* SHOPT_FIXEDARRAY */
@@ -3511,8 +3503,7 @@ char *nv_name(Namval_t *np)
 	else if(!nv_isref(np))
 	{
 	skip:
-		for(fp= np->nvfun ; fp; fp=fp->next)
-		if(fp->disc && fp->disc->namef)
+		for(Namfun_t *fp= np->nvfun ; fp; fp=fp->next) if(fp->disc && fp->disc->namef)
 		{
 			if(np==sh.last_table)
 				sh.last_table = 0;

@@ -780,13 +780,12 @@ static void put_lastarg(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp
 static void match2d(struct match *mp)
 {
 	Namval_t	*np;
-	ptrdiff_t	i;
 	Namarr_t	*ap;
 	nv_disc(SH_MATCHNOD, &mp->hdr, NV_POP);
 	if(mp->nodes)
 	{
 		np = nv_namptr(mp->nodes, 0);
-		for(i=0; i < mp->nmatch; i++)
+		for(ptrdiff_t i=0; i < mp->nmatch; i++)
 		{
 			np->nvname = mp->names + 3 * i;
 			if(i > 9)
@@ -816,7 +815,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ptrdiff_t nmatch, ssize_t match
 	Init_t		*ip = sh.init_context;
 	struct match	*mp = &ip->SH_MATCH_init;
 	unsigned int	savesub=sh.subshell;
-	ptrdiff_t	i,n,x;
+	ptrdiff_t	i,n;
 	Namarr_t	*ap = nv_arrayptr(SH_MATCHNOD);
 	Namval_t	*np;
 	if(sh.intrace)
@@ -833,7 +832,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ptrdiff_t nmatch, ssize_t match
 			{
 				nv_disc(np,&mp->hdr,NV_LAST);
 				nv_putsub(np,NULL,mp->index);
-				for(x=mp->index; x >=0; x--)
+				for(ptrdiff_t x=mp->index; x >=0; x--)
 				{
 					n = i + x*mp->nmatch;
 					if(mp->match[2*n+1]>mp->match[2*n])
@@ -1041,10 +1040,9 @@ static void math_init(void)
 {
 	Namval_t	*np;
 	char		*name;
-	size_t		i;
 	sh.mathnodes = (char*)sh_calloc(1,MAX_MATH_ARGS*(NV_MINSZ+5));
 	name = sh.mathnodes+MAX_MATH_ARGS*NV_MINSZ;
-	for(i=0; i < MAX_MATH_ARGS; i++)
+	for(size_t i=0; i < MAX_MATH_ARGS; i++)
 	{
 		np = nv_namptr(sh.mathnodes,i);
 		np->nvfun = &math_child_fun;
@@ -1592,7 +1590,6 @@ static Namval_t *create_stat(Namval_t *np,const char *name,nvflag_t flag,Namfun_
 	struct Stats		*sp = (struct Stats*)fp;
 	const char		*cp=name;
 	int			i=0;
-	size_t			j;
 	ptrdiff_t		n;
 	Namval_t		*nq=0;
 	NOT_USED(flag);
@@ -1600,7 +1597,7 @@ static Namval_t *create_stat(Namval_t *np,const char *name,nvflag_t flag,Namfun_
 		return SH_STATS;
 	while((i=*cp++) && i != '=' && i != '+' && i!='[');
 	n = (cp-1) -name;
-	for(j=0; j < sp->numnodes; j++)
+	for(size_t j=0; j < sp->numnodes; j++)
 	{
 		nq = nv_namptr(sp->nodes,j);
 		if((n==0||strncmp(name,nq->nvname,(size_t)n)==0) && nq->nvname[n]==0)
@@ -1649,14 +1646,14 @@ static Namfun_t	 stat_child_fun =
 
 static void stat_init(void)
 {
-	size_t		i,nstat = STAT_SUBSHELL+1;
+	size_t		nstat = STAT_SUBSHELL+1;
 	size_t		extrasize = nstat*(sizeof(int)+NV_MINSZ);
 	struct Stats	*sp = sh_newof(0,struct Stats,1,extrasize);
 	Namval_t	*np;
 	sp->numnodes = nstat;
 	sp->nodes = (char*)(sp+1);
 	sh.stats = (int*)sh_calloc(sizeof(int),nstat);
-	for(i=0; i < nstat; i++)
+	for(size_t i=0; i < nstat; i++)
 	{
 		np = nv_namptr(sp->nodes,i);
 		np->nvfun = &stat_child_fun;
@@ -1809,11 +1806,10 @@ static Init_t *nv_init(void)
 Dt_t *sh_inittree(const struct shtable2 *name_vals)
 {
 	Namval_t *np;
-	const struct shtable2 *tp;
 	size_t n = 0;
 	Dt_t *treep;
 	Dt_t *base_treep, *dict = 0;
-	for(tp=name_vals;*tp->sh_name;tp++)
+	for(const struct shtable2 *tp=name_vals;*tp->sh_name;tp++)
 		n++;
 	np = (Namval_t*)sh_calloc(n,sizeof(Namval_t));
 	if(name_vals==shtab_variables)
@@ -1824,7 +1820,7 @@ Dt_t *sh_inittree(const struct shtable2 *name_vals)
 	else if(name_vals==(const struct shtable2*)shtab_builtins)
 		sh.bltin_cmds = np;
 	base_treep = treep = dtopen(&_Nvdisc,Dtoset);
-	for(tp=name_vals;*tp->sh_name;tp++,np++)
+	for(const struct shtable2 *tp=name_vals;*tp->sh_name;tp++,np++)
 	{
 		if((np->nvname = strrchr(tp->sh_name,'.')) && np->nvname!=((char*)tp->sh_name))
 			np->nvname++;

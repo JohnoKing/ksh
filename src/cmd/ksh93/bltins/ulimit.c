@@ -48,12 +48,10 @@
 
 static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 {
-	const Limit_t*	tp;
-
 	NOT_USED(op);
 	NOT_USED(s);
 	NOT_USED(dp);
-	for (tp = shtab_limits; tp->option; tp++)
+	for (const Limit_t *tp = shtab_limits; tp->option; tp++)
 	{
 		sfprintf(sp, "[%c=%d:%s?The %s", tp->option, tp - shtab_limits + 1, tp->name, tp->description);
 		if(tp->type != LIM_COUNT)

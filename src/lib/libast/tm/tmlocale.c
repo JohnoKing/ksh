@@ -64,10 +64,6 @@ standardized(Lc_info_t* li, char** b)
 static void
 fixup(Lc_info_t* li, char** b)
 {
-	char**			v;
-	char**			e;
-	unsigned int		n;
-
 	static int		must[] =
 	{
 					TM_TIME,
@@ -98,20 +94,20 @@ fixup(Lc_info_t* li, char** b)
 	};
 
 	standardized(li, b);
-	for (v = b, e = b + TM_NFORM; v < e; v++)
+	for (char **v = b, **e = b + TM_NFORM; v < e; v++)
 		if (!*v)
 			*v = state.null;
-	for (n = 0; n < elementsof(must); n++)
+	for (size_t n = 0; n < elementsof(must); n++)
 		if (!*b[must[n]])
 			b[must[n]] = tm_data.format[must[n]];
 	if (li->lc->flags & LC_default)
-		for (n = 0; n < TM_NFORM; n++)
+		for (size_t n = 0; n < TM_NFORM; n++)
 			if (!*b[n])
 				b[n] = tm_data.format[n];
 	if (strchr(b[TM_UT], '%'))
 	{
 		tm_info.deformat = b[TM_UT];
-		for (n = TM_UT; n < TM_DT; n++)
+		for (size_t n = TM_UT; n < TM_DT; n++)
 			b[n] = state.null;
 	}
 	else
@@ -511,10 +507,9 @@ native_lc_time(Lc_info_t* li)
 	char*	t;
 	char**	b;
 	size_t	n;
-	unsigned int	i;
 
 	n = 0;
-	for (i = 0; i < elementsof(map); i++)
+	for (size_t i = 0; i < elementsof(map); i++)
 	{
 		if (!(t = nl_langinfo(map[i].native)))
 			t = tm_data.format[map[i].local];
@@ -523,7 +518,7 @@ native_lc_time(Lc_info_t* li)
 	if (!(b = newof(0, char*, TM_NFORM, n)))
 		return;
 	s = (char*)(b + TM_NFORM);
-	for (i = 0; i < elementsof(map); i++)
+	for (size_t i = 0; i < elementsof(map); i++)
 	{
 		b[map[i].local] = s;
 		if (!(t = nl_langinfo(map[i].native)))

@@ -29,7 +29,7 @@ int sfwalk(Sfwalk_f	walkf,	/* return <0: stop, >=0: continue	*/
 {
 	Sfpool_t	*p;
 	Sfio_t		*f;
-	int		n, rv;
+	int		rv;
 
 	/* truly initializing std-streams before walking */
 	if(sfstdin->mode & SFIO_INIT)
@@ -40,7 +40,7 @@ int sfwalk(Sfwalk_f	walkf,	/* return <0: stop, >=0: continue	*/
 		_sfmode(sfstderr, (sfstderr->mode & SFIO_RDWR), 0);
 
 	for(rv = 0, p = &_Sfpool; p; p = p->next)
-	{	for(n = 0; n < p->n_sf; )
+	{	for(int n = 0; n < p->n_sf; )
 		{	f = p->sf[n];
 
 			if(type != 0 && (f->_flags&type) != type )

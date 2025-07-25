@@ -144,7 +144,6 @@ static int unexcept(Sfio_t* f, int type, void* data, Sfdisc_t* disc)
 int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
 {
 	Union_t*	un;
-	int		i;
 
 	if(n <= 0)
 		return -1;
@@ -159,7 +158,7 @@ int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
 	un->disc.exceptf = unexcept;
 	un->n = n;
 
-	for(i = 0; i < n; ++i)
+	for(int i = 0; i < n; ++i)
 	{	un->f[i].f = array[i];
 		if(!(un->type&UNSEEKABLE))
 		{	un->f[i].lower = sfseek(array[i],0,1);

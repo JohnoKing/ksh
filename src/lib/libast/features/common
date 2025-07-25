@@ -194,8 +194,7 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
 	int
 	main(void)
 	{
-		int	t;
-		int	s;
+		size_t	t;
 		int	m = 1;
 		int	b = 1;
 		int	w = 0;
@@ -213,7 +212,7 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
 		if (strcmp(buf, "0x123456789abcdef0"))
 			return 1;
 	#endif
-		for (s = 0; s < elementsof(int_size); s++)
+		for (size_t s = 0; s < elementsof(int_size); s++)
 		{
 			for (t = 0; t < elementsof(int_type) && int_type[t].size < int_size[s]; t++);
 			if (t < elementsof(int_type))
@@ -281,9 +280,7 @@ tst	- output{
 	int
 	main(void)
 	{
-		int	t;
-
-		for (t = 0; t < elementsof(types); t++)
+		for (size_t t = 0; t < elementsof(types); t++)
 	#if COND
 			if (types[t].cond)
 			{
@@ -326,9 +323,8 @@ tst note{ generating _ast_flt\*_t types }end output{
 	int
 	main(void)
 	{
-		int	t;
 		int	m = 1;
-		int	e = elementsof(flt_type);
+		int	e = (int)elementsof(flt_type);
 		if (flt_type[e - 1].size <= sizeof(double))
 			e--; /* exclude "long double" */
 		else
@@ -340,7 +336,7 @@ tst note{ generating _ast_flt\*_t types }end output{
 			if (strcmp(buf, "1.12345E-55"))
 				e--; /* exclude "long double" */
 		}
-		for (t = 0; t < e; t++)
+		for (int t = 0; t < e; t++)
 		{
 			while (t < (e - 1) && flt_type[t].size == flt_type[t + 1].size)
 				t++;

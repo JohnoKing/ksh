@@ -351,9 +351,7 @@ static const Tty_t Ttable[] =
 
 static void sane(struct termios *sp)
 {
-	const Tty_t*	tp;
-
-	for (tp = Ttable; tp < &Ttable[elementsof(Ttable)]; tp++)
+	for (const Tty_t *tp = Ttable; tp < &Ttable[elementsof(Ttable)]; tp++)
 		if (tp->flags & (SS|US))
 			switch (tp->type)
 			{
@@ -437,12 +435,11 @@ static int gin(char *arg,struct termios *sp)
 
 static void gout(struct termios *sp)
 {
-	int i;
 	sfprintf(sfstdout,":%x",sp->c_iflag);
 	sfprintf(sfstdout,":%x",sp->c_oflag);
 	sfprintf(sfstdout,":%x",sp->c_cflag);
 	sfprintf(sfstdout,":%x",sp->c_lflag);
-	for(i=0;i< NCCS; i++)
+	for(int i=0;i< NCCS; i++)
 		sfprintf(sfstdout,":%x",sp->c_cc[i]);
 #if _mem_c_line_termios
 	sfprintf(sfstdout,":%x", sp->c_line);
@@ -460,7 +457,6 @@ static void output(struct termios *sp, int flags)
 	struct termios tty;
 	int delim = ' ';
 	int off,off2;
-	size_t i;
 	char schar[2];
 	unsigned int ispeed = cfgetispeed(sp);
 	unsigned int ospeed = cfgetospeed(sp);
@@ -471,7 +467,7 @@ static void output(struct termios *sp, int flags)
 	}
 	tty = *sp;
 	sane(&tty);
-	for(i=0; i < elementsof(Ttable); i++)
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		tp= &Ttable[i];
 		if(tp->flags&IG)
@@ -573,8 +569,7 @@ static void output(struct termios *sp, int flags)
 
 static const Tty_t *lookup(const char *name)
 {
-	size_t i;
-	for(i=0; i < elementsof(Ttable); i++)
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		if(strcmp(Ttable[i].name,name)==0)
 			return &Ttable[i];
@@ -584,8 +579,7 @@ static const Tty_t *lookup(const char *name)
 
 static const Tty_t *getspeed(unsigned long val)
 {
-	size_t i;
-	for(i=0; i < elementsof(Ttable); i++)
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		if(Ttable[i].type==SPEED && Ttable[i].mask==val)
 			return &Ttable[i];
@@ -814,10 +808,8 @@ static void set(char *argv[], struct termios *sp)
 
 static void listchars(Sfio_t *sp,int type)
 {
-	size_t i;
-	int c;
-	c = (type==CHAR?'c':'n');
-	for(i=0; i < elementsof(Ttable); i++)
+	int c = (type==CHAR?'c':'n');
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		if(Ttable[i].type==type && *Ttable[i].description)
 			sfprintf(sp,"[+%s \a%c\a?%s.]",Ttable[i].name,c,Ttable[i].description);
@@ -826,9 +818,8 @@ static void listchars(Sfio_t *sp,int type)
 
 static void listgroup(Sfio_t *sp,int type, const char *description)
 {
-	size_t i;
 	sfprintf(sp,"[+");
-	for(i=0; i < elementsof(Ttable); i++)
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		if(Ttable[i].type==type)
 			sfprintf(sp,"%s ",Ttable[i].name);
@@ -838,9 +829,8 @@ static void listgroup(Sfio_t *sp,int type, const char *description)
 
 static void listmask(Sfio_t *sp,unsigned int mask,const char *description)
 {
-	size_t i;
 	sfprintf(sp,"[+");
-	for(i=0; i < elementsof(Ttable); i++)
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		if(Ttable[i].mask==mask && Ttable[i].type==BITS)
 			sfprintf(sp,"%s ",Ttable[i].name);
@@ -850,8 +840,7 @@ static void listmask(Sfio_t *sp,unsigned int mask,const char *description)
 
 static void listfields(Sfio_t *sp,int field)
 {
-	size_t i;
-	for(i=0; i < elementsof(Ttable); i++)
+	for(size_t i=0; i < elementsof(Ttable); i++)
 	{
 		if(Ttable[i].field==field &&  Ttable[i].type==BIT && *Ttable[i].description)
 			sfprintf(sp,"[+%s (-%s)?%s.]",Ttable[i].name,Ttable[i].name,Ttable[i].description);

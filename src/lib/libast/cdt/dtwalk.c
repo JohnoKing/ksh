@@ -26,11 +26,11 @@
 
 int dtwalk(Dt_t* dt, int (*userf)(Dt_t*, void*, void*), void* data)
 {
-	void	*obj, *next;
+	void	*next;
 	Dt_t	*walk;
 	int	rv;
 
-	for(obj = dtfirst(dt); obj; )
+	for(void *obj = dtfirst(dt); obj; )
 	{	if(!(walk = dt->walk) )
 			walk = dt;
 		next = dtnext(dt,obj);

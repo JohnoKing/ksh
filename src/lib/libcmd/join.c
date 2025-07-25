@@ -182,13 +182,12 @@ static Join_t*
 init(void)
 {
 	Join_t*	jp;
-	int	i;
 
 	setlocale(LC_ALL, "");
 	if (jp = newof(0, Join_t, 1, 0))
 	{
 		if (jp->mb = mbwide())
-			for (i = 0x80; i <= 0xff; i++)
+			for (int i = 0x80; i <= 0xff; i++)
 				jp->state[i] = S_WIDE;
 		jp->state[' '] = jp->state['\t'] = S_SPACE;
 		jp->state['\n'] = S_NL;

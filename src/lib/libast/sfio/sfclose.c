@@ -70,9 +70,7 @@ int sfclose(Sfio_t* f)
 	if(!local && f->pool)
 	{	/* remove from pool */
 		if(f->pool == &_Sfpool)
-		{	int	n;
-
-			for(n = 0; n < _Sfpool.n_sf; ++n)
+		{	for(int n = 0; n < _Sfpool.n_sf; ++n)
 			{	if(_Sfpool.sf[n] != f)
 					continue;
 				/* found it */

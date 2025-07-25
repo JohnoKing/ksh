@@ -425,7 +425,6 @@ static int
 umeinit(void)
 {
 	const unsigned char*	s;
-	unsigned char		i;
 	unsigned char		c;
 
 	if (!ume_d[ume_D[0]])
@@ -434,7 +433,7 @@ umeinit(void)
 		while (c = *s++)
 			ume_d[c] = 1;
 		memset(ume_m, NOE, sizeof(ume_m));
-		for (i = 0; c = ume_M[i]; i++)
+		for (unsigned char i = 0; c = ume_M[i]; i++)
 			ume_m[c] = i;
 	}
 	return 0;
@@ -788,7 +787,6 @@ _ast_iconv_open(const char* t, const char* f)
 	Conv_t*	cc;
 	int	fc;
 	int	tc;
-	size_t	i;
 
 	char	fr[64];
 	char	to[64];
@@ -819,7 +817,7 @@ error(DEBUG_TRACE, "AHA#%d _ast_iconv_open f=%s:%s:%d t=%s:%s:%d\n", __LINE__, f
 	 * first check the free list
 	 */
 
-	for (i = 0; i < elementsof(freelist); i++)
+	for (size_t i = 0; i < elementsof(freelist); i++)
 		if ((cc = freelist[i]) && streq(to, cc->to.name) && streq(fr, cc->from.name))
 		{
 			freelist[i] = 0;

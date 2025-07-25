@@ -154,9 +154,7 @@ enter(Table_t* tab, Link_t* v)
 static Link_t*
 lookup(Table_t* tab, char* s)
 {
-	Link_t*	x;
-
-	for (x = tab->root; x; x = x->next)
+	for (Link_t *x = tab->root; x; x = x->next)
 		if (!strcmp(x->code, s))
 			return x;
 	return NULL;

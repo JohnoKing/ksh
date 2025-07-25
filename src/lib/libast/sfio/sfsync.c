@@ -27,22 +27,22 @@
 
 static int _sfall(void)
 {
-	Sfpool_t	*p, *next;
+	Sfpool_t	*next;
 	Sfio_t*		f;
-	int		n, rv;
-	int		nsync, count, loop;
+	int		rv;
+	int		nsync, count;
 #define MAXLOOP 3
 
-	for(loop = 0; loop < MAXLOOP; ++loop)
+	for(int loop = 0; loop < MAXLOOP; ++loop)
 	{	rv = nsync = count = 0;
-		for(p = &_Sfpool; p; p = next)
+		for(Sfpool_t *p = &_Sfpool; p; p = next)
 		{	/* find the next legitimate pool */
 			for(next = p->next; next; next = next->next)
 				if(next->n_sf > 0)
 					break;
 
 			/* walk the streams for _Sfpool only */
-			for(n = 0; n < ((p == &_Sfpool) ? p->n_sf : 1); ++n)
+			for(int n = 0; n < ((p == &_Sfpool) ? p->n_sf : 1); ++n)
 			{	count += 1;
 				f = p->sf[n];
 

@@ -505,7 +505,6 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
 {
 	unsigned char*	sp = (unsigned char*)str;
 	size_t		m;
-	size_t		i;
 	int		c;
 	wchar_t		w = 0;
 
@@ -523,7 +522,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
 				return 1;
 			}
 			w = *sp & ((1<<(8-m))-1);
-			for (i = m - 1; i > 0; i--)
+			for (size_t i = m - 1; i > 0; i--)
 			{
 				c = *++sp;
 				if ((c&0xc0) != 0x80)
@@ -2360,7 +2359,6 @@ static char*
 single(int category, Lc_t* lc, unsigned int flags)
 {
 	const char*	sys;
-	int		i;
 
 #if AHA
 	if ((ast.locale.set & (AST_LC_debug|AST_LC_setlocale)) && !(ast.locale.set & AST_LC_internal))
@@ -2384,7 +2382,7 @@ single(int category, Lc_t* lc, unsigned int flags)
 	{
 		if (lc_categories[category].external == -lc_categories[category].internal)
 		{
-			for (i = 1; i < AST_LC_COUNT; i++)
+			for (size_t i = 1; i < AST_LC_COUNT; i++)
 				if (locales[i] == lc)
 				{
 					sys = (char*)lc->name;
@@ -2486,7 +2484,6 @@ static size_t
 composite(const char* s, int initialize)
 {
 	const char*	t;
-	size_t		i;
 	size_t		j;
 	size_t		k;
 	size_t		n;
@@ -2503,7 +2500,7 @@ composite(const char* s, int initialize)
 		n++;
 		j = 0;
 		w = s;
-		for (i = 1; i < AST_LC_COUNT; i++)
+		for (size_t i = 1; i < AST_LC_COUNT; i++)
 		{
 			s = w;
 			t = lc_categories[i].name;
@@ -2519,7 +2516,7 @@ composite(const char* s, int initialize)
 		for (s = w; *s && *s != '='; s++);
 		if (!*s)
 		{
-			for (i = 0; i < k; i++)
+			for (size_t i = 0; i < k; i++)
 				single(stk[i], NULL, 0);
 			return (size_t)-1;
 		}
@@ -2541,13 +2538,13 @@ composite(const char* s, int initialize)
 				break;
 			}
 		}
-		for (i = 0; i < j; i++)
+		for (size_t i = 0; i < j; i++)
 			if (!initialize)
 			{
 				if (!single(cat[i], p, 0))
 				{
-					for (i = 0; i < k; i++)
-						single(stk[i], NULL, 0);
+					for (size_t x = 0; x < k; x++)
+						single(stk[x], NULL, 0);
 					return (size_t)-1;
 				}
 				stk[k++] = cat[i];
@@ -2573,7 +2570,7 @@ composite(const char* s, int initialize)
 		{
 			if (!single((int)n, p, 0))
 			{
-				for (i = 1; i < n; i++)
+				for (size_t i = 1; i < n; i++)
 					single((int)i, NULL, 0);
 				return (size_t)-1;
 			}

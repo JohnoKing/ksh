@@ -47,8 +47,7 @@ strtoip6(const char* s, char** e, unsigned char* addr, unsigned char* bits)
 
 	if (!lex[0])
 	{
-		size_t i;
-		for (i = 0; i < sizeof(lex); ++i)
+		for (size_t i = 0; i < sizeof(lex); ++i)
 			lex[i] = END;
 		lex['0'] = 0;
 		lex['1'] = 1;

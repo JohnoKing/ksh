@@ -46,12 +46,11 @@ extern int
 fnmatch(const char* pattern, const char* subject, int flags)
 {
 	regflags_t		reflags = REG_SHELL|REG_LEFT;
-	const Map_t*		mp;
 	regex_t			re;
 	regmatch_t		match;
 	int			ret;
 
-	for (mp = map; mp < &map[elementsof(map)]; mp++)
+	for (const Map_t *mp = map; mp < &map[elementsof(map)]; mp++)
 		if (flags & mp->fnm)
 			reflags |= (regflags_t)mp->reg;
 	if (flags & FNM_LEADING_DIR)

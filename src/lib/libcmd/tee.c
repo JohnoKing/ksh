@@ -90,7 +90,6 @@ tee_write(Sfio_t* fp, const void* buf, size_t n, Sfdisc_t* handle)
 static void
 tee_cleanup(Tee_t* tp)
 {
-	int*	hp;
 	int	n;
 
 	if (tp)
@@ -98,7 +97,7 @@ tee_cleanup(Tee_t* tp)
 		sfdisc(sfstdout, NULL);
 		if (tp->line >= 0)
 			sfset(sfstdout, SFIO_LINE, tp->line);
-		for (hp = tp->fd; (n = *hp) >= 0; hp++)
+		for (int *hp = tp->fd; (n = *hp) >= 0; hp++)
 			ast_close(n);
 	}
 }

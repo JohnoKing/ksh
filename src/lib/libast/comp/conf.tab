@@ -199,11 +199,10 @@ NAME_MAX			POSIX	PC 1 LMU	14	cc{
 	#ifdef MAXNAMLEN
 		printf("%d", MAXNAMLEN);
 	#else
-		int	i;
 		int	n;
-		int	v;
+		size_t	v;
 		char	name[256];
-		for (i = 0; i < sizeof(name); i++)
+		for (size_t i = 0; i < sizeof(name); i++)
 			name[i] = 'F';
 		name[8] = '.';
 		name[sizeof(name) - 1] = 0;
@@ -232,7 +231,7 @@ NAME_MAX			POSIX	PC 1 LMU	14	cc{
 				break;
 			}
 		}
-		printf("%d", v);
+		printf("%zu", v);
 		return 0;
 	}
 	#endif

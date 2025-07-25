@@ -160,7 +160,6 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 {
 	if (forked)
 	{
-		int	i;
 #ifndef TIOCSCTTY
 		char*	s;
 #endif /* !TIOCSCTTY */
@@ -185,7 +184,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 			break;
 		case PROC_fd_ctty:
 			setsid();
-			for (i = 0; i <= 2; i++)
+			for (int i = 0; i <= 2; i++)
 				if (arg1 != i)
 					ast_close(i);
 			arg2 = -1;
@@ -198,7 +197,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 			if ((arg2 = open(s, O_RDWR)) < 0)
 				return -1;
 #endif /* TIOCSCTTY */
-			for (i = 0; i <= 2; i++)
+			for (int i = 0; i <= 2; i++)
 				if (arg1 != i && (int)arg2 != i && fcntl((int)arg1, F_DUPFD, i) != i)
 					return -1;
 			if (arg1 > 2)

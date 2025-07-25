@@ -175,8 +175,7 @@ int sh_argopts(int argc,char *argv[])
 			break;
 		    case -6:	/* --default */
 			{
-				const Shtable_t *tp;
-				for(tp=shtab_options; o = tp->sh_number; tp++)
+				for(const Shtable_t *tp=shtab_options; o = tp->sh_number; tp++)
 				{
 					if(!(o&SH_COMMANDLINE) && (o&=0xff)!=SH_RESTRICTED && is_option(&newflags,o))
 					{
@@ -550,7 +549,6 @@ struct dolnod *sh_arguse(void)
  */
 void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 {
-	const Shtable_t *tp;
 	const char *name;
 	int on;
 	uint64_t value;
@@ -564,7 +562,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 		int	i;
 
 		c = 0;
-		for(tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
+		for(const Shtable_t *tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
 		{
 			if(mask && !is_option(mask,value&0xff))
 				continue;
@@ -579,7 +577,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 			w = 2*c;
 		r = w / c;
 		i = 0;
-		for(tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
+		for(const Shtable_t *tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
 		{
 			if(mask && !is_option(mask,value&0xff))
 				continue;
@@ -608,7 +606,7 @@ void sh_printopts(Shopt_t oflags,int mode, Shopt_t *mask)
 #endif
 	if(!(mode&(PRINT_ALL|PRINT_VERBOSE))) /* only print set options */
 		sfwrite(sfstdout,"set --default",13);
-	for(tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
+	for(const Shtable_t *tp=shtab_options; value=(uint64_t)tp->sh_number; tp++)
 	{
 		if(mask && !is_option(mask,value&0xff))
 			continue;

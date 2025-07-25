@@ -1016,7 +1016,6 @@ char *hist_word(char *string,int size,int word)
 {
 	int c;
 	int is_boundary;
-	int quoted;
 	char *s1 = string;
 	unsigned char *cp = (unsigned char*)s1;
 	int flag = 0;
@@ -1024,7 +1023,7 @@ char *hist_word(char *string,int size,int word)
 	if(!hp)
 		return NULL;
 	hist_copy(string,size,(int)hp->histind-1,-1);
-	for(quoted=0;c = (int)*cp;cp++)
+	for(int quoted=0;c = (int)*cp;cp++)
 	{
 		is_boundary = !quoted && hist_iswordbndry(c);
 		if(is_boundary && flag)

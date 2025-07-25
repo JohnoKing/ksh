@@ -213,7 +213,6 @@ mcopen(Sfio_t* ip)
 	Vmalloc_t*	vm;
 	char*		rp;
 	int		i;
-	int		j;
 	int		oerrno;
 	size_t		n;
 	char		buf[MC_MAGIC_SIZE];
@@ -309,7 +308,7 @@ mcopen(Sfio_t* ip)
 	 */
 
 	for (i = 1; i <= mc->num; i++)
-		for (j = 1; j <= mc->set[i].num; j++)
+		for (int j = 1; j <= mc->set[i].num; j++)
 			if (n = (size_t)sfgetu(ip))
 			{
 				mc->set[i].msg[j] = sp;
@@ -510,8 +509,6 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 int
 mcdump(Mc_t* mc, Sfio_t* op)
 {
-	int		i;
-	int		j;
 	size_t		n;
 	char*		s;
 	Mcset_t*	sp;
@@ -549,7 +546,7 @@ mcdump(Mc_t* mc, Sfio_t* op)
 	 * write the set dimensions
 	 */
 
-	for (i = 1; i <= mc->num; i++)
+	for (int i = 1; i <= mc->num; i++)
 		if (mc->set[i].num)
 		{
 			sfputu(op, i);
@@ -561,11 +558,11 @@ mcdump(Mc_t* mc, Sfio_t* op)
 	 * write the message sizes
 	 */
 
-	for (i = 1; i <= mc->num; i++)
+	for (int i = 1; i <= mc->num; i++)
 		if (mc->set[i].num)
 		{
 			sp = mc->set + i;
-			for (j = 1; j <= sp->num; j++)
+			for (int j = 1; j <= sp->num; j++)
 			{
 				n = (s = sp->msg[j]) ? (strlen(s) + 1) : 0;
 				sfputu(op, n);
@@ -576,11 +573,11 @@ mcdump(Mc_t* mc, Sfio_t* op)
 	 * write the string table
 	 */
 
-	for (i = 1; i <= mc->num; i++)
+	for (int i = 1; i <= mc->num; i++)
 		if (mc->set[i].num)
 		{
 			sp = mc->set + i;
-			for (j = 1; j <= sp->num; j++)
+			for (int j = 1; j <= sp->num; j++)
 				if (s = sp->msg[j])
 					sfputr(op, s, 0);
 		}

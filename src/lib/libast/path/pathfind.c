@@ -80,7 +80,6 @@ pathinclude(const char* dir)
 char*
 pathfind(const char* name, const char* lib, const char* type, char* buf, size_t size)
 {
-	Dir_t*		dp;
 	char*		s;
 	char		tmp[PATH_MAX];
 	struct stat	st;
@@ -129,7 +128,7 @@ pathfind(const char* name, const char* lib, const char* type, char* buf, size_t 
 	 * check the include dir list
 	 */
 
-	for (dp = state.head; dp; dp = dp->next)
+	for (Dir_t *dp = state.head; dp; dp = dp->next)
 	{
 		sfsprintf(tmp, sizeof(tmp), "%s/%s", dp->dir, name);
 		if (pathpath(tmp, "", PATH_REGULAR, buf, size))

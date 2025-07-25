@@ -28,7 +28,6 @@
 Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
 	        Sfio_t*	f2)	/* top of stack		*/
 {
-	int		n;
 	Sfio_t*		rf;
 	Sfrsrv_t*	rsrv;
 
@@ -53,7 +52,7 @@ Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
 		if(f1->pool && f1->pool != &_Sfpool && f1->pool != f2->pool &&
 		   f1 == f1->pool->sf[0])
 		{	/* get something else to pool front since f1 will be locked */
-			for(n = 1; n < f1->pool->n_sf; ++n)
+			for(int n = 1; n < f1->pool->n_sf; ++n)
 			{	if(SFFROZEN(f1->pool->sf[n]) )
 					continue;
 				(*_Sfpmove)(f1->pool->sf[n],0);

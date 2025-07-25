@@ -154,8 +154,7 @@ static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
 	Sfulong_t frac = (Sfulong_t)(tv->tv_usec);
 
 	/* scale fraction from micro to milli, centi, or deci second according to precision */
-	int n;
-	for(n = 3 + (3 - precision); n > 0; --n)
+	for(int n = 3 + (3 - precision); n > 0; --n)
 		frac /= 10;
 	if(hr)
 		sfprintf(outfile,"%juh",hr);
@@ -247,8 +246,7 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
 			/* scale fraction from micro to milli, centi, or deci second according to precision */
 			Sfulong_t sec = (Sfulong_t)tvp->tv_sec;
 			Sfulong_t frac = (Sfulong_t)tvp->tv_usec;
-			int n;
-			for(n = 3 + (3 - precision); n > 0; --n)
+			for(int n = 3 + (3 - precision); n > 0; --n)
 				frac /= 10;
 			if(precision)
 				sfprintf(sh.stk, "%ju%c%0*ju", sec, sh.radixpoint, precision, frac);
@@ -1223,8 +1221,7 @@ int sh_exec(const Shnode_t *t, int flags)
 					}
 					else
 					{
-						struct openlist *item;
-						for(item=buffp->olist;item;item=item->next)
+						for(struct openlist *item=buffp->olist;item;item=item->next)
 						{
 							if(item->strm)
 							{
@@ -1646,8 +1643,7 @@ int sh_exec(const Shnode_t *t, int flags)
 				 * https://github.com/ksh93/ksh/issues/161 (check each redirection for >&- or <&-)
 				 * https://github.com/ksh93/ksh/issues/784 (check for stdout in a command substitution)
 				 * TODO: find the elusive real fix */
-				struct ionod *i;
-				for (i = t->fork.forkio; i; i = i->ionxt)
+				for (struct ionod *i = t->fork.forkio; i; i = i->ionxt)
 				{
 					unsigned f = i->iofile;
 					if ((f & (unsigned)~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
@@ -2877,7 +2873,6 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
 	Namval_t	node,*mp,*np, *nref[9], **nr=nref;
 	char		*argv[2];
 	struct funenv	funenv;
-	size_t		i;
 	np = (Namval_t*)fp;
 	funenv.node = np;
 	funenv.nref = nref;
@@ -2887,7 +2882,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
 	SH_VALNOD->nvmeta = NULL;
 	SH_VALNOD->nvflag = NV_LDOUBLE|NV_NOFREE;
 	SH_VALNOD->nvalue = NULL;
-	for(i=0; i < (size_t)nargs; i++)
+	for(size_t i=0; i < (size_t)nargs; i++)
 	{
 		*nr++ = mp = nv_namptr(sh.mathnodes,i);
 		mp->nvalue = arg++;
@@ -2919,7 +2914,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	struct sh_scoped	*savst = stkalloc(sh.stk,sizeof(struct sh_scoped));
 	struct sh_scoped	*prevscope = sh.st.self;
 	struct argnod		*envlist = 0;
-	int			isig, jmpval;
+	int			jmpval;
 	volatile int		r = 0;
 	int			posix_fun = 0, save_loopcnt = sh.st.loopcnt;
 	char			save_invoc_local;
@@ -3009,7 +3004,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 			 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
 			 * so sh.st.trapcom needs a "deep copy" to properly save/restore pointers.
 			 */
-			for (isig = 0; isig < nsig; ++isig)
+			for (int isig = 0; isig < nsig; ++isig)
 			{
 				if(sh.st.trapcom[isig] == Empty)
 					savsig[isig] = Empty;
@@ -3134,7 +3129,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	nv_getval(sh_scoped(IFSNOD));
 	if(nsig)
 	{
-		for (isig = 0; isig < nsig; ++isig)
+		for (int isig = 0; isig < nsig; ++isig)
 			if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
 				free(sh.st.trapcom[isig]);
 		memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));
@@ -3317,8 +3312,7 @@ static void coproc_init(int pipes[])
 static void sigreset(int mode)
 {
 	char   *trap;
-	int	sig;
-	for (sig = 1; sig < sh.st.trapmax; sig++)
+	for (int sig = 1; sig < sh.st.trapmax; sig++)
 	{
 		if(sig==SIGCHLD)
 			continue;

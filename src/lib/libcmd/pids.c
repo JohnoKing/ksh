@@ -56,7 +56,6 @@ static int
 key(void* handle, Sffmt_t* fp, const char* arg, char** ps, Sflong_t* pn)
 {
 	char*	s;
-	int	fd;
 	pid_t	tid;
 
 	NOT_USED(arg);
@@ -68,7 +67,7 @@ key(void* handle, Sffmt_t* fp, const char* arg, char** ps, Sflong_t* pn)
 		*pn = getppid();
 	else if (streq(s, "tid") || streq(s, "tty"))
 	{
-		for (fd = 0; fd < 3; fd++)
+		for (int fd = 0; fd < 3; fd++)
 			if ((tid = tcgetpgrp(fd)) >= 0)
 				break;
 		*pn = tid;

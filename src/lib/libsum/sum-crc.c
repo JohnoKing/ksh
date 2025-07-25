@@ -236,7 +236,6 @@ crc_block(Sum_t* p, const void* s, size_t n)
 	Crcnum_t	c = sum->sum;
 	const unsigned char*	b = (const unsigned char*)s;
 	const unsigned char*	e = b + n;
-	unsigned short i;
 
 	sum_prefetch(b);
 
@@ -248,7 +247,7 @@ crc_block(Sum_t* p, const void* s, size_t n)
 #if defined(__clang__)
 			#pragma clang loop unroll_count(16)
 #endif
-			for(i=0 ; i < CBLOCK_SIZE ; i++)
+			for(unsigned short i=0 ; i < CBLOCK_SIZE ; i++)
 			{
 				CRCROTATE(sum, c, *b++);
 			}
@@ -269,7 +268,7 @@ crc_block(Sum_t* p, const void* s, size_t n)
 #if defined(__clang__)
 			#pragma clang loop unroll_count(16)
 #endif
-			for(i=0 ; i < CBLOCK_SIZE ; i++)
+			for(unsigned short i=0 ; i < CBLOCK_SIZE ; i++)
 			{
 				CRC(sum, c, *b++);
 			}
