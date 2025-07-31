@@ -172,7 +172,7 @@ typedef struct regsubop_s
 #define setclr(p,c)	bitclr((p)->bits,c)
 #define settst(p,c)	bittst((p)->bits,c)
 
-#if _hdr_wchar && _lib_wctype
+#if _hdr_wchar
 
 #include <stdio.h> /* because <wchar.h> includes it and we generate it */
 #include <wchar.h>
@@ -180,17 +180,7 @@ typedef struct regsubop_s
 #include <wctype.h>
 #endif
 
-#if !defined(towupper) && !_lib_towupper
-#define towupper(x)	toupper(x)
-#endif
-
-#if !defined(towlower) && !_lib_towlower
-#define towlower(x)	tolower(x)
-#endif
-
 #else
-
-#undef	_lib_wctype
 
 #ifndef iswalnum
 #define iswalnum(x)	isalnum(x)

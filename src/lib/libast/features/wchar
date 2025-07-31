@@ -10,9 +10,7 @@ cat{
 	#endif
 }end
 
-lib	mbstowcs,wctomb,wcrtomb,wcstombs,wcwidth stdlib.h stdio.h wchar.h
-lib	towlower,towupper stdlib.h stdio.h wchar.h
-typ	mbstate_t stdlib.h stdio.h wchar.h
+hdr	wchar
 nxt	wchar
 
 run{
@@ -114,25 +112,6 @@ run{
 	#define vwscanf		_ast_vwscanf
 	#define wprintf		_ast_wprintf
 	#define wscanf		_ast_wscanf
-
-	#if !_typ_mbstate_t
-	#undef	_typ_mbstate_t
-	#define _typ_mbstate_t	1
-	typedef char mbstate_t;
-	#endif
-
-	#if !_lib_mbstowcs
-	extern size_t		mbstowcs(wchar_t*, const char*, size_t);
-	#endif
-	#if !_lib_wctomb
-	extern int		wctomb(char*, wchar_t);
-	#endif
-	#if !_lib_wcrtomb
-	extern size_t		wcrtomb(char*, wchar_t, mbstate_t*);
-	#endif
-	#if !_lib_wcstombs
-	extern size_t		wcstombs(char*, const wchar_t*, size_t);
-	#endif
 
 	extern int		fwprintf(FILE*, const wchar_t*, ...);
 	extern int		fwscanf(FILE*, const wchar_t*, ...);

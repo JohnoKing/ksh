@@ -51,18 +51,10 @@
 
 /* AST always provides multibyte handling */
 #undef _hdr_wchar
-#undef _lib_mbrtowc
-#undef _lib_wcrtomb
 #define _hdr_wchar	1
-#define _lib_mbrtowc	1
-#define _lib_wcrtomb	1
 
 #if _mem_st_blksize_stat
 #define _stat_blksize	1
-#endif
-
-#if _lib_localeconv && _hdr_locale
-#define _lib_locale	1
 #endif
 
 #if !_mmap_worthy

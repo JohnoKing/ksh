@@ -36,21 +36,12 @@
 #include <namval.h>
 #include <error.h>
 
-#if ( _lib_wcwidth || _lib_wctomb ) && _hdr_wctype
+#if _hdr_wctype
 #include <wctype.h>
 #endif
 
-#if _lib_wcwidth
 #undef	wcwidth
-#else
-#define wcwidth			0
-#endif
-
-#if _lib_wctomb
 #undef	wctomb
-#else
-#define wctomb			0
-#endif
 
 #ifdef mblen
 #undef	mblen
@@ -80,7 +71,7 @@ header(void)
  * LC_COLLATE and LC_CTYPE native support
  */
 
-#if !_lib_mbtowc || MB_LEN_MAX <= 1
+#if MB_LEN_MAX <= 1
 #define mblen		0
 #define mbtowc		0
 #endif
@@ -440,7 +431,7 @@ set_collate(Lc_category_t* cp)
  * workaround the interesting SJIS that translates unshifted 7 bit ASCII!
  */
 
-#if _hdr_wchar && _typ_mbstate_t && _lib_mbrtowc && !AST_NOMULTIBYTE
+#if _hdr_wchar && !AST_NOMULTIBYTE
 
 #define sjis_workaround	1
 static mbstate_t	sjis_state_zero;
@@ -2119,7 +2110,7 @@ utf8_alpha(wchar_t c)
 
 #endif /* !AST_NOMULTIBYTE */
 
-#if !_hdr_wchar || !_lib_wctype
+#if !_hdr_wchar
 #undef	iswalpha
 #define iswalpha	default_iswalpha
 static int

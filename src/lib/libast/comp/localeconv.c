@@ -57,18 +57,6 @@ static void init_lconv_structs(void)
 		CHAR_MAX;
 }
 
-#if !_lib_localeconv
-
-struct lconv*
-localeconv(void)
-{
-	if(!default_lconv.decimal_point)
-		init_lconv_structs();
-	return &default_lconv;
-}
-
-#endif
-
 /*
  * localeconv() intercept
  */

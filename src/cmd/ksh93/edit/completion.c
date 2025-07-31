@@ -79,14 +79,12 @@ static int charcmp(int a, int b, int nocase)
 {
 	if(nocase)
 	{
-#if _lib_towlower
 		if(mbwide())
 		{
 			a = (int)towlower((wint_t)a);
 			b = (int)towlower((wint_t)b);
 		}
 		else
-#endif
 		{
 			a = tolower(a);
 			b = tolower(b);

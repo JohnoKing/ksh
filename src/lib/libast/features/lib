@@ -4,7 +4,7 @@ cmd	universe
 
 sys	mman
 hdr	dirent,direntry,jioctl
-hdr	locale,ndir,nl_types,process,spawn,utime
+hdr	ndir,nl_types,process,spawn,utime
 hdr	linux/fs,linux/msdos_fs
 hdr	wctype
 hdr	wchar note{ <wchar.h> and isw*() really work }end execute{
@@ -26,9 +26,7 @@ lib	confstr,dirread
 lib	fcntl,fmtmsg,fsync
 lib	getdents,getdirentries,getdtablesize
 lib	gethostname,getpagesize,getrlimit
-lib	localeconv,madvise
-lib	mbtowc,mbrtowc,memdup
-lib	mktime
+lib	madvise,memdup
 lib	opendir,openat,pathconf,pipe2,posix_close
 lib	rewinddir,setlocale
 lib	setreuid,setuid
@@ -36,7 +34,7 @@ lib	socketpair
 lib	clone,spawn,spawnve
 lib	strcoll,strlcat,strlcpy,stpcpy
 lib	strmode,strxfrm,strftime,sysconf,sysinfo
-lib	tzset,universe,utime,wctype
+lib	tzset,universe,utime
 lib	ftruncate
 
 lib,npt	strtod,strtold,strtol,strtoll,strtoul,strtoull stdlib.h

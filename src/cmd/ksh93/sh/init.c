@@ -97,7 +97,6 @@ static wctrans_t wctrans(const char *name)
 #define towctrans	sh_towctrans
 static int towctrans(int c, wctrans_t t)
 {
-#if _lib_towupper && _lib_towlower
 	if(mbwide())
 	{
 		if(t==1 && iswupper((wint_t)c))
@@ -106,7 +105,6 @@ static int towctrans(int c, wctrans_t t)
 			c = (int)towupper((wint_t)c);
 	}
 	else
-#endif
 	if(t==1 && isupper(c))
 		c = tolower(c);
 	else if(t==2 && islower(c))
@@ -471,7 +469,6 @@ static void put_lang(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 		}
 	}
 	nv_putv(np, val, flags, fp);
-#if _lib_localeconv
 	if(type==LC_ALL || type==LC_NUMERIC || type==LC_LANG)
 	{
 		struct lconv *lp = localeconv();
@@ -479,7 +476,6 @@ static void put_lang(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 		/* Multibyte radix points are not (yet?) supported */
 		sh.radixpoint = strlen(cp)==1 ? *cp : '.';
 	}
-#endif
 }
 
 /* Trap for IFS assignment and invalidates state table */

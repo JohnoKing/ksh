@@ -2614,14 +2614,6 @@ make install virtual
 			exec - compile %{<} -Idisc -Iport -Isfio
 		done
 
-		make wc.o
-			make comp/wc.c
-				prev std/wchar.h
-				prev include/ast.h
-			done
-			exec - compile %{<}
-		done
-
 		make utf32toutf8.o
 			make string/utf32toutf8.c
 				prev include/ast.h
@@ -2722,15 +2714,6 @@ make install virtual
 				make comp/wordexp.h
 					prev ast_common.h
 				done
-				prev include/ast.h
-			done
-			exec - compile %{<}
-		done
-
-		make mktime.o
-			make comp/mktime.c
-				prev ast_map.h
-				prev include/tm.h
 				prev include/ast.h
 			done
 			exec - compile %{<}
