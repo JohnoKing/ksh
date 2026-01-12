@@ -532,7 +532,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		.pwdfd = -1	/* pwdfd should not be initialized to stdin */
 	};
 	struct subshell *sp = &sub_data;
-	int jmpval,nsig=0,fatalerror=0,saveerrno=0;
+	int jmpval;
+	volatile int nsig=0,fatalerror=0,saveerrno=0,argcnt;
 	unsigned int savecurenv = sh.curenv;
 	int savejobpgid = job.curpgid;
 	int *saveexitval = job.exitval;
@@ -541,7 +542,6 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 	struct checkpt checkpoint;
 	struct sh_scoped savst;
 	struct dolnod   *argsav=0;
-	int argcnt;
 	sfsync(sh.outpool);
 	sh_sigcheck();
 	sh.savesig = -1;

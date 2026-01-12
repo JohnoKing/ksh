@@ -170,7 +170,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 	int count;
 	Emacs_t *ep = ed->e_emacs;
 	int adjust,oadjust;
-	int vt220_save_repeat = 0;
+	volatile int vt220_save_repeat = 0;
 	char backslash;
 	genchar *kptr;
 	char prompt[PRSIZE];

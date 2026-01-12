@@ -46,7 +46,7 @@
 #endif	/* _hdr_nc */
 
 /* These routines are referenced by this module */
-static void	exfile(Sfio_t*,int);
+static void	exfile(Sfio_t*,volatile int);
 static void	chkmail(char*);
 #if !defined(_NEXT_SOURCE) && !defined(__sun)
     static void	fixargs(char**,int);
@@ -98,7 +98,7 @@ static int sh_source(Sfio_t *iop, const char *file)
 noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 {
 	char		*name;
-	int		fdin;
+	volatile int	fdin;
 	Sfio_t		*iop;
 	struct stat	statb;
 	int		i;
@@ -341,7 +341,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
  * iop is not null when the input is a string
  * fdin is the input file descriptor
  */
-static void	exfile(Sfio_t *iop,int fno)
+static void	exfile(Sfio_t *iop,volatile int fno)
 {
 	time_t curtime;
 	Shnode_t *t;

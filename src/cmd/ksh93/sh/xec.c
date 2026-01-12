@@ -531,7 +531,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
 /*
  * Given stream <iop> compile and execute
  */
-int sh_eval(Sfio_t *iop, int mode)
+int sh_eval(Sfio_t *iop, int eval_mode)
 {
 	Shnode_t *t;
 	struct slnod *saveslp = sh.st.staklist;
@@ -539,7 +539,7 @@ int sh_eval(Sfio_t *iop, int mode)
 	struct checkpt *pp = (struct checkpt*)sh.jmplist;
 	struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 	static Sfio_t *io_save;
-	volatile int traceon=0, lineno=0;
+	volatile int traceon=0, lineno=0, mode = eval_mode;
 	char binscript=sh.binscript;
 	char comsub = sh.comsub;
 	io_save = iop; /* preserve correct value across longjmp */
@@ -696,7 +696,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
 }
 
 #if SHOPT_FILESCAN
-    static Sfio_t *openstream(struct ionod *iop, int *save)
+    static Sfio_t *openstream(struct ionod *iop, volatile int *save)
     {
 	int savein, fd = sh_redirect(iop,3);
 	Sfio_t	*sp;
@@ -789,15 +789,16 @@ static int check_exec_optimization(int type, int execflg, int execflg2, struct i
 /*
  * Main execution function: execute any type of command.
  */
-int sh_exec(const Shnode_t *t, int flags)
+int sh_exec(const Shnode_t *t, int exec_flags)
 {
-	int		type;
-	int 		mainloop;
+	int		type, mainloop;
+	volatile int	flags;
 	sh_sigcheck();
 	/* Bail out on no command, break/continue, or noexec */
 	if(!t || sh.st.breakcnt || sh_isoption(SH_NOEXEC))
 		return sh.exitval;
 	/* Set up state */
+	flags = exec_flags;
 	sh.exitval = 0;
 	sh.lastsig = 0;
 	sh.chldexitsig = 0;
@@ -867,7 +868,8 @@ int sh_exec(const Shnode_t *t, int flags)
 			char		*trap;
 			Namval_t	*np, *nq, *last_table;
 			struct ionod	*io;
-			int		command=0, jmpval=0;
+			volatile int	command=0;
+			int		jmpval=0;
 			nvflag_t	flgs = NV_ASSIGN;
 			sh.bltindata.invariant = type>>(COMBITS+2);
 			type &= (COMMSK|COMSCAN);
@@ -1122,8 +1124,8 @@ int sh_exec(const Shnode_t *t, int flags)
 					volatile char	scope, was_mktype, was_nofork;
 					volatile void	*save_ptr;
 					volatile void	*save_data;
-					short		save_prompt;
-					int		share;
+					volatile short	save_prompt;
+					volatile int	share;
 					struct checkpt	*buffp;
 					Shbltin_t	*bp = &sh.bltindata;
 					/* Fallback optimization for ':'/'true' and 'false' */
@@ -1285,7 +1287,7 @@ int sh_exec(const Shnode_t *t, int flags)
 #endif /* SHOPT_NAMESPACE */
 					Namval_t	*nodep;
 					struct Namref	*nrp;
-					long		mode = 0;
+					volatile long	mode = 0;
 					struct slnod *slp;
 					if(!np->nvalue)
 					{
@@ -1494,10 +1496,9 @@ int sh_exec(const Shnode_t *t, int flags)
 			 * this is the FORKED branch (child) of execute
 			 */
 			{
-				volatile int jmpval;
+				volatile int jmpval, rewrite = 0;
 				struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 				struct ionod *iop;
-				int	rewrite=0;
 #if !SHOPT_DEVFD
 				char	*save_sh_fifo = sh.fifo;
 				if(sh.fifo_tree)
@@ -1632,10 +1633,10 @@ int sh_exec(const Shnode_t *t, int flags)
 		     */
 		    case TSETIO:
 		    {
-			pid_t	pid = 0;
-			int 	jmpval;
-			char	waitall = 0;
-			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
+			volatile pid_t	pid = 0;
+			volatile char	waitall = 0;
+			int 		jmpval;
+			int 		simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
 			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 			if(sh.subshell && !sh.subshare)
 			{
@@ -1910,13 +1911,12 @@ int sh_exec(const Shnode_t *t, int flags)
 		    case TFOR:
 		    {
 			char **args;
-			int nargs;
 			Namval_t *np;
-			int flag = errorflg|ARG_OPTIMIZE;
+			volatile int flag = errorflg|ARG_OPTIMIZE, refresh=1;
 			struct dolnod	*argsav = NULL;
 			struct comnod	*tp;
 			char *cp, *trap, *null_pointer = NULL;
-			int nameref, refresh=1;
+			int nargs, nameref;
 			char *av[5];
 #if SHOPT_OPTIMIZE
 			int  jmpval = ((struct checkpt*)sh.jmplist)->mode;
@@ -2045,15 +2045,14 @@ int sh_exec(const Shnode_t *t, int flags)
 		     */
 		    case TWH:
 		    {
-			volatile int 	r=0;
-			int first = ARG_OPTIMIZE;
+			volatile int 	r = 0, first = ARG_OPTIMIZE;
 			Shnode_t *tt = t->wh.whtre;
 			char always_true;
 			Namval_t *np;
 			Shbltin_f fp;
 #if SHOPT_FILESCAN
-			Sfio_t *iop=0;
-			int savein=-1;
+			Sfio_t *iop = NULL;
+			volatile int savein = -1;
 #endif /* SHOPT_FILESCAN */
 #if SHOPT_OPTIMIZE
 			int  jmpval = ((struct checkpt*)sh.jmplist)->mode;
@@ -2909,15 +2908,13 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
 int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 {
 	char			*trap;
-	int			nsig;
 	struct dolnod		*argsav = 0, *saveargfor;
 	struct sh_scoped	*savst = stkalloc(sh.stk,sizeof(struct sh_scoped));
 	struct sh_scoped	*prevscope = sh.st.self;
 	struct argnod		*envlist = 0;
-	int			jmpval;
-	volatile int		r = 0;
-	int			posix_fun = 0, save_loopcnt = sh.st.loopcnt;
-	char			save_invoc_local;
+	volatile int		nsig, r = 0;
+	volatile char		save_invoc_local;
+	int			jmpval, posix_fun = 0, save_loopcnt = sh.st.loopcnt;
 	char 			**savsig;
 	struct funenv		*fp = 0;
 	struct checkpt		*buffp = stkalloc(sh.stk,sizeof(struct checkpt));
@@ -3210,9 +3207,9 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
 	char		*base;
 	Namval_t	node;
 	struct Namref	nr;
-	long		mode = 0;
+	volatile long	mode = 0;
+	volatile int	n=0;
 	char		*prefix = sh.prefix;
-	int		n=0;
 	char		*av[3];
 	Fcin_t		save;
 	fcsave(&save);

@@ -234,11 +234,12 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 	Namval_t		*np;
 	int			jmpval, fd;
 	struct sh_scoped	savst, *prevscope = sh.st.self;
-	char			*filename=0, *buffer=0, *tofree;
+	char			*filename=NULL, *tofree;
 	struct dolnod		*saveargfor;
-	volatile struct dolnod	*argsave=0;
+	volatile struct dolnod	*argsave=NULL;
 	struct checkpt		buff;
-	Sfio_t			*iop=0;
+	Sfio_t			*iop=NULL;
+	void			*buffer;
 	while (n = optget(argv,sh_optdot)) switch (n)
 	{
 	    case ':':
@@ -310,6 +311,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 	sh_pushcontext(&buff,SH_JMPDOT);
 	errorpush(&buff.err,0);
 	error_info.id = argv[0];
+	buffer = NULL;
 	jmpval = sigsetjmp(buff.buff,0);
 	if(jmpval == 0)
 	{

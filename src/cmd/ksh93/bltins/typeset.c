@@ -1328,7 +1328,7 @@ static int unall(int argc, char **argv, Dt_t *troot)
 	volatile int r;
 	Dt_t	*dp;
 	int all=0,isfun,jmpval;
-	nvflag_t nflag=0;
+	volatile nvflag_t nflag=0;
 	struct checkpt buff;
 	NOT_USED(argc);
 	if(troot==sh.alias_tree)

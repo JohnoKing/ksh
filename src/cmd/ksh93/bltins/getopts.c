@@ -53,7 +53,7 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 	return 1;
 }
 
-int	b_getopts(int argc,char *argv[],Shbltin_t *context)
+int	b_getopts(int _argc,char *argv[],Shbltin_t *context)
 {
 	char *options=error_info.context->id;
 	Namval_t *np;
@@ -61,7 +61,7 @@ int	b_getopts(int argc,char *argv[],Shbltin_t *context)
 	bool mode;
 	char value[2], key[2];
 	int jmpval;
-	volatile int extended, r= -1;
+	volatile int extended, r = -1, argc = _argc;
 	struct checkpt buff, *pp;
 	Optdisc_t disc = {
 		.version = OPT_VERSION,

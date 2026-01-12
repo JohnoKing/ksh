@@ -29,7 +29,7 @@
 #include	"io.h"
 #include	"shlex.h"
 
-static void assign(Namval_t*,const char*,nvflag_t,Namfun_t*);
+static void assign(Namval_t*,const char*,volatile nvflag_t,Namfun_t*);
 
 int nv_compare(Dt_t* dict, void *sp, void *dp, Dtdisc_t *disc)
 {
@@ -237,9 +237,9 @@ static void chktfree(Namval_t *np, struct vardisc *vp)
 /*
  * This function performs an assignment disc on the given node <np>
  */
-static void	assign(Namval_t *np,const char* val,nvflag_t flags,Namfun_t *handle)
+static void	assign(Namval_t *np,const char* val,volatile nvflag_t flags,Namfun_t *handle)
 {
-	int		type = (flags&NV_APPEND)?APPEND:ASSIGN;
+	volatile int	type = (flags&NV_APPEND)?APPEND:ASSIGN;
 	struct vardisc *vp = (struct vardisc*)handle;
 	Namval_t *nq =  vp->disc[type];
 	struct blocked	block, *bp;
@@ -288,7 +288,7 @@ static void	assign(Namval_t *np,const char* val,nvflag_t flags,Namfun_t *handle)
 		struct checkpt	checkpoint;
 		int		savexit = sh.savexit;
 		Lex_t		*lexp = (Lex_t*)sh.lex_context, savelex;
-		int		bflag;
+		volatile int	bflag;
 		/* disciplines like PS2 may run at parse time; save, reinit and restore the lexer state */
 		savelex = *lexp;
 		sh_lexopen(lexp, 0);   /* needs full init (0), not what it calls reinit (1) */
