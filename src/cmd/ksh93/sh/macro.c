@@ -125,7 +125,7 @@ void *sh_macopen(void)
  * perform only parameter substitution and catch failures
  * (also save lexer state to allow use while in here-docs)
  */
-char *sh_mactry(char *string)
+char *sh_mactry(char *volatile string)
 {
 	if(string)
 	{

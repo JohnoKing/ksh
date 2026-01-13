@@ -241,7 +241,7 @@ static void	assign(Namval_t *np,const char* val,volatile nvflag_t flags,Namfun_t
 {
 	volatile int	type = (flags&NV_APPEND)?APPEND:ASSIGN;
 	struct vardisc *vp = (struct vardisc*)handle;
-	Namval_t *nq =  vp->disc[type];
+	Namval_t *volatile nq = vp->disc[type];
 	struct blocked	block, *bp;
 	Namval_t	node;
 	void		*saveval = np->nvalue;

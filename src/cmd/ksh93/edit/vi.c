@@ -198,7 +198,7 @@ int ed_viread(void *context, int fd, char *shbuf, int nchar, int reedit)
 	Edit_t *ed = (Edit_t*)context;
 	int i;				/* general variable */
 	int r = -1;			/* return value */
-	Vi_t *vp = ed->e_vi;
+	Vi_t *volatile vp = ed->e_vi;
 	char prompt[PRSIZE+2];		/* prompt */
 	genchar Physical[2*MAXLINE];	/* physical image */
 	genchar Ubuf[MAXLINE];		/* used for U command */

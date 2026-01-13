@@ -533,11 +533,11 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 	unsigned int savecurenv = sh.curenv;
 	int savejobpgid = job.curpgid;
 	int *saveexitval = job.exitval;
-	char **savsig;
-	Sfio_t *iop=0;
+	char **volatile savsig;
+	Sfio_t *volatile iop=0;
 	struct checkpt checkpoint;
 	struct sh_scoped savst;
-	struct dolnod   *argsav=0;
+	struct dolnod   *volatile argsav=0;
 	sfsync(sh.outpool);
 	sh_sigcheck();
 	sh.savesig = -1;

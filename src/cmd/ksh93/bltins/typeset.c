@@ -78,7 +78,7 @@ static int	print_namval(Sfio_t*, Namval_t*, int, struct tdata*);
 static void	print_attribute(Namval_t*,void*);
 static void	print_all(Sfio_t*, Dt_t*, struct tdata*);
 static void	print_scan(Sfio_t*, nvflag_t, Dt_t*, int, struct tdata*);
-static int	unall(int, char**, Dt_t*);
+static int	unall(int, char **volatile, Dt_t *volatile);
 static int	setall(char**, nvflag_t, Dt_t*, struct tdata*);
 static void	pushname(Namval_t*,void*);
 static void(*nullscan)(Namval_t*,void*);
@@ -1320,7 +1320,7 @@ int    b_unset(int argc,char *argv[],Shbltin_t *context)
 	return unall(argc,argv,sh.var_tree);
 }
 
-static int unall(int argc, char **argv, Dt_t *troot)
+static int unall(int argc, char **volatile argv, Dt_t *volatile troot)
 {
 	Namval_t *np;
 	const char *name;

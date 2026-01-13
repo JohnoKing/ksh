@@ -789,7 +789,7 @@ static int check_exec_optimization(int type, int execflg, int execflg2, struct i
 /*
  * Main execution function: execute any type of command.
  */
-int sh_exec(const Shnode_t *t, int exec_flags)
+int sh_exec(const Shnode_t *volatile t, int exec_flags)
 {
 	int		type, mainloop;
 	volatile int	flags;
@@ -847,7 +847,7 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 		int 		execflg2 = (flags&sh_state(SH_FORKED));
 		int		topfd = sh.topfd;
 		char 		*sav=stkfreeze(sh.stk,0);
-		char		*cp=0, **com=0, *comn;
+		char		*cp=0, **com=0, *volatile comn;
 		int		argn;
 		int 		skipexitset = 0;
 		volatile int	was_interactive = 0;
@@ -864,10 +864,10 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 		     */
 		    case TCOM:
 		    {
-			struct argnod	*argp;
+			struct argnod	*volatile argp;
 			char		*trap;
-			Namval_t	*np, *nq, *last_table;
-			struct ionod	*io;
+			Namval_t	*volatile np, *nq, *last_table;
+			struct ionod	*volatile io;
 			volatile int	command=0;
 			int		jmpval=0;
 			nvflag_t	flgs = NV_ASSIGN;
@@ -947,7 +947,7 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 			{
 				if(argn==0 || (np && (nv_isattr(np,BLT_DCL) || (!command && nv_isattr(np,BLT_SPC)))))
 				{
-					Namval_t *tp=0;
+					Namval_t *volatile tp = NULL;
 					if(argn)
 					{
 						if(checkopt(com,'A'))
@@ -1281,12 +1281,12 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 				{
 					volatile int indx;
 					volatile char scope = 0;
-					struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
+					struct checkpt *volatile buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 #if SHOPT_NAMESPACE
-					Namval_t *namespace=0;
+					Namval_t *volatile namespace = NULL;
 #endif /* SHOPT_NAMESPACE */
-					Namval_t	*nodep;
-					struct Namref	*nrp;
+					Namval_t	*volatile nodep;
+					struct Namref	*volatile nrp;
 					volatile long	mode = 0;
 					struct slnod *slp;
 					if(!np->nvalue)
@@ -1637,7 +1637,7 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 			volatile char	waitall = 0;
 			int 		jmpval;
 			int 		simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
-			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
+			struct checkpt *volatile buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 			if(sh.subshell && !sh.subshare)
 			{
 				/* Subshell forking workaround for:
@@ -1913,7 +1913,7 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 			char **args;
 			Namval_t *np;
 			volatile int flag = errorflg|ARG_OPTIMIZE, refresh=1;
-			struct dolnod	*argsav = NULL;
+			struct dolnod	*volatile argsav = NULL;
 			struct comnod	*tp;
 			char *cp, *trap, *null_pointer = NULL;
 			int nargs, nameref;
@@ -2051,7 +2051,7 @@ int sh_exec(const Shnode_t *t, int exec_flags)
 			Namval_t *np;
 			Shbltin_f fp;
 #if SHOPT_FILESCAN
-			Sfio_t *iop = NULL;
+			Sfio_t *volatile iop = NULL;
 			volatile int savein = -1;
 #endif /* SHOPT_FILESCAN */
 #if SHOPT_OPTIMIZE
@@ -3198,19 +3198,20 @@ static void sh_funct(Namval_t *np,int argn, char *argv[],struct argnod *envlist,
  * <np> is the function node
  * If <nq> is not-null, then sh.name and sh.subscript will be set
  */
-int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
+int sh_fun(Namval_t *np, Namval_t *nq, char *_argv[])
 {
 	struct checkpt	*checkpoint;
 	int		jmpval = 0;
 	int		jmpthresh;
 	ptrdiff_t	offset = 0;
-	char		*base;
+	char		*volatile base;
 	Namval_t	node;
 	struct Namref	nr;
 	volatile long	mode = 0;
 	volatile int	n=0;
 	char		*prefix = sh.prefix;
 	char		*av[3];
+	char		**volatile argv = _argv;
 	Fcin_t		save;
 	fcsave(&save);
 	if((offset=stktell(sh.stk))>0)

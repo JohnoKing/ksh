@@ -160,7 +160,7 @@ static void show_info(Emacs_t*,const char*);
 static void xcommands(Emacs_t*,int);
 static int blankline(Emacs_t*, genchar*, int);
 
-int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
+int ed_emacsread(void *context, int fd,char *buff,int sc, int reedit)
 {
 	Edit_t *ed = (Edit_t*)context;
 	int c;
@@ -168,9 +168,10 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 	int r = -1;  /* return code */
 	genchar *out;
 	int count;
-	Emacs_t *ep = ed->e_emacs;
+	Emacs_t *volatile ep = ed->e_emacs;
 	int adjust,oadjust;
 	volatile int vt220_save_repeat = 0;
+	volatile int scend = sc;
 	char backslash;
 	genchar *kptr;
 	char prompt[PRSIZE];

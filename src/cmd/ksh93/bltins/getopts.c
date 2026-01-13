@@ -53,9 +53,10 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 	return 1;
 }
 
-int	b_getopts(int _argc,char *argv[],Shbltin_t *context)
+int	b_getopts(int _argc,char *_argv[],Shbltin_t *context)
 {
-	char *options=error_info.context->id;
+	char *volatile options = error_info.context->id;
+	char **volatile argv;
 	Namval_t *np;
 	int flag;
 	bool mode;
@@ -71,7 +72,7 @@ int	b_getopts(int _argc,char *argv[],Shbltin_t *context)
 	NOT_USED(context);
 	value[1] = 0;
 	key[1] = 0;
-	while((flag = optget(argv,sh_optgetopts))) switch(flag)
+	while((flag = optget(_argv,sh_optgetopts))) switch(flag)
 	{
 	    case 'a':
 		options = opt_info.arg;
@@ -84,8 +85,9 @@ int	b_getopts(int _argc,char *argv[],Shbltin_t *context)
 		error(ERROR_USAGE|ERROR_OUTPUT, STDOUT_FILENO, "%s", opt_info.arg);
 		return 0;
 	}
-	argv += opt_info.index;
+	_argv += opt_info.index;
 	argc -= opt_info.index;
+	argv = _argv;
 	if(error_info.errors || argc<2)
 	{
 		errormsg(SH_DICT,ERROR_usage(2), "%s", optusage(NULL));

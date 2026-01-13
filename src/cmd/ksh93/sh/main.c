@@ -46,7 +46,7 @@
 #endif	/* _hdr_nc */
 
 /* These routines are referenced by this module */
-static void	exfile(Sfio_t*,volatile int);
+static void	exfile(Sfio_t *volatile,volatile int);
 static void	chkmail(char*);
 #if !defined(__sun)
     static void	fixargs(char**,int);
@@ -345,7 +345,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
  * iop is not null when the input is a string
  * fdin is the input file descriptor
  */
-static void	exfile(Sfio_t *iop,volatile int fno)
+static void	exfile(Sfio_t *volatile iop,volatile int fno)
 {
 	time_t curtime;
 	Shnode_t *t;

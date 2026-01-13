@@ -138,8 +138,7 @@ static void	trap_timeout(void* handle)
 
 void	sh_timetraps(void)
 {
-	struct tevent *tp, *tpnext;
-	struct tevent *tptop;
+	struct tevent *volatile tp, *volatile tpnext, *volatile tptop;
 	while(1)
 	{
 		sh.trapnote &= ~SH_SIGALRM;

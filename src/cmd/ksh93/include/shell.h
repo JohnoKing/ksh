@@ -479,7 +479,7 @@ extern void		sh_sigcheck(void);
 extern uint64_t		sh_isoption(uint64_t);
 extern uint64_t		sh_onoption(uint64_t);
 extern uint64_t		sh_offoption(uint64_t);
-extern int		sh_exec(const Shnode_t*,int);
+extern int		sh_exec(const Shnode_t *volatile,int);
 
 /*
  * As of 93u+m, direct access to sh is no longer obsolete;

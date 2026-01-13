@@ -215,16 +215,17 @@ static void timedout(void *handle)
  *  <flags> is union of -A, -r, -s, and contains delimiter if not '\n'
  *  <timeout> is the number of milliseconds until timeout
  */
-int sh_readline(char **names, volatile int fd, int flg, ssize_t sz, Sflong_t timeout)
+int sh_readline(char **volatile names, volatile int fd, int flg, ssize_t sz, Sflong_t timeout)
 {
 	ssize_t			c;
 	unsigned char		*cp;
 	Namval_t		*np;
-	char			*name, *val;
-	Sfio_t			*iop;
-	char			*ifs;
-	unsigned char		*cpmax;
+	Sfio_t			*volatile iop;
+	void			*volatile timeslot = NULL;
+	char			*volatile ifs;
+	unsigned char		*volatile cpmax;
 	unsigned char		*del;
+	char			*name, *val;
 	volatile char		was_escape = 0;
 	volatile char		use_stak = 0;
 	volatile char		was_write = 0;
@@ -233,7 +234,6 @@ int sh_readline(char **names, volatile int fd, int flg, ssize_t sz, Sflong_t tim
 	int			wrd;
 	ptrdiff_t		rel;
 	long			array_index = 0;
-	void			*timeslot=0;
 	volatile int		delim = '\n';
 	volatile int		flags = flg;
 	volatile ssize_t	size = sz;
