@@ -237,6 +237,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 	char			*filename=NULL, *tofree;
 	struct dolnod		*saveargfor;
 	volatile struct dolnod	*argsave=NULL;
+	bool			argsave_set;
 	struct checkpt		buff;
 	Sfio_t			*iop=NULL;
 	void			*buffer;
@@ -306,7 +307,8 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 	if(np)
 		sh.st.filename = ((struct Ufunction*)np->nvalue)->fname;
 	nv_putval(SH_PATHNAMENOD,sh.st.filename,NV_NOFREE);
-	if(np || argv[1])
+	argsave_set = np != NULL || argv[1] != NULL;
+	if(argsave_set)
 		argsave = sh_argnew(argv,&saveargfor);
 	sh_pushcontext(&buff,SH_JMPDOT);
 	errorpush(&buff.err,0);
@@ -338,7 +340,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 		free(tofree);
 	sh.dot_depth--;
 	update_sh_level();
-	if((np || argv[1]) && jmpval!=SH_JMPSCRIPT)
+	if(argsave_set && jmpval!=SH_JMPSCRIPT)
 		sh_argreset((struct dolnod*)argsave,saveargfor);
 	else
 	{
