@@ -84,7 +84,7 @@ struct lval
 
 struct mathtab
 {
-	char		fname[16];
+	char		fname[18];
 	Sfdouble_t	(*fnptr)(Sfdouble_t,...);
 };
 
