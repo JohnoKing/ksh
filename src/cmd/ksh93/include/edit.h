@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -28,7 +28,7 @@
 #define SEARCHSIZE	80
 
 #include	"FEATURE/cmds"
-#include        "FEATURE/locale"
+#include	"FEATURE/locale"
 #include	"terminal.h"
 
 #define STRIP		0377

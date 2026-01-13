@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -643,7 +643,7 @@ static void io_preserve(Sfio_t *sp, int f2)
  * Given a file descriptor <f1>, move it to a file descriptor number <f2>
  * If <f2> is needed move it, otherwise it is closed first.
  * The original stream <f1> is closed.
- *  The new file descriptor <f2> is returned;
+ * The new file descriptor <f2> is returned.
  */
 int sh_iorenumber(int f1,int f2)
 {

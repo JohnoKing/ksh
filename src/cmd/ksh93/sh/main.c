@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -48,7 +48,7 @@
 /* These routines are referenced by this module */
 static void	exfile(Sfio_t*,volatile int);
 static void	chkmail(char*);
-#if !defined(_NEXT_SOURCE) && !defined(__sun)
+#if !defined(__sun)
     static void	fixargs(char**,int);
 #   undef fixargs_disabled
 #else
@@ -112,6 +112,10 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 	time(&mailtime);
 	if(rshflag=sh_isoption(SH_RESTRICTED))
 		sh_offoption(SH_RESTRICTED);
+	/*
+	 * return here for shell script execution
+	 * but not for parenthesis subshells
+	 */
 	if(sigsetjmp(*((sigjmp_buf*)sh.jmpbuffer),0))
 	{
 		/* begin script execution here */

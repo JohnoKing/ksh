@@ -62,5 +62,4 @@ extern	strlcat		size_t		(char *restrict, const char *restrict, size_t)
 extern	strlcpy		size_t		(char *restrict, const char *restrict, size_t)
 extern	stpcpy		size_t		(char *restrict, const char *restrict)
 
-print	#undef	extern
 print	#include <stdarg.h>

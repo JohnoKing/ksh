@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -29,17 +29,17 @@
  */
 
 #include	"shopt.h"
-#include        "defs.h"
-#include        <pwd.h>
-#include        <tmx.h>
-#include        <tv.h>
-#include        <regex.h>
+#include	"defs.h"
+#include	<pwd.h>
+#include	<tmx.h>
+#include	<tv.h>
+#include	<regex.h>
 #include	<math.h>
 #include	<ast_random.h>
-#include        "variables.h"
-#include        "path.h"
-#include        "fault.h"
-#include        "name.h"
+#include	"variables.h"
+#include	"path.h"
+#include	"fault.h"
+#include	"name.h"
 #include	"edit.h"
 #include	"jobs.h"
 #include	"io.h"
@@ -1340,13 +1340,8 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
 	}
 	else
 		sh_offoption(SH_PRIVILEGED);
-	/* shname for $0 in profiles and . scripts */
-	sh.shname = sh_strdup(sh.st.dolv[0]);
-	/*
-	 * return here for shell script execution
-	 * but not for parenthesis subshells
-	 */
-	error_info.id = sh_strdup(sh.st.dolv[0]); /* error_info.id is $0 */
+	sh.shname = sh_strdup(sh.st.dolv[0]);		/* shname for $0 in profiles and . scripts */
+	error_info.id = sh_strdup(sh.st.dolv[0]);	/* error_info.id is $0 */
 	sh.jmpbuffer = &sh.checkbase;
 	sh_pushcontext(&sh.checkbase,SH_JMPSCRIPT);
 	sh.st.self = &sh.global;
@@ -1550,7 +1545,7 @@ void sh_reinit(void)
 }
 
 /*
- * set when creating a local variable of this name
+ * return discipline function tree pointer if a local variable of this name should share the parent's discipline function(s)
  */
 Namfun_t *nv_cover(Namval_t *np)
 {

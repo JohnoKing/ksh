@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -214,7 +214,6 @@ int    b_alias(int argc,char *argv[],Shbltin_t *context)
     int    b_float(int argc,char *argv[],Shbltin_t *context){}
     int    b_functions(int argc,char *argv[],Shbltin_t *context){}
     int    b_integer(int argc,char *argv[],Shbltin_t *context){}
-    int    b_local(int argc,char *argv[],Shbltin_t *context){}
     int    b_nameref(int argc,char *argv[],Shbltin_t *context){}
 #endif
 int    b_typeset(int argc,char *argv[],Shbltin_t *context)
