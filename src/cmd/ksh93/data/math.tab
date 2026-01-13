@@ -46,8 +46,8 @@ f 1 exp10
 f 1 expm1
 f 1 exp2m1
 f 1 exp10m1
-f 2 fadd
 f 1 fabs abs
+f 2 fadd
 f 2 fdim
 f 2 fdiv
 f 3 ffma

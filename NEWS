@@ -91,7 +91,7 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
   directory with fchdir(2).
 
 - Fixed a file descriptor leak that could occur on systems lacking a
-  useable implementation of arc4random(3).
+  usable implementation of arc4random(3).
 
 2025-07-09:
 
