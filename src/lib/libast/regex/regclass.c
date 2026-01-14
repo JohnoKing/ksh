@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -186,7 +186,7 @@ regclass(const char* s, char** e)
 		if (!streq(cp->name, s))
 		{
 			free((void*)cp->name);
-			cp->name = 0;
+			cp->name = NULL;
 		}
 	}
 	if (!cp->name)
@@ -199,7 +199,7 @@ regclass(const char* s, char** e)
 	if (!(cp->wtype = wctype((char*)cp->name)))
 	{
 		free((void*)cp->name);
-		cp->name = 0;
+		cp->name = NULL;
 		return NULL;
 	}
 	cp->size = n;

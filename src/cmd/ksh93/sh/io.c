@@ -198,11 +198,10 @@ getaddrinfo(const char* node, const char* service, const struct addrinfo* hint, 
 	return 0;
 }
 
-static void
+static inline void
 freeaddrinfo(struct addrinfo* ap)
 {
-	if (ap)
-		free(ap);
+	free(ap);
 }
 
 #endif /* !_lib_getaddrinfo */
@@ -418,8 +417,7 @@ int  sh_iovalidfd(int fd)
 	sh.fdstatus = (unsigned char*)(&sh.fdptrs[n]);
 	if(max)
 		memcpy(sh.fdstatus,fdstatus,(size_t)max);
-	if(sftable)
-		free(sftable);
+	free(sftable);
 	sh.lim.open_max = n;
 	return 1;
 }
@@ -2357,7 +2355,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
 	{
 		if(type==SFIO_CLOSING)
 			sfdisc(iop,SFIO_POPDISC);
-		else if(ep && (type==SFIO_DPOP || type==SFIO_FINAL))
+		else if(type==SFIO_DPOP || type==SFIO_FINAL)
 			free(ep);
 		return 0;
 	}

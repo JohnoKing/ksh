@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -702,8 +702,8 @@ static void outval(char *name, const char *vname, struct Walk *wp)
 		if(!wp->out)
 		{
 			fp = nv_stack(np,fp);
-			if(fp = nv_stack(np,NULL))
-				free(fp);
+			fp = nv_stack(np,NULL);
+			free(fp);
 			np->nvfun = 0;
 			return;
 		}
@@ -1124,8 +1124,8 @@ static void put_tree(Namval_t *np, const char *val, nvflag_t flags,Namfun_t *fp)
 	if(nleft==0)
 	{
 		fp = nv_stack(np,fp);
-		if(fp = nv_stack(np,NULL))
-			free(fp);
+		fp = nv_stack(np,NULL);
+		free(fp);
 	}
 }
 

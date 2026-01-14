@@ -1328,7 +1328,7 @@ int nv_settype(Namval_t* np, Namval_t *tp, nvflag_t flags)
 		nv_disc(np,&ap->hdr,NV_POP);
 		np->nvalue = NULL;
 		nv_clone(tp,np,flags|NV_NOFREE);
-		if(np->nvalue && np->nvalue != Empty && !nv_isattr(np,NV_NOFREE))
+		if(np->nvalue != Empty && !nv_isattr(np,NV_NOFREE))
 			free(np->nvalue);
 		np->nvalue = NULL;
 		nofree = ap->hdr.nofree;

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2014 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -493,7 +493,7 @@ tmxscan(const char* s, char** e, const char* format, char** f, Time_t t, long fl
 					if (sfread(sp, v, (size_t)m) != m)
 					{
 						free(p);
-						p = 0;
+						p = NULL;
 					}
 					else
 					{

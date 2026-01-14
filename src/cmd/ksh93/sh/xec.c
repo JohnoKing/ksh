@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -2571,7 +2571,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 			static char	lastarg[32];
 			if(sh_isstate(SH_FORKED))
 				sh_done(0);
-			if(sh.lastarg!= lastarg && sh.lastarg)
+			if(sh.lastarg!=lastarg)
 				free(sh.lastarg);
 			if(strlen(comn) < sizeof(lastarg))
 			{
@@ -3127,7 +3127,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	if(nsig)
 	{
 		for (int isig = 0; isig < nsig; ++isig)
-			if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
+			if (sh.st.trapcom[isig]!=Empty)
 				free(sh.st.trapcom[isig]);
 		memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));
 		free(savsig);

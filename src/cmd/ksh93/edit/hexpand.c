@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -69,8 +69,7 @@ static char *parse_subst(const char *s, struct subst *sb)
 	off = stktell(sh.stk);
 
 	/* init "new" with empty string */
-	if(sb->str[1])
-		free(sb->str[1]);
+	free(sb->str[1]);
 	sb->str[1] = sh_strdup("");
 
 	/* get delimiter */
@@ -87,8 +86,7 @@ static char *parse_subst(const char *s, struct subst *sb)
 			{
 				/* dupe string on stack and rewind stack */
 				sfputc(sh.stk,'\0');
-				if(sb->str[n])
-					free(sb->str[n]);
+				free(sb->str[n]);
 				sb->str[n] = sh_strdup(stkptr(sh.stk,off));
 				stkseek(sh.stk,off);
 			}
@@ -521,7 +519,7 @@ getsel:
 			sfclose(ref);
 			flag &= ~HIST_HASH;
 			free(cc);
-			cc = 0;
+			cc = NULL;
 		}
 
 		evp = cp;
@@ -713,7 +711,7 @@ done:
 		/* close !# temp file */
 		sfclose(ref);
 		free(cc);
-		cc = 0;
+		cc = NULL;
 	}
 
 	/* error? */

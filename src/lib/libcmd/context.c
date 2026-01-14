@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1992-2014 AT&T Intellectual Property          *
-*             Copyright (c) 2025 Contributors to ksh 93u+m             *
+*          Copyright (c) 2025-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -82,11 +82,8 @@ context_line(Context_t* cp)
 		n -= cp->total;
 	cp->line[n].show = 0;
 	lp = &cp->line[cp->curline];
-	if (lp->drop)
-	{
-		free(lp->drop);
-		lp->drop = 0;
-	}
+	free(lp->drop);
+	lp->drop = NULL;
 	if (cp->cur >= cp->end)
 	{
 		lp->drop = cp->buf;
@@ -179,10 +176,8 @@ context_close(Context_t* cp)
 {
 	for (size_t j = 0; j < cp->total; j++)
 	{
-		if (cp->line[j].drop)
-			free(cp->line[j].drop);
-		if (cp->line[j].span)
-			free(cp->line[j].data);
+		free(cp->line[j].drop);
+		free(cp->line[j].data);
 	}
 	free(cp);
 	return 0;

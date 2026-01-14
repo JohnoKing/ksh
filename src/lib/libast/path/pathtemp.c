@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -154,8 +154,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 		}
 		else if (streq(pfx, "prefix"))
 		{
-			if (tmp.pfx)
-				free(tmp.pfx);
+			free(tmp.pfx);
 			tmp.pfx = dir ? strdup(dir) : NULL;
 			return (char*)pfx;
 		}
@@ -171,25 +170,17 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 		}
 		else if (streq(pfx, TMP_ENV))
 		{
-			if (tmp.vec)
-			{
-				free(tmp.vec);
-				tmp.vec = 0;
-			}
-			if (tmp.tmpdir)
-				free(tmp.tmpdir);
+			free(tmp.vec);
+			tmp.vec = NULL;
+			free(tmp.tmpdir);
 			tmp.tmpdir = dir ? strdup(dir) : NULL;
 			return (char*)pfx;
 		}
 		else if (streq(pfx, TMP_PATH_ENV))
 		{
-			if (tmp.vec)
-			{
-				free(tmp.vec);
-				tmp.vec = 0;
-			}
-			if (tmp.tmppath)
-				free(tmp.tmppath);
+			free(tmp.vec);
+			tmp.vec = NULL;
+			free(tmp.tmppath);
 			tmp.tmppath = dir ? strdup(dir) : NULL;
 			return (char*)pfx;
 		}

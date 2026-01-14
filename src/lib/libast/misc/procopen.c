@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -713,8 +713,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 			goto bad;
 		}
 #if _use_spawnveg
-		if (v)
-			free(v);
+		free(v);
 		if (p = oenviron)
 		{
 			environ = 0;

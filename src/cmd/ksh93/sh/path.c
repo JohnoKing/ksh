@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -185,7 +185,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 			{
 				memcpy(av,saveargs,n);
 				free(saveargs);
-				saveargs = 0;
+				saveargs = NULL;
 			}
 		}
 		else if(spawn)
@@ -270,10 +270,8 @@ void  path_delete(Pathcomp_t *first)
 		ppnext = pp->next;
 		if(--pp->refcount<=0)
 		{
-			if(pp->lib)
-				free(pp->lib);
-			if(pp->bbuf)
-				free(pp->bbuf);
+			free(pp->lib);
+			free(pp->bbuf);
 			free(pp);
 			if(old)
 				old->next = ppnext;
@@ -800,8 +798,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
 				   nv_isattr(np,NV_BLTINOPT))
 				{
 				found:
-					if(fp)
-						free(fp);
+					free(fp);
 					sh.bltin_dir = 0;
 					return oldpp;
 				}
@@ -817,8 +814,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
 				}
 				if(*stkptr(sh.stk,PATH_OFFSET)=='/' && nv_search(stkptr(sh.stk,PATH_OFFSET),sh.bltin_tree,0))
 					goto found;
-				if(fp)
-					free(fp);
+				free(fp);
 				stkseek(sh.stk,n);
 			}
 #endif /* SHOPT_DYNAMIC */
@@ -1567,8 +1563,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 			}
 			else if(m==11 && strncmp(sp,"PLUGIN_LIB=",(size_t)m)==0)
 			{
-				if(pp->bbuf)
-					free(pp->bbuf);
+				free(pp->bbuf);
 				pp->blib = pp->bbuf = sh_strdup(ep);
 			}
 			else if(m)
@@ -1749,8 +1744,7 @@ Pathcomp_t *path_unsetfpath(void)
 				pp = pp->next;
 				if(--ppsave->refcount<=0)
 				{
-					if(ppsave->lib)
-						free(ppsave->lib);
+					free(ppsave->lib);
 					free(ppsave);
 				}
 				continue;
@@ -1822,7 +1816,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
 		nv_offattr(np,NV_NOPRINT);
 		nv_stack(np,&talias_init);
 		old = np->nvalue;
-		if (old && (--old->refcount <= 0))
+		if(old && (--old->refcount <= 0))
 			free(old);
 		np->nvalue = pp;
 		pp->refcount++;

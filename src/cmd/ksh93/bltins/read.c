@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -70,13 +70,11 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
 	int fixargs=context->invariant;
 	short save_prompt;
-	struct read_save *rp;
 	static char default_prompt[3] = {ESC,ESC};
-	rp = (struct read_save*)(context->data);
+	struct read_save *rp = (struct read_save*)(context->data);
 	if(argc==0)
 	{
-		if(rp)
-			free(rp);
+		free(rp);
 		return 0;
 	}
 	if(rp)

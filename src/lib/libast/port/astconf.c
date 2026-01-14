@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -469,7 +469,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 		n = 0;
 	if(!(newvalue = malloc((size_t)n + 1)))
 	{
-		if(fp->value && fp->value != null)
+		if(fp->value != null)
 			free(fp->value);
 		fp->value = null;
 		if (conferror)
@@ -479,7 +479,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 	/* memcpy comes before free because fp->value and value might share memory */
 	memcpy(newvalue, value, (size_t)n);
 	newvalue[n] = 0;
-	if(fp->value && fp->value != null)
+	if(fp->value != null)
 		free(fp->value);
 	fp->flags |= CONF_ALLOC;
 	return fp->value = newvalue;

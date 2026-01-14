@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -123,10 +123,8 @@ int sfclose(Sfio_t* f)
 	f->endb = f->endr = f->endw = f->next = f->data;
 
 	/* zap any associated auxiliary buffer */
-	if(f->rsrv)
-	{	free(f->rsrv);
-		f->rsrv = NULL;
-	}
+	free(f->rsrv);
+	f->rsrv = NULL;
 
 	/* delete any associated sfpopen-data */
 	if(f->proc)
@@ -148,7 +146,6 @@ int sfclose(Sfio_t* f)
 	}
 
 done:
-	if(data)
-		free(data);
+	free(data);
 	return rv;
 }

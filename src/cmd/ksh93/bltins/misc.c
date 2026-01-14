@@ -334,8 +334,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 		}
 	}
 	sh_popcontext(&buff);
-	if(buffer)
-		free(buffer);
+	free(buffer);
 	if(!np)
 		free(tofree);
 	sh.dot_depth--;

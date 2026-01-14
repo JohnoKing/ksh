@@ -659,7 +659,7 @@ void nv_setlist(struct argnod *arg,nvflag_t flags, Namval_t *typ)
 			maketype = 0;
 			if(sh.namespace)
 				free(sh.prefix);
-			sh.prefix = 0;
+			sh.prefix = NULL;
 			if(nr.np == np)
 			{
 				L_ARGNOD->nvalue = node.nvalue;
@@ -1304,9 +1304,8 @@ void nv_delete(Namval_t* np, Dt_t *root, nvflag_t flags)
 			struct Namref *rp;
 			while(rp = (struct Namref*)dtmatch(Refdict,key))
 			{
-				if(rp->sub)
-					free(rp->sub);
-				rp->sub = 0;
+				free(rp->sub);
+				rp->sub = NULL;
 				rp = dtremove(Refdict,rp);
 				if(rp && !(flags&NV_REF))
 					rp->np = &NullNode;
@@ -1650,7 +1649,7 @@ void nv_putval(Namval_t *np, const char *sp, nvflag_t flags)
 	nv_local=0;
 	if(flags&(NV_NOREF|NV_NOFREE))
 	{
-		if(np->nvalue && np->nvalue!=sp && !nv_isattr(np,NV_NOFREE))
+		if(np->nvalue!=sp && !nv_isattr(np,NV_NOFREE))
 			free(np->nvalue);
 		np->nvalue = (void*)sp;
 		nv_setattr(np,(flags&~NV_RDONLY)|NV_NOFREE);
@@ -2005,7 +2004,7 @@ void nv_putval(Namval_t *np, const char *sp, nvflag_t flags)
 		}
 		if(flags&NV_APPEND)
 			stkseek(sh.stk,offset);
-		if(tofree && tofree!=Empty && tofree!=AltEmpty)
+		if(tofree!=Empty && tofree!=AltEmpty)
 			free((void*)tofree);
 	}
 	if(!was_local && ((flags&NV_EXPORT) || nv_isattr(np,NV_EXPORT)))
@@ -2435,8 +2434,7 @@ void nv_unset(Namval_t *np, nvflag_t flags)
 		struct Namref *nrp = np->nvalue;
 		if(nrp->root && Refdict)
 			dtremove(Refdict,nrp);
-		if(nrp->sub)
-			free(nrp->sub);
+		free(nrp->sub);
 		free(nrp);
 		np->nvalue = NULL;
 		vpp = NULL;
@@ -2922,9 +2920,9 @@ void nv_newattr (Namval_t *np, nvflag_t newatts, ptrdiff_t size)
 		if(cp)
 		{
 			if(!mp)
-				nv_putval (np, cp, NV_RDONLY);
+				nv_putval(np,cp,NV_RDONLY);
 			free(cp);
-			cp = 0;
+			cp = NULL;
 		}
 		if(sh.subshell && !sh.subshare && nv_isattr(np,NV_ARRAY|NV_RDONLY)==NV_ARRAY && sp && sp!=Empty && sp!=AltEmpty && array_assoc(ap))
 			free(sp);
@@ -3450,8 +3448,7 @@ void nv_unref(Namval_t *np)
 	nq = nv_refnode(np);
 	if(Refdict)
 	{
-		if(nrp->sub)
-			free(nrp->sub);
+		free(nrp->sub);
 		dtremove(Refdict,nrp);
 	}
 	free(nrp);

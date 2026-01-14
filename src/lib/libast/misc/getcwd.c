@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -121,7 +121,7 @@ pushdir(struct dirlist* d, char* dots, char* path, char* end)
 
 	if (!(p = newof(0, struct dirlist, 1, 0)) || chdir(dots))
 	{
-		if (p) free(p);
+		free(p);
 		if (d) popdir(d, end);
 		return NULL;
 	}
@@ -248,8 +248,7 @@ getcwd(char* buf, size_t len)
 					dirstk = 0;
 					ERROR(errno);
 				}
-				if (env[0].path)
-					free(env[0].path);
+				free(env[0].path);
 				env[0].path = strdup(buf);
 				return buf;
 			}

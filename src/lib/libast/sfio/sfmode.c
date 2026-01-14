@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -209,8 +209,7 @@ int _sfpclose(Sfio_t* f)
 		return -1;
 	f->proc = NULL;
 
-	if(p->rdata)
-		free(p->rdata);
+	free(p->rdata);
 
 	if(p->pid < 0)
 		status = 0;
@@ -253,8 +252,7 @@ static int _sfpmode(Sfio_t* f, int type)
 	{	/* save unread data */
 		p->ndata = f->endb-f->next;
 		if(p->ndata > p->size)
-		{	if(p->rdata)
-				free(p->rdata);
+		{	free(p->rdata);
 			if((p->rdata = (uchar*)malloc((size_t)p->ndata)) )
 				p->size = p->ndata;
 			else

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -342,7 +342,6 @@ static char* setdisc(Namval_t* np, const char* event, Namval_t* action, Namfun_t
 	Service_t*	sp = (Service_t*)fp;
 	const char*	cp;
 	size_t		n = strlen(event) - 1;
-	Namval_t*	nq;
 
 	for (size_t i = 0; cp = disctab[i]; i++)
 	{
@@ -352,12 +351,8 @@ static char* setdisc(Namval_t* np, const char* event, Namval_t* action, Namfun_t
 			action = sp->disc[i];
 		else
 		{
-			if (nq = sp->disc[i])
-				free(nq);
-			if (action)
-				sp->disc[i] = action;
-			else
-				sp->disc[i] = 0;
+			free(sp->disc[i]);
+			sp->disc[i] = action ? action : NULL;
 		}
 		return action ? (char*)action : "";
 	}

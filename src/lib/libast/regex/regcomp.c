@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -1443,8 +1443,7 @@ bra(Cenv_t* env)
 			}
 			else
 			{
-				if (cc)
-					free(cc);
+				free(cc);
 				drop(env->disc, e);
 				return NULL;
 			}

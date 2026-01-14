@@ -625,9 +625,8 @@ done:
 		sh_done(0);
 	if(fno>0)
 		sh_close(fno);
-	if(sh.st.filename)
-		free(sh.st.filename);
-	sh.st.filename = 0;
+	free(sh.st.filename);
+	sh.st.filename = NULL;
 }
 
 

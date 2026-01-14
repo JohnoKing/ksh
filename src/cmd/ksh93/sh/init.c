@@ -244,8 +244,7 @@ returns_nonnull void *sh_realloc(void *ptr, size_t size)
 	cp = realloc(ptr, size);
 	if(!cp)
 	{
-		if(ptr)
-			free(ptr);
+		free(ptr);
 		nomemory(size);
 	}
 	return cp;
@@ -489,7 +488,7 @@ static void put_ifs(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 		if(fp && !fp->nofree)
 		{
 			free(fp);
-			fp = 0;
+			fp = NULL;
 		}
 	}
 	if(val != np->nvalue)
@@ -764,7 +763,7 @@ static void put_lastarg(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp
 	}
 	if(val)
 		val = sh_strdup(val);
-	if(sh.lastarg && !nv_isattr(np,NV_NOFREE))
+	if(!nv_isattr(np,NV_NOFREE))
 		free(sh.lastarg);
 	else
 		nv_offattr(np,NV_NOFREE);
@@ -853,15 +852,15 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ptrdiff_t nmatch, ssize_t match
 			np = nv_namptr(mp->nodes,0);
 			for(i=0; i < mp->nmatch; i++)
 			{
-				if(np->nvfun && np->nvfun != &mp->hdr)
+				if(np->nvfun != &mp->hdr)
 				{
 					free(np->nvfun);
-					np->nvfun = 0;
+					np->nvfun = NULL;
 				}
 				np = nv_namptr(np+1,0);
 			}
 			free(mp->nodes);
-			mp->nodes = 0;
+			mp->nodes = NULL;
 		}
 		mp->vlen = 0;
 		if(ap && ap->hdr.next != &mp->hdr)
@@ -949,11 +948,7 @@ static char* get_match(Namval_t *np, Namfun_t *fp)
 	if(mp->val[mp->match[2*sub+1]]==0)
 		return val;
 	mp->index = i;
-	if(mp->rval[i])
-	{
-		free(mp->rval[i]);
-		mp->rval[i] = 0;
-	}
+	free(mp->rval[i]);
 	mp->rval[i] = (char*)sh_malloc((size_t)n+1);
 	mp->lastsub[i] = sub;
 	memcpy(mp->rval[i],val,(size_t)n);
@@ -1892,7 +1887,7 @@ static void env_init(void)
 			import1var(cp, &save_env_n);
 		}
 	}
-	if(save_env_n==0 && sh.save_env)
+	if(save_env_n==0)
 	{
 		free(sh.save_env);
 		sh.save_env = NULL;

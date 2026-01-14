@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -129,10 +129,9 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
 						sfputr(sfstdout,sh_fmtq(arg),'\n');
 					continue;
 				}
-				sh.st.otrap = 0;
-				if(sh.st.trap[sig])
-					free(sh.st.trap[sig]);
-				sh.st.trap[sig] = 0;
+				sh.st.otrap = NULL;
+				free(sh.st.trap[sig]);
+				sh.st.trap[sig] = NULL;
 				if(!clear && *action)
 					sh.st.trap[sig] = sh_strdup(action);
 				if(sig == SH_DEBUGTRAP)
@@ -176,7 +175,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
 				arg = sh.st.trapcom[sig];
 				sh_sigtrap(sig);
 				sh.st.trapcom[sig] = (sh.sigflag[sig]&SH_SIGOFF) ? Empty : sh_strdup(action);
-				if(arg && arg != Empty)
+				if(arg != Empty)
 					free(arg);
 			}
 		}

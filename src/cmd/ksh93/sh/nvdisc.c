@@ -656,7 +656,7 @@ static void putdisc(Namval_t* np, const char* val, nvflag_t flag, Namfun_t* fp)
 			{
 				if(is_abuiltin(mp))
 				{
-					if(mp->nvfun && !nv_isattr(mp,NV_NOFREE))
+					if(!nv_isattr(mp,NV_NOFREE))
 						free(mp->nvfun);
 					dtdelete(sh.bltin_tree,mp);
 					free(mp);
@@ -1146,7 +1146,7 @@ Namval_t *sh_addbuiltin(const char *path, Shbltin_f bltin, void *extra)
 				errormsg(SH_DICT,ERROR_exit(1),"cannot delete: %s%s",name,is_spcbuiltin);
 				UNREACHABLE();
 			}
-			if(np->nvfun && !nv_isattr(np,NV_NOFREE))
+			if(!nv_isattr(np,NV_NOFREE))
 				free(np->nvfun);
 			dtdelete(sh.bltin_tree,np);
 			return NULL;

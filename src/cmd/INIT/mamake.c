@@ -524,7 +524,7 @@ static char *reduplicate(char *orig, char *s)
 	n = strlen(s);
 	if (n == 0)
 	{
-		if (orig && orig != empty)
+		if (orig != empty)
 			free(orig);
 		return empty;
 	}
@@ -1721,8 +1721,7 @@ static void run(Rule_t *r, char *s)
 			}
 		} while (*s = (char)c);
 		s = use(buf);
-		if (tofree)
-			free(tofree);
+		free(tofree);
 	}
 	else if (x)
 	{
@@ -2280,7 +2279,7 @@ static void make(Rule_t *r, Makestate_t *parentstate)
 			if (r->path)
 			{
 				free(r->path);
-				r->path = 0;
+				r->path = NULL;
 				r->time = 0;
 			}
 			if (state.active)

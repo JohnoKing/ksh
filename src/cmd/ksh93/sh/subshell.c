@@ -163,8 +163,7 @@ void sh_subfork(void)
 		/* this is the parent part of the fork */
 		if(sp->subpid==0)
 			sp->subpid = pid;
-		if(trap)
-			free(trap);
+		free(trap);
 		siglongjmp(*sh.jmplist,SH_JMPSUB);
 	}
 	else
@@ -865,7 +864,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		if(nsig)
 		{
 			for (int isig = 0; isig < nsig; ++isig)
-				if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
+				if (sh.st.trapcom[isig]!=Empty)
 					free(sh.st.trapcom[isig]);
 			memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));
 			free(savsig);

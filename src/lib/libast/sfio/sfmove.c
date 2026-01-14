@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -222,8 +222,7 @@ Sfoff_t sfmove(Sfio_t*	fr,	/* moving data from this stream */
 		fr->bits &= ~SFIO_SEQUENTIAL;
 	}
 
-	if(rbuf)
-		free(rbuf);
+	free(rbuf);
 
 	if(fw)
 	{	SFOPEN(fw,0);

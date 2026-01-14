@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -1380,10 +1380,8 @@ pop_fmt:
 			nargs = xargs;
 		(*ft->reloadf)(nargs+1, 0, NULL, ft);
 	}
-	if(fp)
-	{	free(fp);
-		fp = NULL;
-	}
+	free(fp);
+	fp = NULL;
 	while((fm = fmstk) ) /* pop the format stack and continue */
 	{	if(fm->eventf)
 		{	if(!form || !form[0])
@@ -1408,8 +1406,7 @@ pop_fmt:
 	}
 
 done:
-	if(fp)
-		free(fp);
+	free(fp);
 	while((fm = fmstk) )
 	{	if(fm->eventf)
 			(*fm->eventf)(f,SFIO_FINAL,NULL,fm->ft);

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -2200,8 +2200,7 @@ retry2:
 				}
 			}
 		}
-		if(arrmax)
-			free(arrmax);
+		free(arrmax);
 	}
 	else if(argp)
 	{
@@ -2255,10 +2254,8 @@ retry2:
 		errormsg(SH_DICT,ERROR_exit(1),e_notset,id);
 		UNREACHABLE();
 	}
-	if(pattern)
-		free(pattern);
-	if(idx)
-		free(idx);
+	free(pattern);
+	free(idx);
 	return 1;
 nosub:
 	if(type==M_BRACE && sh_lexstates[ST_NORM][c]==S_BREAK)

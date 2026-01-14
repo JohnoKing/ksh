@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -784,7 +784,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 		sh.fifo_tree = dtopen(&_Nvdisc,Dtoset);
 	nv_search(sh.fifo,sh.fifo_tree,NV_ADD);
 	free(sh.fifo);
-	sh.fifo = 0;
+	sh.fifo = NULL;
 #endif /* SHOPT_DEVFD */
 	return ap;
 }

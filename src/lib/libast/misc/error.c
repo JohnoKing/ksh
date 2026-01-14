@@ -179,13 +179,13 @@ setopt(void* a, const void* p, int n, const char* v)
 				if ((error_state.match || (error_state.match = newof(0, regex_t, 1, 0))) && regcomp(error_state.match, v, REG_EXTENDED|REG_LENIENT))
 				{
 					free(error_state.match);
-					error_state.match = 0;
+					error_state.match = NULL;
 				}
 			}
 			else if (error_state.match)
 			{
 				free(error_state.match);
-				error_state.match = 0;
+				error_state.match = NULL;
 			}
 			break;
 		case OPT_PREFIX:
@@ -194,7 +194,7 @@ setopt(void* a, const void* p, int n, const char* v)
 			else if (error_state.prefix)
 			{
 				free(error_state.prefix);
-				error_state.prefix = 0;
+				error_state.prefix = NULL;
 			}
 			break;
 		case OPT_SYSTEM:

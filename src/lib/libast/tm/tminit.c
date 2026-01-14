@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -443,9 +443,8 @@ tminit(Tm_zone_t* zp, time_t now, const char newzone)
 {
 	static uint32_t		serial = ~(uint32_t)0;
 
-	if(tz_abbr)
-		free(tz_abbr);
-	tz_abbr = 0;
+	free(tz_abbr);
+	tz_abbr = NULL;
 	if (serial != ast.env_serial)
 	{
 		serial = ast.env_serial;

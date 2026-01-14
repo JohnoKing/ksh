@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -1012,8 +1012,7 @@ b_cp(int argc, char** argv, Shbltin_t* context)
 		error(ERROR_SYSTEM|2, "%s: cannot link to %s", *argv, state->path);
 	if (cleanup && !sh)
 	{
-		if (state->path)
-			free(state->path);
+		free(state->path);
 		free(state);
 	}
 	return error_info.errors != 0;

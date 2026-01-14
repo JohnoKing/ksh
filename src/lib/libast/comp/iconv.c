@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -948,8 +948,7 @@ _ast_iconv_close(_ast_iconv_t cd)
 				if (oc->cvt != (iconv_t)(-1))
 					r = iconv_close(oc->cvt);
 #endif
-				if (oc->buf)
-					free(oc->buf);
+				free(oc->buf);
 				free(oc);
 			}
 			break;

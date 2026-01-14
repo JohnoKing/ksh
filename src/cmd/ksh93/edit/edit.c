@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -299,14 +299,12 @@ static void get_tput(char *tp, char **cpp)
 	sh_trap(sfstruse(sh.strbuf),0);
 	if((cp = nv_getval(SH_VALNOD)) && (!*cpp || strcmp(cp,*cpp)!=0))
 	{
-		if(*cpp)
-			free(*cpp);
+		free(*cpp);
 		*cpp = *cp ? sh_strdup(cp) : NULL;
 	}
 	else
 	{
-		if(*cpp)
-			free(*cpp);
+		free(*cpp);
 		*cpp = NULL;
 	}
 	nv_unset(SH_VALNOD,0);
@@ -504,8 +502,7 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
 				get_tput(TCAP_CURSOR_UP,&cursor_up);
 			if(!erase_eos)
 				get_tput(TCAP_ERASE_EOS,&erase_eos);
-			if(oldterm)
-				free(oldterm);
+			free(oldterm);
 			oldterm = sh_strdup(term);
 		}
 		if(cursor_up && erase_eos)
