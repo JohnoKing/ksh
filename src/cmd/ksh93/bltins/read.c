@@ -220,7 +220,7 @@ int sh_readline(char **volatile names, volatile int fd, int flg, ssize_t sz, Sfl
 	Namval_t		*np;
 	Sfio_t			*volatile iop;
 	void			*volatile timeslot = NULL;
-	char			*volatile ifs;
+	const char		*volatile ifs;
 	unsigned char		*volatile cpmax;
 	unsigned char		*del;
 	char			*name, *val;
@@ -316,6 +316,8 @@ int sh_readline(char **volatile names, volatile int fd, int flg, ssize_t sz, Sfl
 		Namval_t *mp;
 		/* set up state table based on IFS */
 		ifs = nv_getval(mp=sh_scoped(IFSNOD));
+		if(!ifs)
+			ifs = e_sptbnl; /* unset == default */
 		if((flags&R_FLAG) && sh.ifstable['\\']==S_ESC)
 			sh.ifstable['\\'] = 0;
 		else if(!(flags&R_FLAG) && sh.ifstable['\\']==0)
@@ -324,7 +326,10 @@ int sh_readline(char **volatile names, volatile int fd, int flg, ssize_t sz, Sfl
 			sh.ifstable[delim] = S_NL;
 		if(delim!='\n')
 		{
-			sh.ifstable['\n'] = 0;
+			if(strchr(ifs,'\n'))
+				sh.ifstable['\n'] = S_DELIM;
+			else
+				sh.ifstable['\n'] = 0;
 			nv_putval(mp, ifs, NV_RDONLY);
 		}
 		sh.ifstable[0] = S_EOF;
@@ -548,7 +553,7 @@ int sh_readline(char **volatile names, volatile int fd, int flg, ssize_t sz, Sfl
 				cpmax--;
 			if(cpmax>cp)
 			{
-				while((c=sh.ifstable[*--cpmax])==S_DELIM || c==S_SPACE);
+				while((c=sh.ifstable[*--cpmax])==S_DELIM && isspace(*cpmax) || c==S_SPACE);
 				cpmax[1] = 0;
 			}
 			else
@@ -784,13 +789,13 @@ int sh_readline(char **volatile names, volatile int fd, int flg, ssize_t sz, Sfl
 		{
 			/* strip off trailing space delimiters */
 			unsigned char	*vp = (unsigned char*)val + strlen(val);
-			while(sh.ifstable[*--vp]==S_SPACE);
+			while(sh.ifstable[*--vp]==S_SPACE || (isspace(*vp) && sh.ifstable[*vp]==S_DELIM));
 			if(vp==del)
 			{
 				if(vp==(unsigned char*)val)
 					vp--;
 				else
-					while(sh.ifstable[*--vp]==S_SPACE);
+					while(sh.ifstable[*--vp]==S_SPACE || (isspace(*vp) && sh.ifstable[*vp]==S_DELIM));
 			}
 			vp[1] = 0;
 		}
