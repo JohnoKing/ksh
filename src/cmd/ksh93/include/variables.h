@@ -39,7 +39,7 @@ extern void sh_save_rand_seed(struct rand *, int);
 #define update_sh_level() \
 ( \
 	sh.level = sh.fn_depth + sh.dot_depth, \
-	sh.topscope != (Shscope_t*)sh.st.self ? sh_setscope(sh.topscope) : 0, \
+	!sh_compare_scopes(sh.topscope, sh.st.self, PUBLIC) ? sh_setscope(sh.topscope) : 0, \
 	1 \
 )
 

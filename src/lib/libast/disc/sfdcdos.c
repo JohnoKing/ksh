@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -54,6 +54,12 @@ typedef struct _dosdisc
 	char		extra;
 } Dosdisc_t;
 
+typedef union
+{
+	Dosdisc_t	*dosdisc;
+	Sfdisc_t	*sfdisc;
+} Dosdisc_u;
+
 static void addmapping(Dosdisc_t *dp)
 {
 	ptrdiff_t n;
@@ -93,9 +99,10 @@ static struct map *getmapping(Dosdisc_t *dp, Sfoff_t offset, int whence)
 
 static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 {
-	Dosdisc_t *dp = (Dosdisc_t*)disc;
 	char *cp = (char*)buff, *first, *cpmax;
 	ptrdiff_t m, n, count;
+	Dosdisc_u du = { .sfdisc = disc };
+	Dosdisc_t *dp = du.dosdisc;
 	if(dp->extra)
 	{
 		dp->extra=0;
@@ -205,7 +212,7 @@ static Sfoff_t cur_offset(Dosdisc_t *dp, Sfoff_t offset,Sfio_t *iop,int whence)
 	{
 		whence= -1;
 		n = offset - dp->plast;
-		iop->next = iop->data + n;
+		iop->_next = iop->_data + n;
 		offset =  dp->llast;
 	}
 	else
@@ -230,17 +237,18 @@ static Sfoff_t cur_offset(Dosdisc_t *dp, Sfoff_t offset,Sfio_t *iop,int whence)
 		}
 	}
 	if(whence<0)
-		iop->next += m;
+		iop->_next += m;
 	return offset+m;
 }
 
 static Sfoff_t dos_seek(Sfio_t *iop, Sfoff_t offset, int whence, Sfdisc_t* disc)
 {
-	Dosdisc_t *dp = (Dosdisc_t*)disc;
-	struct map dummy, *mp=0;
+	struct map dummy, *mp=NULL;
 	Sfoff_t physical;
 	ptrdiff_t n;
 	size_t size;
+	Dosdisc_u du = { .sfdisc = disc };
+	Dosdisc_t *dp = du.dosdisc;
 retry:
 	switch(whence)
 	{
@@ -272,13 +280,13 @@ retry:
 	if(sfsetbuf(iop,(char*)iop,0))
 		size = (size_t)sfvalue(iop);
 	else
-		size = (size_t)(iop->endb-iop->data);
+		size = (size_t)(iop->_endb-iop->_data);
 	if(mp)
 	{
 		sfsk(iop,mp->physical,SEEK_SET,disc);
 		dp->phere = mp->physical;
 		dp->lhere = mp->logical;
-		if((*disc->readf)(iop,iop->data,size,disc)<0)
+		if((*disc->readf)(iop,iop->_data,size,disc)<0)
 			return -1;
 	}
 	while(1)
@@ -287,7 +295,7 @@ retry:
 			break;
 		if(whence==SEEK_SET && dp->lhere>=offset)
 			break;
-		n=(*disc->readf)(iop,iop->data,size,disc);
+		n=(*disc->readf)(iop,iop->_data,size,disc);
 		if(n < 0)
 			return -1;
 		if(n==0)
@@ -320,7 +328,8 @@ retry:
 
 static int dos_except(Sfio_t *iop, int type, void *arg, Sfdisc_t *disc)
 {
-	Dosdisc_t *dp = (Dosdisc_t*)disc;
+	Dosdisc_u du = { .sfdisc = disc };
+	Dosdisc_t *dp = du.dosdisc;
 	NOT_USED(iop);
 	NOT_USED(arg);
 	if(type==SFIO_DPOP || type==SFIO_FINAL)
@@ -336,23 +345,23 @@ static int dos_except(Sfio_t *iop, int type, void *arg, Sfdisc_t *disc)
 
 int sfdcdos(Sfio_t *f)
 {
-	Dosdisc_t *dos;
+	Dosdisc_u dos;
 
 	/* this is a readonly discipline */
 	if(sfset(f,0,0)&SFIO_WRITE)
 		return -1;
 
-	if(!(dos = (Dosdisc_t*)malloc(sizeof(Dosdisc_t))) )
+	if(!(dos.dosdisc = malloc(sizeof(Dosdisc_t))) )
 		return -1;
-	memset(dos,'\0',sizeof(Dosdisc_t));
+	memset(dos.dosdisc,'\0',sizeof(Dosdisc_t));
 
-	dos->disc.readf = dos_read;
-	dos->disc.writef = NULL;
-	dos->disc.seekf = dos_seek;
-	dos->disc.exceptf = dos_except;
+	dos.dosdisc->disc.readf = dos_read;
+	dos.dosdisc->disc.writef = NULL;
+	dos.dosdisc->disc.seekf = dos_seek;
+	dos.dosdisc->disc.exceptf = dos_except;
 
-	if(sfdisc(f,(Sfdisc_t*)dos) != (Sfdisc_t*)dos)
-	{	free(dos);
+	if(sfdisc(f,dos.sfdisc) != dos.sfdisc)
+	{	free(dos.dosdisc);
 		return -1;
 	}
 

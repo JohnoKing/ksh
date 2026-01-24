@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -39,13 +39,20 @@ typedef struct _dthash_s
 	ssize_t		tblz;	/* size of hash table 	*/
 } Dthash_t;
 
+typedef union
+{
+	Dthash_t	*hash;
+	Dtdata_t	*data;
+} Dthash_u;
+
 /* make/resize hash table */
 static int htable(Dt_t* dt)
 {
 	Dtlink_t	**htbl, **t, **endt, *l, *next;
 	ssize_t		n, k;
 	Dtdisc_t	*disc = dt->disc;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	if((n = hash->tblz) > 0 && (hash->type&H_FIXED) )
 		return 0; /* fixed size table */
@@ -97,7 +104,8 @@ static int htable(Dt_t* dt)
 static void* hclear(Dt_t* dt)
 {
 	Dtlink_t	**t, **endt, *l, *next;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	hash->here = NULL;
 	hash->data.size = 0;
@@ -116,13 +124,14 @@ static void* hclear(Dt_t* dt)
 static void* hfirst(Dt_t* dt)
 {
 	Dtlink_t	**t, **endt, *l;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
 	{	if(!(l = *t) )
 			continue;
 		hash->here = l;
-		return _DTOBJ(dt->disc, l);
+		return _dtobj(dt->disc, l);
 	}
 
 	return NULL;
@@ -131,11 +140,12 @@ static void* hfirst(Dt_t* dt)
 static void* hnext(Dt_t* dt, Dtlink_t* l)
 {
 	Dtlink_t	**t, **endt, *next;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	if((next = l->_rght) )
 	{	hash->here = next;
-		return _DTOBJ(dt->disc, next);
+		return _dtobj(dt->disc, next);
 	}
 	else
 	{	t = hash->htbl + (l->_hash & (hash->tblz-1)) + 1;
@@ -144,7 +154,7 @@ static void* hnext(Dt_t* dt, Dtlink_t* l)
 		{	if(!(l = *t) )
 				continue;
 			hash->here = l;
-			return _DTOBJ(dt->disc, l);
+			return _dtobj(dt->disc, l);
 		}
 		return NULL;
 	}
@@ -153,7 +163,8 @@ static void* hnext(Dt_t* dt, Dtlink_t* l)
 static void* hflatten(Dt_t* dt, int type)
 {
 	Dtlink_t	**t, **endt, *head, *tail, *l;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	if(type == DT_FLATTEN || type == DT_EXTRACT)
 	{	head = tail = NULL;
@@ -213,7 +224,7 @@ static void* hlist(Dt_t* dt, Dtlink_t* list, int type)
 	{	dt->data->size = 0;
 		for(l = list; l; l = next)
 		{	next = l->_rght;
-			obj = _DTOBJ(disc,l);
+			obj = _dtobj(disc,l);
 			if((*dt->meth->searchf)(dt, l, DT_RELINK) == obj)
 				dt->data->size += 1;
 		}
@@ -225,7 +236,8 @@ static void* hstat(Dt_t* dt, Dtstat_t* st)
 {
 	ssize_t		n;
 	Dtlink_t	**t, **endt, *l;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	if(st)
 	{	memset(st, 0, sizeof(Dtstat_t));
@@ -255,7 +267,8 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	void		*key, *k, *o;
 	uint		hsh;
 	Dtdisc_t	*disc = dt->disc;
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash_u = { .data = dt->data };
+	Dthash_t	*hash = hash_u.hash;
 
 	type = DTTYPE(dt,type); /* map type for upward compatibility */
 	if(!(type&DT_OPERATIONS) )
@@ -283,7 +296,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	lnk = hash->here; /* fingered object */
 	hash->here = NULL;
 
-	if(lnk && obj == _DTOBJ(disc,lnk))
+	if(lnk && obj == _dtobj(disc,lnk))
 	{	if(type&DT_SEARCH)
 			DTRETURN(obj, obj);
 		else if(type&(DT_NEXT|DT_PREV) )
@@ -292,7 +305,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 
 	if(type&DT_RELINK)
 	{	lnk = (Dtlink_t*)obj;
-		obj = _DTOBJ(disc,lnk);
+		obj = _dtobj(disc,lnk);
 		key = _DTKEY(disc,obj);
 	}
 	else
@@ -309,7 +322,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	pp = ll = NULL; /* pp is the before, ll is the here */
 	for(p = NULL, l = *tbl; l; p = l, l = l->_rght)
 	{	if(hsh == l->_hash)
-		{	o = _DTOBJ(disc,l); k = _DTKEY(disc,o);
+		{	o = _dtobj(disc,l); k = _DTKEY(disc,o);
 			if(_DTCMP(dt, key, k, disc) != 0 )
 				continue;
 			else if((type&(DT_REMOVE|DT_NEXT|DT_PREV)) && o != obj )
@@ -326,7 +339,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	if(ll) /* found object */
 	{	if(type&(DT_SEARCH|DT_MATCH|DT_ATLEAST|DT_ATMOST) )
 		{	hash->here = ll;
-			DTRETURN(obj, _DTOBJ(disc,ll));
+			DTRETURN(obj, _dtobj(disc,ll));
 		}
 		else if(type & (DT_NEXT|DT_PREV) )
 			DTRETURN(obj, hnext(dt, ll));
@@ -336,7 +349,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 				pp->_rght = ll->_rght;
 			else	*tbl = ll->_rght;
 			_dtfree(dt, ll, type);
-			DTRETURN(obj, _DTOBJ(disc,ll));
+			DTRETURN(obj, _dtobj(disc,ll));
 		}
 		else if(type & DT_INSTALL )
 		{	if(dt->meth->type&DT_BAG)
@@ -347,7 +360,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 			{	if(pp) /* remove old object */
 					pp->_rght = ll->_rght;
 				else	*tbl = ll->_rght;
-				o = _DTOBJ(disc,ll);
+				o = _dtobj(disc,ll);
 				_dtfree(dt, ll, DT_DELETE);
 				DTANNOUNCE(dt, o, DT_DELETE);
 
@@ -363,11 +376,11 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 					type |= DT_MATCH; /* for announcement */
 				else if(lnk && (type&DT_RELINK) )
 				{	/* remove a duplicate */
-					o = _DTOBJ(disc, lnk);
+					o = _dtobj(disc, lnk);
 					_dtfree(dt, lnk, DT_DELETE);
 					DTANNOUNCE(dt, o, DT_DELETE);
 				}
-				DTRETURN(obj, _DTOBJ(disc,ll));
+				DTRETURN(obj, _dtobj(disc,ll));
 			}
 		}
 	}
@@ -391,7 +404,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 		lnk->_rght = *tbl; *tbl = lnk;
 
 		hash->here = lnk;
-		DTRETURN(obj, _DTOBJ(disc,lnk));
+		DTRETURN(obj, _dtobj(disc,lnk));
 	}
 
 dt_return:
@@ -402,28 +415,28 @@ dt_return:
 
 static int hashevent(Dt_t* dt, int event, void* arg)
 {
-	Dthash_t	*hash = (Dthash_t*)dt->data;
+	Dthash_u	hash = { .data = dt->data };
 
 	NOT_USED(arg);
 	if(event == DT_OPEN)
-	{	if(hash)
+	{	if(hash.hash)
 			return 0;
-		if(!(hash = (Dthash_t*)(*dt->memoryf)(dt, 0, sizeof(Dthash_t), dt->disc)) )
+		if(!(hash.hash = (Dthash_t*)(*dt->memoryf)(dt, 0, sizeof(Dthash_t), dt->disc)) )
 		{	DTERROR(dt, "Error in allocating a hash table with chaining");
 			return -1;
 		}
-		memset(hash, 0, sizeof(Dthash_t));
-		dt->data = (Dtdata_t*)hash;
+		memset(hash.hash, 0, sizeof(Dthash_t));
+		dt->data = hash.data;
 		return 1;
 	}
 	else if(event == DT_CLOSE)
-	{	if(!hash)
+	{	if(!hash.hash)
 			return 0;
-		if(hash->data.size > 0 )
+		if(hash.hash->data.size > 0 )
 			(void)hclear(dt);
-		if(hash->htbl)
-			(void)(*dt->memoryf)(dt, hash->htbl, 0, dt->disc);
-		(void)(*dt->memoryf)(dt, hash, 0, dt->disc);
+		if(hash.hash->htbl)
+			(void)(*dt->memoryf)(dt, hash.hash->htbl, 0, dt->disc);
+		(void)(*dt->memoryf)(dt, hash.hash, 0, dt->disc);
 		dt->data = NULL;
 		return 0;
 	}

@@ -216,13 +216,19 @@ labelcomp(const regex_t* re, const char* s, size_t len, regdisc_t* disc)
 static int
 labelexec(const regex_t* re, void* data, const char* xstr, size_t xlen, const char* sstr, size_t slen, char** snxt, regdisc_t* disc)
 {
+	union
+	{
+		regdisc_t*	disc;
+		State_t*	state;
+	} u;
 	NOT_USED(re);
 	NOT_USED(xstr);
 	NOT_USED(xlen);
 	NOT_USED(sstr);
 	NOT_USED(slen);
 	NOT_USED(snxt);
-	((State_t*)disc)->hit = (Item_t*)data;
+	u.disc = disc;
+	u.state->hit = (Item_t*)data;
 	return 0;
 }
 

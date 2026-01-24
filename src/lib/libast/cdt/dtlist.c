@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -30,6 +30,12 @@ typedef struct _dtlist_s
 	Dtlink_t*	here;	/* finger to searched objects	*/
 } Dtlist_t;
 
+typedef union
+{
+	Dtlist_t*	list;
+	Dtdata_t*	data;
+} Dtlist_data_u;
+
 #ifdef DEBUG
 int dtlistprint(Dt_t* dt, Dtlink_t* here, char* (*objprintf)(void*) )
 {
@@ -44,7 +50,7 @@ int dtlistprint(Dt_t* dt, Dtlink_t* here, char* (*objprintf)(void*) )
 	for(; here; here = here->_rght)
 	{	endb = buf; /* indentation */
 		*endb++ = '(';
-		obj = (*objprintf)(_DTOBJ(disc, here));
+		obj = (*objprintf)(_dtobj(disc, here));
 		k = strlen(obj); memcpy(endb, obj, k); endb += k;
 		*endb++ = ')';
 		*endb++ = '\n';
@@ -60,15 +66,15 @@ void* lfirstlast(Dt_t* dt, int type)
 {
 	Dtlink_t	*lnk;
 	Dtdisc_t	*disc = dt->disc;
-	Dtlist_t	*list = (Dtlist_t*)dt->data;
+	Dtlist_data_u	u = { .data = dt->data };
 
-	if((lnk = list->link) )
+	if((lnk = u.list->link) )
 	{	if(type&DT_LAST)
 			lnk = lnk->_left;
-		list->here = lnk; /* finger points to this */
+		u.list->here = lnk; /* finger points to this */
 	}
 
-	return lnk ? _DTOBJ(disc,lnk) : NULL;
+	return lnk ? _dtobj(disc,lnk) : NULL;
 }
 
 /* DT_CLEAR */
@@ -76,11 +82,11 @@ void* lclear(Dt_t* dt)
 {
 	Dtlink_t	*lnk, *next;
 	Dtdisc_t	*disc = dt->disc;
-	Dtlist_t	*list = (Dtlist_t*)dt->data;
+	Dtlist_data_u	u = { .data = dt->data };
 
-	lnk = list->link;
-	list->link = list->here = NULL;
-	list->data.size = 0;
+	lnk = u.list->link;
+	u.list->link = u.list->here = NULL;
+	u.list->data.size = 0;
 
 	if(disc->freef || disc->link < 0)
 	{	for(; lnk; lnk = next)
@@ -95,23 +101,23 @@ void* lclear(Dt_t* dt)
 /* DT_FLATTEN|DT_EXTRACT|DT_RESTORE */
 void* llist(Dt_t* dt, Dtlink_t* lnk, int type)
 {
-	Dtlist_t	*list = (Dtlist_t*)dt->data;
+	Dtlist_data_u	u = { .data = dt->data };
 
 	if(type&(DT_FLATTEN|DT_EXTRACT) )
 	{	if(lnk) /* error on calling */
 			return NULL;
 
-		lnk = list->link;
+		lnk = u.list->link;
 		if(type&DT_EXTRACT)
-		{	list->link = NULL;
+		{	u.list->link = NULL;
 			dt->data->size = 0;
 		}
 	}
 	else /* if(type&DT_RESTORE) */
-	{	if(list->link != NULL)
+	{	if(u.list->link != NULL)
 			return NULL;
 
-		list->link = lnk;
+		u.list->link = lnk;
 
 		dt->data->size = 0;
 		for(; lnk; lnk = lnk->_rght)
@@ -138,7 +144,7 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 	Dtlink_t	*r, *t, *h;
 	void		*key, *o, *k;
 	Dtdisc_t	*disc = dt->disc;
-	Dtlist_t	*list = (Dtlist_t*)dt->data;
+	Dtlist_data_u	u = { .data = dt->data };
 
 	type = DTTYPE(dt,type); /* map type for upward compatibility */
 	if(!(type&DT_OPERATIONS) )
@@ -155,12 +161,12 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 	else if(type&DT_STAT )
 		DTRETURN(obj, listat(dt, (Dtstat_t*)obj));
 
-	h = list->here; /* save finger to last search object */
-	list->here = NULL;
+	h = u.list->here; /* save finger to last search object */
+	u.list->here = NULL;
 
 	if(!obj)
 	{	if((type&(DT_DELETE|DT_DETACH|DT_REMOVE)) && (dt->meth->type&(DT_STACK|DT_QUEUE)) )
-			if((r = list->link) ) /* special case for destack or dequeue */
+			if((r = u.list->link) ) /* special case for destack or dequeue */
 				goto dt_delete;
 		DTRETURN(obj, NULL); /* error, needing non-void object */
 	}
@@ -190,7 +196,7 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 				r->_left->_rght = r;
 			}
 			else
-			{	if(!h || h == list->link )
+			{	if(!h || h == u.list->link )
 					goto dt_stack;
 				r->_left = h->_left;
 				r->_left->_rght = r;
@@ -200,30 +206,30 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 		}
 		else if(dt->meth->type&DT_STACK)
 		{ dt_stack:
-			r->_rght = t = list->link;
+			r->_rght = t = u.list->link;
 			if(t)
 			{	r->_left = t->_left;
 				t->_left = r;
 			}
 			else	r->_left = r;
-			list->link = r;
+			u.list->link = r;
 		}
 		else /* if(dt->meth->type&DT_QUEUE) */
 		{ dt_queue:
-			if((t = list->link) )
+			if((t = u.list->link) )
 			{	t->_left->_rght = r;
 				r->_left = t->_left;
 				t->_left = r;
 			}
 			else
-			{	list->link = r;
+			{	u.list->link = r;
 				r->_left = r;
 			}
 			r->_rght = NULL;
 		}
 
-		list->here = r;
-		DTRETURN(obj, _DTOBJ(disc,r));
+		u.list->here = r;
+		DTRETURN(obj, _dtobj(disc,r));
 	}
 
 	/* define key to match */
@@ -234,12 +240,12 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 	else	key = _DTKEY(disc, obj);
 
 	/* try to find a matching object */
-	if(h && _DTOBJ(disc,h) == obj && (type & (DT_SEARCH|DT_NEXT|DT_PREV)) )
+	if(h && _dtobj(disc,h) == obj && (type & (DT_SEARCH|DT_NEXT|DT_PREV)) )
 		r = h; /* match at the finger, no search needed */
 	else /* linear search through the list */
 	{	h = NULL; /* track first/last obj with same key */
-		for(r = list->link; r; r = r->_rght)
-		{	o = _DTOBJ(disc,r); k = _DTKEY(disc,o);
+		for(r = u.list->link; r; r = r->_rght)
+		{	o = _dtobj(disc,r); k = _DTKEY(disc,o);
 			if(_DTCMP(dt, key, k, disc) != 0)
 				continue;
 			else if(type & (DT_REMOVE|DT_NEXT|DT_PREV) )
@@ -264,9 +270,9 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 	{ dt_delete:
 		if(r->_rght)
 			r->_rght->_left = r->_left;
-		if(r == (t = list->link) )
-		{	list->link = r->_rght;
-			if((h = list->link) )
+		if(r == (t = u.list->link) )
+		{	u.list->link = r->_rght;
+			if((h = u.list->link) )
 				h->_left = t->_left;
 		}
 		else
@@ -275,9 +281,9 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 				t->_left = r->_left;
 		}
 
-		list->here = r == list->here ? r->_rght : NULL;
+		u.list->here = r == u.list->here ? r->_rght : NULL;
 
-		obj = _DTOBJ(disc,r);
+		obj = _dtobj(disc,r);
 		_dtfree(dt, r, type);
 		dt->data->size -= 1;
 
@@ -287,12 +293,12 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 	if(type&DT_NEXT)
 		r = r->_rght;
 	else if(type&DT_PREV)
-		r = r == list->link ? NULL : r->_left;
+		r = r == u.list->link ? NULL : r->_left;
 	/* else: if(type&(DT_SEARCH|DT_MATCH|DT_ATLEAST|DT_ATMOST)) */
 
-	list->here = r;
+	u.list->here = r;
 	if(r)
-		DTRETURN(obj, _DTOBJ(disc,r));
+		DTRETURN(obj, _dtobj(disc,r));
 	else	DTRETURN(obj, NULL);
 
 dt_return:
@@ -303,26 +309,26 @@ dt_return:
 
 static int listevent(Dt_t* dt, int event, void* arg)
 {
-	Dtlist_t	*list = (Dtlist_t*)dt->data;
+	Dtlist_data_u	u = { .data = dt->data };
 
 	NOT_USED(arg);
 	if(event == DT_OPEN)
-	{	if(list) /* already initialized */
+	{	if(u.list) /* already initialized */
 			return 0;
-		if(!(list = (Dtlist_t*)(*dt->memoryf)(dt, 0, sizeof(Dtlist_t), dt->disc)) )
+		if(!(u.list = (Dtlist_t*)(*dt->memoryf)(dt, 0, sizeof(Dtlist_t), dt->disc)) )
 		{	DTERROR(dt, "Error in allocating a list data structure");
 			return -1;
 		}
-		memset(list, 0, sizeof(Dtlist_t));
-		dt->data = (Dtdata_t*)list;
+		memset(u.list, 0, sizeof(Dtlist_t));
+		dt->data = u.data;
 		return 1;
 	}
 	else if(event == DT_CLOSE)
-	{	if(!list) /* already closed */
+	{	if(!u.list) /* already closed */
 			return 0;
-		if(list->link) /* remove all items */
+		if(u.list->link) /* remove all items */
 			(void)lclear(dt);
-		(void)(*dt->memoryf)(dt, list, 0, dt->disc);
+		(void)(*dt->memoryf)(dt, u.list, 0, dt->disc);
 		dt->data = NULL;
 		return 0;
 	}

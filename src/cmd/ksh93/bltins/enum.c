@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -108,70 +108,77 @@ struct Enum
 	const char	*values[1];
 };
 
+typedef union
+{
+	struct Enum	*ep;
+	Namfun_t	*nfp;
+} Enumfun_u;
+
 /*
  * For range checking in arith.c
  */
 ptrdiff_t b_enum_nelem(Namfun_t *fp)
 {
-	return ((struct Enum *)fp)->nelem;
+	Enumfun_u u = { .nfp = fp };
+	return u.ep->nelem;
 }
 
 static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 {
-	Namval_t	*np;
-	struct Enum	*ep;
-	int		n=0;
-	const char	*v;
+	int			n=0;
+	const char		*v;
+	Namoptdisc_u		u = { .op = fp+1 };
+	Namval_t		*np = *u.npv;
+	Enumfun_u		ep = { .nfp = np->nvfun };
 	NOT_USED(op);
-	np = *(Namval_t**)(fp+1);
-	ep = (struct Enum*)np->nvfun;
-	if(!ep)
+	if(!ep.ep)
 		return 0;
 	if(strcmp(str,"default")==0)
-		sfprintf(out,"\b%s\b",ep->values[0]);
+		sfprintf(out,"\b%s\b",ep.ep->values[0]);
 	else if(strncmp(str,"last",4)==0)
 	{
-		while(ep->values[++n])
+		while(ep.ep->values[++n])
 			;
 		n--;
 		if(str[4]=='v')
-			sfprintf(out,"\b%s\b",ep->values[n]);
+			sfprintf(out,"\b%s\b",ep.ep->values[n]);
 		else
 			sfprintf(out,"\b%d\b",n);
 	}
 	else if(strcmp(str,"case")==0)
 	{
-		if(ep->iflag)
+		if(ep.ep->iflag)
 			sfprintf(out,"not ");
 	}
-	else while(v=ep->values[n])
+	else while(v=ep.ep->values[n])
 		sfprintf(out, n++ ? ", \b%s\b" : "\b%s\b", v);
 	return 0;
 }
 
 static Namfun_t *clone_enum(Namval_t* np, Namval_t *mp, nvflag_t flags, Namfun_t *fp)
 {
-	struct Enum	*ep, *pp=(struct Enum*)fp;
+	struct Enum	*ep;
+	Enumfun_u	pp = { .nfp = fp };
 	NOT_USED(np);
 	NOT_USED(mp);
 	NOT_USED(flags);
-	ep = sh_newof(0,struct Enum,1,(size_t)pp->nelem*sizeof(char*));
-	memcpy(ep,pp,sizeof(struct Enum)+(size_t)pp->nelem*sizeof(char*));
+	ep = sh_newof(0,struct Enum,1,(size_t)pp.ep->nelem*sizeof(char*));
+	memcpy(ep,pp.ep,sizeof(struct Enum)+(size_t)pp.ep->nelem*sizeof(char*));
 	return &ep->hdr;
 }
 
 static void put_enum(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 {
-	struct Enum 		*ep = (struct Enum*)fp;
-	const char		*v;
-	unsigned short		i=0;
-	int			n;
+	Enumfun_u	ep = { .nfp = fp };
+	const char	*v;
+	unsigned short	i=0;
+	int		n;
 	if(!val)
 	{
 		nv_putv(np, val, flags,fp);
-		nv_disc(np,&ep->hdr,NV_POP);
-		if(!ep->hdr.nofree)
-			free(ep);
+		nv_disc(np,&ep.ep->hdr,NV_POP);
+		if(!ep.ep->hdr.nofree)
+			free(ep.ep);
 		return;
 	}
 	if(flags&NV_INTEGER)
@@ -179,9 +186,9 @@ static void put_enum(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 		nv_putv(np,val,flags,fp);
 		return;
 	}
-	while(v=ep->values[i])
+	while(v=ep.ep->values[i])
 	{
-		if(ep->iflag)
+		if(ep.ep->iflag)
 			n = strcasecmp(v,val);
 		else
 			n = strcmp(v,val);
@@ -199,10 +206,10 @@ static void put_enum(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 static char* get_enum(Namval_t* np, Namfun_t *fp)
 {
 	static char buff[6];
-	struct Enum *ep = (struct Enum*)fp;
+	Enumfun_u ep = { .nfp = fp };
 	long n = nv_getn(np,fp);
-	if(n < ep->nelem)
-		return (char*)ep->values[n];
+	if(n < ep.ep->nelem)
+		return (char*)ep.ep->values[n];
 	sfsprintf(buff,sizeof(buff),"%u%c",n,0);
 	return buff;
 }

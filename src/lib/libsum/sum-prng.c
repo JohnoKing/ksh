@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -47,19 +47,25 @@ typedef struct Prng_s
 	Prngnum_t		add;
 } Prng_t;
 
+typedef union
+{
+	Prng_t			*prng;
+	Sum_t			*sum;
+} Prng_sum_u;
+
 static Sum_t*
 prng_open(const Method_t* method, const char* name)
 {
-	Prng_t*	sum;
+	Prng_sum_u	sum;
 	const char*	s;
 	const char*	t;
 	const char*	v;
 	ptrdiff_t	i;
 
-	if (sum = newof(0, Prng_t, 1, 0))
+	if (sum.prng = newof(0, Prng_t, 1, 0))
 	{
-		sum->method = (Method_t*)method;
-		sum->name = name;
+		sum.prng->method = (Method_t*)method;
+		sum.prng->name = name;
 	}
 	s = name;
 	while (*(t = s))
@@ -69,42 +75,42 @@ prng_open(const Method_t* method, const char* name)
 				v = s;
 		i = (v ? v : s) - t;
 		if (isdigit(*t) || v && strneq(t, "mpy", (size_t)i) && (t = v + 1))
-			sum->mpy = (Prngnum_t)strtoul(t, NULL, 0);
+			sum.prng->mpy = (Prngnum_t)strtoul(t, NULL, 0);
 		else if (strneq(t, "add", (size_t)i))
-			sum->add = v ? (Prngnum_t)strtoul(v + 1, NULL, 0) : ~sum->add;
+			sum.prng->add = v ? (Prngnum_t)strtoul(v + 1, NULL, 0) : ~sum.prng->add;
 		else if (strneq(t, "init", (size_t)i))
-			sum->init = v ? (Prngnum_t)strtoul(v + 1, NULL, 0) : ~sum->init;
+			sum.prng->init = v ? (Prngnum_t)strtoul(v + 1, NULL, 0) : ~sum.prng->init;
 		if (*s == '-')
 			s++;
 	}
-	if (!sum->mpy)
+	if (!sum.prng->mpy)
 	{
-		sum->mpy = FNV_MULT;
-		if (!sum->init)
-			sum->init = FNV_INIT;
+		sum.prng->mpy = FNV_MULT;
+		if (!sum.prng->init)
+			sum.prng->init = FNV_INIT;
 	}
-	return (Sum_t*)sum;
+	return sum.sum;
 }
 
 static int
 prng_init(Sum_t* p)
 {
-	Prng_t*		sum = (Prng_t*)p;
+	Prng_sum_u	sum = { .sum = p };
 
-	sum->sum = sum->init;
+	sum.prng->sum = sum.prng->init;
 	return 0;
 }
 
 static int
 prng_block(Sum_t* p, const void* s, size_t n)
 {
-	Prng_t*			sum = (Prng_t*)p;
-	Prngnum_t	c = sum->sum;
+	Prng_sum_u	sum = { .sum = p };
+	Prngnum_t	c = sum.prng->sum;
 	unsigned char*	b = (unsigned char*)s;
 	unsigned char*	e = b + n;
 
 	while (b < e)
-		c = c * sum->mpy + sum->add + *b++;
-	sum->sum = c;
+		c = c * sum.prng->mpy + sum.prng->add + *b++;
+	sum.prng->sum = c;
 	return 0;
 }

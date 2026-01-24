@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -12,6 +12,7 @@
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 
@@ -33,12 +34,13 @@
 static int
 bsd_block(Sum_t* p, const void* s, size_t n)
 {
-	uint32_t	c = ((Integral_t*)p)->sum;
+	Integral_sum_u	u = { .sp = p };
+	uint32_t	c = u.ip->sum;
 	unsigned char*	b = (unsigned char*)s;
 	unsigned char*	e = b + n;
 
 	while (b < e)
 		c = ((c >> 1) + *b++ + ((c & 01) ? 0x8000 : 0)) & 0xffff;
-	((Integral_t*)p)->sum = c;
+	u.ip->sum = c;
 	return 0;
 }

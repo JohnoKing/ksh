@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -890,6 +890,7 @@ static Shnode_t *funct(Lex_t *lexp)
 	jmpval = sigsetjmp(buff.buff,0);
 	if(jmpval == 0)
 	{
+		Slfu_u fu;
 		/* create a new stack to compile the command */
 		savstak = sh.stk;
 		sh.stk = stkopen(STK_SMALL);
@@ -902,7 +903,8 @@ static Shnode_t *funct(Lex_t *lexp)
 		 * store the pathname of function definition file on stack
 		 * in name field of fake for node
 		 */
-		fp = (struct functnod*)(slp+1);
+		fu.slp = slp+1;
+		fp = fu.fp;
 		fp->functtyp = TFUN|FAMP;
 		fp->functnam = 0;
 		fp->functargs = 0;
@@ -956,7 +958,7 @@ static Shnode_t *funct(Lex_t *lexp)
 			slp->slptr = NULL;
 			stkclose(slptr_save);
 		}
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	}
 	sh.st.staklist = (struct slnod*)slp;
 	fp->functtre = t;
@@ -1489,7 +1491,8 @@ static Shnode_t *simple(Lex_t *lexp,nvflag_t flag, struct ionod *io)
 			&& !(sh_isoption(SH_RESTRICTED) && strchr(argp->argval,'/')))
 			{
 				/* check for builtin command (including path-bound builtins executed by full pathname) */
-				Namval_t *np=nv_bfsearch(argp->argval,sh.fun_tree, (Namval_t**)&t->comnamq,NULL);
+				Namval_voidp_u u = { .vv = &t->comnamq };
+				Namval_t *np = nv_bfsearch(argp->argval,sh.fun_tree,u.nv,NULL);
 				if(np && is_abuiltin(np))
 				{
 					if(cmdarg==0)

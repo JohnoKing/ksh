@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -43,6 +43,12 @@ typedef struct _union_s
 	File_t		f[1];	/* array of streams	*/
 } Union_t;
 
+typedef union
+{
+	Union_t		*un;
+	Sfdisc_t	*disc;
+} Union_u;
+
 static ssize_t unwrite(Sfio_t*		f,	/* stream involved */
 		       const void*	buf,	/* buffer to read into */
 		       size_t		n,	/* number of bytes to read */
@@ -60,71 +66,71 @@ static ssize_t unread(Sfio_t*	f,	/* stream involved */
 		      size_t	n,	/* number of bytes to read */
 		      Sfdisc_t*	disc)	/* discipline */
 {
-	Union_t*	un;
-	ssize_t	r, m;
+	Union_u		un;
+	ssize_t		r, m;
 
-	un = (Union_t*)disc;
+	un.disc = disc;
 	m = (ssize_t)n;
-	f = un->f[un->c].f;
+	f = un.un->f[un.un->c].f;
 	while(1)
-	{	if((r = sfread(f,buf,(size_t)m)) < 0 || (r == 0 && un->c == un->n-1) )
+	{	if((r = sfread(f,buf,(size_t)m)) < 0 || (r == 0 && un.un->c == un.un->n-1) )
 			break;
 
 		m -= r;
-		un->here += r;
+		un.un->here += r;
 
 		if(m == 0)
 			break;
 
 		buf = (char*)buf + r;
-		if(sfeof(f) && un->c < un->n-1)
-			f = un->f[un->c += 1].f;
+		if(sfeof(f) && un.un->c < un.un->n-1)
+			f = un.un->f[un.un->c += 1].f;
 	}
 	return (ssize_t)n-m;
 }
 
 static Sfoff_t unseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
 {
-	Union_t*	un;
+	Union_u		un;
 	int		i;
 	Sfoff_t	extent, s;
 
 	NOT_USED(f);
 
-	un = (Union_t*)disc;
-	if(un->type&UNSEEKABLE)
+	un.disc = disc;
+	if(un.un->type&UNSEEKABLE)
 		return -1L;
 
 	if(type == 2)
 	{	extent = 0;
-		for(i = 0; i < un->n; ++i)
-			extent += (sfsize(un->f[i].f) - un->f[i].lower);
+		for(i = 0; i < un.un->n; ++i)
+			extent += (sfsize(un.un->f[i].f) - un.un->f[i].lower);
 		addr += extent;
 	}
 	else if(type == 1)
-		addr += un->here;
+		addr += un.un->here;
 
 	if(addr < 0)
 		return -1;
 
 	/* find the stream where the addr could be in */
 	extent = 0;
-	for(i = 0; i < un->n-1; ++i)
-	{	s = sfsize(un->f[i].f) - un->f[i].lower;
+	for(i = 0; i < un.un->n-1; ++i)
+	{	s = sfsize(un.un->f[i].f) - un.un->f[i].lower;
 		if(addr < extent + s)
 			break;
 		extent += s;
 	}
 
-	s = (addr-extent) + un->f[i].lower;
-	if(sfseek(un->f[i].f,s,0) != s)
+	s = (addr-extent) + un.un->f[i].lower;
+	if(sfseek(un.un->f[i].f,s,0) != s)
 		return -1;
 
-	un->c = i;
-	un->here = addr;
+	un.un->c = i;
+	un.un->here = addr;
 
-	for(i += 1; i < un->n; ++i)
-		sfseek(un->f[i].f,un->f[i].lower,0);
+	for(i += 1; i < un.un->n; ++i)
+		sfseek(un.un->f[i].f,un.un->f[i].lower,0);
 
 	return addr;
 }
@@ -143,32 +149,32 @@ static int unexcept(Sfio_t* f, int type, void* data, Sfdisc_t* disc)
 
 int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
 {
-	Union_t*	un;
+	Union_u		un;
 
 	if(n <= 0)
 		return -1;
 
-	if(!(un = (Union_t*)malloc(sizeof(Union_t)+((size_t)n-1)*sizeof(File_t))) )
+	if(!(un.un = malloc(sizeof(Union_t)+((size_t)n-1)*sizeof(File_t))) )
 		return -1;
-	memset(un, 0, sizeof(*un));
+	memset(un.un, 0, sizeof(*un.un));
 
-	un->disc.readf = unread;
-	un->disc.writef = unwrite;
-	un->disc.seekf = unseek;
-	un->disc.exceptf = unexcept;
-	un->n = n;
+	un.un->disc.readf = unread;
+	un.un->disc.writef = unwrite;
+	un.un->disc.seekf = unseek;
+	un.un->disc.exceptf = unexcept;
+	un.un->n = n;
 
 	for(int i = 0; i < n; ++i)
-	{	un->f[i].f = array[i];
-		if(!(un->type&UNSEEKABLE))
-		{	un->f[i].lower = sfseek(array[i],0,1);
-			if(un->f[i].lower < 0)
-				un->type |= UNSEEKABLE;
+	{	un.un->f[i].f = array[i];
+		if(!(un.un->type&UNSEEKABLE))
+		{	un.un->f[i].lower = sfseek(array[i],0,1);
+			if(un.un->f[i].lower < 0)
+				un.un->type |= UNSEEKABLE;
 		}
 	}
 
-	if(sfdisc(f,(Sfdisc_t*)un) != (Sfdisc_t*)un)
-	{	free(un);
+	if(sfdisc(f,un.disc) != un.disc)
+	{	free(un.un);
 		return -1;
 	}
 

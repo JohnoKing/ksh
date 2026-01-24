@@ -364,6 +364,11 @@ static int sig_number(const char *string)
 	{
 		int c;
 		ptrdiff_t o = stktell(sh.stk);
+		union
+		{
+			Shtable_t	*shtable;
+			struct shtable2	*shtable2;
+		} u;
 		do
 		{
 			c = *string++;
@@ -384,7 +389,8 @@ static int sig_number(const char *string)
 					return n;
 			}
 		}
-		tp = sh_locate(stkptr(sh.stk,o),(const Shtable_t*)shtab_signals,sizeof(*shtab_signals));
+		u.shtable2 = (struct shtable2*)shtab_signals;
+		tp = sh_locate(stkptr(sh.stk,o),u.shtable,sizeof(*shtab_signals));
 		n = (int)tp->sh_number;
 		if(sig==1 && (n>=(SH_TRAP-1) && n < (1<<SH_SIGBITS)))
 		{

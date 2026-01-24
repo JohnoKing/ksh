@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -76,6 +76,12 @@ struct stk
 	int		stkflags;	/* stack attributes */
 	char		*stkbase;	/* beginning of current stack frame */
 	char		*stkend;	/* end of current stack frame */
+};
+
+union stk_sfdisc_u
+{
+	Sfdisc_t	*dp;
+	struct stk	*sp;
 };
 
 static size_t		init;		/* 1 when initialized */
@@ -188,15 +194,16 @@ Sfio_t *stkopen(int flags)
 	struct frame *fp;
 	Sfdisc_t *dp;
 	char *cp;
+	union stk_sfdisc_u su;
 	if(!(stream=newof(NULL,Sfio_t, 1, sizeof(*dp)+sizeof(*sp))))
 		return NULL;
 	dp = (Sfdisc_t*)(stream+1);
 	dp->exceptf = stkexcept;
-	sp = (struct stk*)(dp+1);
-	sp->stkref = 1;
-	sp->stkflags = flags;
-	if(flags&STK_NULL) sp->stkoverflow = 0;
-	else sp->stkoverflow = stkcur?stkcur->stkoverflow:overflow;
+	su.dp = dp+1;
+	su.sp->stkref = 1;
+	su.sp->stkflags = flags;
+	if(flags&STK_NULL) su.sp->stkoverflow = 0;
+	else su.sp->stkoverflow = stkcur?stkcur->stkoverflow:overflow;
 	bsize = init+sizeof(struct frame);
 	if(flags&STK_SMALL)
 		bsize = roundof(bsize,STK_FSIZE/16);
@@ -209,11 +216,11 @@ Sfio_t *stkopen(int flags)
 		return NULL;
 	}
 	cp = (char*)(fp+1);
-	sp->stkbase = (char*)fp;
+	su.sp->stkbase = (char*)fp;
 	fp->prev = 0;
 	fp->nalias = 0;
 	fp->aliases = 0;
-	fp->end = sp->stkend = cp+bsize;
+	fp->end = su.sp->stkend = cp+bsize;
 	if(!sfnew(stream,cp,bsize,-1,SFIO_STRING|SFIO_WRITE|SFIO_STATIC|SFIO_EOF))
 		return NULL;
 	sfdisc(stream,dp);

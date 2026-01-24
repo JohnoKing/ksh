@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -53,7 +53,8 @@
 static int
 att_block(Sum_t* p, const void* s, size_t n)
 {
-	uint32_t	c = ((Integral_t*)p)->sum;
+	Integral_sum_u	u = { .sp = p };
+	uint32_t	c = u.ip->sum;
 	const unsigned char*	b = (const unsigned char*)s;
 	const unsigned char*	e = b + n;
 	uint32_t s0, s1, s2, s3, s4, s5, s6, s7;
@@ -95,7 +96,7 @@ att_block(Sum_t* p, const void* s, size_t n)
 
 	while (b < e)
 		c += *b++;
-	((Integral_t*)p)->sum = c;
+	u.ip->sum = c;
 	return 0;
 }
 
@@ -103,13 +104,14 @@ att_block(Sum_t* p, const void* s, size_t n)
 static int
 att_block(Sum_t* p, const void* s, size_t n)
 {
-	uint32_t	c = ((Integral_t*)p)->sum;
+	Integral_sum_u	u = { .sp = p };
+	uint32_t	c = u.ip->sum;
 	unsigned char*	b = (unsigned char*)s;
 	unsigned char*	e = b + n;
 
 	while (b < e)
 		c += *b++;
-	((Integral_t*)p)->sum = c;
+	u.ip->sum = c;
 	return 0;
 }
 #endif
@@ -117,10 +119,11 @@ att_block(Sum_t* p, const void* s, size_t n)
 static int
 att_done(Sum_t* p)
 {
-	uint32_t	c = ((Integral_t*)p)->sum;
+	Integral_sum_u	u = { .sp = p };
+	uint32_t	c = u.ip->sum;
 
 	c = (c & 0xffff) + ((c >> 16) & 0xffff);
 	c = (c & 0xffff) + (c >> 16);
-	((Integral_t*)p)->sum = c & 0xffff;
-	return short_done(p);
+	u.ip->sum = c & 0xffff;
+	return short_done(u.sp);
 }

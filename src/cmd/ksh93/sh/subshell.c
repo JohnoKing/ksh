@@ -40,6 +40,18 @@
 #   define PIPE_BUF	512
 #endif
 
+typedef union
+{
+	Namval_t	*np;
+	Namval_t	**npv;
+} Namval_meta_u;
+
+typedef union
+{
+	Namval_t	*np;
+	Dt_t		**dictv;
+} Namval_dict_u;
+
 struct Link
 {
 	struct Link	*next;
@@ -98,7 +110,7 @@ void	sh_subtmpfile(void)
 	if(sfset(sfstdout,0,0)&SFIO_STRING)
 	{
 		int fd;
-		struct checkpt	*pp = (struct checkpt*)sh.jmplist;
+		struct checkpt	*pp = sh.jmplist.pt;
 		struct subshell *sp = subshell_data->pipe;
 		/* save file descriptor 1 if open */
 		if((sp->tmpfd = fd = sh_fcntl(1,F_DUPFD_CLOEXEC,10)) >= 0)
@@ -164,7 +176,7 @@ void sh_subfork(void)
 		if(sp->subpid==0)
 			sp->subpid = pid;
 		free(trap);
-		siglongjmp(*sh.jmplist,SH_JMPSUB);
+		siglongjmp(*sh.jmplist.jmp,SH_JMPSUB);
 	}
 	else
 	{
@@ -246,6 +258,7 @@ void sh_assignok(Namval_t *np,int add)
 	Namval_t		*mpnext;
 	Namarr_t		*ap;
 	unsigned int		save;
+	Namval_dict_u		nu;
 	/*
 	 * Don't create a scope during virtual subshell cleanup (see nv_restore()) or if this is a subshare.
 	 * Also, ${.sh.level} (SH_LEVELNOD) is handled specially and is not scoped in virtual subshells.
@@ -274,6 +287,7 @@ void sh_assignok(Namval_t *np,int add)
 		Dt_t		*walk, *root=sh.var_tree;
 		char		*name = nv_name(np);
 		size_t		len = strlen(name);
+		Namval_meta_u	mpmeta;
 		fake.nvname = name;
 		mpnext = dtnext(root,&fake);
 		dp = root->walk?root->walk:root;
@@ -284,12 +298,14 @@ void sh_assignok(Namval_t *np,int add)
 			if(strncmp(name,mp->nvname,len) || mp->nvname[len]!='.')
 				break;
 			nv_delete(mp,walk,NV_NOFREE);
-			*((Namval_t**)mp) = lp->child;
+			mpmeta.np = mp;
+			*mpmeta.npv = lp->child;
 			lp->child = mp;
 		}
 	}
 	lp->dict = dp;
-	mp = (Namval_t*)&lp->dict;
+	nu.dictv = &lp->dict;
+	mp = nu.np;
 	lp->next = subshell_data->svar;
 	subshell_data->svar = lp;
 	save = sh.subshell;
@@ -312,12 +328,15 @@ static void nv_restore(struct subshell *sp)
 	struct Link	*lp, *lq;
 	Namval_t	*mp, *np;
 	Namval_t	*mpnext;
+	Namval_meta_u	mpmeta;
+	Namval_dict_u	nu;
 	nvflag_t	flags;
 	char		nofree;
 	sh.nv_restore = 1;
 	for(lp=sp->svar; lp; lp=lq)
 	{
-		np = (Namval_t*)&lp->dict;
+		nu.dictv = &lp->dict;
+		np = nu.np;
 		lq = lp->next;
 		mp = lp->node;
 		if(!mp->nvname)
@@ -376,7 +395,8 @@ static void nv_restore(struct subshell *sp)
 	skip:
 		for(mp=lp->child; mp; mp=mpnext)
 		{
-			mpnext = *((Namval_t**)mp);
+			mpmeta.np = mp;
+			mpnext = *mpmeta.npv;
 			dtinsert(lp->dict,mp);
 		}
 		free(lp);
@@ -715,7 +735,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 		subshell_data = sp->prev;
 		sh_popcontext(&checkpoint);
 		if(jmpval==SH_JMPSCRIPT)
-			siglongjmp(*sh.jmplist,jmpval);
+			siglongjmp(*sh.jmplist.jmp,jmpval);
 		sh.exitval &= SH_EXITMASK;
 		if(sh.chldexitsig)
 			sh.exitval |= SH_EXITSIG;
@@ -764,7 +784,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 				if(fd<0)
 				{
 					sh.toomany = 1;
-					((struct checkpt*)sh.jmplist)->mode = SH_JMPERREXIT;
+					sh.jmplist.pt->mode = SH_JMPERREXIT;
 					errormsg(SH_DICT,ERROR_system(1),e_toomany);
 					UNREACHABLE();
 				}
@@ -976,7 +996,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 	}
 	if(fatalerror)
 	{
-		((struct checkpt*)sh.jmplist)->mode = SH_JMPERREXIT;
+		sh.jmplist.pt->mode = SH_JMPERREXIT;
 		switch(fatalerror)
 		{
 			case 1:
@@ -1002,6 +1022,6 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, char comsub)
 	if(jmpval==SH_JMPSUB && sh.lastsig)
 		kill(sh.current_pid,sh.lastsig);
 	if(jmpval && sh.toomany)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	return iop;
 }

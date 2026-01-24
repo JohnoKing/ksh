@@ -356,6 +356,12 @@ typedef struct Sha256_s
 	sha2_byte	buffer[SHA256_BLOCK_LENGTH];
 } Sha256_t;
 
+typedef union
+{
+	Sha256_t	*sha;
+	Sum_t		*sum;
+} Sha256_sum_u;
+
 #ifdef SHA2_UNROLL_TRANSFORM
 
 /* Unrolled SHA-256 round macros: */
@@ -534,28 +540,28 @@ static void SHA256_Transform(SHA256_CTX* sha, const sha2_word32* data) {
 static int
 sha256_block(Sum_t* p, const void* s, size_t len)
 {
-	Sha256_t*	sha = (Sha256_t*)p;
+	Sha256_sum_u	sha = { .sum = p };
 	sha2_byte*	data = (sha2_byte*)s;
 	unsigned int	freespace, usedspace;
 
 	if (!len)
 		return 0;
-	usedspace = (sha->bitcount >> 3) % SHA256_BLOCK_LENGTH;
+	usedspace = (sha.sha->bitcount >> 3) % SHA256_BLOCK_LENGTH;
 	if (usedspace > 0) {
 		/* Calculate how much free space is available in the buffer */
 		freespace = SHA256_BLOCK_LENGTH - usedspace;
 
 		if (len >= freespace) {
 			/* Fill the buffer completely and process it */
-			memcpy(&sha->buffer[usedspace], data, freespace);
-			sha->bitcount += freespace << 3;
+			memcpy(&sha.sha->buffer[usedspace], data, freespace);
+			sha.sha->bitcount += freespace << 3;
 			len -= freespace;
 			data += freespace;
-			SHA256_Transform(sha, (sha2_word32*)sha->buffer);
+			SHA256_Transform(sha.sha, (sha2_word32*)sha.sha->buffer);
 		} else {
 			/* The buffer is not yet full */
-			memcpy(&sha->buffer[usedspace], data, len);
-			sha->bitcount += len << 3;
+			memcpy(&sha.sha->buffer[usedspace], data, len);
+			sha.sha->bitcount += len << 3;
 			/* Clean up: */
 			usedspace = freespace = 0;
 			return 0;
@@ -563,15 +569,15 @@ sha256_block(Sum_t* p, const void* s, size_t len)
 	}
 	while (len >= SHA256_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA256_Transform(sha, (sha2_word32*)data);
-		sha->bitcount += SHA256_BLOCK_LENGTH << 3;
+		SHA256_Transform(sha.sha, (sha2_word32*)data);
+		sha.sha->bitcount += SHA256_BLOCK_LENGTH << 3;
 		len -= SHA256_BLOCK_LENGTH;
 		data += SHA256_BLOCK_LENGTH;
 	}
 	if (len > 0) {
 		/* There's leftovers, so save 'em */
-		memcpy(sha->buffer, data, len);
-		sha->bitcount += len << 3;
+		memcpy(sha.sha->buffer, data, len);
+		sha.sha->bitcount += len << 3;
 	}
 	/* Clean up: */
 	usedspace = freespace = 0;
@@ -582,11 +588,11 @@ sha256_block(Sum_t* p, const void* s, size_t len)
 static int
 sha256_init(Sum_t* p)
 {
-	Sha256_t*	sha = (Sha256_t*)p;
+	Sha256_sum_u	sha = { .sum = p };
 
-	memcpy(sha->state, sha256_initial_hash_value, SHA256_DIGEST_LENGTH);
-	memset(sha->buffer, 0, SHA256_BLOCK_LENGTH);
-	sha->bitcount = 0;
+	memcpy(sha.sha->state, sha256_initial_hash_value, SHA256_DIGEST_LENGTH);
+	memset(sha.sha->buffer, 0, SHA256_BLOCK_LENGTH);
+	sha.sha->bitcount = 0;
 
 	return 0;
 }
@@ -594,80 +600,80 @@ sha256_init(Sum_t* p)
 static Sum_t*
 sha256_open(const Method_t* method, const char* name)
 {
-	Sha256_t*	sha;
+	Sha256_sum_u	sha;
 
-	if (sha = newof(0, Sha256_t, 1, 0))
+	if (sha.sha = newof(0, Sha256_t, 1, 0))
 	{
-		sha->method = (Method_t*)method;
-		sha->name = name;
-		sha256_init((Sum_t*)sha);
+		sha.sha->method = (Method_t*)method;
+		sha.sha->name = name;
+		sha256_init(sha.sum);
 	}
-	return (Sum_t*)sha;
+	return sha.sum;
 }
 
 static int
 sha256_done(Sum_t* p)
 {
-	Sha256_t*	sha = (Sha256_t*)p;
+	Sha256_sum_u	sha = { .sum = p };
 	unsigned int	usedspace;
 
 	/* Sanity check: */
-	assert(sha != NULL);
+	assert(p != NULL);
 
-	usedspace = (sha->bitcount >> 3) % SHA256_BLOCK_LENGTH;
+	usedspace = (sha.sha->bitcount >> 3) % SHA256_BLOCK_LENGTH;
 #if BYTE_ORDER == LITTLE_ENDIAN
 	/* Convert FROM host byte order */
-	REVERSE64(sha->bitcount,sha->bitcount);
+	REVERSE64(sha.sha->bitcount,sha.sha->bitcount);
 #endif
 	if (usedspace > 0) {
 		/* Begin padding with a 1 bit: */
-		sha->buffer[usedspace++] = 0x80;
+		sha.sha->buffer[usedspace++] = 0x80;
 
 		if (usedspace <= SHA256_SHORT_BLOCK_LENGTH) {
 			/* Set-up for the last transform: */
-			memset(&sha->buffer[usedspace], 0, SHA256_SHORT_BLOCK_LENGTH - usedspace);
+			memset(&sha.sha->buffer[usedspace], 0, SHA256_SHORT_BLOCK_LENGTH - usedspace);
 		} else {
 			if (usedspace < SHA256_BLOCK_LENGTH) {
-				memset(&sha->buffer[usedspace], 0, SHA256_BLOCK_LENGTH - usedspace);
+				memset(&sha.sha->buffer[usedspace], 0, SHA256_BLOCK_LENGTH - usedspace);
 			}
 			/* Do second-to-last transform: */
-			SHA256_Transform(sha, (sha2_word32*)sha->buffer);
+			SHA256_Transform(sha.sha, (sha2_word32*)sha.sha->buffer);
 
 			/* And set-up for the last transform: */
-			memset(sha->buffer, 0, SHA256_SHORT_BLOCK_LENGTH);
+			memset(sha.sha->buffer, 0, SHA256_SHORT_BLOCK_LENGTH);
 		}
 	} else {
 		/* Set-up for the last transform: */
-		memset(sha->buffer, 0, SHA256_SHORT_BLOCK_LENGTH);
+		memset(sha.sha->buffer, 0, SHA256_SHORT_BLOCK_LENGTH);
 
 		/* Begin padding with a 1 bit: */
-		*sha->buffer = 0x80;
+		*sha.sha->buffer = 0x80;
 	}
 	/* Store the length of input data (in bits): */
-	memcpy(&sha->buffer[SHA256_SHORT_BLOCK_LENGTH], &sha->bitcount, 8);
+	memcpy(&sha.sha->buffer[SHA256_SHORT_BLOCK_LENGTH], &sha.sha->bitcount, 8);
 
 	/* Final transform: */
-	SHA256_Transform(sha, (sha2_word32*)sha->buffer);
+	SHA256_Transform(sha.sha, (sha2_word32*)sha.sha->buffer);
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 	{
 		/* Convert TO host byte order */
-		sha2_word32*	d = (sha2_word32*)sha->digest;
+		sha2_word32*	d = (sha2_word32*)sha.sha->digest;
 		for (size_t j = 0; j < 8; j++) {
-			REVERSE32(sha->state[j],sha->state[j]);
-			*d++ = sha->state[j];
+			REVERSE32(sha.sha->state[j],sha.sha->state[j]);
+			*d++ = sha.sha->state[j];
 		}
 	}
 #else
-	memcpy(sha->digest, sha->state, SHA256_DIGEST_LENGTH);
+	memcpy(sha.sha->digest, sha.sha->state, SHA256_DIGEST_LENGTH);
 #endif
 
 	/* accumulate the digests */
 	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
-		sha->digest_sum[i] ^= sha->digest[i];
+		sha.sha->digest_sum[i] ^= sha.sha->digest[i];
 
 	/* Clean up state data: */
-	memset(&sha->state, 0, sizeof(*sha) - offsetof(Sha256_t, state));
+	memset(&sha.sha->state, 0, sizeof(*sha.sha) - offsetof(Sha256_t, state));
 	usedspace = 0;
 
 	return 0;
@@ -676,12 +682,12 @@ sha256_done(Sum_t* p)
 static int
 sha256_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
-	Sha256_t*	sha = (Sha256_t*)p;
+	Sha256_sum_u	sha = { .sum = p };
 	sha2_byte*	d;
 	sha2_byte*	e;
 
 	NOT_USED(scale);
-	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
+	d = (flags & SUM_TOTAL) ? sha.sha->digest_sum : sha.sha->digest;
 	e = d + SHA256_DIGEST_LENGTH;
 	while (d < e)
 		sfprintf(sp, "%02x", *d++);
@@ -691,11 +697,11 @@ sha256_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 static int
 sha256_data(Sum_t* p, Sumdata_t* data)
 {
-	Sha256_t*	sha = (Sha256_t*)p;
+	Sha256_sum_u	sha = { .sum = p };
 
 	data->size = SHA256_DIGEST_LENGTH;
 	data->num = 0;
-	data->buf = sha->digest;
+	data->buf = sha.sha->digest;
 	return 0;
 }
 
@@ -723,6 +729,12 @@ typedef struct Sha512_s
 	sha2_word64	bitcount[2];
 	sha2_byte	buffer[SHA512_BLOCK_LENGTH];
 } Sha512_t;
+
+typedef union
+{
+	Sha512_t	*sha;
+	Sum_t		*sum;
+} Sha512_sum_u;
 
 #ifdef SHA2_UNROLL_TRANSFORM
 
@@ -896,28 +908,28 @@ static void SHA512_Transform(SHA512_CTX* sha, const sha2_word64* data) {
 static int
 sha512_block(Sum_t* p, const void* s, size_t len)
 {
-	Sha512_t*	sha = (Sha512_t*)p;
+	Sha512_sum_u	sha = { .sum = p };
 	sha2_byte*	data = (sha2_byte*)s;
 	unsigned int	freespace, usedspace;
 
 	if (!len)
 		return 0;
-	usedspace = (sha->bitcount[1] >> 3) % SHA512_BLOCK_LENGTH;
+	usedspace = (sha.sha->bitcount[1] >> 3) % SHA512_BLOCK_LENGTH;
 	if (usedspace > 0) {
 		/* Calculate how much free space is available in the buffer */
 		freespace = SHA512_BLOCK_LENGTH - usedspace;
 
 		if (len >= freespace) {
 			/* Fill the buffer completely and process it */
-			memcpy(&sha->buffer[usedspace], data, freespace);
-			ADDINC128(sha->bitcount, freespace << 3);
+			memcpy(&sha.sha->buffer[usedspace], data, freespace);
+			ADDINC128(sha.sha->bitcount, freespace << 3);
 			len -= freespace;
 			data += freespace;
-			SHA512_Transform(sha, (sha2_word64*)sha->buffer);
+			SHA512_Transform(sha.sha, (sha2_word64*)sha.sha->buffer);
 		} else {
 			/* The buffer is not yet full */
-			memcpy(&sha->buffer[usedspace], data, len);
-			ADDINC128(sha->bitcount, len << 3);
+			memcpy(&sha.sha->buffer[usedspace], data, len);
+			ADDINC128(sha.sha->bitcount, len << 3);
 			/* Clean up: */
 			usedspace = freespace = 0;
 			return 0;
@@ -925,15 +937,15 @@ sha512_block(Sum_t* p, const void* s, size_t len)
 	}
 	while (len >= SHA512_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA512_Transform(sha, (sha2_word64*)data);
-		ADDINC128(sha->bitcount, SHA512_BLOCK_LENGTH << 3);
+		SHA512_Transform(sha.sha, (sha2_word64*)data);
+		ADDINC128(sha.sha->bitcount, SHA512_BLOCK_LENGTH << 3);
 		len -= SHA512_BLOCK_LENGTH;
 		data += SHA512_BLOCK_LENGTH;
 	}
 	if (len > 0) {
 		/* There's leftovers, so save 'em */
-		memcpy(sha->buffer, data, len);
-		ADDINC128(sha->bitcount, len << 3);
+		memcpy(sha.sha->buffer, data, len);
+		ADDINC128(sha.sha->bitcount, len << 3);
 	}
 	/* Clean up: */
 	usedspace = freespace = 0;
@@ -944,11 +956,11 @@ sha512_block(Sum_t* p, const void* s, size_t len)
 static int
 sha512_init(Sum_t* p)
 {
-	Sha512_t*	sha = (Sha512_t*)p;
+	Sha512_sum_u	sha = { .sum = p };
 
-	memcpy(sha->state, sha512_initial_hash_value, SHA512_DIGEST_LENGTH);
-	memset(sha->buffer, 0, SHA512_BLOCK_LENGTH);
-	sha->bitcount[0] = sha->bitcount[1] =  0;
+	memcpy(sha.sha->state, sha512_initial_hash_value, SHA512_DIGEST_LENGTH);
+	memset(sha.sha->buffer, 0, SHA512_BLOCK_LENGTH);
+	sha.sha->bitcount[0] = sha.sha->bitcount[1] =  0;
 
 	return 0;
 }
@@ -956,78 +968,78 @@ sha512_init(Sum_t* p)
 static Sum_t*
 sha512_open(const Method_t* method, const char* name)
 {
-	Sha512_t*	sha;
+	Sha512_sum_u	sha;
 
-	if (sha = newof(0, Sha512_t, 1, 0))
+	if (sha.sha = newof(0, Sha512_t, 1, 0))
 	{
-		sha->method = (Method_t*)method;
-		sha->name = name;
-		sha512_init((Sum_t*)sha);
+		sha.sha->method = (Method_t*)method;
+		sha.sha->name = name;
+		sha512_init(sha.sum);
 	}
-	return (Sum_t*)sha;
+	return sha.sum;
 }
 
 static int
 sha512_done(Sum_t* p)
 {
-	Sha512_t*	sha = (Sha512_t*)p;
+	Sha512_sum_u	sha = { .sum = p };
 	unsigned int	usedspace;
 
-	usedspace = (sha->bitcount[1] >> 3) % SHA512_BLOCK_LENGTH;
+	usedspace = (sha.sha->bitcount[1] >> 3) % SHA512_BLOCK_LENGTH;
 #if BYTE_ORDER == LITTLE_ENDIAN
 	/* Convert FROM host byte order */
-	REVERSE64(sha->bitcount[0],sha->bitcount[0]);
-	REVERSE64(sha->bitcount[1],sha->bitcount[1]);
+	REVERSE64(sha.sha->bitcount[0],sha.sha->bitcount[0]);
+	REVERSE64(sha.sha->bitcount[1],sha.sha->bitcount[1]);
 #endif
 	if (usedspace > 0) {
 		/* Begin padding with a 1 bit: */
-		sha->buffer[usedspace++] = 0x80;
+		sha.sha->buffer[usedspace++] = 0x80;
 
 		if (usedspace <= SHA512_SHORT_BLOCK_LENGTH) {
 			/* Set-up for the last transform: */
-			memset(&sha->buffer[usedspace], 0, SHA512_SHORT_BLOCK_LENGTH - usedspace);
+			memset(&sha.sha->buffer[usedspace], 0, SHA512_SHORT_BLOCK_LENGTH - usedspace);
 		} else {
 			if (usedspace < SHA512_BLOCK_LENGTH) {
-				memset(&sha->buffer[usedspace], 0, SHA512_BLOCK_LENGTH - usedspace);
+				memset(&sha.sha->buffer[usedspace], 0, SHA512_BLOCK_LENGTH - usedspace);
 			}
 			/* Do second-to-last transform: */
-			SHA512_Transform(sha, (sha2_word64*)sha->buffer);
+			SHA512_Transform(sha.sha, (sha2_word64*)sha.sha->buffer);
 
 			/* And set-up for the last transform: */
-			memset(sha->buffer, 0, SHA512_BLOCK_LENGTH - 2);
+			memset(sha.sha->buffer, 0, SHA512_BLOCK_LENGTH - 2);
 		}
 	} else {
 		/* Prepare for final transform: */
-		memset(sha->buffer, 0, SHA512_SHORT_BLOCK_LENGTH);
+		memset(sha.sha->buffer, 0, SHA512_SHORT_BLOCK_LENGTH);
 
 		/* Begin padding with a 1 bit: */
-		*sha->buffer = 0x80;
+		*sha.sha->buffer = 0x80;
 	}
 	/* Store the length of input data (in bits): */
-	memcpy(&sha->buffer[SHA512_SHORT_BLOCK_LENGTH], &sha->bitcount[0], 16);
+	memcpy(&sha.sha->buffer[SHA512_SHORT_BLOCK_LENGTH], &sha.sha->bitcount[0], 16);
 
 	/* Final transform: */
-	SHA512_Transform(sha, (sha2_word64*)sha->buffer);
+	SHA512_Transform(sha.sha, (sha2_word64*)sha.sha->buffer);
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 	{
 		/* Convert TO host byte order */
-		sha2_word64*	d = (sha2_word64*)sha->digest;
+		sha2_word64*	d = (sha2_word64*)sha.sha->digest;
 		for (size_t j = 0; j < 8; j++) {
-			REVERSE64(sha->state[j],sha->state[j]);
-			*d++ = sha->state[j];
+			REVERSE64(sha.sha->state[j],sha.sha->state[j]);
+			*d++ = sha.sha->state[j];
 		}
 	}
 #else
-	memcpy(sha->digest, sha->state, SHA512_DIGEST_LENGTH);
+	memcpy(sha.sha->digest, sha.sha->state, SHA512_DIGEST_LENGTH);
 #endif
 
 	/* accumulate the digests */
 	for (size_t i = 0; i < SHA512_DIGEST_LENGTH; i++)
-		sha->digest_sum[i] ^= sha->digest[i];
+		sha.sha->digest_sum[i] ^= sha.sha->digest[i];
 
 	/* Clean up state data: */
-	memset(&sha->state, 0, sizeof(*sha) - offsetof(Sha512_t, state));
+	memset(&sha.sha->state, 0, sizeof(*sha.sha) - offsetof(Sha512_t, state));
 	usedspace = 0;
 
 	return 0;
@@ -1036,12 +1048,12 @@ sha512_done(Sum_t* p)
 static int
 sha512_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
-	Sha512_t*	sha = (Sha512_t*)p;
+	Sha512_sum_u	sha = { .sum = p };
 	sha2_byte*	d;
 	sha2_byte*	e;
 
 	NOT_USED(scale);
-	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
+	d = (flags & SUM_TOTAL) ? sha.sha->digest_sum : sha.sha->digest;
 	e = d + SHA512_DIGEST_LENGTH;
 	while (d < e)
 		sfprintf(sp, "%02x", *d++);
@@ -1051,11 +1063,11 @@ sha512_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 static int
 sha512_data(Sum_t* p, Sumdata_t* data)
 {
-	Sha512_t*	sha = (Sha512_t*)p;
+	Sha512_sum_u	sha = { .sum = p };
 
 	data->size = SHA512_DIGEST_LENGTH;
 	data->num = 0;
-	data->buf = sha->digest;
+	data->buf = sha.sha->digest;
 	return 0;
 }
 
@@ -1074,17 +1086,18 @@ sha512_data(Sum_t* p, Sumdata_t* data)
 #define sha384_padding	md5_pad
 
 #define Sha384_t		Sha512_t
+#define Sha384_sum_u		Sha512_sum_u
 #define SHA384_CTX		Sha384_t
 #define SHA384_DIGEST_LENGTH	48
 
 static int
 sha384_init(Sum_t* p)
 {
-	Sha384_t*	sha = (Sha384_t*)p;
+	Sha384_sum_u	sha = { .sum = p };
 
-	memcpy(sha->state, sha384_initial_hash_value, SHA512_DIGEST_LENGTH);
-	memset(sha->buffer, 0, SHA384_BLOCK_LENGTH);
-	sha->bitcount[0] = sha->bitcount[1] = 0;
+	memcpy(sha.sha->state, sha384_initial_hash_value, SHA512_DIGEST_LENGTH);
+	memset(sha.sha->buffer, 0, SHA384_BLOCK_LENGTH);
+	sha.sha->bitcount[0] = sha.sha->bitcount[1] = 0;
 
 	return 0;
 }
@@ -1092,26 +1105,26 @@ sha384_init(Sum_t* p)
 static Sum_t*
 sha384_open(const Method_t* method, const char* name)
 {
-	Sha384_t*	sha;
+	Sha384_sum_u	sha;
 
-	if (sha = newof(0, Sha384_t, 1, 0))
+	if (sha.sha = newof(0, Sha384_t, 1, 0))
 	{
-		sha->method = (Method_t*)method;
-		sha->name = name;
-		sha384_init((Sum_t*)sha);
+		sha.sha->method = (Method_t*)method;
+		sha.sha->name = name;
+		sha384_init(sha.sum);
 	}
-	return (Sum_t*)sha;
+	return sha.sum;
 }
 
 static int
 sha384_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
-	Sha384_t*	sha = (Sha384_t*)p;
+	Sha384_sum_u	sha = { .sum = p };
 	sha2_byte*	d;
 	sha2_byte*	e;
 
 	NOT_USED(scale);
-	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
+	d = (flags & SUM_TOTAL) ? sha.sha->digest_sum : sha.sha->digest;
 	e = d + SHA384_DIGEST_LENGTH;
 	while (d < e)
 		sfprintf(sp, "%02x", *d++);
@@ -1121,11 +1134,11 @@ sha384_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 static int
 sha384_data(Sum_t* p, Sumdata_t* data)
 {
-	Sha384_t*	sha = (Sha384_t*)p;
+	Sha384_sum_u	sha = { .sum = p };
 
 	data->size = SHA384_DIGEST_LENGTH;
 	data->num = 0;
-	data->buf = sha->digest;
+	data->buf = sha.sha->digest;
 	return 0;
 }
 

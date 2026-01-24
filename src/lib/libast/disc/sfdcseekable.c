@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -35,6 +35,12 @@ typedef struct _skable_s
 	int		eof;	/* if eof has been reached */
 } Seek_t;
 
+union Seek_u
+{
+	Seek_t		*seek;
+	Sfdisc_t	*disc;
+};
+
 static ssize_t skwrite(Sfio_t*		f,	/* stream involved */
 		       const void*	buf,	/* buffer to read into */
 		       size_t		n,	/* number of bytes to read */
@@ -52,22 +58,22 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
 		      size_t	n,	/* number of bytes to read */
 		      Sfdisc_t*	disc)	/* discipline */
 {
-	Seek_t*		sk;
+	union Seek_u	sk;
 	Sfio_t*		sf;
 	Sfoff_t		addr;
 	ssize_t		r, w, p;
 
-	sk = (Seek_t*)disc;
-	sf = sk->shadow;
-	if(sk->eof)
+	sk.disc = disc;
+	sf = sk.seek->shadow;
+	if(sk.seek->eof)
 		return sfread(sf,buf,n);
 
 	addr = sfseek(sf,0,SEEK_CUR);
 
-	if((addr+(ssize_t)n) <= sk->extent)
+	if((addr+(ssize_t)n) <= sk.seek->extent)
 		return sfread(sf,buf,n);
 
-	if((r = (ssize_t)(sk->extent-addr)) > 0)
+	if((r = (ssize_t)(sk.seek->extent-addr)) > 0)
 	{	if((w = sfread(sf,buf,(size_t)r)) != r)
 			return w;
 		buf = (char*)buf + r;
@@ -76,15 +82,15 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
 
 	/* do a raw read */
 	if((w = sfrd(f,buf,n,disc)) <= 0)
-	{	sk->eof = 1;
+	{	sk.seek->eof = 1;
 		w = 0;
 	}
 	else
 	{
 		if((p = sfwrite(sf,buf,(size_t)w)) != w)
-			sk->eof = 1;
+			sk.seek->eof = 1;
 		if(p > 0)
-			sk->extent += p;
+			sk.seek->extent += p;
 	}
 
 	return r+w;
@@ -92,24 +98,24 @@ static ssize_t skread(Sfio_t*	f,	/* stream involved */
 
 static Sfoff_t skseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
 {
-	Seek_t*		sk;
+	union Seek_u	sk;
 	Sfio_t*		sf;
 	char		buf[SFIO_BUFSIZE];
 	ssize_t		r, w;
 
-	sk = (Seek_t*)disc;
-	sf = sk->shadow;
+	sk.disc = disc;
+	sf = sk.seek->shadow;
 
 	switch (type)
 	{
 	case SEEK_SET:
-		addr -= sk->discard;
+		addr -= sk.seek->discard;
 		break;
 	case SEEK_CUR:
 		addr += sftell(sf);
 		break;
 	case SEEK_END:
-		addr += sk->extent;
+		addr += sk.seek->extent;
 		break;
 	default:
 		return -1;
@@ -117,53 +123,53 @@ static Sfoff_t skseek(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
 
 	if(addr < 0)
 		return (Sfoff_t)(-1);
-	else if(addr > sk->extent)
-	{	if(sk->eof)
+	else if(addr > sk.seek->extent)
+	{	if(sk.seek->eof)
 			return (Sfoff_t)(-1);
 
 		/* read enough to reach the seek point */
-		while(addr > sk->extent)
-		{	if(addr > sk->extent+(ssize_t)sizeof(buf) )
+		while(addr > sk.seek->extent)
+		{	if(addr > sk.seek->extent+(ssize_t)sizeof(buf) )
 				w = sizeof(buf);
-			else	w = (int)(addr-sk->extent);
+			else	w = (int)(addr-sk.seek->extent);
 			if((r = sfrd(f,buf,(size_t)w,disc)) <= 0)
 				w = r-1;
 			else if((w = sfwrite(sf,buf,(size_t)r)) > 0)
-				sk->extent += w;
+				sk.seek->extent += w;
 			if(w != r)
-			{	sk->eof = 1;
+			{	sk.seek->eof = 1;
 				break;
 			}
 		}
 
-		if(addr > sk->extent)
+		if(addr > sk.seek->extent)
 			return (Sfoff_t)(-1);
 	}
 
-	return sfseek(sf,addr,SEEK_SET) + sk->discard;
+	return sfseek(sf,addr,SEEK_SET) + sk.seek->discard;
 }
 
 /* on close, remove the discipline */
 static int skexcept(Sfio_t* f, int type, void* data, Sfdisc_t* disc)
 {
-	Seek_t*		sk;
+	union Seek_u	sk;
 
 	NOT_USED(f);
 	NOT_USED(data);
-	sk = (Seek_t*)disc;
+	sk.disc = disc;
 
 	switch (type)
 	{
 	case SFIO_FINAL:
 	case SFIO_DPOP:
-		sfclose(sk->shadow);
+		sfclose(sk.seek->shadow);
 		free(disc);
 		break;
 	case SFSK_DISCARD:
-		sk->eof = 0;
-		sk->discard += sk->extent;
-		sk->extent = 0;
-		sfseek(sk->shadow,0,SEEK_SET);
+		sk.seek->eof = 0;
+		sk.seek->discard += sk.seek->extent;
+		sk.seek->extent = 0;
+		sfseek(sk.seek->shadow,0,SEEK_SET);
 		break;
 	}
 	return 0;
@@ -171,28 +177,29 @@ static int skexcept(Sfio_t* f, int type, void* data, Sfdisc_t* disc)
 
 int sfdcseekable(Sfio_t* f)
 {
-	Seek_t*	sk;
+	union Seek_u	sk;
+	Seek_t		*skk;
 
 	/* see if already seekable */
 	if(sfseek(f,0,SEEK_CUR) >= 0)
 		return 0;
 
-	if(!(sk = (Seek_t*)malloc(sizeof(Seek_t))) )
+	if(!(sk.seek = (Seek_t*)malloc(sizeof(Seek_t))) )
 		return -1;
-	memset(sk, 0, sizeof(*sk));
+	memset(sk.seek, 0, sizeof(*skk));
 
-	sk->disc.readf = skread;
-	sk->disc.writef = skwrite;
-	sk->disc.seekf = skseek;
-	sk->disc.exceptf = skexcept;
-	sk->shadow = sftmp(SFIO_BUFSIZE);
-	sk->discard = 0;
-	sk->extent = 0;
-	sk->eof = 0;
+	sk.seek->disc.readf = skread;
+	sk.seek->disc.writef = skwrite;
+	sk.seek->disc.seekf = skseek;
+	sk.seek->disc.exceptf = skexcept;
+	sk.seek->shadow = sftmp(SFIO_BUFSIZE);
+	sk.seek->discard = 0;
+	sk.seek->extent = 0;
+	sk.seek->eof = 0;
 
-	if(sfdisc(f, (Sfdisc_t*)sk) != (Sfdisc_t*)sk)
-	{	sfclose(sk->shadow);
-		free(sk);
+	if(sfdisc(f, sk.disc) != sk.disc)
+	{	sfclose(sk.seek->shadow);
+		free(sk.seek);
 		return -1;
 	}
 

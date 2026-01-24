@@ -48,6 +48,12 @@ struct	tevent
 	void            *timeout;
 };
 
+typedef union
+{
+	struct tevent	*te;
+	Namfun_t	*nfp;
+} Tevent_u;
+
 static const char ALARM[] = "alarm";
 
 static void	trap_timeout(void*);
@@ -190,7 +196,7 @@ void	sh_timetraps(void)
 					fcrestore(&savefc);
 					errno = oerrno;
 					if(jmpval>SH_JMPTRAP)
-						siglongjmp(*sh.jmplist,jmpval);
+						siglongjmp(*sh.jmplist.jmp,jmpval);
 				}
 				tp->flags &= ~L_FLAG;
 				if(!tp->flags)
@@ -208,7 +214,7 @@ void	sh_timetraps(void)
  */
 static char *setdisc(Namval_t *np, const char *event, Namval_t* action, Namfun_t *fp)
 {
-	struct tevent *tp = (struct tevent*)fp;
+	Tevent_u tp = { .nfp = fp };
 	if(!event)
 		return action ? Empty : (char*)ALARM;
 	if(strcmp(event,ALARM)!=0)
@@ -217,9 +223,9 @@ static char *setdisc(Namval_t *np, const char *event, Namval_t* action, Namfun_t
 		return nv_setdisc(np, event, action, fp);
 	}
 	if(action==np)
-		action = tp->action;
+		action = tp.te->action;
 	else
-		tp->action = action;
+		tp.te->action = action;
 	return action ? (char*)action : Empty;
 }
 
@@ -228,7 +234,7 @@ static char *setdisc(Namval_t *np, const char *event, Namval_t* action, Namfun_t
  */
 static void putval(Namval_t* np, const char* val, nvflag_t flag, Namfun_t* fp)
 {
-	struct tevent	*tp = (struct tevent*)fp;
+	Tevent_u	tp = { .nfp = fp };
 	double		d, x;
 	char		*pp;
 	if(val)
@@ -256,16 +262,16 @@ static void putval(Namval_t* np, const char* val, nvflag_t flag, Namfun_t* fp)
 			}
 		}
 		nv_putv(np,(char*)&x,NV_INTEGER|NV_DOUBLE,fp);
-		tp->milli = 1000*(d+.0005);
-		if(tp->timeout)
-			sh.st.timetrap = time_delete(tp,sh.st.timetrap);
-		if(tp->milli > 0)
-			sh.st.timetrap = time_add(tp,sh.st.timetrap);
+		tp.te->milli = 1000*(d+.0005);
+		if(tp.te->timeout)
+			sh.st.timetrap = time_delete(tp.te,sh.st.timetrap);
+		if(tp.te->milli > 0)
+			sh.st.timetrap = time_add(tp.te,sh.st.timetrap);
 	}
 	else
 	{
-		tp = (struct tevent*)nv_stack(np, NULL);
-		sh.st.timetrap = time_delete(tp,sh.st.timetrap);
+		tp.nfp = nv_stack(np, NULL);
+		sh.st.timetrap = time_delete(tp.te,sh.st.timetrap);
 		nv_unset(np,0);
 		free(fp);
 	}
@@ -284,7 +290,7 @@ int	b_alarm(int argc,char *argv[],Shbltin_t *context)
 {
 	int n,rflag=0;
 	Namval_t *np;
-	struct tevent *tp;
+	Tevent_u tp;
 	NOT_USED(context);
 	while (n = optget(argv, sh_optalarm)) switch (n)
 	{
@@ -320,11 +326,11 @@ int	b_alarm(int argc,char *argv[],Shbltin_t *context)
 	if(!nv_isnull(np))
 		nv_unset(np,0);
 	nv_setattr(np, NV_DOUBLE);
-	tp = sh_newof(NULL,struct tevent,1,0);
-	tp->fun.disc = &alarmdisc;
-	tp->flags = rflag;
-	tp->node = np;
-	nv_stack(np,(Namfun_t*)tp);
+	tp.te = sh_newof(NULL,struct tevent,1,0);
+	tp.te->fun.disc = &alarmdisc;
+	tp.te->flags = rflag;
+	tp.te->node = np;
+	nv_stack(np,tp.nfp);
 	nv_putval(np, argv[1], 0);
 	return 0;
 }

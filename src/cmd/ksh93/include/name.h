@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -49,6 +49,14 @@
 #define ARRAY_LOOKUP	1
 #define ARRAY_DELETE	2
 
+union Shnode_u;
+typedef union Shnode_u Shnode_t;
+
+typedef union _ptree_u
+{
+	Shnode_t	*n;
+	struct functnod *fn;
+} Ptree_u;
 
 struct Namref
 {
@@ -65,7 +73,7 @@ struct Namref
 /* This describes a user shell function node */
 struct Ufunction
 {
-	int		*ptree;		/* address of parse tree */
+	Ptree_u		ptree;		/* address of parse tree */
 	int		lineno;		/* line number of function start */
 	short		argc;		/* number of references */
 	short		running;	/* function is running */
@@ -77,6 +85,12 @@ struct Ufunction
 	Dt_t		*fdict;		/* dictionary node belongs to */
 	Namval_t	*np;		/* function node pointer */
 };
+
+typedef union
+{
+	Namval_t **nv;
+	void **vv;
+} Namval_voidp_u;
 
 #ifndef ARG_RAW
     struct argnod;

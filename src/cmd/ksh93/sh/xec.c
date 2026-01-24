@@ -536,7 +536,7 @@ int sh_eval(Sfio_t *iop, int eval_mode)
 	Shnode_t *t;
 	struct slnod *saveslp = sh.st.staklist;
 	int jmpval;
-	struct checkpt *pp = (struct checkpt*)sh.jmplist;
+	struct checkpt *pp = sh.jmplist.pt;
 	struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 	static Sfio_t *io_save;
 	volatile int traceon=0, lineno=0, mode = eval_mode;
@@ -599,7 +599,7 @@ int sh_eval(Sfio_t *iop, int eval_mode)
 	sh_freeup();
 	sh.st.staklist = saveslp;
 	if(jmpval>SH_JMPEVAL)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	return sh.exitval;
 }
 
@@ -772,7 +772,7 @@ static int check_exec_optimization(int type, int execflg, int execflg2, struct i
 	|| !(execflg && sh.fn_depth==0 || execflg2)
 	|| sh.st.trapdontexec
 	|| sh.subshell
-	|| ((struct checkpt*)sh.jmplist)->mode==SH_JMPEVAL
+	|| sh.jmplist.pt->mode==SH_JMPEVAL
 	|| sh_isstate(SH_XARG)
 	|| (pipejob && (sh_isstate(SH_MONITOR) || sh_isoption(SH_PIPEFAIL) || sh_isstate(SH_TIMING))))
 	{
@@ -1019,7 +1019,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 						if(jmpval)	/* error occurred */
 						{
 							if(jmpval>SH_JMPCMD)
-								siglongjmp(*sh.jmplist,jmpval);
+								siglongjmp(*sh.jmplist.jmp,jmpval);
 							goto setexit;
 						}
 					}
@@ -1273,7 +1273,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 					bp->data = (void*)save_data;
 					sh.redir0 = 0;
 					if(jmpval)
-						siglongjmp(*sh.jmplist,jmpval);
+						siglongjmp(*sh.jmplist.jmp,jmpval);
 					goto setexit;
 				}
 				/* check for functions */
@@ -1383,7 +1383,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 						stkclose(sp);
 					}
 					if(jmpval > SH_JMPFUN || (io && jmpval > SH_JMPIO))
-						siglongjmp(*sh.jmplist,jmpval);
+						siglongjmp(*sh.jmplist.jmp,jmpval);
 					goto setexit;
 				}
 				/* not a built-in or function: external command, fall through to TFORK */
@@ -1621,7 +1621,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 #endif
 				sh_popcontext(buffp);
 				if(jmpval>SH_JMPEXIT)
-					siglongjmp(*sh.jmplist,jmpval);
+					siglongjmp(*sh.jmplist.jmp,jmpval);
 				sh_done(0);
 			}
 		    }
@@ -1714,7 +1714,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 				sh.st.ioset = 0;
 			}
 			if(jmpval>SH_JMPIO)
-				siglongjmp(*sh.jmplist,jmpval);
+				siglongjmp(*sh.jmplist.jmp,jmpval);
 			break;
 		    }
 
@@ -1748,7 +1748,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 					sh_exec(t->par.partre,flags);
 				sh_popcontext(buffp);
 				if(jmpval > SH_JMPEXIT)
-					siglongjmp(*sh.jmplist,jmpval);
+					siglongjmp(*sh.jmplist.jmp,jmpval);
 				sh_done(0);
 			}
 			else
@@ -1919,7 +1919,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 			int nargs, nameref;
 			char *av[5];
 #if SHOPT_OPTIMIZE
-			int  jmpval = ((struct checkpt*)sh.jmplist)->mode;
+			int  jmpval = sh.jmplist.pt->mode;
 			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 			void *optlist = sh.optlist;
 			sh.optlist = 0;
@@ -2030,7 +2030,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 			sh_tclear(t->for_.fortre);
 			sh_optclear(optlist);
 			if(jmpval)
-				siglongjmp(*sh.jmplist,jmpval);
+				siglongjmp(*sh.jmplist.jmp,jmpval);
 #endif /* SHOPT_OPTIMIZE */
 			/* decrease 'break' level */
 			if(sh.st.breakcnt>0)
@@ -2055,7 +2055,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 			volatile int savein = -1;
 #endif /* SHOPT_FILESCAN */
 #if SHOPT_OPTIMIZE
-			int  jmpval = ((struct checkpt*)sh.jmplist)->mode;
+			int  jmpval = sh.jmplist.pt->mode;
 			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
 			void *optlist = sh.optlist;
 			sh.optlist = 0;
@@ -2123,7 +2123,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 			sh_tclear(t->wh.dotre);
 			sh_optclear(optlist);
 			if(jmpval)
-				siglongjmp(*sh.jmplist,jmpval);
+				siglongjmp(*sh.jmplist.jmp,jmpval);
 #endif /* SHOPT_OPTIMIZE */
 			/* decrease 'break' level */
 			if(sh.st.breakcnt>0)
@@ -2285,11 +2285,12 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 		     */
 		    case TFUN:
 		    {
-			Namval_t *np=0;
+			Namval_t *np = NULL;
 			struct slnod *slp;
 			char *fname = ((struct functnod*)t)->functnam;
 			char *cp = strrchr(fname,'.');
-			Namval_t *npv=0,*mp;
+			Namval_t *mp;
+			Namunion_u npv = { .np = NULL };
 #if SHOPT_NAMESPACE
 			/* Namespace definition: a modified function definition */
 			if(t->tre.tretyp==TNSPACE)
@@ -2332,7 +2333,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 				sh_popcontext(chkp);
 				enter_namespace(oldnspace);
 				if(jmpval)	/* error occurred */
-					siglongjmp(*sh.jmplist,jmpval);
+					siglongjmp(*sh.jmplist.jmp,jmpval);
 				break;
 			}
 #endif /* SHOPT_NAMESPACE */
@@ -2345,7 +2346,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 				{
 					cp = sh.prefix;
 					sh.prefix = 0;
-					npv = nv_open(cp,sh.var_tree,NV_NOARRAY|NV_VARNAME);
+					npv.np = nv_open(cp,sh.var_tree,NV_NOARRAY|NV_VARNAME);
 					sh.prefix = cp;
 					cp = fname;
 				}
@@ -2353,10 +2354,10 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 				{
 					sfwrite(sh.stk,fname,(size_t)(cp++-fname));
 					sfputc(sh.stk,0);
-					npv = nv_open(stkptr(sh.stk,offset),sh.var_tree,NV_NOARRAY|NV_VARNAME);
+					npv.np = nv_open(stkptr(sh.stk,offset),sh.var_tree,NV_NOARRAY|NV_VARNAME);
 				}
 				offset = stktell(sh.stk);
-				sfprintf(sh.stk,"%s.%s%c",nv_name(npv),cp,0);
+				sfprintf(sh.stk,"%s.%s%c",nv_name(npv.np),cp,0);
 				fname = stkptr(sh.stk,offset);
 			}
 			else if((mp=nv_search(fname,sh.bltin_tree,0)))
@@ -2375,7 +2376,7 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 			if(!np)
 #endif /* SHOPT_NAMESPACE */
 			np = nv_open(fname,sh_subfuntree(1),NV_NOARRAY|NV_VARNAME|NV_NOSCOPE);
-			if(npv)
+			if(npv.np)
 			{
 				if(!sh.mktype)
 				{	/*
@@ -2383,8 +2384,8 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 					 * must be scoped to the subshell before nvfun is set to the discipline.
 					 */
 					if(sh.subshell && !sh.subshare)
-						sh_assignok(npv, 1);
-					cp = nv_setdisc(npv,cp,np,(Namfun_t*)npv);
+						sh_assignok(npv.np, 1);
+					cp = nv_setdisc(npv.np,cp,np,npv.nfp);
 				}
 				if(!cp)
 				{
@@ -2435,23 +2436,23 @@ int sh_exec(const Shnode_t *volatile t, int exec_flags)
 				{
 				        offsetof(struct Ufunction,fname), -1, sizeof(struct Ufunction)
 				};
-				struct functnod *fp;
+				Slfu_u fu;
 				struct comnod *ac = t->funct.functargs;
 				slp = t->funct.functstak;
 				sh_funstaks(slp->slchild,1);
 				if(slp->slptr)
 					stklink(slp->slptr);
 				np->nvmeta = slp;
-				nv_funtree(np) = (int*)(t->funct.functtre);
+				nv_funtree(np).n = t->funct.functtre;
 				rp->lineno = t->funct.functline;
 				rp->nspace = sh.namespace;
 				rp->fname = 0;
 				rp->argv = ac ? ac->comarg.dp->dolval + 1 : NULL;
 				rp->argc = ac ? (short)ac->comarg.dp->dolnum : 0;
 				rp->fdict = sh.fun_tree;
-				fp = (struct functnod*)(slp+1);
-				if(fp->functtyp==(TFUN|FAMP))
-					rp->fname = fp->functnam;
+				fu.slp = slp+1;
+				if(fu.fp->functtyp==(TFUN|FAMP))
+					rp->fname = fu.fp->functnam;
 				nv_offattr(np,NV_FPOSIX);
 				if(sh.funload)
 				{
@@ -2627,7 +2628,10 @@ int sh_run(int argn, char *argv[])
 	memcpy(dp->dolval+ARG_SPARE, argv, ((size_t)argn+1)*sizeof(char*));
 	t->comarg.dp = dp;
 	if(!strchr(argv[0],'/'))
-		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);
+	{
+		Namval_voidp_u var = { .vv = &t->comnamq };
+		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,var.nv,NULL);
+	}
 	argn=sh_exec((Shnode_t*)t,sh_isstate(SH_ERREXIT));
 	optctx(op,np);
 	sh.bltindata = bltindata;
@@ -2925,7 +2929,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	*prevscope = sh.st;
 	sh.st.prevst = prevscope;
 	sh.st.self = savst;
-	sh.topscope = (Shscope_t*)sh.st.self;
+	sh.topscope = sh_conv_scope(sh.st.self,PUBLIC);
 	sh.st.loopcnt = 0;
 	if(!fun)
 	{
@@ -3037,7 +3041,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 			if(sh.fn_depth >= MAXDEPTH)
 			{
 				sh.toomany = 1;
-				siglongjmp(*sh.jmplist,SH_JMPERRFN);
+				siglongjmp(*sh.jmplist.jmp,SH_JMPERRFN);
 			}
 			sh.fn_depth++;
 		}
@@ -3047,7 +3051,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 		else
 		{
 			if(posix_fun)
-				sh_exec((Shnode_t*)(nv_funtree(fp->node)),sh_isstate(SH_ERREXIT));
+				sh_exec(nv_funtree(fp->node).n,sh_isstate(SH_ERREXIT));
 			else
 			{
 				char		**arg = sh.st.real_fun->argv;
@@ -3066,7 +3070,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 						}
 					}
 				}
-				sh_exec((Shnode_t*)(nv_funtree((fp->node))),execflg|SH_ERREXIT);
+				sh_exec(nv_funtree(fp->node).n,execflg|SH_ERREXIT);
 			}
 			r = sh.exitval;
 		}
@@ -3108,10 +3112,10 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 			*sh.st.self = sh.st;
 		/* Only restore the top Shscope_t portion for POSIX functions */
 		memcpy(&sh.st, prevscope, sizeof(Shscope_t));
-		sh.topscope = (Shscope_t*)prevscope;
+		sh.topscope = sh_conv_scope(prevscope,PUBLIC);
 		nv_putval(SH_PATHNAMENOD,sh.st.filename,NV_NOFREE);
 		if(jmpval && jmpval!=SH_JMPFUN)
-			siglongjmp(*sh.jmplist,jmpval);
+			siglongjmp(*sh.jmplist.jmp,jmpval);
 		sh.st.loopcnt = save_loopcnt;
 		return r;
 	}
@@ -3122,7 +3126,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	sh.st.trapcom[0] = 0;
 	sh_sigreset(1);
 	sh.st = *prevscope;
-	sh.topscope = (Shscope_t*)prevscope;
+	sh.topscope = sh_conv_scope(prevscope,PUBLIC);
 	nv_getval(sh_scoped(IFSNOD));
 	if(nsig)
 	{
@@ -3136,7 +3140,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	sh.options = save_options;
 	sh.last_root = last_root;
 	if(jmpval == SH_JMPSUB)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	if(trap)
 	{
 		sh_trap(trap,0);
@@ -3149,7 +3153,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	if(jmpval > SH_JMPFUN)
 	{
 		sh_chktrap();
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	}
 	return r;
 }
@@ -3166,7 +3170,7 @@ static void sh_funct(Namval_t *np,int argn, char *argv[],struct argnod *envlist,
 #endif
 	sh.pipepid = 0;
 	sh_stats(STAT_FUNCT);
-	if((struct sh_scoped*)sh.topscope != sh.st.self)
+	if (!sh_compare_scopes(sh.topscope,sh.st.self,PRIVATE))
 		sh_setscope(sh.topscope);
 	sh.st.lineno = error_info.line;
 	rp->running += 2;
@@ -3256,7 +3260,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *_argv[])
 		stkset(sh.stk,base,offset);
 	sh.prefix = prefix;
 	if(jmpval >= jmpthresh)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	return sh.exitval;
 }
 
@@ -3439,7 +3443,7 @@ static pid_t sh_ntfork(const Shnode_t *t,char *argv[],int *jobid,int topfd)
 	if((t->com.comio || spawnpid<0) && jmpval && sh.topfd > topfd)
 		sh_iorestore(topfd,jmpval);
 	if(jmpval>SH_JMPCMD)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	if(spawnpid>0)
 	{
 		_sh_fork(spawnpid,0,jobid);

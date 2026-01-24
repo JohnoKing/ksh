@@ -217,7 +217,13 @@ int sh_macexpand(struct argnod *argp, struct argnod **arghead,int flag)
 	mp->sp = 0;
 	setup_ifs(mp);
 	if((flag&ARG_OPTIMIZE) && !sh.indebug && !(flags&ARG_MESSAGE))
-		nv_setoptimize((char**)&argp->argchn.ap);
+	{
+		union argchn_u {
+			struct argnod **av;
+			char **cv;
+		} nv_optimize_argaddr = { .av =  &argp->argchn.ap };
+		nv_setoptimize(nv_optimize_argaddr.cv);
+	}
 	else
 		nv_setoptimize(NULL);
 	mp->arghead = arghead;

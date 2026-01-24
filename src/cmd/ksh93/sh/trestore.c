@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -129,7 +129,7 @@ static Shnode_t *r_tree(void)
 		{
 			Stk_t *savstak;
 			struct slnod *slp;
-			struct functnod *fp;
+			Slfu_u fu;
 			t = getnode(functnod);
 			t->funct.functline = (int)sfgetu(infile);
 			t->funct.functnam = r_string();
@@ -139,11 +139,11 @@ static Shnode_t *r_tree(void)
 			slp->slchild = 0;
 			slp->slnext = sh.st.staklist;
 			sh.st.staklist = 0;
-			fp = (struct functnod*)(slp+1);
-			memset(fp, 0, sizeof(*fp));
-			fp->functtyp = TFUN|FAMP;
+			fu.slp = slp+1;
+			memset(fu.fp, 0, sizeof(*fu.fp));
+			fu.fp->functtyp = TFUN|FAMP;
 			if(sh.st.filename)
-				fp->functnam = stkcopy(sh.stk,sh.st.filename);
+				fu.fp->functnam = stkcopy(sh.stk,sh.st.filename);
 			t->funct.functtre = r_tree();
 			t->funct.functstak = slp;
 			t->funct.functargs = (struct comnod*)r_tree();

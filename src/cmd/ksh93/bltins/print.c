@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -94,6 +94,18 @@ struct print
 	bool		echon;
 };
 
+typedef union
+{
+	struct print	*pr;
+	Shbltin_t	*bltin;
+} Prdata_u;
+
+typedef union
+{
+	struct printf	*pr;
+	Sffmt_t		*fmt;
+} Printf_u;
+
 static char* 	nullarg[] = { 0, 0 };
 static int	exitval;
 
@@ -102,6 +114,7 @@ static int	exitval;
    {
 	static bool bsd_univ;
 	struct print prdata = { .options = sh_optecho + 5 };
+	Prdata_u pr_u;
 	NOT_USED(argc);
 	NOT_USED(context);
 	/* This mess is because /bin/echo on BSD is different */
@@ -113,7 +126,10 @@ static int	exitval;
 		sh.universe = 1;
 	}
 	if(!bsd_univ)
-		return b_print(0,argv,(Shbltin_t*)&prdata);
+	{
+		pr_u.pr = &prdata;
+		return b_print(0,argv,pr_u.bltin);
+	}
 	prdata.options = sh_optecho;
 	prdata.raw = true;
 	while(argv[1] && *argv[1]=='-')
@@ -133,16 +149,18 @@ static int	exitval;
 			break;
 		argv++;
 	}
-	return b_print(0,argv,(Shbltin_t*)&prdata);
+	pr_u.pr = &prdata;
+	return b_print(0,argv,pr_u.bltin);
    }
 #endif /* SHOPT_ECHOPRINT */
 
 int    b_printf(int argc, char *argv[],Shbltin_t *context)
 {
 	struct print prdata = { .options = sh_optprintf };
+	Prdata_u pr_u = { .pr = &prdata };
 	NOT_USED(argc);
 	NOT_USED(context);
-	return b_print(-1,argv,(Shbltin_t*)&prdata);
+	return b_print(-1,argv,pr_u.bltin);
 }
 
 static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
@@ -184,12 +202,12 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 	}
 	else
 	{
-		struct print *pp = (struct print*)context;
-		options = pp->options;
+		Prdata_u pp = { .bltin = context };
+		options = pp.pr->options;
 		if(argc==0)
 		{
-			nflag = pp->echon;
-			rflag = pp->raw;
+			nflag = pp.pr->echon;
+			rflag = pp.pr->raw;
 			argv++;
 			goto skip;
 		}
@@ -740,16 +758,17 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	ptrdiff_t	m;
 	int		fold = (int)fe->base;
 	union types_t*	value = (union types_t*)v;
-	struct printf*	pp = (struct printf*)fe;
-	char*		argp = *pp->nextarg;
+	Printf_u	pp = { .fmt = fe };
+	char*		argp;
 	char		*w,*s;
 	NOT_USED(sp);
+	argp = *pp.pr->nextarg;
 	if(fe->n_str>0 && (format=='T'||format=='Q') && varname(fe->t_str,fe->n_str) && (!argp || varname(argp,-1)))
 	{
 		if(argp)
-			pp->lastarg = argp;
+			pp.pr->lastarg = argp;
 		else
-			argp = pp->lastarg;
+			argp = pp.pr->lastarg;
 		if(argp)
 		{
 			sfprintf(sh.strbuf,"%s.%.*s",argp,fe->n_str,fe->t_str);
@@ -757,7 +776,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		}
 	}
 	else
-		pp->lastarg = 0;
+		pp.pr->lastarg = 0;
 	fe->flags |= SFFMT_VALUE;
 	if(!argp || format=='Z')
 	{
@@ -797,7 +816,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				value->d = 0.;
 			break;
 		case 'n':
-			value->ip = &pp->intvar;
+			value->ip = &pp.pr->intvar;
 			break;
 		case 'Q':
 			value->ll = 0;
@@ -869,8 +888,8 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 			fe->size = -1;
 			if(format=='s' && fe->base>=0)
 			{
-				value->p = pp->nextarg;
-				pp->nextarg = nullarg;
+				value->p = pp.pr->nextarg;
+				pp.pr->nextarg = nullarg;
 			}
 			else
 			{
@@ -921,7 +940,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				if(w[0] && (w[0] != argp[0] || w[1]))
 				{
 					errormsg(SH_DICT,ERROR_warn(0),e_charconst,argp);
-					pp->err = 1;
+					pp.pr->err = 1;
 				}
 				break;
 			default:
@@ -937,13 +956,13 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				if(d<longmin)
 				{
 					errormsg(SH_DICT,ERROR_warn(0),e_overflow,argp);
-					pp->err = 1;
+					pp.pr->err = 1;
 					d = longmin;
 				}
 				else if(d>longmax)
 				{
 					errormsg(SH_DICT,ERROR_warn(0),e_overflow,argp);
-					pp->err = 1;
+					pp.pr->err = 1;
 					d = longmax;
 				}
 				value->ll = (Sflong_t)d;
@@ -972,7 +991,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				if(argp[2] && (argp[2] != argp[0] || argp[3]))
 				{
 					errormsg(SH_DICT,ERROR_warn(0),e_charconst,argp);
-					pp->err = 1;
+					pp.pr->err = 1;
 				}
 				break;
 			    default:
@@ -1016,9 +1035,9 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		if(*lastchar)
 		{
 			errormsg(SH_DICT,ERROR_warn(0),e_argtype,format);
-			pp->err = 1;
+			pp.pr->err = 1;
 		}
-		pp->nextarg++;
+		pp.pr->nextarg++;
 	}
 	switch(format)
 	{
@@ -1028,11 +1047,11 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		value->c = 0;
 		break;
 	case 'b':
-		if((m=fmtvecho(value->s,pp))>=0)
+		if((m=fmtvecho(value->s,pp.pr))>=0)
 		{
-			if(pp->nextarg == nullarg)
+			if(pp.pr->nextarg == nullarg)
 			{
-				pp->argsize = m;
+				pp.pr->argsize = m;
 				return -1;
 			}
 			value->s = stkptr(sh.stk,stktell(sh.stk));
@@ -1117,19 +1136,19 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  */
 static ptrdiff_t reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe)
 {
-	struct printf*	pp = (struct printf*)fe;
+	Printf_u	pp = { .fmt = fe };
 	ptrdiff_t	r;
 	ptrdiff_t	n;
 	if(fmt == 0)
 	{
 		/* Set nextarg */
 		n = 0;
-		if(pp->nextarg != nullarg)
+		if(pp.pr->nextarg != nullarg)
 		{
-			n = pp->nextarg - pp->argv0;
-			pp->nextarg = pp->argv0;
-			while(argn && *pp->nextarg)
-				argn--, pp->nextarg++;
+			n = pp.pr->nextarg - pp.pr->argv0;
+			pp.pr->nextarg = pp.pr->argv0;
+			while(argn && *pp.pr->nextarg)
+				argn--, pp.pr->nextarg++;
 		}
 		return n;
 	}
@@ -1137,11 +1156,11 @@ static ptrdiff_t reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe)
 	 * fmt!=0 ==> Late conversion on type mismatch on fp[x], i.e., %1$s %1$d
 	 * fp[1-1].fmt='s' ==> %1$d wants an int, go convert.
 	 */
-	n = pp->nextarg - pp->argv0;
-	pp->nextarg = pp->argv0 + argn;
+	n = pp.pr->nextarg - pp.pr->argv0;
+	pp.pr->nextarg = pp.pr->argv0 + argn;
 	fe->fmt = fmt;
 	r = extend(0,v,fe);
-	pp->nextarg = pp->argv0 + n;
+	pp.pr->nextarg = pp.pr->argv0 + n;
 	return r;
 }
 

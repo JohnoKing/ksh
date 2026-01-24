@@ -357,16 +357,40 @@ struct Eof
 	int		fd;
 };
 
+typedef union
+{
+	struct Eof	*ep;
+	Namfun_t	*nfp;
+} Eoffun_u;
+
+typedef union
+{
+	struct eval	*ep;
+	Sfdisc_t	*dp;
+} Eval_disc_u;
+
+typedef union
+{
+	struct subfile	*sp;
+	Sfdisc_t	*dp;
+} Subfile_disc_u;
+
+typedef union
+{
+	Sfio_t		**sv;
+	int		**iv;
+} Sfio_int_conv_u;
+
 static Sfdouble_t nget_cur_eof(Namval_t* np, Namfun_t *fp)
 {
-	struct Eof *ep = (struct Eof*)fp;
-	Sfoff_t end, cur =lseek(ep->fd, 0, SEEK_CUR);
+	Eoffun_u ep = { .nfp = fp };
+	Sfoff_t end, cur = lseek(ep.ep->fd, 0, SEEK_CUR);
 	if(*np->nvname=='C')
 	        return (Sfdouble_t)cur;
 	if(cur<0)
 		return (Sfdouble_t)-1;
-	end =lseek(ep->fd, 0, SEEK_END);
-	lseek(ep->fd, 0, SEEK_CUR);
+	end = lseek(ep.ep->fd, 0, SEEK_END);
+	lseek(ep.ep->fd, 0, SEEK_CUR);
 	return (Sfdouble_t)end;
 }
 
@@ -392,6 +416,7 @@ int  sh_iovalidfd(int fd)
 	int		n, **fdptrs = sh.fdptrs;
 	unsigned char	*fdstatus = sh.fdstatus;
 	long		max;
+	Sfio_int_conv_u	u;
 	if(fd<0)
 		return 0;
 	if(fd < sh.lim.open_max)
@@ -411,7 +436,8 @@ int  sh_iovalidfd(int fd)
 	sh.sftable = (Sfio_t**)sh_calloc(((size_t)n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
 	if(max)
 		memcpy(sh.sftable,sftable,(size_t)max*sizeof(Sfio_t*));
-	sh.fdptrs = (int**)(&sh.sftable[n]);
+	u.sv = &sh.sftable[n];
+	sh.fdptrs = u.iv;
 	if(max)
 		memcpy(sh.fdptrs,fdptrs,(size_t)max*sizeof(int*));
 	sh.fdstatus = (unsigned char*)(&sh.fdptrs[n]);
@@ -502,21 +528,21 @@ static int outexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
 		default:
 			if(!active)
 			{
-				int mode = ((struct checkpt*)sh.jmplist)->mode;
+				int mode = sh.jmplist.pt->mode;
 				int save = errno;
 				active = 1;
-				((struct checkpt*)sh.jmplist)->mode = 0;
+				sh.jmplist.pt->mode = 0;
 				sfpurge(iop);
 				sfpool(iop,NULL,SFIO_WRITE);
 				errno = save;
 				/*
 				 * Note: UNREACHABLE() is avoided here because this errormsg() call will return.
-				 * The ERROR_system flag causes sh_exit() to be called, but if sh.jmplist->mode
+				 * The ERROR_system flag causes sh_exit() to be called, but if sh.jmplist.pt->mode
 				 * is 0 (see above), then sh_exit() neither exits nor longjmps. See fault.c.
 				 */
 				errormsg(SH_DICT,ERROR_system(1),e_badwrite,sffileno(iop));
 				active = 0;
-				((struct checkpt*)sh.jmplist)->mode = mode;
+				sh.jmplist.pt->mode = mode;
 				sh_exit(1);
 			}
 			return -1;
@@ -617,7 +643,7 @@ static void io_preserve(Sfio_t *sp, int f2)
 	if(fd<0)
 	{
 		sh.toomany = 1;
-		((struct checkpt*)sh.jmplist)->mode = SH_JMPERREXIT;
+		sh.jmplist.pt->mode = SH_JMPERREXIT;
 		errormsg(SH_DICT,ERROR_system(1),e_toomany);
 		UNREACHABLE();
 	}
@@ -1716,7 +1742,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
 		if((savefd = sh_fcntl(origfd, F_DUPFD_CLOEXEC, 10)) < 0 && errno!=EBADF)
 		{
 			sh.toomany=1;
-			((struct checkpt*)sh.jmplist)->mode = SH_JMPERREXIT;
+			sh.jmplist.pt->mode = SH_JMPERREXIT;
 			errormsg(SH_DICT,ERROR_system(1),e_toomany);
 			UNREACHABLE();
 		}
@@ -1940,7 +1966,7 @@ static void time_grace(void *handle)
 		sh_offstate(SH_GRACE);
 		if(!sh_isstate(SH_INTERACTIVE))
 			return;
-		((struct checkpt*)sh.jmplist)->mode = SH_JMPEXIT;
+		sh.jmplist.pt->mode = SH_JMPEXIT;
 		errormsg(SH_DICT,2,e_timeout);
 		sh.trapnote |= SH_SIGSET;
 		return;
@@ -2276,7 +2302,7 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
 			sh.fdstatus[fd] = flag;
 			sh_iostream(fd);
 		}
-		if((pp=(struct checkpt*)sh.jmplist) && pp->mode==SH_JMPCMD)
+		if((pp=sh.jmplist.pt) && pp->mode==SH_JMPCMD)
 		{
 			struct openlist *item;
 			/*
@@ -2296,7 +2322,7 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
 	{
 		sh.sftable[fd] = 0;
 		sh.fdstatus[fd]=IOCLOSE;
-		if(pp=(struct checkpt*)sh.jmplist)
+		if(pp=sh.jmplist.pt)
 		{
 			for(struct openlist *item=pp->olist; item; item=item->next)
 			{
@@ -2346,26 +2372,26 @@ Sfio_t *sh_sfeval(char *argv[])
  */
 static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
 {
-	struct eval *ep = (struct eval*)handle;
+	Eval_disc_u ep = { .dp = handle };
 	char	*cp;
 	size_t	len;
 	NOT_USED(data);
 	/* no more to do */
-	if(type!=SFIO_READ || !(cp = ep->argv[0]))
+	if(type!=SFIO_READ || !(cp = ep.ep->argv[0]))
 	{
 		if(type==SFIO_CLOSING)
 			sfdisc(iop,SFIO_POPDISC);
 		else if(type==SFIO_DPOP || type==SFIO_FINAL)
-			free(ep);
+			free(ep.ep);
 		return 0;
 	}
 
-	if(!ep->addspace)
+	if(!ep.ep->addspace)
 	{
 		/* get the length of this string */
 		len = strlen(cp);
 		/* move to next string */
-		ep->argv++;
+		ep.ep->argv++;
 	}
 	else /* insert space between arguments */
 	{
@@ -2374,7 +2400,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
 	}
 	/* insert the new string */
 	sfsetbuf(iop,cp,len);
-	ep->addspace = !ep->addspace;
+	ep.ep->addspace = !ep.ep->addspace;
 	return 1;
 }
 
@@ -2403,18 +2429,18 @@ static Sfio_t *subopen(Sfio_t* sp, off_t offset, long size)
  */
 static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
 {
-	struct subfile *disp = (struct subfile*)handle;
+	Subfile_disc_u disp = { .dp = handle };
 	ssize_t	n;
 	NOT_USED(sp);
-	sfseek(disp->oldsp,disp->offset,SEEK_SET);
-	if(disp->left == 0)
+	sfseek(disp.sp->oldsp,disp.sp->offset,SEEK_SET);
+	if(disp.sp->left == 0)
 		return 0;
-	if(size > (size_t)disp->left)
-		size = (size_t)disp->left;
-	disp->left -= size;
-	n = sfread(disp->oldsp,buff,size);
+	if(size > (size_t)disp.sp->left)
+		size = (size_t)disp.sp->left;
+	disp.sp->left -= size;
+	n = sfread(disp.sp->oldsp,buff,size);
 	if(size>0)
-		disp->offset += size;
+		disp.sp->offset += size;
 	return n;
 }
 
@@ -2423,7 +2449,7 @@ static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
  */
 static int subexcept(Sfio_t* sp,int mode, void *data, Sfdisc_t* handle)
 {
-	struct subfile *disp = (struct subfile*)handle;
+	Subfile_disc_u disp = { .dp = handle };
 	NOT_USED(data);
 	if(mode==SFIO_CLOSING)
 	{
@@ -2431,9 +2457,9 @@ static int subexcept(Sfio_t* sp,int mode, void *data, Sfdisc_t* handle)
 		sfsetfd(sp,-1);
 		return 0;
 	}
-	else if(disp && (mode==SFIO_DPOP || mode==SFIO_FINAL))
+	else if(disp.sp && (mode==SFIO_DPOP || mode==SFIO_FINAL))
 	{
-		free(disp);
+		free(disp.sp);
 		return 0;
 	}
 	else if (mode==SFIO_ATEXIT)

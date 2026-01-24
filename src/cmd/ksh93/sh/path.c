@@ -1027,7 +1027,7 @@ noreturn void path_exec(const char *arg0,char *argv[],struct argnod *local)
 	else
 	{
 		/* Force an exit */
-		((struct checkpt*)sh.jmplist)->mode = SH_JMPEXIT;
+		sh.jmplist.pt->mode = SH_JMPEXIT;
 	}
 	errno = not_executable ? not_executable : sh.path_err;
 	switch(errno)
@@ -1241,7 +1241,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 					return pid;
 			}
 			while(_sh_fork(pid,0,NULL) < 0);
-			((struct checkpt*)sh.jmplist)->mode = SH_JMPEXIT;
+			sh.jmplist.pt->mode = SH_JMPEXIT;
 		}
 		exscript(path,argv);
 		UNREACHABLE();
@@ -1360,7 +1360,7 @@ static noreturn void exscript(char *path,char *argv[])
 	 * Longjmp with SH_JMPSCRIPT triggers a chain of longjmps to restore state as appropriate,
 	 * ending up back in sh_main() which then calls sh_reinit() and executes the script.
 	 */
-	siglongjmp(*sh.jmplist,SH_JMPSCRIPT);
+	siglongjmp(*sh.jmplist.jmp,SH_JMPSCRIPT);
 	UNREACHABLE();  /* silence warning on Haiku */
 }
 

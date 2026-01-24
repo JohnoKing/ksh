@@ -83,11 +83,6 @@
 #define ERROR_PIPE(e)		((e)==EPIPE||(e)==EIO)
 #endif
 
-#define ERROR_CONTEXT_BASE	((Error_context_t*)&error_info.context)
-
-#define errorpush(p,f)	(*(p)=*ERROR_CONTEXT_BASE,*ERROR_CONTEXT_BASE=error_info.empty,error_info.context=(p),error_info.flags=(f))
-#define errorpop(p)	(*ERROR_CONTEXT_BASE=*(p))
-
 typedef struct Error_info_s Error_info_t;
 typedef struct Error_context_s Error_context_t;
 
@@ -137,6 +132,27 @@ struct Error_info_s			/* error state			*/
 
 	const char*	catalog;	/* message catalog		*/
 };
+
+union _err_context_u_
+{
+	Error_context_t *ep;
+	Error_context_t **ev;
+};
+
+#define errorpush(p,f)	\
+do { \
+	union _err_context_u_ _error_context_base_ = { .ev = &error_info.context }; \
+	*(p)=*_error_context_base_.ep; \
+	*_error_context_base_.ep=error_info.empty; \
+	error_info.context=(p); \
+	error_info.flags=(f); \
+} while(0)
+
+#define errorpop(p)	\
+do { \
+	union _err_context_u_ _error_context_base_ = { .ev = &error_info.context }; \
+	*_error_context_base_.ep = *(p); \
+} while(0)
 
 #ifndef errno
 extern int	errno;			/* system call error status	*/

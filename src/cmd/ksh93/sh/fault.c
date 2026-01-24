@@ -47,7 +47,7 @@ void	sh_fault(int sig)
 {
 	int 		flag=0;
 	char		*trap;
-	struct checkpt	*pp = (struct checkpt*)sh.jmplist;
+	struct checkpt	*pp = sh.jmplist.pt;
 	int		action=0;
 	int		save_errno = errno;
 	/* reset handler */
@@ -415,7 +415,7 @@ void	sh_chktrap(void)
 		sh.trapnote = sav_trapnote;
 		if(sh_isoption(SH_ERREXIT))
 		{
-			struct checkpt	*pp = (struct checkpt*)sh.jmplist;
+			struct checkpt	*pp = sh.jmplist.pt;
 			pp->mode = SH_JMPEXIT;
 			sh_exit(sh.exitval);
 		}
@@ -521,7 +521,7 @@ int sh_trap(const char *trap, int mode)
 	sh.chldexitsig = save_chldexitsig;
 	exitset();
 	if(jmpval>SH_JMPTRAP && (((struct checkpt*)sh.jmpbuffer)->prev || ((struct checkpt*)sh.jmpbuffer)->mode==SH_JMPSCRIPT))
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	return savxit_return;
 }
 
@@ -530,7 +530,7 @@ int sh_trap(const char *trap, int mode)
  */
 void sh_exit(int xno)
 {
-	struct checkpt	*pp = (struct checkpt*)sh.jmplist;
+	struct checkpt	*pp = sh.jmplist.pt;
 	int		sig=0;
 	Sfio_t		*pool;
 	/* POSIX requires exit status >= 2 for error in 'test'/'[' */

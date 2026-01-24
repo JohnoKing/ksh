@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -252,6 +252,7 @@ extern unsigned int	dtstrhash(unsigned int, void*, ssize_t);
 extern int		dtuserlock(Dt_t*, unsigned int, int);
 extern void*		dtuserdata(Dt_t*, void*, int);
 extern int		dtuserevent(Dt_t*, int, void*);
+extern void*		_dtobj(Dtdisc_t*, Dtlink_t*);
 
 /* deal with upward binary compatibility (operation bit translation, etc.) */
 extern Dt_t*		_dtopen(Dtdisc_t*, Dtmethod_t*, unsigned long);
@@ -265,9 +266,6 @@ extern void*		dllmeth(const char*, const char*, unsigned long);
 #define _DT(dt)		((Dt_t*)(dt))
 
 #define _DTLNK(dc,o)	((Dtlink_t*)((char*)(o) + (dc)->link) ) /* get link from obj */
-
-#define _DTO(dc,l)	(void*)((char*)(l) - (dc)->link) /* get object from link */
-#define _DTOBJ(dc,l)	((dc)->link >= 0 ? _DTO(dc,l) : ((Dthold_t*)(l))->obj )
 
 #define _DTK(dc,o)	((char*)(o) + (dc)->key) /* get key from object */
 #define _DTKEY(dc,o)	(void*)((dc)->size >= 0 ? _DTK(dc,o) : *((char**)_DTK(dc,o)) )
@@ -285,7 +283,7 @@ extern void*		dllmeth(const char*, const char*, unsigned long);
 #define dtvhere(d)	(_DT(d)->walk)
 
 #define dtlink(d,e)	(((Dtlink_t*)(e))->rh.__rght)
-#define dtobj(d,e)	_DTOBJ(_DT(d)->disc, (e))
+#define dtobj(d,e)	_dtobj(_DT(d)->disc, (e))
 
 #define dtfirst(d)	(*(_DT(d)->searchf))((d),(void*)(0),DT_FIRST)
 #define dtnext(d,o)	(*(_DT(d)->searchf))((d),(void*)(o),DT_NEXT)

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -60,6 +60,12 @@ typedef struct Tee_s
 	int		fd[1];
 } Tee_t;
 
+typedef union
+{
+	Tee_t		*tp;
+	Sfdisc_t	*disc;
+} Tee_disc_u;
+
 /*
  * This discipline writes to each file in the list given in handle
  */
@@ -69,7 +75,8 @@ tee_write(Sfio_t* fp, const void* buf, size_t n, Sfdisc_t* handle)
 {
 	const char*	bp;
 	const char*	ep;
-	int*		hp = ((Tee_t*)handle)->fd;
+	Tee_disc_u	tu = { .disc = handle };
+	int*		hp = tu.tp->fd;
 	int		fd = sffileno(fp);
 	ssize_t		r;
 

@@ -2362,28 +2362,33 @@ void nv_unset(Namval_t *np, nvflag_t flags)
 		}
 		if(slp && !nv_isattr(np,NV_NOFREE))
 		{
-			struct Ufunction *rq;
+			union ufun_u
+			{
+				Namval_t *np;
+				struct Ufunction *up;
+				void *vp;
+			} rq;
 			/* free function definition */
 			char *name=nv_name(np),*cp= strrchr(name,'.');
 			if(cp)
 			{
-				Namval_t *npv;
+				Namunion_u npv;
 				*cp = 0;
-				 npv = nv_open(name,sh.var_tree,NV_NOARRAY|NV_VARNAME|NV_NOADD);
+				npv.np = nv_open(name,sh.var_tree,NV_NOARRAY|NV_VARNAME|NV_NOADD);
 				*cp++ = '.';
-				if(npv && npv!=sh.namespace)
-					nv_setdisc(npv,cp,NULL,(Namfun_t*)npv);
+				if(npv.np && npv.np!=sh.namespace)
+					nv_setdisc(npv.np,cp,NULL,npv.nfp);
 			}
-			if(rp->fname && sh.fpathdict && (rq = (struct Ufunction*)nv_search(rp->fname,sh.fpathdict,0)))
+			if(rp->fname && sh.fpathdict && (rq.np = nv_search(rp->fname,sh.fpathdict,0)))
 			{
 				do
 				{
-					if(rq->np != np)
+					if(rq.up->np != np)
 						continue;
-					dtdelete(sh.fpathdict,rq);
+					dtdelete(sh.fpathdict,rq.up);
 					break;
 				}
-				while(rq = (struct Ufunction*)dtnext(sh.fpathdict,rq));
+				while(rq.vp = dtnext(sh.fpathdict,rq.vp));
 			}
 			if(rp->sdict)
 			{
@@ -2486,19 +2491,25 @@ struct optimize
 	Namval_t	*np;
 };
 
+union opt_u
+{
+	struct optimize *op;
+	Namfun_t *nfp;
+};
+
 static struct optimize *opt_free;
 
 static void optimize_clear(Namval_t* np, Namfun_t *fp)
 {
-	struct optimize *op = (struct optimize*)fp;
+	union opt_u ou = { .nfp = fp };
 	nv_stack(np,fp);
 	nv_stack(np,NULL);
-	for(;op && op->np==np; op=op->next)
+	for(;ou.op && ou.op->np==np; ou.op=ou.op->next)
 	{
-		if(op->ptr)
+		if(ou.op->ptr)
 		{
-			*op->ptr = 0;
-			op->ptr = 0;
+			*ou.op->ptr = 0;
+			ou.op->ptr = 0;
 		}
 	}
 }
@@ -2534,7 +2545,8 @@ const Namdisc_t OPTIMIZE_disc  = {sizeof(struct optimize),put_optimize,0,0,0,0,c
 
 void nv_optimize(Namval_t *np)
 {
-	struct optimize *op, *xp = 0;
+	struct optimize *op;
+	union opt_u xu = { .op = NULL };
 	if(nv_getoptimize())
 	{
 		if(np==SH_LINENO)
@@ -2550,12 +2562,12 @@ void nv_optimize(Namval_t *np)
 				return;
 			}
 			if(fp->disc == &OPTIMIZE_disc)
-				xp = (struct optimize*)fp;
+				xu.nfp = fp;
 		}
-		if(xp && xp->ptr==nv_getoptimize())
+		if(xu.op && xu.op->ptr==nv_getoptimize())
 			return;
-		if(xp && xp->next)
-			for(struct optimize *xpn = xp->next; xpn; xpn = xpn->next)
+		if(xu.op && xu.op->next)
+			for(struct optimize *xpn = xu.op->next; xpn; xpn = xpn->next)
 				if(xpn->ptr == nv_getoptimize() && xpn->np == np)
 					return;
 		if(op = opt_free)
@@ -2564,11 +2576,11 @@ void nv_optimize(Namval_t *np)
 			op=(struct optimize*)sh_calloc(1,sizeof(struct optimize));
 		op->ptr = nv_getoptimize();
 		op->np = np;
-		if(xp)
+		if(xu.op)
 		{
 			op->hdr.disc = 0;
-			op->next = xp->next;
-			xp->next = op;
+			op->next = xu.op->next;
+			xu.op->next = op;
 		}
 		else
 		{
@@ -2706,7 +2718,12 @@ done:
 		char *cp;
 		char *ep;
 		size_t size = nv_size(np), insize=(4*size)/3+size/45+8;
-		base64encode(vp, size, NULL, cp=getbuf(insize), insize, (void**)&ep);
+		union raw_u
+		{
+			char **cv;
+			void **vv;
+		} ev = { .cv = &ep };
+		base64encode(vp, size, NULL, cp=getbuf(insize), insize, ev.vv);
 		*ep = 0;
 		return cp;
 	}
@@ -3376,44 +3393,46 @@ void nv_setref(Namval_t *np, Dt_t *hp, nvflag_t flags)
  */
 Shscope_t *sh_getscope(int index, int whence)
 {
-	struct sh_scoped *sp, *topmost;
+	struct sh_scoped *topmost;
+	Shscope_u sp;
 	if(whence==SEEK_CUR)
-		sp = &sh.st;
+		sp.private = &sh.st;
 	else
 	{
-		if ((struct sh_scoped*)sh.topscope != sh.st.self)
-			topmost = (struct sh_scoped*)sh.topscope;
+		if (!sh_compare_scopes(sh.topscope,sh.st.self,PRIVATE))
+			topmost = sh_conv_scope(sh.topscope,PRIVATE);
 		else
 			topmost = &(sh.st);
-		sp = topmost;
+		sp.private = topmost;
 		if(whence==SEEK_SET)
 		{
 			int n =0;
-			while(sp = sp->prevst)
+			while(sp.private = sp.private->prevst)
 				n++;
 			index = n - index;
-			sp = topmost;
+			sp.private = topmost;
 		}
 	}
 	if(index < 0)
 		return NULL;
-	while(index-- && (sp = sp->prevst));
-	return (Shscope_t*)sp;
+	while(index-- && (sp.private = sp.private->prevst));
+	return sp.public;
 }
 
 /*
  * make <scoped> the top scope and return previous scope
  */
-Shscope_t *sh_setscope(Shscope_t *scope)
+Shscope_t *sh_setscope(Shscope_t *sc)
 {
-	Shscope_t *old = (Shscope_t*)sh.st.self;
+	Shscope_u scope = { .public = sc };
+	Shscope_u old = { .private = sh.st.self };
 	*sh.st.self = sh.st;
-	sh.st = *((struct sh_scoped*)scope);
-	sh.var_tree = scope->var_tree;
+	sh.st = *scope.private;
+	sh.var_tree = scope.public->var_tree;
 	SH_PATHNAMENOD->nvalue = sh.st.filename;
 	SH_FUNNAMENOD->nvalue = sh.st.funname;
-	error_info.id = scope->cmdname;
-	return old;
+	error_info.id = scope.public->cmdname;
+	return old.public;
 }
 
 void sh_unscope(void)

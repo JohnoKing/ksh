@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -106,7 +106,11 @@ Dt_t* dtopen(Dtdisc_t* disc, Dtmethod_t* meth)
 /* below are private functions used across CDT modules */
 Dtlink_t* _dtmake(Dt_t* dt, void* obj, int type)
 {
-	Dthold_t	*h;
+	union
+	{
+		Dthold_t	*hold;
+		Dtlink_t	*link;
+	} u;
 	Dtdisc_t	*disc = dt->disc;
 
 	/* if obj is a prototype, make a real one */
@@ -117,15 +121,15 @@ Dtlink_t* _dtmake(Dt_t* dt, void* obj, int type)
 		return _DTLNK(disc, obj);
 
 	/* create a holder to hold obj */
-	if((h = (Dthold_t*)(dt->memoryf)(dt, NULL, sizeof(Dthold_t), disc)) )
-		h->obj = obj;
+	if((u.hold = (Dthold_t*)(dt->memoryf)(dt, NULL, sizeof(Dthold_t), disc)) )
+		u.hold->obj = obj;
 	else
 	{	DTERROR(dt, "Error in allocating an object holder");
 		if(!(type&DT_ATTACH) && disc->makef && disc->freef)
 			(void)(*disc->freef)(dt, obj, disc); /* free just-made obj */
 	}
 
-	return (Dtlink_t*)h;
+	return u.link;
 }
 
 void _dtfree(Dt_t* dt, Dtlink_t* l, int type)
@@ -133,8 +137,22 @@ void _dtfree(Dt_t* dt, Dtlink_t* l, int type)
 	Dtdisc_t	*disc = dt->disc;
 
 	if(!(type&DT_DETACH) && disc->freef) /* free object */
-		(void)(*disc->freef)(dt, _DTOBJ(disc,l), disc);
+		(void)(*disc->freef)(dt, _dtobj(disc,l), disc);
 
 	if(disc->link < 0) /* free holder */
 		(void)(*dt->memoryf)(dt, l, 0, disc);
+}
+
+/* get object from link */
+void *_dtobj(Dtdisc_t *dc, Dtlink_t *l)
+{
+	union obj_link
+	{
+		char*		c;
+		Dthold_t*	hold;
+		Dtlink_t*	link;
+	} u = { .link = l };
+	if (dc->link >= 0)
+		return (void*)(u.c - dc->link);
+	return u.hold->obj;
 }

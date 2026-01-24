@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -71,73 +71,80 @@ typedef struct Integral_s
 	_INTEGRAL_PRIVATE_
 } Integral_t;
 
+typedef union
+{
+	Integral_t	*ip;
+	Sum_t		*sp;
+} Integral_sum_u;
+
 static Sum_t*
 long_open(const Method_t* method, const char* name)
 {
-	Integral_t*	p;
+	Integral_sum_u	p;
 
-	if (p = newof(0, Integral_t, 1, 0))
+	if (p.ip = newof(0, Integral_t, 1, 0))
 	{
-		p->method = (Method_t*)method;
-		p->name = name;
+		p.ip->method = (Method_t*)method;
+		p.ip->name = name;
 	}
-	return (Sum_t*)p;
+	return p.sp;
 }
 
 static int
 long_init(Sum_t* p)
 {
-	((Integral_t*)p)->sum = 0;
+	Integral_sum_u	pp = { .sp = p };
+	pp.ip->sum = 0;
 	return 0;
 }
 
 static int
 long_done(Sum_t* p)
 {
-	Integral_t*	x = (Integral_t*)p;
+	Integral_sum_u	x = { .sp = p };
 
-	x->total_sum ^= (x->sum &= 0xffffffff);
+	x.ip->total_sum ^= (x.ip->sum &= 0xffffffff);
 	return 0;
 }
 
 static int
 short_done(Sum_t* p)
 {
-	Integral_t*	x = (Integral_t*)p;
+	Integral_sum_u	x = { .sp = p };
 
-	x->total_sum ^= (x->sum &= 0xffff);
+	x.ip->total_sum ^= (x.ip->sum &= 0xffff);
 	return 0;
 }
 
 static int
 long_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
-	Integral_t*	x = (Integral_t*)p;
 	uint32_t	c;
 	uintmax_t	z;
 	size_t		n;
+	Integral_sum_u	x = { .sp = p };
 
-	c = (flags & SUM_TOTAL) ? x->total_sum : x->sum;
+	c = (flags & SUM_TOTAL) ? x.ip->total_sum : x.ip->sum;
 	sfprintf(sp, "%.*I*u", (flags & SUM_LEGACY) ? 5 : 1, sizeof(c), c);
 	if (flags & SUM_SIZE)
 	{
-		z = (flags & SUM_TOTAL) ? x->total_size : x->size;
-		if ((flags & SUM_SCALE) && ((n = scale) || (n = (size_t)x->method->scale)))
+		z = (flags & SUM_TOTAL) ? x.ip->total_size : x.ip->size;
+		if ((flags & SUM_SCALE) && ((n = scale) || (n = (size_t)x.ip->method->scale)))
 			z = SCALE(z, n);
 		sfprintf(sp, " %*I*u", (flags & SUM_LEGACY) ? 6 : 0, sizeof(z), z);
 	}
 	if (flags & SUM_TOTAL)
-		sfprintf(sp, " %*I*u", (flags & SUM_LEGACY) ? 6 : 0, sizeof(x->total_count), x->total_count);
+		sfprintf(sp, " %*I*u", (flags & SUM_LEGACY) ? 6 : 0, sizeof(x.ip->total_count), x.ip->total_count);
 	return 0;
 }
 
 static int
 long_data(Sum_t* p, Sumdata_t* data)
 {
-	Integral_t*	x = (Integral_t*)p;
+	Integral_sum_u	x = { .sp = p };
 
 	data->size = sizeof(data->num);
-	data->num = x->sum;
+	data->num = x.ip->sum;
 	data->buf = 0;
 	return 0;
 }

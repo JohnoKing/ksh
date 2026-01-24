@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -36,16 +36,22 @@ typedef struct _subfile_s
 	Sfoff_t		here;	/* current seek location */
 } Subfile_t;
 
-static ssize_t streamio(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc, int type)
+typedef union
 {
 	Subfile_t	*su;
+	Sfdisc_t	*disc;
+} Subfile_u;
+
+static ssize_t streamio(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc, int type)
+{
+	Subfile_u	su;
 	Sfoff_t	here, parent;
 	ssize_t	io;
 
-	su = (Subfile_t*)disc;
+	su.disc = disc;
 
 	/* read just what we need */
-	if(su->extent >= 0 && (ssize_t)n > (io = (ssize_t)(su->extent - su->here)) )
+	if(su.su->extent >= 0 && (ssize_t)n > (io = (ssize_t)(su.su->extent - su.su->here)) )
 		n = (size_t)io;
 	if((ssize_t)n <= 0)
 		return (ssize_t)n;
@@ -54,7 +60,7 @@ static ssize_t streamio(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc, int type
 	parent = sfsk(f,0,SEEK_CUR,disc);
 
 	/* read data */
-	here = su->here + su->offset;
+	here = su.su->here + su.su->offset;
 	if(sfsk(f,here,SEEK_SET,disc) != here)
 		io = 0;
 	else
@@ -62,7 +68,7 @@ static ssize_t streamio(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc, int type
 			io = sfwr(f,buf,n,disc);
 		else	io = sfrd(f,buf,n,disc);
 		if(io > 0)
-			su->here += io;
+			su.su->here += io;
 	}
 
 	/* restore parent current position */
@@ -83,10 +89,10 @@ static ssize_t streamread(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 
 static Sfoff_t streamseek(Sfio_t* f, Sfoff_t pos, int type, Sfdisc_t* disc)
 {
-	Subfile_t*	su;
+	Subfile_u	su;
 	Sfoff_t	here, parent;
 
-	su = (Subfile_t*)disc;
+	su.disc = disc;
 
 	switch(type)
 	{
@@ -94,16 +100,16 @@ static Sfoff_t streamseek(Sfio_t* f, Sfoff_t pos, int type, Sfdisc_t* disc)
 		here = 0;
 		break;
 	case SEEK_CUR:
-		here = su->here;
+		here = su.su->here;
 		break;
 	case SEEK_END:
-		if(su->extent >= 0)
-			here = su->extent;
+		if(su.su->extent >= 0)
+			here = su.su->extent;
 		else
 		{	parent = sfsk(f,0,SEEK_CUR,disc);
 			if((here = sfsk(f,0,SEEK_END,disc)) < 0)
 				return -1;
-			else	here -= su->offset;
+			else	here -= su.su->offset;
 			sfsk(f,parent,SEEK_SET,disc);
 		}
 		break;
@@ -112,10 +118,10 @@ static Sfoff_t streamseek(Sfio_t* f, Sfoff_t pos, int type, Sfdisc_t* disc)
 	}
 
 	pos += here;
-	if(pos < 0 || (su->extent >= 0 && pos >= su->extent))
+	if(pos < 0 || (su.su->extent >= 0 && pos >= su.su->extent))
 		return -1;
 
-	return su->here = pos;
+	return su.su->here = pos;
 }
 
 static int streamexcept(Sfio_t* f, int type, void* data, Sfdisc_t* disc)
@@ -132,8 +138,8 @@ Sfio_t* sfdcsubstream(Sfio_t*	f,	/* stream */
 		      Sfoff_t	offset,	/* offset in f */
 		      Sfoff_t	extent)	/* desired size */
 {
+	Subfile_u	su;
 	Sfio_t*	sp;
-	Subfile_t*	su;
 	Sfoff_t	here;
 
 	/* establish that we can seek to offset */
@@ -142,26 +148,26 @@ Sfio_t* sfdcsubstream(Sfio_t*	f,	/* stream */
 	else	sfseek(parent,here,SEEK_SET);
 	sfpurge(parent);
 
-	if (!(sp = f) && !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, dup(sffileno(parent)), parent->flags)))
+	if (!(sp = f) && !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, dup(sffileno(parent)), parent->_flags)))
 		return NULL;
 
-	if(!(su = (Subfile_t*)malloc(sizeof(Subfile_t))))
+	if(!(su.su = malloc(sizeof(Subfile_t))))
 	{	if(sp != f)
 			sfclose(sp);
 		return NULL;
 	}
-	memset(su, 0, sizeof(*su));
+	memset(su.su, 0, sizeof(*su.su));
 
-	su->disc.readf = streamread;
-	su->disc.writef = streamwrite;
-	su->disc.seekf = streamseek;
-	su->disc.exceptf = streamexcept;
-	su->parent = parent;
-	su->offset = offset;
-	su->extent = extent;
+	su.su->disc.readf = streamread;
+	su.su->disc.writef = streamwrite;
+	su.su->disc.seekf = streamseek;
+	su.su->disc.exceptf = streamexcept;
+	su.su->parent = parent;
+	su.su->offset = offset;
+	su.su->extent = extent;
 
-	if(sfdisc(sp, (Sfdisc_t*)su) != (Sfdisc_t*)su)
-	{	free(su);
+	if(sfdisc(sp, su.disc) != su.disc)
+	{	free(su.su);
 		if(sp != f)
 			sfclose(sp);
 		return NULL;

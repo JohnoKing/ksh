@@ -120,6 +120,12 @@ typedef struct Cenv_s
 	unsigned char*	MAP;		/* fold and/or map		*/
 } Cenv_t;
 
+typedef union
+{
+	unsigned char**	ucv;
+	char**		cv;
+} Char_conv_u;
+
 /*
  * allocate a new Rex_t node
  */
@@ -1173,6 +1179,7 @@ bra(Cenv_t* env)
 	unsigned char	buf[4 * (COLL_KEY_MAX + 1)];
 	int		ic;
 	char		mbc[COLL_KEY_MAX + 1];
+	Char_conv_u	cursor_u;
 
 	if (!(e = node(env, REX_CLASS, 1, 1, sizeof(Set_t))))
 		return NULL;
@@ -1295,7 +1302,8 @@ bra(Cenv_t* env)
 					setadd(e->re.charclass, last);
 					elements++;
 				}
-				if (!(f = regclass((char*)env->cursor, (char**)&env->cursor)))
+				cursor_u.ucv = &env->cursor;
+				if (!(f = regclass((char*)env->cursor, cursor_u.cv)))
 				{
 					if (env->cursor == start && (c = *(env->cursor + 1)))
 					{
@@ -1346,7 +1354,8 @@ bra(Cenv_t* env)
 					setadd(e->re.charclass, last);
 					elements++;
 				}
-				if ((c = regcollate((char*)env->cursor, (char**)&env->cursor, (char*)buf, sizeof(buf), NULL)) < 0)
+				cursor_u.ucv = &env->cursor;
+				if ((c = regcollate((char*)env->cursor, cursor_u.cv, (char*)buf, sizeof(buf), NULL)) < 0)
 					goto ecollate;
 				if (c > 1)
 					collate++;
@@ -1360,7 +1369,8 @@ bra(Cenv_t* env)
 			case '.':
 				if (env->flags & REG_REGEXP)
 					goto normal;
-				if ((c = regcollate((char*)env->cursor, (char**)&env->cursor, (char*)buf, sizeof(buf), NULL)) < 0)
+				cursor_u.ucv = &env->cursor;
+				if ((c = regcollate((char*)env->cursor, cursor_u.cv, (char*)buf, sizeof(buf), NULL)) < 0)
 					goto ecollate;
 				if (c > 1)
 					collate++;
@@ -1548,7 +1558,8 @@ bra(Cenv_t* env)
 							goto complicated_normal;
 						if (inrange == 1)
 							ce = col(ce, ic, rp, rw, rc, NULL, 0, 0);
-						if (!(f = regclass((char*)env->cursor, (char**)&env->cursor)))
+						cursor_u.ucv = &env->cursor;
+						if (!(f = regclass((char*)env->cursor, cursor_u.cv)))
 						{
 							if (env->cursor == start && (c = *(env->cursor + 1)) && *(env->cursor + 2) == ':' && *(env->cursor + 3) == ']' && *(env->cursor + 4) == ']')
 							{
@@ -1588,7 +1599,8 @@ bra(Cenv_t* env)
 							ce = col(ce, ic, rp, rw, rc, NULL, 0, 0);
 						pp = (unsigned char*)cb[inrange];
 						rp = env->cursor + 1;
-						if ((rw = regcollate((char*)env->cursor, (char**)&env->cursor, (char*)pp, COLL_KEY_MAX, &wc)) < 0)
+						cursor_u.ucv = &env->cursor;
+						if ((rw = regcollate((char*)env->cursor, cursor_u.cv, (char*)pp, COLL_KEY_MAX, &wc)) < 0)
 							goto ecollate;
 						c = 0;
 						if (ic)
@@ -1659,7 +1671,8 @@ bra(Cenv_t* env)
 						if (env->flags & REG_REGEXP)
 							goto complicated_normal;
 						pp = (unsigned char*)cb[inrange];
-						if ((w = regcollate((char*)env->cursor, (char**)&env->cursor, (char*)pp, COLL_KEY_MAX, NULL)) < 0)
+						cursor_u.ucv = &env->cursor;
+						if ((w = regcollate((char*)env->cursor, cursor_u.cv, (char*)pp, COLL_KEY_MAX, NULL)) < 0)
 							goto ecollate;
 						c = *pp;
 						break;
@@ -1985,6 +1998,7 @@ static Rex_t*		alt(Cenv_t*, int, int);
 static int
 chr(Cenv_t* env, ptrdiff_t* escaped)
 {
+	Char_conv_u	cursor_u;
 	unsigned char*	p;
 	int		c;
 
@@ -2004,7 +2018,8 @@ chr(Cenv_t* env, ptrdiff_t* escaped)
 			return -1;
 		}
 		p = env->cursor;
-		c = chresc((char*)env->cursor - 1, (char**)&env->cursor);
+		cursor_u.ucv = &env->cursor;
+		c = chresc((char*)env->cursor - 1, cursor_u.cv);
 		*escaped = env->cursor - p;
 	}
 	return c;

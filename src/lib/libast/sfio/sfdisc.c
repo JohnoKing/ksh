@@ -45,6 +45,12 @@ typedef struct _dccache_s
 	uchar*		endb;
 } Dccache_t;
 
+typedef union
+{
+	Dccache_t	*cache;
+	Sfdisc_t	*disc;
+} Dccache_disc_u;
+
 static int _dccaexcept(Sfio_t* f, int type, void* val, Sfdisc_t* disc)
 {
 	NOT_USED(f);
@@ -58,7 +64,7 @@ static ssize_t _dccaread(Sfio_t* f, void* buf, size_t size, Sfdisc_t* disc)
 {
 	ssize_t		sz;
 	Sfdisc_t	*prev;
-	Dccache_t	*dcca;
+	Dccache_disc_u	dcca;
 
 	if(!f) /* bad stream */
 		return -1;
@@ -74,12 +80,12 @@ static ssize_t _dccaread(Sfio_t* f, void* buf, size_t size, Sfdisc_t* disc)
 		return (ssize_t)size;
 
 	/* read from available data */
-	dcca = (Dccache_t*)disc;
-	if((sz = dcca->endb - dcca->data) > (ssize_t)size)
+	dcca.disc = disc;
+	if((sz = dcca.cache->endb - dcca.cache->data) > (ssize_t)size)
 		sz = (ssize_t)size;
-	memcpy(buf, dcca->data, (size_t)sz);
+	memcpy(buf, dcca.cache->data, (size_t)sz);
 
-	if((dcca->data += sz) >= dcca->endb) /* free empty cache */
+	if((dcca.cache->data += sz) >= dcca.cache->endb) /* free empty cache */
 	{	prev->disc = disc->disc;
 		free(disc);
 	}

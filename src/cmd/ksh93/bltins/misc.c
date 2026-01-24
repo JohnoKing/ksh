@@ -162,7 +162,7 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
 			t->comarg.dp = dp;
 			sh_exec((Shnode_t*)t,sh_isstate(SH_ERREXIT));
 			sh_offstate(SH_EXEC);
-			siglongjmp(*sh.jmplist,SH_JMPEXIT);
+			siglongjmp(*sh.jmplist.jmp,SH_JMPEXIT);
 		}
 		sh_sigreset(2);
 		sh_freeup();
@@ -295,13 +295,13 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 		filename = path_fullname(stkptr(sh.stk,PATH_OFFSET));
 	}
 	*prevscope = sh.st;
-	sh.st.lineno = np ? ((struct functnod*)nv_funtree(np))->functline : 1;
+	sh.st.lineno = np ? nv_funtree(np).fn->functline : 1;
 	sh.st.save_tree = sh.var_tree;
 	if(filename)
 		sh.st.filename = filename;
 	sh.st.prevst = prevscope;
 	sh.st.self = &savst;
-	sh.topscope = (Shscope_t*)sh.st.self;
+	sh.topscope = sh_conv_scope(sh.st.self,PUBLIC);
 	prevscope->save_tree = sh.var_tree;
 	tofree = sh.st.filename;
 	if(np)
@@ -322,7 +322,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 		if(np)
 		{
 			/* execute the function as though it were a dot script */
-			sh_exec((Shnode_t*)(nv_funtree(np)),sh_isstate(SH_ERREXIT));
+			sh_exec(nv_funtree(np).n,sh_isstate(SH_ERREXIT));
 		}
 		else
 		{
@@ -350,10 +350,10 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 		*sh.st.self = sh.st;
 	/* only restore the top Shscope_t portion for functions */
 	memcpy(&sh.st, prevscope, sizeof(Shscope_t));
-	sh.topscope = (Shscope_t*)prevscope;
+	sh.topscope = sh_conv_scope(prevscope,PUBLIC);
 	nv_putval(SH_PATHNAMENOD,sh.st.filename,NV_NOFREE);
 	if(jmpval && jmpval!=SH_JMPFUN)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	return sh.exitval;
 }
 

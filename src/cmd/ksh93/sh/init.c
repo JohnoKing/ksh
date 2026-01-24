@@ -158,6 +158,12 @@ struct ifs
 	Namval_t	*ifsnp;
 };
 
+union ifs_u
+{
+	Namfun_t	*nfp;
+	struct ifs	*ifs;
+};
+
 struct match
 {
 	Namfun_t	hdr;
@@ -174,6 +180,12 @@ struct match
 	ptrdiff_t	nmatch;
 	int		index;
 	int		lastsub[2];
+};
+
+union match_u
+{
+	Namfun_t	*nfp;
+	struct match	*match;
 };
 
 typedef struct _init_
@@ -480,8 +492,8 @@ static void put_lang(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 /* Trap for IFS assignment and invalidates state table */
 static void put_ifs(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 {
-	struct ifs *ip = (struct ifs*)fp;
-	ip->ifsnp = 0;
+	union ifs_u ip = { .nfp = fp };
+	ip.ifs->ifsnp = NULL;
 	if(!val)
 	{
 		fp = nv_stack(np, NULL);
@@ -507,13 +519,13 @@ static void put_ifs(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
  */
 static char* get_ifs(Namval_t *np, Namfun_t *fp)
 {
-	struct ifs *ip = (struct ifs*)fp;
+	union ifs_u ip = { .nfp = fp };
 	char *cp, *value;
 	int c,n;
 	value = nv_getv(np,fp);
-	if(np!=ip->ifsnp)
+	if(np!=ip.ifs->ifsnp)
 	{
-		ip->ifsnp = np;
+		ip.ifs->ifsnp = np;
 		memset(sh.ifstable,0,(1<<CHAR_BIT));
 		if(cp=value)
 		{
@@ -924,8 +936,8 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ptrdiff_t nmatch, ssize_t match
 
 static char* get_match(Namval_t *np, Namfun_t *fp)
 {
-	struct match	*mp = (struct match*)fp;
-	int		sub,sub2=0,i=!mp->index;
+	union match_u	mp = { .nfp = fp };
+	int		sub,sub2=0,i=!mp.match->index;
 	ptrdiff_t	n;
 	char		*val;
 	sub = nv_aindex(SH_MATCHNOD);
@@ -933,27 +945,27 @@ static char* get_match(Namval_t *np, Namfun_t *fp)
 		sub = 0;
 	if(np!=SH_MATCHNOD)
 		sub2 = nv_aindex(np);
-	if(sub>=mp->nmatch)
+	if(sub>=mp.match->nmatch)
 		return NULL;
 	if(sub2>0)
-		sub += sub2*mp->nmatch;
-	if(sub==mp->lastsub[!i])
-		return mp->rval[!i];
-	else if(sub==mp->lastsub[i])
-		return mp->rval[i];
-	n = mp->match[2*sub+1]-mp->match[2*sub];
+		sub += sub2*mp.match->nmatch;
+	if(sub==mp.match->lastsub[!i])
+		return mp.match->rval[!i];
+	else if(sub==mp.match->lastsub[i])
+		return mp.match->rval[i];
+	n = mp.match->match[2*sub+1]-mp.match->match[2*sub];
 	if(n<=0)
-		return mp->match[2*sub]<0?Empty:"";
-	val = mp->val+mp->match[2*sub];
-	if(mp->val[mp->match[2*sub+1]]==0)
+		return mp.match->match[2*sub]<0?Empty:"";
+	val = mp.match->val+mp.match->match[2*sub];
+	if(mp.match->val[mp.match->match[2*sub+1]]==0)
 		return val;
-	mp->index = i;
-	free(mp->rval[i]);
-	mp->rval[i] = (char*)sh_malloc((size_t)n+1);
-	mp->lastsub[i] = sub;
-	memcpy(mp->rval[i],val,(size_t)n);
-	mp->rval[i][n] = 0;
-	return mp->rval[i];
+	mp.match->index = i;
+	free(mp.match->rval[i]);
+	mp.match->rval[i] = (char*)sh_malloc((size_t)n+1);
+	mp.match->lastsub[i] = sub;
+	memcpy(mp.match->rval[i],val,(size_t)n);
+	mp.match->rval[i][n] = 0;
+	return mp.match->rval[i];
 }
 
 static const Namdisc_t SH_MATCH_disc  = { sizeof(struct match), 0, get_match };
@@ -987,9 +999,9 @@ void sh_invalidate_ifs(void)
 	Namval_t *np = sh_scoped(IFSNOD);
 	if(np)
 	{
-		struct ifs *ip = (struct ifs*)nv_hasdisc(np, &IFS_disc);
-		if(ip)
-			ip->ifsnp = 0;
+		union ifs_u ip = { .nfp = nv_hasdisc(np, &IFS_disc) };
+		if(ip.ifs)
+			ip.ifs->ifsnp = NULL;
 	}
 }
 
@@ -1340,7 +1352,7 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
 	sh.jmpbuffer = &sh.checkbase;
 	sh_pushcontext(&sh.checkbase,SH_JMPSCRIPT);
 	sh.st.self = &sh.global;
-	sh.topscope = (Shscope_t*)sh.st.self;
+	sh.topscope = sh_conv_scope(sh.st.self,PUBLIC);
 	login_files[0] = (char*)e_profile;
 	sh.login_files = login_files;
 	sh.bltindata.version = SH_VERSION;
@@ -1560,32 +1572,38 @@ struct Stats
 	size_t		current;
 };
 
+union stats_u
+{
+	struct Stats	*stats;
+	Namfun_t	*nfp;
+};
+
 static Namval_t *next_stat(Namval_t *np, Dt_t *root,Namfun_t *fp)
 {
-	struct Stats *sp = (struct Stats*)fp;
+	union stats_u sp = { .nfp = fp };
 	NOT_USED(np);
 	if(!root)
-		sp->current = 0;
-	else if(++sp->current>=sp->numnodes)
+		sp.stats->current = 0;
+	else if(++sp.stats->current>=sp.stats->numnodes)
 		return NULL;
-	return nv_namptr(sp->nodes,sp->current);
+	return nv_namptr(sp.stats->nodes,sp.stats->current);
 }
 
 static Namval_t *create_stat(Namval_t *np,const char *name,nvflag_t flag,Namfun_t *fp)
 {
-	struct Stats		*sp = (struct Stats*)fp;
+	union stats_u		sp = { .nfp = fp };
 	const char		*cp=name;
 	int			i=0;
 	ptrdiff_t		n;
-	Namval_t		*nq=0;
+	Namval_t		*nq=NULL;
 	NOT_USED(flag);
 	if(!name)
 		return SH_STATS;
 	while((i=*cp++) && i != '=' && i != '+' && i!='[');
 	n = (cp-1) -name;
-	for(size_t j=0; j < sp->numnodes; j++)
+	for(size_t j=0; j < sp.stats->numnodes; j++)
 	{
-		nq = nv_namptr(sp->nodes,j);
+		nq = nv_namptr(sp.stats->nodes,j);
 		if((n==0||strncmp(name,nq->nvname,(size_t)n)==0) && nq->nvname[n]==0)
 			goto found;
 	}
@@ -1663,9 +1681,10 @@ static Init_t *nv_init(void)
 {
 	Sfdouble_t d=0;
 	Init_t *ip = sh_newof(0,Init_t,1,0);
+	union shtable_u tu = { .two = shtab_variables };
 	sh.nvfun.last = (char*)&sh;
 	sh.nvfun.nofree = 1;
-	sh.var_base = sh.var_tree = sh_inittree(shtab_variables);
+	sh.var_base = sh.var_tree = sh_inittree(tu);
 	SHLVL->nvalue = &sh.shlvl;
 	ip->IFS_init.hdr.disc = &IFS_disc;
 	ip->PATH_init.disc = &RESTRICTED_disc;
@@ -1763,7 +1782,8 @@ static Init_t *nv_init(void)
 	SH_LEVELNOD->nvalue = &sh.level;
 	sh.alias_tree = dtopen(&_Nvdisc,Dtoset);
 	sh.track_tree = dtopen(&_Nvdisc,Dtset);
-	sh.bltin_tree = sh_inittree((const struct shtable2*)shtab_builtins);
+	tu.three = shtab_builtins;
+	sh.bltin_tree = sh_inittree(tu);
 	sh.fun_base = sh.fun_tree = dtopen(&_Nvdisc,Dtoset);
 	dtview(sh.fun_tree,sh.bltin_tree);
 	nv_mount(DOTSHNOD, "type", sh.typedict=dtopen(&_Nvdisc,Dtoset));
@@ -1789,24 +1809,24 @@ static Init_t *nv_init(void)
 /*
  * initialize name-value pairs
  */
-Dt_t *sh_inittree(const struct shtable2 *name_vals)
+Dt_t *sh_inittree(union shtable_u name_vals)
 {
 	Namval_t *np;
 	size_t n = 0;
 	Dt_t *treep;
 	Dt_t *base_treep, *dict = 0;
-	for(const struct shtable2 *tp=name_vals;*tp->sh_name;tp++)
+	for(const struct shtable2 *tp=name_vals.two;*tp->sh_name;tp++)
 		n++;
 	np = (Namval_t*)sh_calloc(n,sizeof(Namval_t));
-	if(name_vals==shtab_variables)
+	if(name_vals.two==shtab_variables)
 	{
 		sh.bltin_nodes = np;
 		nvars = n;
 	}
-	else if(name_vals==(const struct shtable2*)shtab_builtins)
+	else if(name_vals.three==shtab_builtins)
 		sh.bltin_cmds = np;
 	base_treep = treep = dtopen(&_Nvdisc,Dtoset);
-	for(const struct shtable2 *tp=name_vals;*tp->sh_name;tp++,np++)
+	for(const struct shtable2 *tp=name_vals.two;*tp->sh_name;tp++,np++)
 	{
 		if((np->nvname = strrchr(tp->sh_name,'.')) && np->nvname!=((char*)tp->sh_name))
 			np->nvname++;
@@ -1816,11 +1836,11 @@ Dt_t *sh_inittree(const struct shtable2 *name_vals)
 			treep = base_treep;
 		}
 		np->nvmeta = NULL;
-		if(name_vals==(const struct shtable2*)shtab_builtins)
-			np->nvalue = ((struct shtable3*)tp)->sh_value;
+		if(name_vals.three==shtab_builtins)
+			np->nvalue = (void*)tp->sh_value;
 		else
 		{
-			if(name_vals == shtab_variables)
+			if(name_vals.two == shtab_variables)
 				np->nvfun = &sh.nvfun;
 			np->nvalue = (void*)tp->sh_value;
 		}
@@ -1935,23 +1955,29 @@ struct Mapchar
 	int		lctype;
 };
 
+typedef union
+{
+	struct Mapchar	*mp;
+	Namfun_t	*nfp;
+} Mapchar_u;
+
 static void put_trans(Namval_t* np,const char *val,nvflag_t flags,Namfun_t *fp)
 {
-	struct Mapchar *mp = (struct Mapchar*)fp;
+	Mapchar_u mp = { .nfp = fp };
 	int c;
 	ptrdiff_t offset = stktell(sh.stk), off = offset;
 	if(val)
 	{
-		if(mp->lctype!=lctype)
+		if(mp.mp->lctype!=lctype)
 		{
-			mp->lctype = lctype;
-			mp->trans = wctrans(mp->name);
+			mp.mp->lctype = lctype;
+			mp.mp->trans = wctrans(mp.mp->name);
 		}
-		if(!mp->trans || (flags&NV_INTEGER))
+		if(!mp.mp->trans || (flags&NV_INTEGER))
 			goto skip;
 		while(c = mbchar(val))
 		{
-			c = (int)towctrans((wint_t)c,mp->trans);
+			c = (int)towctrans((wint_t)c,mp.mp->trans);
 			stkseek(sh.stk,off+c);
 			stkseek(sh.stk,off);
 			c  = mbconv(stkptr(sh.stk,off),c);
@@ -1980,39 +2006,39 @@ static const Namdisc_t TRANS_disc      = {  sizeof(struct Mapchar), put_trans };
 Namfun_t	*nv_mapchar(Namval_t *np,const char *name)
 {
 	wctrans_t	trans = name?wctrans(name):0;
-	struct Mapchar	*mp=0;
 	int		low;
 	size_t		n=0;
+	Mapchar_u	mp = { .nfp = NULL };
 	if(np)
-		mp = (struct Mapchar*)nv_hasdisc(np,&TRANS_disc);
+		mp.nfp = nv_hasdisc(np,&TRANS_disc);
 	if(!name)
-		return mp ? (Namfun_t*)mp->name : 0;
+		return mp.mp ? (Namfun_t*)mp.mp->name : 0;
 	if(!trans)
 		return NULL;
 	if(!np)
 		return ((Namfun_t*)1);  /* non-dereferenceable non-NULL result to use as boolean true */
 	if((low=strcmp(name,e_tolower)) && strcmp(name,e_toupper))
 		n += strlen(name)+1;
-	if(mp)
+	if(mp.mp)
 	{
-		if(strcmp(name,mp->name)==0)
-			return &mp->hdr;
-		nv_disc(np,&mp->hdr,NV_POP);
-		if(!(mp->hdr.nofree&1))
-			free(mp);
+		if(strcmp(name,mp.mp->name)==0)
+			return &mp.mp->hdr;
+		nv_disc(np,&mp.mp->hdr,NV_POP);
+		if(!(mp.mp->hdr.nofree&1))
+			free(mp.mp);
 	}
-	mp = sh_newof(0,struct Mapchar,1,n);
-	mp->trans = trans;
-	mp->lctype = lctype;
+	mp.mp = sh_newof(0,struct Mapchar,1,n);
+	mp.mp->trans = trans;
+	mp.mp->lctype = lctype;
 	if(low==0)
-		mp->name = e_tolower;
+		mp.mp->name = e_tolower;
 	else if(n==0)
-		mp->name = e_toupper;
+		mp.mp->name = e_toupper;
 	else
 	{
-		mp->name = (char*)(mp+1);
-		strcpy((char*)mp->name,name);
+		mp.mp->name = (char*)(mp.mp+1);
+		strcpy((char*)mp.mp->name,name);
 	}
-	mp->hdr.disc =  &TRANS_disc;
-	return &mp->hdr;
+	mp.mp->hdr.disc =  &TRANS_disc;
+	return &mp.mp->hdr;
 }

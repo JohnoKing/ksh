@@ -85,6 +85,12 @@ typedef struct _arg_
 #endif /* SHOPT_KIA */
 } Arg_t;
 
+typedef union
+{
+	struct argnod	*ap;
+	Shnode_t	*n;
+} Argnod_conv_u;
+
 static int 		arg_expand(struct argnod*,struct argnod**,int);
 static void 		argset(Arg_t*, char *[]);
 static void		applyopts(Shopt_t);
@@ -729,6 +735,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	int savestates = sh_getstate();
 	bool savejobcontrol = job.jobcontrol;
 	unsigned int savesubshell = sh.subshell;
+	Argnod_conv_u u;
 	ap = stkseek(sh.stk,ARGVAL);
 	ap->argflag |= ARG_MAKE;
 	ap->argflag &= ~ARG_RAW;
@@ -770,7 +777,8 @@ struct argnod *sh_argprocsub(struct argnod *argp)
 	else
 		sh.outpipe = pv;
 	sh_onstate(SH_PROCSUB);
-	sh_exec((Shnode_t*)argp->argchn.ap,sh_isstate(SH_ERREXIT));
+	u.ap = argp->argchn.ap;
+	sh_exec(u.n,sh_isstate(SH_ERREXIT));
 	/* restore the previous state */
 	sh.subshell = savesubshell;
 	job.jobcontrol = savejobcontrol;

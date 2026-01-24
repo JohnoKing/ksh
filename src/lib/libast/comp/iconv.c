@@ -1064,6 +1064,12 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 
 #define OK		((size_t)-1)
 
+union Disc_u
+{
+	Iconv_disc_t	*disc;
+	size_t 		*size;
+};
+
 /*
  * write *fb size *fn to op
  * fb,fn updated on return
@@ -1076,7 +1082,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
 	char*		fo = *fb;
 	char*		tb;
 	char*		ts;
-	size_t*		e;
+	union Disc_u	e;
 	size_t		tn;
 	ssize_t		r;
 	int		ok;
@@ -1088,12 +1094,12 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
 
 	if (!disc || disc->version < 20110101L || disc->version >= 30000101L)
 	{
-		e = (size_t*)disc;
+		e.disc = disc;
 		disc = &compat;
 		iconv_init(disc, 0);
 	}
 	else
-		e = 0;
+		e.size = NULL;
 	r = 0;
 	tn = 0;
 	ok = 1;
@@ -1156,8 +1162,8 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d", __LINE__, ts - tb);
 		sfwrite(op, tb, (size_t)(ts - tb));
 		r += (ptrdiff_t)(ts - tb);
 	}
-	if (e)
-		*e = disc->errors;
+	if (e.size)
+		*e.size = disc->errors;
 	return r;
 }
 
@@ -1172,7 +1178,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	char*		fs;
 	char*		tb;
 	char*		ts;
-	size_t*		e;
+	union Disc_u	e;
 	size_t		fe;
 	size_t		fn;
 	size_t		fo;
@@ -1191,13 +1197,13 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 
 	if (!disc || disc->version < 20110101L || disc->version >= 30000101L)
 	{
-		e = (size_t*)disc;
+		e.disc = disc;
 		disc = &compat;
 		iconv_init(disc, 0);
 	}
 	else
-		e = 0;
-	tb = 0;
+		e.size = NULL;
+	tb = NULL;
 	fe = OK;
 	ft = 0;
 	fn = n;
@@ -1285,8 +1291,8 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 			r += ts - tb;
 		}
 	}
-	if (e)
-		*e = disc->errors;
+	if (e.size)
+		*e.size = disc->errors;
 	return r;
 }
 

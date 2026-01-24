@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 #include	"sfdchdr.h"
@@ -32,17 +33,23 @@ typedef struct _tee_s
 	int		status;	/* if tee stream is still ok */
 } Tee_t;
 
+typedef union
+{
+	Tee_t		*te;
+	Sfdisc_t	*disc;
+} Tee_u;
+
 /*	write to the teed stream.  */
 static ssize_t teewrite(Sfio_t* 	f,	/* the stream being written to */
 			const void*	buf,	/* the buffer of data being output */
 			size_t		size,	/* the data size */
 			Sfdisc_t*	disc)	/* the tee discipline */
 {
-	Tee_t*	te = (Tee_t*)disc;
+	Tee_u tu = { .disc = disc };
 
 	/* tee data if still ok */
-	if(te->status == 0 && sfwrite(te->tee,buf,size) != (ssize_t)size)
-		te->status = -1;
+	if(tu.te->status == 0 && sfwrite(tu.te->tee,buf,size) != (ssize_t)size)
+		tu.te->status = -1;
 
 	/* do the actual write */
 	return sfwr(f,buf,size,disc);
@@ -63,20 +70,20 @@ static int teeexcept(Sfio_t* f, int type, void* data, Sfdisc_t* disc)
 int sfdctee(Sfio_t*	f,	/* stream to tee from	*/
 	    Sfio_t*	tee)	/* stream to tee to	*/
 {
-	Tee_t*	te;
+	Tee_u	tu;
 
-	if(!(te = (Tee_t*)malloc(sizeof(Tee_t))) )
+	if(!(tu.te = malloc(sizeof(Tee_t))) )
 		return -1;
 
-	te->disc.readf = NULL;
-	te->disc.seekf = NULL;
-	te->disc.writef = teewrite;
-	te->disc.exceptf = teeexcept;
-	te->tee = tee;
-	te->status = 0;
+	tu.te->disc.readf = NULL;
+	tu.te->disc.seekf = NULL;
+	tu.te->disc.writef = teewrite;
+	tu.te->disc.exceptf = teeexcept;
+	tu.te->tee = tee;
+	tu.te->status = 0;
 
-	if(sfdisc(f,(Sfdisc_t*)te) != (Sfdisc_t*)te)
-	{	free(te);
+	if(sfdisc(f,tu.disc) != tu.disc)
+	{	free(tu.te);
 		return -1;
 	}
 

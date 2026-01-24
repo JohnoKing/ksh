@@ -61,9 +61,6 @@ typedef void	(*Shinit_f)(Shell_t*, int);
 #   define SH_wait_f_defined
 #endif
 
-union Shnode_u;
-typedef union Shnode_u Shnode_t;
-
 /*
  * Shell state flags. Used with sh_isstate(), sh_onstate(), sh_offstate().
  * See also shell options below. States 0-5 are also used as shell options.
@@ -234,6 +231,12 @@ struct limits
 	int		child_max;	/* maximum number of children */
 };
 
+union shjmp_u
+{
+	sigjmp_buf	*jmp;
+	struct checkpt	*pt;
+};
+
 #endif /* _BLD_ksh */
 
 /*
@@ -265,6 +268,7 @@ struct Shell_s
 	Shbltin_f	bltinfun;
 	Shbltin_t	bltindata;
 	Shwait_f	waitevent;
+	union shjmp_u	jmplist;	/* longjmp return stack */
 	Namval_t	*bltin_nodes;
 	Namval_t	*bltin_cmds;
 	History_t	*hist_ptr;
@@ -304,7 +308,6 @@ struct Shell_s
 	char		*shname;	/* shell name */
 	char		*comdiv;	/* points to sh -c argument */
 	char		*prefix;	/* prefix for compound assignment */
-	sigjmp_buf	*jmplist;	/* longjmp return stack */
 	void		*jmpbuffer;
 	struct argnod	*envlist;
 	struct dolnod	*arglist;
@@ -424,6 +427,20 @@ typedef struct Libcomp_s
 } Libcomp_t;
 extern Libcomp_t *liblist;
 
+/*
+ * The union is used to fulfill C99's strict aliasing
+ * requirements while handling the public and private
+ * Shscope_t structs.
+ */
+#define PUBLIC  1
+#define PRIVATE 0
+union shscope_u
+{
+	Shscope_t		*public;
+	struct sh_scoped	*private;
+};
+typedef union shscope_u Shscope_u;
+
 /* flags for sh_parse */
 #define SH_NL		1	/* Treat new-lines as ; */
 #define SH_EOF		2	/* EOF causes syntax error */
@@ -480,6 +497,8 @@ extern uint64_t		sh_isoption(uint64_t);
 extern uint64_t		sh_onoption(uint64_t);
 extern uint64_t		sh_offoption(uint64_t);
 extern int		sh_exec(const Shnode_t *volatile,int);
+extern void		*sh_conv_scope(void*, unsigned char);
+extern bool		sh_compare_scopes(void*, void*, unsigned char);
 
 /*
  * As of 93u+m, direct access to sh is no longer obsolete;

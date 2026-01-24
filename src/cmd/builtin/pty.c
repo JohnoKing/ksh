@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1992-2013 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -1081,6 +1081,11 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 	}
 	if (stty)
 	{
+		union
+		{
+			char	**cv;
+			Argv_t	*a;
+		} u;
 		Argv_t* ap;
 		n = 2;
 		for (s = stty; *s; s++)
@@ -1088,7 +1093,8 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 				n++;
 		ap = newof(0, Argv_t, 1, ((size_t)n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
 		ap->argc = n + 1;
-		ap->argv = (char**)(ap + 1);
+		u.a = ap + 1;
+		ap->argv = u.cv;
 		ap->args = (char*)(ap->argv + n + 2);
 		strcpy(ap->args, stty);
 		ap->argv[0] = "stty";

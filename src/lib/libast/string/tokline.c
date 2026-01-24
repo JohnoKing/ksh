@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -47,6 +47,12 @@ typedef struct
 	int*		line;
 } Splice_t;
 
+typedef union
+{
+	Sfdisc_t *sd;
+	Splice_t *sp;
+} Splice_u;
+
 /*
  * the splicer
  */
@@ -54,7 +60,7 @@ typedef struct
 static int
 spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 {
-	Splice_t*	d = (Splice_t*)ad;
+	Splice_u	d = { .sd = ad };
 	char*		b;
 	int		c;
 	ptrdiff_t	n;
@@ -67,20 +73,20 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 	switch (op)
 	{
 	case SFIO_CLOSING:
-		sfclose(d->sp);
+		sfclose(d.sp->sp);
 		return 0;
 	case SFIO_DPOP:
-		free(d);
+		free(d.sp);
 		return 0;
 	case SFIO_READ:
 		do
 		{
-			if (!(buf = sfgetr(d->sp, '\n', 0)) && !(buf = sfgetr(d->sp, '\n', -1)))
+			if (!(buf = sfgetr(d.sp->sp, '\n', 0)) && !(buf = sfgetr(d.sp->sp, '\n', -1)))
 				return 0;
-			n = sfvalue(d->sp);
-			q = d->quote;
+			n = sfvalue(d.sp->sp);
+			q = d.sp->quote;
 			j = 0;
-			(*d->line)++;
+			(*d.sp->line)++;
 			if (n > 1 && buf[n - 2] == '\\')
 			{
 				j = 1;
@@ -133,7 +139,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 			}
 		} while (n <= 0);
 		sfsetbuf(s, buf, (size_t)n);
-		d->quote = q;
+		d.sp->quote = q;
 		return 1;
 	default:
 		return 0;
@@ -156,24 +162,24 @@ tokline(const char* arg, int flags, int* line)
 {
 	Sfio_t*		f;
 	Sfio_t*		s;
-	Splice_t*	d;
+	Splice_u	d;
 	char*		p;
 	char*		e;
 
 	static int	hidden;
 
-	if (!(d = newof(0, Splice_t, 1, 0)))
+	if (!(d.sp = newof(0, Splice_t, 1, 0)))
 		return NULL;
 	if (!(s = sfopen(NULL, NULL, "s")))
 	{
-		free(d);
+		free(d.sp);
 		return NULL;
 	}
 	if (!(flags & (SFIO_STRING|SFIO_READ)))
 		f = (Sfio_t*)arg;
 	else if (!(f = sfopen(NULL, arg, (flags & SFIO_STRING) ? "s" : "r")))
 	{
-		free(d);
+		free(d.sp);
 		sfclose(s);
 		return NULL;
 	}
@@ -182,9 +188,9 @@ tokline(const char* arg, int flags, int* line)
 		flags = (int)strtol(p + 5, &p, 10);
 		error(flags, "%s:%-.*s", arg, e - p - 4, p);
 	}
-	d->disc.exceptf = spliceline;
-	d->sp = f;
-	*(d->line = line ? line : &hidden) = 0;
-	sfdisc(s, (Sfdisc_t*)d);
+	d.sp->disc.exceptf = spliceline;
+	d.sp->sp = f;
+	*(d.sp->line = line ? line : &hidden) = 0;
+	sfdisc(s, d.sd);
 	return s;
 }

@@ -43,6 +43,12 @@ struct nvdir
 	char		*data;
 };
 
+typedef union
+{
+	Namval_t	*np;
+	Dt_t		*dt;
+} Nvdt_u;
+
 static int	Indent;
 char *nv_getvtree(Namval_t*, Namfun_t *);
 static void put_tree(Namval_t*, const char*, nvflag_t,Namfun_t*);
@@ -225,7 +231,10 @@ void *nv_diropen(Namval_t *np,const char *name)
 			if(nv_istable(np))
 				dp->root = nv_dict(np);
 			else
-				dp->root = (Dt_t*)np;
+			{
+				Nvdt_u nu = { .np = np };
+				dp->root = nu.dt;
+			}
 			if(nfp)
 			{
 				dp->nextnode = nfp->disc->nextf;
@@ -295,7 +304,10 @@ char *nv_dirnext(void *dir)
 					if(nv_istable(np))
 						root = nv_dict(np);
 					else
-						root = (Dt_t*)np;
+					{
+						Nvdt_u nu = { .np = np };
+						root = nu.dt;
+					}
 					/* check for recursive walk */
 					for(save=dp; save;  save=save->prev)
 					{
@@ -453,7 +465,11 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 				if(val==NV_ARRAY)
 				{
 					Namarr_t *ap = nv_arrayptr(np);
-					char **xp=0;
+					union
+					{
+						char **cv;
+						Namarr_t *na;
+					} xp = { .cv = NULL };
 					if(ap && array_assoc(ap))
 					{
 						if(tp->sh_name[1]!='A')
@@ -471,8 +487,8 @@ void nv_attribute(Namval_t *np,Sfio_t *out,char *prefix,int noname)
 						fixed++;
 					else
 #endif /* SHOPT_FIXEDARRAY */
-					if(ap && !array_assoc(ap) && (xp=(char**)(ap+1)) && *xp)
-						ip = nv_namptr(*xp,0)->nvname;
+					if(ap && !array_assoc(ap) && (xp.na=ap+1) && *xp.cv)
+						ip = nv_namptr(*xp.cv,0)->nvname;
 				}
 				if(val==NV_UTOL || val==NV_LTOU)
 				{

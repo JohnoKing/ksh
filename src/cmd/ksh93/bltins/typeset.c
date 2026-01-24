@@ -1557,13 +1557,13 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
 			for(int i = 0; i < rp->argc; i++)
 				sfprintf(file," %s",rp->argv[i]);
 		}
-		if(rp && rp->ptree)
+		if(rp && rp->ptree.n)
 			fname = rp->fname;
 		else
 			flag = '\n';
 		if(flag)
 		{
-			if(tp->pflag && rp && rp->ptree)
+			if(tp->pflag && rp && rp->ptree.n)
 				sfprintf(file," #line %d %s\n", rp->lineno, fname ? sh_fmtq(fname) : Empty);
 			else
 				sfputc(file, '\n');
@@ -1571,7 +1571,7 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
 		else
 		{
 			sfputc(file, '\n');
-			sh_deparse(file, (Shnode_t*)(rp->ptree), 2 | nv_isattr(np,NV_FPOSIX), 0);
+			sh_deparse(file, rp->ptree.n, 2 | nv_isattr(np,NV_FPOSIX), 0);
 		}
 		return 1;
 	}

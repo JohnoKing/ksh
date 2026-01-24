@@ -851,6 +851,6 @@ done:
 		hist_flush(sh.hist_ptr);
 #endif
 	if(jmpval > 1)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	return jmpval;
 }

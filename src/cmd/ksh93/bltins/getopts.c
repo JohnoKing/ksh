@@ -120,7 +120,7 @@ int	b_getopts(int _argc,char *_argv[],Shbltin_t *context)
 		sh.st.opterror = 1;
 		if(r==0)
 			return 2;
-		pp = (struct checkpt*)sh.jmplist;
+		pp = sh.jmplist.pt;
 		pp->mode = SH_JMPERREXIT;
 		sh_exit(r==-2 ? 0 : 2);
 	}
@@ -133,7 +133,7 @@ int	b_getopts(int _argc,char *_argv[],Shbltin_t *context)
 			/* a ksh script's self-doc: write to standard output and force script to exit with status 0 */
 			error(ERROR_USAGE|ERROR_OUTPUT, STDOUT_FILENO, "%s", opt_info.arg);
 			r = -2;
-			siglongjmp(*sh.jmplist,SH_JMPERREXIT);  /* back to if(jmpval) above */
+			siglongjmp(*sh.jmplist.jmp,SH_JMPERREXIT);  /* back to if(jmpval) above */
 		}
 		opt_info.option[1] = '?';
 		/* FALLTHROUGH */

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -40,6 +40,24 @@ typedef struct Namdisc Namdisc_t;
 typedef struct Nambfun Nambfun_t;
 typedef struct Namarray Namarr_t;
 typedef struct Namdecl Namdecl_t;
+
+union Namunion
+{
+	Namarr_t	*na;
+	Namdisc_t	*nd;
+	Namval_t	*np;
+	Namfun_t	*nfp;
+	Nambfun_t	*nbf;
+};
+
+union Namoptdisc
+{
+	Optdisc_t	*op;
+	Namval_t	**npv;
+};
+
+typedef union Namunion Namunion_u;
+typedef union Namoptdisc Namoptdisc_u;
 
 /*
  * Any place that assigns or compares the NV_* symbols below to a var should use 'nvflag_t' for the
@@ -86,15 +104,30 @@ struct Nambfun
 	Namval_t	*bltins[1];
 };
 
+struct fixed_array
+{
+	unsigned char	level;
+	unsigned char	ptr;
+	size_t		ndim;
+	size_t		dim;
+	size_t		size;
+	ptrdiff_t	nelem;
+	ptrdiff_t	curi;
+	ptrdiff_t	*max;
+	ptrdiff_t	*incr;
+	ptrdiff_t	*cur;
+	char		*data;
+};
+
 /* This is an array template header */
 struct Namarray
 {
-	Namfun_t	hdr;
-	long		nelem;					/* number of elements */
+	Namfun_t		hdr;
+	long			nelem;				/* number of elements */
 	void	*(*fun)(Namval_t*,const char*,nvflag_t);	/* associative arrays */
-	void		*fixed;					/* for fixed-size arrays */
-	Dt_t		*table;					/* for subscripts */
-	void		*scope;					/* non-zero when scoped */
+	struct fixed_array	*fixed;				/* for fixed-size arrays */
+	Dt_t			*table;				/* for subscripts */
+	void			*scope;				/* non-zero when scoped */
 };
 
 /* The context pointer for declaration command */

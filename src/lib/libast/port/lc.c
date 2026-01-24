@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -404,6 +404,12 @@ lccanon(Lc_t* lc, unsigned long flags, char* buf, size_t siz)
 	return canonical(lc->language, lc->territory, lc->charset, lc->attributes, flags, buf, siz);
 }
 
+union Lc_attr_u
+{
+	Lc_attribute_list_t	*list;
+	Lc_attribute_t		*attr;
+};
+
 /*
  * make an Lc_t from a locale name
  */
@@ -430,7 +436,7 @@ lcmake(const char* name)
 	const Lc_charset_t*	cp;
 	const Lc_charset_t*	ppa;
 	const Lc_attribute_t*	ap;
-	Lc_attribute_list_t*	ai;
+	union Lc_attr_u		ai;
 	Lc_attribute_list_t*	al;
 	ptrdiff_t		i;
 	size_t			j;
@@ -705,21 +711,21 @@ lcmake(const char* name)
 				for (j = 0; j < elementsof(lp->attributes) && (ap = lp->attributes[j]); j++)
 					if (match(w, ap->name, 5, 0))
 					{
-						if (ai = newof(0, Lc_attribute_list_t, 1, 0))
+						if (ai.list = newof(0, Lc_attribute_list_t, 1, 0))
 						{
-							ai->attribute = ap;
-							ai->next = al;
-							al = ai;
+							ai.list->attribute = ap;
+							ai.list->next = al;
+							al = ai.list;
 						}
 						break;
 					}
 				if (j >= elementsof(lp->attributes) && (ap = newof(0, Lc_attribute_t, 1, sizeof(Lc_attribute_list_t) + (size_t)(s - w + 1))))
 				{
-					ai = (Lc_attribute_list_t*)(ap + 1);
-					strcpy((char*)(((Lc_attribute_t*)ap)->name = (const char*)(ai + 1)), w);
-					ai->attribute = ap;
-					ai->next = al;
-					al = ai;
+					ai.attr = (Lc_attribute_t*)(ap + 1);
+					strcpy((char*)(((Lc_attribute_t*)ap)->name = (const char*)(ai.list + 1)), w);
+					ai.list->attribute = ap;
+					ai.list->next = al;
+					al = ai.list;
 				}
 			}
 			*s = (char)c;

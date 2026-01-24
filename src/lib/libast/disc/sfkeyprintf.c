@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -65,6 +65,12 @@ typedef union
 	short			h;
 	char			c;
 } Value_t;
+
+typedef union
+{
+	Fmt_t			*fp;
+	Sffmt_t			*sfp;
+} Fmt_u;
 
 #define initfield(f,s)	((f)->first = (f)->delimiter = *((f)->next = (s)))
 
@@ -134,7 +140,7 @@ getfield(Field_t* f, int restore)
 static int
 getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 {
-	Fmt_t*		fp = (Fmt_t*)dp;
+	Fmt_u		fp = { .sfp = dp };
 	Value_t*	value = (Value_t*)vp;
 	char*		v;
 	char*		t;
@@ -150,11 +156,11 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 	regmatch_t	match[10];
 
 	NOT_USED(sp);
-	fp->level++;
-	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)fp->fmt.n_str + 1)))
+	fp.fp->level++;
+	if (fp.fp->fmt.t_str && fp.fp->fmt.n_str > 0 && (v = fmtbuf((size_t)fp.fp->fmt.n_str + 1)))
 	{
-		memcpy(v, fp->fmt.t_str, (size_t)fp->fmt.n_str);
-		v[fp->fmt.n_str] = 0;
+		memcpy(v, fp.fp->fmt.t_str, (size_t)fp.fp->fmt.n_str);
+		v[fp.fp->fmt.n_str] = 0;
 		b = v;
 		for (;;)
 		{
@@ -183,7 +189,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 			if (i = *--v)
 			{
 				*v = 0;
-				if (i == ':' && fp->fmt.fmt == 's' && strlen(a) > 4 && !isalnum(*(a + 4)))
+				if (i == ':' && fp.fp->fmt.fmt == 's' && strlen(a) > 4 && !isalnum(*(a + 4)))
 				{
 					d = *(a + 4);
 					*(a + 4) = 0;
@@ -199,33 +205,33 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 			break;
 		}
 		n = i;
-		t = fp->fmt.t_str;
-		fp->fmt.t_str = b;
-		h = (*fp->lookup)(fp->handle, &fp->fmt, a, &s, &n);
-		fp->fmt.t_str = t;
+		t = fp.fp->fmt.t_str;
+		fp.fp->fmt.t_str = b;
+		h = (*fp.fp->lookup)(fp.fp->handle, &fp.fp->fmt, a, &s, &n);
+		fp.fp->fmt.t_str = t;
 		if (i)
 			*v++ = (char)i;
 	}
 	else
 	{
-		h = (*fp->lookup)(fp->handle, &fp->fmt, a, &s, &n);
+		h = (*fp.fp->lookup)(fp.fp->handle, &fp.fp->fmt, a, &s, &n);
 		v = 0;
 	}
-	fp->fmt.flags |= SFFMT_VALUE;
-	switch (fp->fmt.fmt)
+	fp.fp->fmt.flags |= SFFMT_VALUE;
+	switch (fp.fp->fmt.fmt)
 	{
 	case 'c':
 		value->c = s ? *s : (char)n;
 		break;
 	case 'd':
 	case 'i':
-		fp->fmt.size = sizeof(Sflong_t);
+		fp.fp->fmt.size = sizeof(Sflong_t);
 		value->q = (Sflong_t)(s ? strtoll(s, NULL, 0) : n);
 		break;
 	case 'o':
 	case 'u':
 	case 'x':
-		fp->fmt.size = sizeof(Sflong_t);
+		fp.fp->fmt.size = sizeof(Sflong_t);
 		value->q = s ? (Sflong_t)strtoull(s, NULL, 0) : n;
 		break;
 	case 'p':
@@ -236,17 +242,17 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 	case 'q':
 		if (s)
 		{
-			fp->fmt.fmt = 's';
+			fp.fp->fmt.fmt = 's';
 			value->s = fmtquote(s, "$'", "'", strlen(s), 0);
 		}
 		else
 		{
-			fp->fmt.fmt = 'd';
+			fp.fp->fmt.fmt = 'd';
 			value->q = n;
 		}
 		break;
 	case 's':
-		if (!s && (!h || !fp->tmp[1] && !(fp->tmp[1] = sfstropen()) || sfprintf(fp->tmp[1], "%I*d", sizeof(n), n) <= 0 || !(s = sfstruse(fp->tmp[1]))))
+		if (!s && (!h || !fp.fp->tmp[1] && !(fp.fp->tmp[1] = sfstropen()) || sfprintf(fp.fp->tmp[1], "%I*d", sizeof(n), n) <= 0 || !(s = sfstruse(fp.fp->tmp[1]))))
 			s = "";
 		if (x)
 		{
@@ -261,11 +267,11 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 					{
 						Fmt_t	fmt;
 
-						fmt = *fp;
+						fmt = *fp.fp;
 						fmt.fmt.form = v;
 						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
 							fmt.tmp[h] = 0;
-						if (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
+						if (!fp.fp->tmp[0] && !(fp.fp->tmp[0] = sfstropen()) || sfprintf(fp.fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp.fp->tmp[0])))
 							s = "";
 						*(v - 1) = (char)d;
 						if (f.delimiter)
@@ -282,20 +288,20 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 			case FMT_edit:
 				for (x = 0; *f.next; x ^= 1)
 				{
-					if (fp->re[x])
-						regfree(fp->re[x]);
+					if (fp.fp->re[x])
+						regfree(fp.fp->re[x]);
 					else
-						fp->re[x] = &fp->red[x];
-					if (regcomp(fp->re[x], f.next, REG_DELIMITED|REG_NULL))
+						fp.fp->re[x] = &fp.fp->red[x];
+					if (regcomp(fp.fp->re[x], f.next, REG_DELIMITED|REG_NULL))
 						break;
-					f.next += fp->re[x]->re_npat;
-					if (regsubcomp(fp->re[x], f.next, NULL, 0, 0))
+					f.next += fp.fp->re[x]->re_npat;
+					if (regsubcomp(fp.fp->re[x], f.next, NULL, 0, 0))
 						break;
-					f.next += fp->re[x]->re_npat;
-					if (!regexec(fp->re[x], s, elementsof(match), match, 0) && !regsubexec(fp->re[x], s, elementsof(match), match))
+					f.next += fp.fp->re[x]->re_npat;
+					if (!regexec(fp.fp->re[x], s, elementsof(match), match, 0) && !regsubexec(fp.fp->re[x], s, elementsof(match), match))
 					{
-						s = fp->re[x]->re_sub->re_buf;
-						if (fp->re[x]->re_sub->re_flags & REG_SUB_STOP)
+						s = fp.fp->re[x]->re_sub->re_buf;
+						if (fp.fp->re[x]->re_sub->re_flags & REG_SUB_STOP)
 							break;
 					}
 				}
@@ -306,12 +312,12 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 				s = "";
 		}
 		value->s = s;
-		if (fp->level == 1)
+		if (fp.fp->level == 1)
 			while ((s = strchr(s, CC_esc)) && *(s + 1) == '[')
-				do fp->invisible++; while (*s && !islower(*s++));
+				do fp.fp->invisible++; while (*s && !islower(*s++));
 		break;
 	case 'Z':
-		fp->fmt.fmt = 'c';
+		fp.fp->fmt.fmt = 'c';
 		value->c = 0;
 		break;
 	case '\n':
@@ -321,11 +327,11 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 		value->i = (int)n;
 		break;
 	default:
-		if ((!fp->convert || !(value->s = (*fp->convert)(fp->handle, &fp->fmt, a, s, n))) && (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%%%c", fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp->tmp[0]))))
+		if ((!fp.fp->convert || !(value->s = (*fp.fp->convert)(fp.fp->handle, &fp.fp->fmt, a, s, n))) && (!fp.fp->tmp[0] && !(fp.fp->tmp[0] = sfstropen()) || sfprintf(fp.fp->tmp[0], "%%%c", fp.fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp.fp->tmp[0]))))
 			value->s = "";
 		break;
 	}
-	fp->level--;
+	fp.fp->level--;
 	return 0;
 }
 

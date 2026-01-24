@@ -620,7 +620,7 @@ done:
 		job_close();
 	}
 	if(jmpval == SH_JMPSCRIPT)
-		siglongjmp(*sh.jmplist,jmpval);
+		siglongjmp(*sh.jmplist.jmp,jmpval);
 	else if(jmpval == SH_JMPEXIT)
 		sh_done(0);
 	if(fno>0)
@@ -705,6 +705,44 @@ static void chkmail(char *files)
 	}
 	while(save);
 	stkset(sh.stk,savstak,offset);
+}
+
+/*
+ * Convert between struct sh_scoped* and Shscope_t* via unions.
+ */
+void *sh_conv_scope(void *src, unsigned char mode)
+{
+	void *ret;
+	Shscope_u su;
+	if(mode == PUBLIC)
+	{
+		su.private = src;
+		ret = su.public;
+	}
+	else
+	{
+		su.public = src;
+		ret = su.private;
+	}
+	return ret;
+}
+
+/*
+ * Compare struct sh_scoped* and Shscope_t* via unions.
+ */
+bool sh_compare_scopes(void *a, void *b, unsigned char mode)
+{
+	Shscope_u su;
+	if(mode == PUBLIC)
+	{
+		su.private = b;
+		return (Shscope_t*)a == su.public;
+	}
+	else /*if(mode == PRIVATE)*/
+	{
+		su.public = a;
+		return su.private == (struct sh_scoped*)b;
+	}
 }
 
 #undef PSTAT

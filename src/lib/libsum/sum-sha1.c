@@ -32,6 +32,12 @@ typedef struct Sha1_s
 	uint8_t		digest_sum[20];
 } Sha1_t;
 
+typedef union
+{
+	Sha1_t		*sha;
+	Sum_t		*sum;
+} Sha1_sum_u;
+
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 /*
@@ -206,26 +212,26 @@ sha1_transform(uint32_t state[5], const unsigned char buffer[64]) {
 static int
 sha1_block(Sum_t* p, const void* s, size_t len)
 {
-	Sha1_t*		sha = (Sha1_t*)p;
+	Sha1_sum_u	sha = { .sum = p };
 	uint8_t*	data = (uint8_t*)s;
 	size_t		i, j;
 
 	if (len) {
-		j = sha->count[0];
-		if ((sha->count[0] += len << 3) < j)
-			sha->count[1] += (len >> 29) + 1;
+		j = sha.sha->count[0];
+		if ((sha.sha->count[0] += len << 3) < j)
+			sha.sha->count[1] += (len >> 29) + 1;
 		j = (j >> 3) & 63;
 		if ((j + len) > 63) {
-			(void)memcpy(&sha->buffer[j], data, (i = 64 - j));
-			sha1_transform(sha->state, sha->buffer);
+			(void)memcpy(&sha.sha->buffer[j], data, (i = 64 - j));
+			sha1_transform(sha.sha->state, sha.sha->buffer);
 			for ( ; i + 63 < len; i += 64)
-				sha1_transform(sha->state, &data[i]);
+				sha1_transform(sha.sha->state, &data[i]);
 			j = 0;
 		} else {
 			i = 0;
 		}
 
-		(void)memcpy(&sha->buffer[j], &data[i], len - i);
+		(void)memcpy(&sha.sha->buffer[j], &data[i], len - i);
 	}
 	return 0;
 }
@@ -233,14 +239,14 @@ sha1_block(Sum_t* p, const void* s, size_t len)
 static int
 sha1_init(Sum_t* p)
 {
-	Sha1_t*	sha = (Sha1_t*)p;
+	Sha1_sum_u	sha = { .sum = p };
 
-	sha->count[0] = sha->count[1] = 0;
-	sha->state[0] = 0x67452301;
-	sha->state[1] = 0xEFCDAB89;
-	sha->state[2] = 0x98BADCFE;
-	sha->state[3] = 0x10325476;
-	sha->state[4] = 0xC3D2E1F0;
+	sha.sha->count[0] = sha.sha->count[1] = 0;
+	sha.sha->state[0] = 0x67452301;
+	sha.sha->state[1] = 0xEFCDAB89;
+	sha.sha->state[2] = 0x98BADCFE;
+	sha.sha->state[3] = 0x10325476;
+	sha.sha->state[4] = 0xC3D2E1F0;
 
 	return 0;
 }
@@ -248,15 +254,15 @@ sha1_init(Sum_t* p)
 static Sum_t*
 sha1_open(const Method_t* method, const char* name)
 {
-	Sha1_t*	sha;
+	Sha1_sum_u	sha;
 
-	if (sha = newof(0, Sha1_t, 1, 0))
+	if (sha.sha = newof(0, Sha1_t, 1, 0))
 	{
-		sha->method = (Method_t*)method;
-		sha->name = name;
-		sha1_init((Sum_t*)sha);
+		sha.sha->method = (Method_t*)method;
+		sha.sha->name = name;
+		sha1_init(sha.sum);
 	}
-	return (Sum_t*)sha;
+	return sha.sum;
 }
 
 /*
@@ -269,42 +275,42 @@ static const unsigned char final_0 = 0;
 static int
 sha1_done(Sum_t* p)
 {
-	Sha1_t*	sha = (Sha1_t*)p;
-	unsigned char finalcount[8];
+	Sha1_sum_u	sha = { .sum = p };
+	unsigned char	finalcount[8];
 
 	for (unsigned int i = 0; i < 8; i++) {
 		/* Endian independent */
 		finalcount[i] = (unsigned char)
-			((sha->count[(i >= 4 ? 0 : 1)]
+			((sha.sha->count[(i >= 4 ? 0 : 1)]
 			  >> ((3 - (i & 3)) * 8)) & 255);
 	}
 
 	sha1_block(p, &final_200, 1);
-	while ((sha->count[0] & 504) != 448)
+	while ((sha.sha->count[0] & 504) != 448)
 		sha1_block(p, &final_0, 1);
 	/* The next Update should cause a sha1_transform() */
 	sha1_block(p, finalcount, 8);
 
-	for (unsigned int i = 0; i < elementsof(sha->digest); i++)
+	for (unsigned int i = 0; i < elementsof(sha.sha->digest); i++)
 	{
-		sha->digest[i] = (unsigned char)((sha->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
-		sha->digest_sum[i] ^= sha->digest[i];
+		sha.sha->digest[i] = (unsigned char)((sha.sha->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+		sha.sha->digest_sum[i] ^= sha.sha->digest[i];
 	}
-	memset(sha->count, 0, sizeof(sha->count));
-	memset(sha->state, 0, sizeof(sha->state));
-	memset(sha->buffer, 0, sizeof(sha->buffer));
+	memset(sha.sha->count, 0, sizeof(sha.sha->count));
+	memset(sha.sha->state, 0, sizeof(sha.sha->state));
+	memset(sha.sha->buffer, 0, sizeof(sha.sha->buffer));
 	return 0;
 }
 
 static int
 sha1_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 {
-	Sha1_t*	sha = (Sha1_t*)p;
+	Sha1_sum_u	sha = { .sum = p };
 	unsigned char*	d;
 
 	NOT_USED(scale);
-	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
-	for (size_t n = 0; n < elementsof(sha->digest); n++)
+	d = (flags & SUM_TOTAL) ? sha.sha->digest_sum : sha.sha->digest;
+	for (size_t n = 0; n < elementsof(sha.sha->digest); n++)
 		sfprintf(sp, "%02x", d[n]);
 	return 0;
 }
@@ -312,10 +318,10 @@ sha1_print(Sum_t* p, Sfio_t* sp, int flags, size_t scale)
 static int
 sha1_data(Sum_t* p, Sumdata_t* data)
 {
-	Sha1_t*	sha = (Sha1_t*)p;
+	Sha1_sum_u	sha = { .sum = p };
 
-	data->size = elementsof(sha->digest);
+	data->size = elementsof(sha.sha->digest);
 	data->num = 0;
-	data->buf = sha->digest;
+	data->buf = sha.sha->digest;
 	return 0;
 }

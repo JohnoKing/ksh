@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -52,6 +52,12 @@ typedef struct Crc_s
 	unsigned int		addsize;
 	unsigned int		rotate;
 } Crc_t;
+
+typedef union
+{
+	Crc_t			*crc;
+	Sum_t			*sum;
+} Crc_sum_u;
 
 #define CRC(p,s,c)		(s = (s >> 8) ^ (p)->tab[(s ^ (c)) & 0xff])
 #define CRCROTATE(p,s,c)	(s = (s << 8) ^ (p)->tab[((s >> 24) ^ (c)) & 0xff])
@@ -115,7 +121,7 @@ Crcnum_t posix_cksum_tab[256] = {
 static Sum_t*
 crc_open(const Method_t* method, const char* name)
 {
-	Crc_t*		sum;
+	Crc_sum_u	sum;
 	const char*	s;
 	const char*	t;
 	const char*	v;
@@ -123,22 +129,22 @@ crc_open(const Method_t* method, const char* name)
 	Crcnum_t	polynomial;
 	Crcnum_t	x;
 
-	if (sum = newof(0, Crc_t, 1, 0))
+	if (sum.crc = newof(0, Crc_t, 1, 0))
 	{
-		sum->method = (Method_t*)method;
-		sum->name = name;
+		sum.crc->method = (Method_t*)method;
+		sum.crc->name = name;
 	}
 
 	if(!strcmp(name, "crc-0x04c11db7-rotate-done-size"))
 	{
-		sum->init=0;
-		sum->done=0xffffffff;
-		sum->xorsize=0x0;
-		sum->addsize=0x1;
-		sum->rotate=1;
+		sum.crc->init=0;
+		sum.crc->done=0xffffffff;
+		sum.crc->xorsize=0x0;
+		sum.crc->addsize=0x1;
+		sum.crc->rotate=1;
 
 		/* Optimized codepath for POSIX cksum to save startup time */
-		sum->tab=posix_cksum_tab;
+		sum.crc->tab=posix_cksum_tab;
 	}
 	else
 	{
@@ -153,21 +159,21 @@ crc_open(const Method_t* method, const char* name)
 		if (isdigit(*t) || v && k >= 4 && strneq(t, "poly", 4) && (t = v + 1))
 			polynomial = (Crcnum_t)strtoul(t, NULL, 0);
 		else if (strneq(t, "done", (size_t)k))
-			sum->done = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum->done;
+			sum.crc->done = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum.crc->done;
 		else if (strneq(t, "init", (size_t)k))
-			sum->init = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum->init;
+			sum.crc->init = v ? (Crcnum_t)strtoul(v + 1, NULL, 0) : ~sum.crc->init;
 		else if (strneq(t, "rotate", (size_t)k))
-			sum->rotate = 1;
+			sum.crc->rotate = 1;
 		else if (strneq(t, "size", (size_t)k))
 		{
-			sum->addsize = 1;
+			sum.crc->addsize = 1;
 			if (v)
-				sum->xorsize = (Crcnum_t)strtoul(v + 1, NULL, 0);
+				sum.crc->xorsize = (Crcnum_t)strtoul(v + 1, NULL, 0);
 		}
 		if (*s == '-')
 			s++;
 	}
-	if (sum->rotate)
+	if (sum.crc->rotate)
 	{
 		Crcnum_t	t;
 		Crcnum_t	p[8];
@@ -175,7 +181,7 @@ crc_open(const Method_t* method, const char* name)
 		p[0] = polynomial;
 		for (size_t i = 1; i < 8; i++)
 			p[i] = (p[i-1] << 1) ^ ((p[i-1] & 0x80000000) ? polynomial : 0);
-		for (size_t i = 0; i < elementsof(sum->tabdata); i++)
+		for (size_t i = 0; i < elementsof(sum.crc->tabdata); i++)
 		{
 			t = 0;
 			x = (Crcnum_t)i;
@@ -185,32 +191,32 @@ crc_open(const Method_t* method, const char* name)
 					t ^= p[j];
 				x >>= 1;
 			}
-			sum->tabdata[i] = t;
+			sum.crc->tabdata[i] = t;
 		}
 	}
 	else
 	{
-		for (size_t i = 0; i < elementsof(sum->tabdata); i++)
+		for (size_t i = 0; i < elementsof(sum.crc->tabdata); i++)
 		{
 			x = (Crcnum_t)i;
 			for (size_t j = 0; j < 8; j++)
 				x = (x>>1) ^ ((x & 1) ? polynomial : 0);
-			sum->tabdata[i] = x;
+			sum.crc->tabdata[i] = x;
 		}
 
-		sum->tab=sum->tabdata;
+		sum.crc->tab=sum.crc->tabdata;
 	}
 	}
 
-	return (Sum_t*)sum;
+	return sum.sum;
 }
 
 static int
 crc_init(Sum_t* p)
 {
-	Crc_t*		sum = (Crc_t*)p;
+	Crc_sum_u	sum = { .sum = p };
 
-	sum->sum = sum->init;
+	sum.crc->sum = sum.crc->init;
 	return 0;
 }
 
@@ -232,14 +238,14 @@ crc_init(Sum_t* p)
 static int
 crc_block(Sum_t* p, const void* s, size_t n)
 {
-	Crc_t*			sum = (Crc_t*)p;
-	Crcnum_t	c = sum->sum;
+	Crc_sum_u		sum = { .sum = p };
+	Crcnum_t		c = sum.crc->sum;
 	const unsigned char*	b = (const unsigned char*)s;
 	const unsigned char*	e = b + n;
 
 	sum_prefetch(b);
 
-	if (sum->rotate)
+	if (sum.crc->rotate)
 	{
 		while (n > CBLOCK_SIZE)
 		{
@@ -249,7 +255,7 @@ crc_block(Sum_t* p, const void* s, size_t n)
 #endif
 			for(unsigned short i=0 ; i < CBLOCK_SIZE ; i++)
 			{
-				CRCROTATE(sum, c, *b++);
+				CRCROTATE(sum.crc, c, *b++);
 			}
 
 			n-=CBLOCK_SIZE;
@@ -257,7 +263,7 @@ crc_block(Sum_t* p, const void* s, size_t n)
 
 		while (b < e)
 		{
-			CRCROTATE(sum, c, *b++);
+			CRCROTATE(sum.crc, c, *b++);
 		}
 	}
 	else
@@ -270,7 +276,7 @@ crc_block(Sum_t* p, const void* s, size_t n)
 #endif
 			for(unsigned short i=0 ; i < CBLOCK_SIZE ; i++)
 			{
-				CRC(sum, c, *b++);
+				CRC(sum.crc, c, *b++);
 			}
 
 			n-=CBLOCK_SIZE;
@@ -278,29 +284,29 @@ crc_block(Sum_t* p, const void* s, size_t n)
 
 		while (b < e)
 		{
-			CRC(sum, c, *b++);
+			CRC(sum.crc, c, *b++);
 		}
 	}
 
-	sum->sum = c;
+	sum.crc->sum = c;
 	return 0;
 }
 #else
 static int
 crc_block(Sum_t* p, const void* s, size_t n)
 {
-	Crc_t*			sum = (Crc_t*)p;
-	Crcnum_t	c = sum->sum;
+	Crc_sum_u	sum = { .sum = p };
+	Crcnum_t	c = sum.crc->sum;
 	unsigned char*	b = (unsigned char*)s;
 	unsigned char*	e = b + n;
 
-	if (sum->rotate)
+	if (sum.crc->rotate)
 		while (b < e)
-			CRCROTATE(sum, c, *b++);
+			CRCROTATE(sum.crc, c, *b++);
 	else
 		while (b < e)
-			CRC(sum, c, *b++);
-	sum->sum = c;
+			CRC(sum.crc, c, *b++);
+	sum.crc->sum = c;
 	return 0;
 }
 #endif
@@ -308,29 +314,28 @@ crc_block(Sum_t* p, const void* s, size_t n)
 static int
 crc_done(Sum_t* p)
 {
-	Crc_t*		sum = (Crc_t*)p;
-	Crcnum_t	c;
+	Crc_sum_u	sum = { .sum = p };
+	Crcnum_t	c = sum.crc->sum;
 	uintmax_t	n;
 	int		j;
 
-	c = sum->sum;
-	if (sum->addsize)
+	if (sum.crc->addsize)
 	{
-		n = sum->size ^ sum->xorsize;
-		if (sum->rotate)
+		n = sum.crc->size ^ sum.crc->xorsize;
+		if (sum.crc->rotate)
 			while (n)
 			{
-				CRCROTATE(sum, c, n);
+				CRCROTATE(sum.crc, c, n);
 				n >>= 8;
 			}
 		else
 			for (size_t i = 0, j = 32; i < 4; i++)
 			{
 				j -= 8;
-				CRC(sum, c, n >> j);
+				CRC(sum.crc, c, n >> j);
 			}
 	}
-	sum->sum = c ^ sum->done;
-	sum->total_sum ^= (sum->sum &= 0xffffffff);
+	sum.crc->sum = c ^ sum.crc->done;
+	sum.crc->total_sum ^= (sum.crc->sum &= 0xffffffff);
 	return 0;
 }

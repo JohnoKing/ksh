@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -97,19 +97,20 @@ struct checkpt
 };
 
 #define sh_pushcontext(bp,n) \
-( \
+do { \
+	union _err_context_u_ _error_context_base_ = { .ev = &error_info.context }; \
 	(bp)->mode = (n), \
 	(bp)->olist = 0, \
 	(bp)->topfd = sh.topfd, \
-	(bp)->prev = sh.jmplist, \
-	(bp)->err = *ERROR_CONTEXT_BASE, \
-	sh.jmplist = (sigjmp_buf*)(&(bp)->buff) \
-)
+	(bp)->prev = sh.jmplist.jmp, \
+	sh.jmplist.jmp = (sigjmp_buf*)(&(bp)->buff); \
+	(bp)->err = *_error_context_base_.ep; \
+} while(0)
 #define sh_popcontext(bp) \
-( \
-	sh.jmplist = (bp)->prev, \
-	errorpop(&((bp)->err)) \
-)
+do { \
+	sh.jmplist.jmp = (bp)->prev; \
+	errorpop(&((bp)->err)); \
+} while(0)
 
 /* signal handling shorthands */
 #define sh_sigaction(s,action) \
