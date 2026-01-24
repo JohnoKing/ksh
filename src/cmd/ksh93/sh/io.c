@@ -1022,7 +1022,7 @@ static int io_patseek(regex_t *rp, Sfio_t* sp, unsigned int flags)
 {
 	char	*cp;
 	int	fd = sffileno(sp), close_exec = sh.fdstatus[fd]&IOCLEX;
-	int	was_share,s=(PIPE_BUF>SFIO_BUFSIZE?SFIO_BUFSIZE:PIPE_BUF);
+	int	was_share=0,s=(PIPE_BUF>SFIO_BUFSIZE?SFIO_BUFSIZE:PIPE_BUF);
 	size_t	n,m;
 	sh.fdstatus[sffileno(sp)] |= IOCLEX;
 	if(fd==0)

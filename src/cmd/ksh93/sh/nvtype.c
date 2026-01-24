@@ -641,7 +641,7 @@ static int typeinfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 		fp->type = 0;
 		if(np->nvmeta)
 			sfprintf(out,"[+?\b%s\b is a %s.]\n", tp->nvname, (char*)np->nvmeta);
-		cp = (char*)out->_next;
+		cp = (char*)out->next;
 		sfprintf(out,"[+?\b%s\b is a %n ", tp->nvname, &j);
 		nv_attribute(np,out,NULL, 1);
 		if(cp[j+1]=='i')

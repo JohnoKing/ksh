@@ -1068,7 +1068,7 @@ static char *walk_tree(Namval_t *np, Namval_t *xp, nvflag_t flags)
 		return NULL;
 	sfputc(out,0);
 	sfseek(out,off,SEEK_SET);
-	return (char*)out->_data+off;
+	return (char*)out->data+off;
 }
 
 Namfun_t *nv_isvtree(Namval_t *np)

@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -292,23 +292,23 @@ extern ssize_t		sfmaxr(ssize_t, int);
 #define __sf_putu(f,v)		(_sfputu(_SFIO_(f),(Sfulong_t)(v)))
 #define __sf_putm(f,v,m)	(_sfputm(_SFIO_(f),(Sfulong_t)(v),(Sfulong_t)(m)))
 
-#define __sf_putc(f,c)	(_SFIO_(f)->_next >= _SFIO_(f)->_endw ? \
+#define __sf_putc(f,c)	(_SFIO_(f)->next >= _SFIO_(f)->endw ? \
 			 _sfflsbuf(_SFIO_(f),(int)((unsigned char)(c))) : \
-			 (int)(*_SFIO_(f)->_next++ = (unsigned char)(c)) )
-#define __sf_getc(f)	(_SFIO_(f)->_next >= _SFIO_(f)->_endr ? (int)_sffilbuf(_SFIO_(f),0) : \
-			 (int)(*_SFIO_(f)->_next++) )
+			 (int)(*_SFIO_(f)->next++ = (unsigned char)(c)) )
+#define __sf_getc(f)	(_SFIO_(f)->next >= _SFIO_(f)->endr ? (int)_sffilbuf(_SFIO_(f),0) : \
+			 (int)(*_SFIO_(f)->next++) )
 
 #define __sf_dlen(v)	(_sfdlen((Sfdouble_t)(v)) )
 #define __sf_llen(v)	(_sfllen((Sflong_t)(v)) )
 #define __sf_ulen(v)	((Sfulong_t)(v) < SFIO_U1 ? 1 : (Sfulong_t)(v) < SFIO_U2 ? 2 : \
 			 (Sfulong_t)(v) < SFIO_U3 ? 3 : (Sfulong_t)(v) < SFIO_U4 ? 4 : 5)
 
-#define __sf_fileno(f)	(_SFIO_(f)->_file)
-#define __sf_eof(f)	(_SFIO_(f)->_flags&SFIO_EOF)
-#define __sf_error(f)	(_SFIO_(f)->_flags&SFIO_ERROR)
-#define __sf_clrerr(f)	(_SFIO_(f)->_flags &= ~(SFIO_ERROR|SFIO_EOF))
-#define __sf_stacked(f)	(_SFIO_(f)->_push != NULL)
-#define __sf_value(f)	(_SFIO_(f)->_val)
+#define __sf_fileno(f)	(_SFIO_(f)->file)
+#define __sf_eof(f)	(_SFIO_(f)->flags&SFIO_EOF)
+#define __sf_error(f)	(_SFIO_(f)->flags&SFIO_ERROR)
+#define __sf_clrerr(f)	(_SFIO_(f)->flags &= ~(SFIO_ERROR|SFIO_EOF))
+#define __sf_stacked(f)	(_SFIO_(f)->push != NULL)
+#define __sf_value(f)	(_SFIO_(f)->val)
 #define __sf_slen()	(_Sfi)
 #define __sf_maxr(n,s)	((s)?((_Sfi=_Sfmaxr),(_Sfmaxr=(n)),_Sfi):_Sfmaxr)
 
@@ -369,35 +369,35 @@ __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
 
 #define sfstrseek(f,p,m) \
 	( (m) == SEEK_SET ? \
-	 	(((p) < 0 || (p) > (f)->_size) ? (char*)0 : \
-		 (char*)((f)->_next = (f)->_data+(p)) ) \
+		(((p) < 0 || (p) > (f)->size) ? (char*)0 : \
+		 (char*)((f)->next = (f)->data+(p)) ) \
 	: (m) == SEEK_CUR ? \
-		((f)->_next += (p), \
-		 (((f)->_next < (f)->_data || (f)->_next > (f)->_data+(f)->_size) ? \
-			((f)->_next -= (p), (char*)0) : (char*)(f)->_next ) ) \
+		((f)->next += (p), \
+		 (((f)->next < (f)->data || (f)->next > (f)->data+(f)->size) ? \
+			((f)->next -= (p), (char*)0) : (char*)(f)->next ) ) \
 	: (m) == SEEK_END ? \
-		( ((p) > 0 || (f)->_size < -(p)) ? (char*)0 : \
-			(char*)((f)->_next = (f)->_data+(f)->_size+(p)) ) \
+		( ((p) > 0 || (f)->size < -(p)) ? (char*)0 : \
+			(char*)((f)->next = (f)->data+(f)->size+(p)) ) \
 	: (char*)0 \
 	)
 
-#define sfstrsize(f)		((f)->_size)
-#define sfstrtell(f)		((f)->_next - (f)->_data)
-#define sfstrpend(f)		((f)->_size - sfstrtell())
-#define sfstrbase(f)		((char*)(f)->_data)
+#define sfstrsize(f)		((f)->size)
+#define sfstrtell(f)		((f)->next - (f)->data)
+#define sfstrpend(f)		((f)->size - sfstrtell())
+#define sfstrbase(f)		((char*)(f)->data)
 
 #define sfstruse(f) \
-	(sfputc((f),0) < 0 ? NULL : (char*)((f)->_next = (f)->_data) \
+	(sfputc((f),0) < 0 ? NULL : (char*)((f)->next = (f)->data) \
 	)
 
 #define sfstrrsrv(f,n) \
-	(sfreserve((f),(n),SFIO_WRITE|SFIO_LOCKR), sfwrite((f),(f)->_next,0), \
-	 ((f)->_next+(n) <= (f)->_data+(f)->_size ? (char*)(f)->_next : (char*)0) \
+	(sfreserve((f),(n),SFIO_WRITE|SFIO_LOCKR), sfwrite((f),(f)->next,0), \
+	 ((f)->next+(n) <= (f)->data+(f)->size ? (char*)(f)->next : (char*)0) \
 	)
 
 #define sfstrbuf(f,b,n,m) \
-	(sfsetbuf((f),(b),(n)), ((f)->_flags |= (m) ? SFIO_MALLOC : 0), \
-	 ((f)->_data == (unsigned char*)(b) ? 0 : -1) \
+	(sfsetbuf((f),(b),(n)), ((f)->flags |= (m) ? SFIO_MALLOC : 0), \
+	 ((f)->data == (unsigned char*)(b) ? 0 : -1) \
 	)
 
 #endif /* _SFSTR_H */

@@ -212,7 +212,7 @@ static Sfoff_t cur_offset(Dosdisc_t *dp, Sfoff_t offset,Sfio_t *iop,int whence)
 	{
 		whence= -1;
 		n = offset - dp->plast;
-		iop->_next = iop->_data + n;
+		iop->next = iop->data + n;
 		offset =  dp->llast;
 	}
 	else
@@ -237,7 +237,7 @@ static Sfoff_t cur_offset(Dosdisc_t *dp, Sfoff_t offset,Sfio_t *iop,int whence)
 		}
 	}
 	if(whence<0)
-		iop->_next += m;
+		iop->next += m;
 	return offset+m;
 }
 
@@ -280,13 +280,13 @@ retry:
 	if(sfsetbuf(iop,(char*)iop,0))
 		size = (size_t)sfvalue(iop);
 	else
-		size = (size_t)(iop->_endb-iop->_data);
+		size = (size_t)(iop->endb-iop->data);
 	if(mp)
 	{
 		sfsk(iop,mp->physical,SEEK_SET,disc);
 		dp->phere = mp->physical;
 		dp->lhere = mp->logical;
-		if((*disc->readf)(iop,iop->_data,size,disc)<0)
+		if((*disc->readf)(iop,iop->data,size,disc)<0)
 			return -1;
 	}
 	while(1)
@@ -295,7 +295,7 @@ retry:
 			break;
 		if(whence==SEEK_SET && dp->lhere>=offset)
 			break;
-		n=(*disc->readf)(iop,iop->_data,size,disc);
+		n=(*disc->readf)(iop,iop->data,size,disc);
 		if(n < 0)
 			return -1;
 		if(n==0)

@@ -131,7 +131,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
 				}
 				if (n > 0)
 				{
-					if (!j && buf[n - 1] != '\n' && (s->_flags & SFIO_STRING))
+					if (!j && buf[n - 1] != '\n' && (s->flags & SFIO_STRING))
 						buf[n++] = '\n';
 					if (q && buf[n - 1] == '\n')
 						buf[n - 1] = '\r';

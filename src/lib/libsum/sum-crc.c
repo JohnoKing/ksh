@@ -317,7 +317,6 @@ crc_done(Sum_t* p)
 	Crc_sum_u	sum = { .sum = p };
 	Crcnum_t	c = sum.crc->sum;
 	uintmax_t	n;
-	int		j;
 
 	if (sum.crc->addsize)
 	{

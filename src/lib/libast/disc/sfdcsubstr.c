@@ -148,7 +148,7 @@ Sfio_t* sfdcsubstream(Sfio_t*	f,	/* stream */
 	else	sfseek(parent,here,SEEK_SET);
 	sfpurge(parent);
 
-	if (!(sp = f) && !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, dup(sffileno(parent)), parent->_flags)))
+	if (!(sp = f) && !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, dup(sffileno(parent)), parent->flags)))
 		return NULL;
 
 	if(!(su.su = malloc(sizeof(Subfile_t))))

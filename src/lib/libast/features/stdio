@@ -338,11 +338,11 @@ cat{
 	extern FILE	_Sfstdout;
 	extern FILE	_Sfstderr;
 
-	#define feof(f)		(_sf_(f)->_flags&_SFIO_EOF)
-	#define ferror(f)	(_sf_(f)->_flags&_SFIO_ERROR)
-	#define fileno(f)	(_sf_(f)->_file)
-	#define fputc(c,f)	(_sf_(f)->_next>=_sf_(f)->_endw?(int)_sfflsbuf(_sf_(f),(int)((unsigned char)(c))):(int)(*_sf_(f)->_next++=(unsigned char)(c)))
-	#define getc(f)		(_sf_(f)->_next>=_sf_(f)->_endr?(int)_sffilbuf(_sf_(f),0):(int)(*_sf_(f)->_next++))
+	#define feof(f)		(_sf_(f)->flags&_SFIO_EOF)
+	#define ferror(f)	(_sf_(f)->flags&_SFIO_ERROR)
+	#define fileno(f)	(_sf_(f)->file)
+	#define fputc(c,f)	(_sf_(f)->next>=_sf_(f)->endw?(int)_sfflsbuf(_sf_(f),(int)((unsigned char)(c))):(int)(*_sf_(f)->next++=(unsigned char)(c)))
+	#define getc(f)		(_sf_(f)->next>=_sf_(f)->endr?(int)_sffilbuf(_sf_(f),0):(int)(*_sf_(f)->next++))
 	#define getchar()	getc(stdin)
 	#define putc(c,f)	fputc(c,f)
 	#define putchar(c)	fputc(c,stdout)

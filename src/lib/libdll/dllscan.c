@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1997-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -89,7 +89,7 @@ dllinfo(void)
 	char*			p;
 	ptrdiff_t		vn;
 	size_t			dn;
-	size_t			pn;
+	size_t			pn = 0;
 	char			pat[256];
 
 	static Dllinfo_t	info;

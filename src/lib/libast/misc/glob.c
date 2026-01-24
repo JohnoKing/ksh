@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -310,8 +310,8 @@ glob_dir(glob_t* gp, globlist_t* ap, regflags_t re_flags)
 	regex_t		rec;
 	regex_t		rei;
 	int		notdir;
-	ptrdiff_t	t1;
-	ptrdiff_t	t2;
+	ptrdiff_t	t1 = 0;
+	ptrdiff_t	t2 = 0;
 	int		bracket;
 
 	int		anymeta = ap->gl_flags & MATCH_META;

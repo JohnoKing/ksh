@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -26,17 +26,6 @@
 /*	Internal definitions for sfio.
 **	Written by Kiem-Phong Vo
 */
-
-#define _next		next
-#define _endw		endw
-#define _endr		endr
-#define _endb		endb
-#define _push		push
-#define _flags		flags
-#define _file		file
-#define _data		data
-#define _size		size
-#define _val		val
 
 #include	"FEATURE/sfio"
 #include	"FEATURE/mmap"

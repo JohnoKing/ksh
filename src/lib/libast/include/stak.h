@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -14,6 +14,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                   Phong Vo <kpv@research.att.com>                    *
 *                  Martijn Dekker <martijn@inlv.org>                   *
+*            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
 /*
@@ -37,7 +38,7 @@
 #define staktell()		stktell(stkstd)
 #define stakputc(c)		sfputc(stkstd,(c))
 #define stakwrite(b,n)		sfwrite(stkstd,(b),(n))
-#define stakputs(s)		(sfputr(stkstd,(s),0),--stkstd->_next)
+#define stakputs(s)		(sfputr(stkstd,(s),0),--stkstd->next)
 #define stakseek(n)		((char*)stkseek(stkstd,n))
 #define stakcreate(n)		stkopen(n)
 #define stakinstall(s,f)	stkinstall(s,f)
