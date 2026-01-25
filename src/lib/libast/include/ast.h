@@ -409,6 +409,15 @@ extern size_t		utf32toutf8(char*, uint32_t);
 #endif /* !AST_NOMULTIBYTE */
 
 /*
+ * Some implementations of faccessat (i.e. glibc) are faster
+ * than eaccess.
+ */
+#if _lib_faccessat
+#undef eaccess
+#define eaccess(p,m)	faccessat(AT_FDCWD,p,m,AT_EACCESS)
+#endif
+
+/*
  * Depending on the implementation, close(2) must either:
  *   - *Never* be used after EINTR (vide Linux man pages).
  *   - *Always* be used after EINTR (that's the generic fallback).

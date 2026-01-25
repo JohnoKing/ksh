@@ -35,7 +35,7 @@ lib	clone,spawn,spawnve
 lib	strcoll,strlcat,strlcpy,stpcpy
 lib	strmode,strxfrm,strftime,sysconf,sysinfo
 lib	tzset,universe,utime
-lib	ftruncate
+lib	faccessat,ftruncate
 
 lib,npt	strtod,strtold,strtol,strtoll,strtoul,strtoull stdlib.h
 lib,npt	sigflag signal.h
