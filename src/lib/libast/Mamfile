@@ -1411,6 +1411,7 @@ make install virtual
 		make setlocale.o
 			make comp/setlocale.c
 				prev ast_standards.h
+				prev FEATURE/locale
 				prev port/lclib.h
 				prev ast_wchar.h
 				prev ast_iconv.h

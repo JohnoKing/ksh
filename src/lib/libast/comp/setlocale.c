@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -28,6 +28,7 @@
 #include <ast_standards.h>
 
 #include "lclib.h"
+#include "FEATURE/locale"
 
 #include <ast_wchar.h>
 #include <ctype.h>
@@ -2368,7 +2369,7 @@ single(int category, Lc_t* lc, unsigned int flags)
 	}
 	if (!lc && (!(lc_categories[category].flags & LC_setlocale) || !(lc = lc_categories[category].prev)) && !(lc = lc_all) && !(lc = lc_categories[category].prev) && !(lc = lang))
 		lc = lcmake(NULL);
-	sys = 0;
+	sys = NULL;
 	if (locales[category] != lc)
 	{
 		if (lc_categories[category].external == -lc_categories[category].internal)
@@ -2381,7 +2382,22 @@ single(int category, Lc_t* lc, unsigned int flags)
 				}
 		}
 		else if (lc->flags & (LC_debug|LC_local))
-			sys = setlocale(lc_categories[category].external, lcmake(NULL)->name);
+		{
+			/*
+			 * Set either C or C.UTF-8 for the actual native locale
+			 * underlying the AST locale on top of it (e.g., tell the
+			 * native setlocale(3) to make the underlying locale C.UTF-8
+			 * if we want to use the nonstandard C_EU.UTF-8).
+			 */
+#if _have_native_c_utf8
+			/* Try C.UTF-8 first if we need UTF-8 support for the locale */
+			if(lc->flags & LC_utf8)
+				sys = setlocale(lc_categories[category].external, "C.UTF-8");
+#endif
+			/* Fallback if the above didn't work (or if we aren't using a UTF-8 locale) */
+			if(!sys)
+				sys = setlocale(lc_categories[category].external, lcmake(NULL)->name);
+		}
 		else if (!(sys = setlocale(lc_categories[category].external, lc->name)) &&
 			 (streq(lc->name, lc->code) || !(sys = setlocale(lc_categories[category].external, lc->code))) &&
 			 !streq(lc->code, lc->language->code))
