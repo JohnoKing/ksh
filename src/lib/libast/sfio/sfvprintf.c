@@ -83,7 +83,10 @@ ptrdiff_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 	char		*sp, *ssp, *endsp, *ep, *endep;
 	int		dot, sign, decpt;
 	int		scale;
-	ptrdiff_t	k, v, w, n, n_s, n_w, base, precis, width, q, size;
+	ptrdiff_t	k, v, w, n, n_s, base, precis, width, q, size;
+#if _has_multibyte
+	ptrdiff_t	n_w;
+#endif
 	Sfdouble_t	dval;
 	void*		valp;
 	char		*tls[2], **ls;	/* for %..[separ]s		*/
