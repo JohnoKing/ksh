@@ -58,7 +58,7 @@ Change in the number of warnings on Linux when compiling with clang using
 4,042 => 3,797 => 86 (progression from d462de66 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
-(although it can be used on it's own). The full suite of
+(although it can be used on its own). The full suite of
 changes can be found on the thickfold-size_t branch.
 This first part has been submitted severed from the other
 changes to make code review less laborious (I hope).
