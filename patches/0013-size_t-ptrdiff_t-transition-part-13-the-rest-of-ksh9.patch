@@ -1,6 +1,6 @@
-From d32f9ce8e54f80cdba3f1a290ccdc778c2efb1d9 Mon Sep 17 00:00:00 2001
+From c8f79c7f055e428d4211bec70c5d80ad4ddc387c Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:55 -0700
+Date: Wed, 28 Jan 2026 21:34:16 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -35,7 +35,8 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-555 => 248 (progression from part 12 => part 13)
+396 => 86 (progression from part 12 => part 13)
+
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 Some, like those pertaining to getrlimit(2), are bugs in the underlying operating
 system and cannot be fixed.
@@ -48,39 +49,38 @@ Fixes https://github.com/ksh93/ksh/issues/592
  NEWS                            |   4 ++
  src/cmd/ksh93/builtins.mm       |   4 +-
  src/cmd/ksh93/include/argnod.h  |   4 +-
- src/cmd/ksh93/include/jobs.h    |   6 +-
+ src/cmd/ksh93/include/jobs.h    |   8 +--
  src/cmd/ksh93/include/path.h    |  10 +--
  src/cmd/ksh93/include/streval.h |  16 ++---
- src/cmd/ksh93/sh/args.c         |  44 +++++++------
- src/cmd/ksh93/sh/arith.c        |  26 ++++----
- src/cmd/ksh93/sh/deparse.c      |  27 ++++----
- src/cmd/ksh93/sh/expand.c       |  25 +++----
- src/cmd/ksh93/sh/fault.c        |  42 ++++++------
- src/cmd/ksh93/sh/io.c           | 108 ++++++++++++++++---------------
- src/cmd/ksh93/sh/jobs.c         |  43 ++++++-------
+ src/cmd/ksh93/sh/args.c         |  46 +++++++------
+ src/cmd/ksh93/sh/arith.c        |  28 ++++----
+ src/cmd/ksh93/sh/deparse.c      |  29 ++++----
+ src/cmd/ksh93/sh/expand.c       |  27 ++++----
+ src/cmd/ksh93/sh/fault.c        |  44 ++++++------
+ src/cmd/ksh93/sh/io.c           | 110 +++++++++++++++---------------
+ src/cmd/ksh93/sh/jobs.c         |  45 ++++++-------
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         |  98 +++++++++++++++-------------
- src/cmd/ksh93/sh/streval.c      |  51 ++++++++-------
- src/cmd/ksh93/sh/xec.c          | 111 +++++++++++++++++---------------
- src/cmd/ksh93/tests/basic.sh    |  26 +++++++-
- src/cmd/ksh93/tests/subshell.sh |   2 +-
- 19 files changed, 363 insertions(+), 305 deletions(-)
+ src/cmd/ksh93/sh/path.c         |  98 ++++++++++++++-------------
+ src/cmd/ksh93/sh/streval.c      |  51 +++++++-------
+ src/cmd/ksh93/sh/xec.c          | 115 +++++++++++++++++---------------
+ src/cmd/ksh93/tests/basic.sh    |  24 +++++++
+ 18 files changed, 371 insertions(+), 313 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 81c063c04..0410b8a0a 100644
+index 581e68548..5785d9d3c 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
- For full details, see the git log at: https://github.com/ksh93/ksh
- Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2025-06-16:
-+
+ 2026-01-28:
+ 
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2025-06-14:
- 
- - Fixed a bug occurring on systems with posix_spawn(3), spawnve(2), and
++2026-01-28:
++
+ - [v1.1] Backported 'builtin -p' and 'umask -p' from ksh93v-, which
+   can be used to print reinputtable commands for recreating the builtin
+   table state and umask.
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -97,7 +97,7 @@ index d9ef1dd96..64913fcc2 100644
          	savebase = stkfreeze(stkstd,0);
          \fR...\fP
 diff --git a/src/cmd/ksh93/include/argnod.h b/src/cmd/ksh93/include/argnod.h
-index 400fc91d9..361cc0559 100644
+index 400fc91d9..d355318b3 100644
 --- a/src/cmd/ksh93/include/argnod.h
 +++ b/src/cmd/ksh93/include/argnod.h
 @@ -2,7 +2,7 @@
@@ -105,7 +105,7 @@ index 400fc91d9..361cc0559 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -119,9 +119,18 @@ index 400fc91d9..361cc0559 100644
  };
  
 diff --git a/src/cmd/ksh93/include/jobs.h b/src/cmd/ksh93/include/jobs.h
-index 6de9e2917..26209232f 100644
+index 6de9e2917..01d268e47 100644
 --- a/src/cmd/ksh93/include/jobs.h
 +++ b/src/cmd/ksh93/include/jobs.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -59,6 +59,7 @@ struct jobs
  {
  	struct process	*pwlist;	/* head of process list */
@@ -147,7 +156,7 @@ index 6de9e2917..26209232f 100644
  
  /* flags for joblist */
 diff --git a/src/cmd/ksh93/include/path.h b/src/cmd/ksh93/include/path.h
-index 8c4882a75..e24219f37 100644
+index 8c4882a75..96dc1babe 100644
 --- a/src/cmd/ksh93/include/path.h
 +++ b/src/cmd/ksh93/include/path.h
 @@ -2,7 +2,7 @@
@@ -155,7 +164,7 @@ index 8c4882a75..e24219f37 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -190,7 +199,7 @@ index 8c4882a75..e24219f37 100644
  
  #if SHOPT_DYNAMIC
 diff --git a/src/cmd/ksh93/include/streval.h b/src/cmd/ksh93/include/streval.h
-index af67a5789..9fdc02677 100644
+index af67a5789..46dd3972c 100644
 --- a/src/cmd/ksh93/include/streval.h
 +++ b/src/cmd/ksh93/include/streval.h
 @@ -2,7 +2,7 @@
@@ -198,7 +207,7 @@ index af67a5789..9fdc02677 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -235,9 +244,18 @@ index af67a5789..9fdc02677 100644
  #define ARITH_COMP	04	/* set when compile separate from execute */
  #define ARITH_ASSIGNOP	010	/* set during assignment operators */
 diff --git a/src/cmd/ksh93/sh/args.c b/src/cmd/ksh93/sh/args.c
-index 99d22f686..f193c85ae 100644
+index 99d22f686..c992ea6ce 100644
 --- a/src/cmd/ksh93/sh/args.c
 +++ b/src/cmd/ksh93/sh/args.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -57,7 +57,7 @@ static  const char optksh[] =
  	"H"
  #endif
@@ -388,9 +406,18 @@ index 99d22f686..f193c85ae 100644
  	sh.subshell = savesubshell;
  	job.jobcontrol = savejobcontrol;
 diff --git a/src/cmd/ksh93/sh/arith.c b/src/cmd/ksh93/sh/arith.c
-index ebfcd7c41..b1de318e8 100644
+index ebfcd7c41..094316c40 100644
 --- a/src/cmd/ksh93/sh/arith.c
 +++ b/src/cmd/ksh93/sh/arith.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -74,9 +74,9 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
  	lvalue->ovalue = 0;
  	if(cp>=lvalue->expr &&  cp < lvalue->expr+lvalue->elen)
@@ -484,9 +511,18 @@ index ebfcd7c41..b1de318e8 100644
  					Sfdouble_t rr;
  					rr = strtold(val,&str);
 diff --git a/src/cmd/ksh93/sh/deparse.c b/src/cmd/ksh93/sh/deparse.c
-index a43aa01b2..551fad977 100644
+index a43aa01b2..b06911a28 100644
 --- a/src/cmd/ksh93/sh/deparse.c
 +++ b/src/cmd/ksh93/sh/deparse.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -111,7 +111,7 @@ static void p_tree(const Shnode_t *t,int tflags)
  
  		case TCOM:
@@ -597,9 +633,18 @@ index a43aa01b2..551fad977 100644
  		sfseek(infile=sh.heredocs,iop->iooffset,SEEK_SET);
  	sfmove(infile,outfile,iop->iosize,-1);
 diff --git a/src/cmd/ksh93/sh/expand.c b/src/cmd/ksh93/sh/expand.c
-index e5fd8fd49..9fe685aff 100644
+index e5fd8fd49..140eed4bf 100644
 --- a/src/cmd/ksh93/sh/expand.c
 +++ b/src/cmd/ksh93/sh/expand.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -36,8 +36,8 @@
  
  #define argbegin	argnxt.cp
@@ -695,9 +740,18 @@ index e5fd8fd49..9fe685aff 100644
  			}
  			else
 diff --git a/src/cmd/ksh93/sh/fault.c b/src/cmd/ksh93/sh/fault.c
-index 950c6f08b..a3d7cdebd 100644
+index 950c6f08b..1ce98bc6b 100644
 --- a/src/cmd/ksh93/sh/fault.c
 +++ b/src/cmd/ksh93/sh/fault.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -95,7 +95,7 @@ void	sh_fault(int sig)
  		if(flag&SH_SIGIGNORE)
  		{
@@ -839,7 +893,7 @@ index 950c6f08b..a3d7cdebd 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 0fa7cf2ff..60bb767f5 100644
+index 78a2ad9ef..23b94852a 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -384,7 +384,7 @@ struct Match
@@ -1111,6 +1165,15 @@ index 0fa7cf2ff..60bb767f5 100644
  #if SHOPT_ESH || SHOPT_VSH
  				if(!sh_isoption(SH_HISTVERIFY) || readf==ed_read)
  #endif /* SHOPT_ESH || SHOPT_VSH */
+@@ -2130,7 +2135,7 @@ int sh_iocheckfd(int fd)
+ 			S_ISSOCK(statb.st_mode) ||
+ #endif /* S_ISSOCK */
+ 			/* The following is for sockets on the sgi */
+-			(statb.st_ino==0 && (statb.st_mode & ~(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH|S_ISUID|S_ISGID))==0) ||
++			(statb.st_ino==0 && (statb.st_mode & (mode_t)~(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH|S_ISUID|S_ISGID))==0) ||
+ 			(S_ISCHR(statb.st_mode) && (statb.st_ino!=null_ino || statb.st_dev!=null_dev))
+ 		))
+ 			n |= IONOSEEK;
 @@ -2192,8 +2197,8 @@ static int	io_prompt(Sfio_t *iop,int flag)
  		{
  			/* PS2 prompt. Save stack state to avoid corrupting command substitutions
@@ -1214,9 +1277,18 @@ index 0fa7cf2ff..60bb767f5 100644
  	}
  	return sp;
 diff --git a/src/cmd/ksh93/sh/jobs.c b/src/cmd/ksh93/sh/jobs.c
-index f98d273b3..5cb002d05 100644
+index f98d273b3..39acdc9e8 100644
 --- a/src/cmd/ksh93/sh/jobs.c
 +++ b/src/cmd/ksh93/sh/jobs.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -91,10 +91,7 @@ pid_t	pid_fromstring(char *str)
  	pid_t	pid;
  	char	*last;
@@ -1352,10 +1424,10 @@ index f98d273b3..5cb002d05 100644
  		{
  			pw->p_flag |= (P_SIGNALLED|P_STOPPED);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
-index b52b149e6..ea8f5d92f 100644
+index c7b94cacf..fc61c1f03 100644
 --- a/src/cmd/ksh93/sh/main.c
 +++ b/src/cmd/ksh93/sh/main.c
-@@ -98,6 +98,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
+@@ -102,6 +102,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
  	Sfio_t		*iop;
  	struct stat	statb;
  	int		i;
@@ -1363,7 +1435,7 @@ index b52b149e6..ea8f5d92f 100644
  	int		rshflag;	/* set for restricted shell */
  	char		*command;
  #ifdef	_hdr_nc
-@@ -154,8 +155,8 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
+@@ -162,8 +163,8 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
  		if(!sh_isoption(SH_RC) && !fstat(0, &statb) && REMOTE(statb.st_mode))
  			sh_onoption(SH_RC);
  #endif
@@ -1374,7 +1446,7 @@ index b52b149e6..ea8f5d92f 100644
  		if(sh_isoption(SH_INTERACTIVE))
  		{
  #ifdef SIGXCPU
-@@ -614,7 +615,7 @@ static void chkmail(char *files)
+@@ -640,7 +641,7 @@ static void chkmail(char *files)
  	char		*cp,*sp,*qp;
  	char		save;
  	struct argnod	*arglist=0;
@@ -1383,7 +1455,7 @@ index b52b149e6..ea8f5d92f 100644
  	char	 	*savstak = stkptr(sh.stk,0);
  	struct stat	statb;
  	if(*(cp=files) == 0)
-@@ -707,8 +708,8 @@ static void fixargs(char **argv, int mode)
+@@ -733,8 +734,8 @@ static void fixargs(char **argv, int mode)
  {
  #   if PSTAT
  	char *cp;
@@ -1394,7 +1466,7 @@ index b52b149e6..ea8f5d92f 100644
  	char *buff;
  	union pstun un;
  	if(mode==0)
-@@ -720,7 +721,7 @@ static void fixargs(char **argv, int mode)
+@@ -746,7 +747,7 @@ static void fixargs(char **argv, int mode)
  		command_len = st.command_length;
  		return;
  	}
@@ -1403,7 +1475,7 @@ index b52b149e6..ea8f5d92f 100644
  	buff = stkseek(sh.stk,0);
  	if(command_len==0)
  		return;
-@@ -739,7 +740,7 @@ static void fixargs(char **argv, int mode)
+@@ -765,7 +766,7 @@ static void fixargs(char **argv, int mode)
  #   elif _lib_setproctitle
  #	define CMDMAXLEN 255
  	char *cp;
@@ -1412,7 +1484,7 @@ index b52b149e6..ea8f5d92f 100644
  	char buff[CMDMAXLEN + 1];
  	if(mode==0)
  		return;
-@@ -757,12 +758,12 @@ static void fixargs(char **argv, int mode)
+@@ -783,12 +784,12 @@ static void fixargs(char **argv, int mode)
  #   else
  	/* Generic version, works on at least Linux and macOS */
  	char *cp;
@@ -1429,7 +1501,7 @@ index b52b149e6..ea8f5d92f 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index 29b21a69c..ca83f47ea 100644
+index eb568c3bc..b3e6c7727 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1441,7 +1513,7 @@ index 29b21a69c..ca83f47ea 100644
 +static noreturn void 	exscript(char*, char*[]);
 +static int		checkdotpaths(Pathcomp_t*,Pathcomp_t*,Pathcomp_t*,ptrdiff_t);
  static void		checkdup(Pathcomp_t*);
- static Pathcomp_t	*defpathinit(void);
+ static Pathcomp_t	*defpath(void);
  
 @@ -111,8 +111,9 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
  	char *cp, **av, **xv;
@@ -1482,7 +1554,7 @@ index 29b21a69c..ca83f47ea 100644
  		sfputr(sh.stk,name,0);
  		checkdotpaths(first,0,pp,offset);
  		stkseek(sh.stk,offset);
-@@ -537,7 +538,8 @@ static void funload(int fno, const char *name)
+@@ -540,7 +541,8 @@ static void funload(int fno, const char *name)
  	Namval_t	*np, *np_loopdetect;
  	static Dt_t	*loopdetect_tree;
  	struct Ufunction *rp,*rpfirst;
@@ -1492,7 +1564,7 @@ index 29b21a69c..ca83f47ea 100644
  	pname = path_fullname(stkptr(sh.stk,PATH_OFFSET));
  	if(sh.fpathdict && (rp = dtmatch(sh.fpathdict,pname)))
  	{
-@@ -738,7 +740,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -741,7 +743,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  		{
  #if SHOPT_DYNAMIC
  			Shbltin_f addr;
@@ -1501,7 +1573,7 @@ index 29b21a69c..ca83f47ea 100644
  #endif
  			/* Handle default path-bound builtins */
  			if(*stkptr(sh.stk,PATH_OFFSET)=='/' && nv_search(stkptr(sh.stk,PATH_OFFSET),sh.bltin_tree,0))
-@@ -760,7 +762,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -763,7 +765,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  			{
  				char *fp;
  				void *dll;
@@ -1510,7 +1582,7 @@ index 29b21a69c..ca83f47ea 100644
  				if(fp = strchr(bp, ':'))
  				{
  					*fp++ = 0;
-@@ -838,7 +840,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -841,7 +843,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  		}
  		else if(f>=0 && (oldpp->flags & PATH_STD_DIR))
  		{
@@ -1519,7 +1591,7 @@ index 29b21a69c..ca83f47ea 100644
  			sfputr(sh.stk,"/bin/",-1);
  			sfputr(sh.stk,name,0);
  			np = nv_search(stkptr(sh.stk,n),sh.bltin_tree,0);
-@@ -896,7 +898,7 @@ static int canexecute(char *path, int isfun)
+@@ -899,7 +901,7 @@ static int canexecute(char *path, int isfun)
  		char *cp;
  		if(errno==ENOENT && (!(cp=strrchr(path,'.')) || strlen(cp)>4 || strchr(cp,'/')))
  		{
@@ -1528,7 +1600,7 @@ index 29b21a69c..ca83f47ea 100644
  			stkseek(sh.stk,offset);
  			sfputr(sh.stk,".bat",0);
  			path = stkptr(sh.stk,PATH_OFFSET);
-@@ -1043,7 +1045,8 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1046,7 +1048,8 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  	char		**xp=0, *xval, *libenv = (libpath?libpath->lib:0);
  	Namval_t*	np;
  	char		*s, *v;
@@ -1538,7 +1610,7 @@ index 29b21a69c..ca83f47ea 100644
  	pid_t		pid= -1;
  	if(!sh_isstate(SH_EXEC) && nv_search(opath,sh.bltin_tree,0))
  	{
-@@ -1074,31 +1077,33 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1077,31 +1080,33 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  		/* check for symlink and use symlink name */
  		char buff[PATH_MAX+1];
  		char save[PATH_MAX+1];
@@ -1583,7 +1655,7 @@ index 29b21a69c..ca83f47ea 100644
  					break;
  				}
  			}
-@@ -1110,7 +1115,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1113,7 +1118,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  	/* end of: ^^^ save original pathname */
  	if(libenv && (v = strchr(libenv,'=')))
  	{
@@ -1592,7 +1664,7 @@ index 29b21a69c..ca83f47ea 100644
  		*v = 0;
  		np = nv_open(libenv,sh.var_tree,0);
  		*v = '=';
-@@ -1126,7 +1131,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1129,7 +1134,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  		xp = envp + 1;
  		while (s = *xp++)
  		{
@@ -1601,7 +1673,7 @@ index 29b21a69c..ca83f47ea 100644
  			{
  				xval = *--xp;
  				*xp = v;
-@@ -1282,7 +1287,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1285,7 +1290,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  		errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_exec,path);
  		UNREACHABLE();
  	}
@@ -1610,7 +1682,7 @@ index 29b21a69c..ca83f47ea 100644
  }
  
  /*
-@@ -1451,13 +1456,14 @@ static noreturn void exscript(char *path,char *argv[])
+@@ -1454,13 +1459,14 @@ static noreturn void exscript(char *path,char *argv[])
  static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, int flag)
  {
  	Pathcomp_t *pp, *oldpp;
@@ -1627,7 +1699,7 @@ index 29b21a69c..ca83f47ea 100644
  		sfputc(sh.stk,0);
  		stkseek(sh.stk,offset);
  		name = (const char*)stkptr(sh.stk,offset);
-@@ -1499,12 +1505,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
+@@ -1502,12 +1508,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
   * This function checks for the .paths file in directory in <pp>
   * it assumes that the directory is on the stack at <offset>
   */
@@ -1645,7 +1717,7 @@ index 29b21a69c..ca83f47ea 100644
  	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
  		stkseek(sh.stk,offset);
  	sfputr(sh.stk,"/.paths",0);
-@@ -1517,11 +1525,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1520,11 +1528,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			close(fd);
  			return 0;
  		}
@@ -1661,7 +1733,7 @@ index 29b21a69c..ca83f47ea 100644
  		sp[n] = 0;
  		close(fd);
  		for(ep=0; n--; cp++)
-@@ -1540,17 +1548,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1543,17 +1551,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
  			*cp = 0;
  			m = ep ? (ep-sp) : 0;
@@ -1682,7 +1754,7 @@ index 29b21a69c..ca83f47ea 100644
  			{
  				if(pp->bbuf)
  					free(pp->bbuf);
-@@ -1558,10 +1566,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1561,10 +1569,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
  			else if(m)
  			{
@@ -1696,7 +1768,7 @@ index 29b21a69c..ca83f47ea 100644
  				strcpy(&pp->lib[k+1],ep);
  				pathcanon(&pp->lib[m],0);
  				if(!first)
-@@ -1584,7 +1592,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
+@@ -1587,7 +1595,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
  {
  	const char *cp;
  	Pathcomp_t *old=0;
@@ -1705,7 +1777,7 @@ index 29b21a69c..ca83f47ea 100644
  	char *savptr = NULL;
  	if(!path && type!=PATH_PATH)
  		return first;
-@@ -1690,7 +1698,7 @@ void path_newdir(Pathcomp_t *first)
+@@ -1693,7 +1701,7 @@ void path_newdir(Pathcomp_t *first)
  		if((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH)
  		{
  			/* try to insert .paths component */
@@ -1714,7 +1786,7 @@ index 29b21a69c..ca83f47ea 100644
  			sfputr(sh.stk,pp->name,0);
  			stkseek(sh.stk,offset);
  			next = pp->next;
-@@ -1815,7 +1823,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
+@@ -1818,7 +1826,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
  		path_nextcomp(pp,name,pp);
  		sp = stkptr(sh.stk,PATH_OFFSET);
  		if(sp && lstat(sp,&statb)>=0 && S_ISLNK(statb.st_mode))
@@ -1724,7 +1796,7 @@ index 29b21a69c..ca83f47ea 100644
  			nv_setsize(np,0);
  	}
 diff --git a/src/cmd/ksh93/sh/streval.c b/src/cmd/ksh93/sh/streval.c
-index 1e77d44f8..02a646ea5 100644
+index 1e77d44f8..77e67ea84 100644
 --- a/src/cmd/ksh93/sh/streval.c
 +++ b/src/cmd/ksh93/sh/streval.c
 @@ -2,7 +2,7 @@
@@ -1732,7 +1804,7 @@ index 1e77d44f8..02a646ea5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1921,9 +1993,18 @@ index 1e77d44f8..02a646ea5 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index 1f78e3a73..9d046bb0d 100644
+index 1f78e3a73..c3fd21a7f 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -152,10 +152,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
   */
  static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
@@ -2079,6 +2160,15 @@ index 1f78e3a73..9d046bb0d 100644
  			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
  			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  			if(sh.subshell && !sh.subshare)
+@@ -1651,7 +1658,7 @@ int sh_exec(const Shnode_t *t, int flags)
+ 				for (i = t->fork.forkio; i; i = i->ionxt)
+ 				{
+ 					unsigned f = i->iofile;
+-					if ((f & ~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
++					if ((f & (unsigned)~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
+ 					{
+ 						sh_subfork();
+ 						break;
 @@ -1698,7 +1705,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				free_list(buffp->olist);
  			if(type&FPIN)
@@ -2298,18 +2388,9 @@ index 1f78e3a73..9d046bb0d 100644
  	Namval_t	node;
  	struct Namref	nr;
 diff --git a/src/cmd/ksh93/tests/basic.sh b/src/cmd/ksh93/tests/basic.sh
-index 9e503a906..abee7c887 100755
+index 97dfebbc2..e747ddc18 100755
 --- a/src/cmd/ksh93/tests/basic.sh
 +++ b/src/cmd/ksh93/tests/basic.sh
-@@ -2,7 +2,7 @@
- #                                                                      #
- #               This software is part of the ast package               #
- #          Copyright (c) 1982-2012 AT&T Intellectual Property          #
--#          Copyright (c) 2020-2024 Contributors to ksh 93u+m           #
-+#          Copyright (c) 2020-2025 Contributors to ksh 93u+m           #
- #                      and is licensed under the                       #
- #                 Eclipse Public License, Version 2.0                  #
- #                                                                      #
 @@ -957,6 +957,30 @@ for t in {A..Z}; do
  	[[ $? == 1 ]] || err_exit "'trap' throws segfault when given invalid signal name '$t'"
  done
@@ -2341,19 +2422,6 @@ index 9e503a906..abee7c887 100755
  # ======
  # Is an invalid flag handled correctly?
  # ksh2020 regression: https://github.com/att/ast/issues/1284
-diff --git a/src/cmd/ksh93/tests/subshell.sh b/src/cmd/ksh93/tests/subshell.sh
-index 911ee07a5..32d1d29f8 100755
---- a/src/cmd/ksh93/tests/subshell.sh
-+++ b/src/cmd/ksh93/tests/subshell.sh
-@@ -2,7 +2,7 @@
- #                                                                      #
- #               This software is part of the ast package               #
- #          Copyright (c) 1982-2012 AT&T Intellectual Property          #
--#          Copyright (c) 2020-2024 Contributors to ksh 93u+m           #
-+#          Copyright (c) 2020-2025 Contributors to ksh 93u+m           #
- #                      and is licensed under the                       #
- #                 Eclipse Public License, Version 2.0                  #
- #                                                                      #
 -- 
-2.49.0
+2.52.0
 

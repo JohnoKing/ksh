@@ -1,6 +1,6 @@
-From 517797a8c58de4bcf0379fdaf400205d017fd384 Mon Sep 17 00:00:00 2001
+From e9fb9e276ebb1288cbd4cbcf6e1c9769a2aec33d Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
+Date: Wed, 28 Jan 2026 21:34:01 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -24,51 +24,73 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,752 => 1,359 => 248 (progression from part 6 => part 7 => part 13)
+1,612 => 1,216 => 86 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libcmd/basename.c |   6 +-
- src/lib/libcmd/cat.c      |  37 +++++-----
- src/lib/libcmd/chgrp.c    |  57 ++++++++--------
- src/lib/libcmd/chmod.c    |  25 ++++---
- src/lib/libcmd/cksum.c    |  28 ++++----
- src/lib/libcmd/cmp.c      |  14 ++--
- src/lib/libcmd/comm.c     |  12 ++--
- src/lib/libcmd/context.c  |  31 +++++----
- src/lib/libcmd/cp.c       |  58 ++++++++--------
- src/lib/libcmd/cut.c      | 103 ++++++++++++++--------------
- src/lib/libcmd/date.c     |  14 ++--
- src/lib/libcmd/dirname.c  |   2 +-
- src/lib/libcmd/expr.c     |  21 +++---
- src/lib/libcmd/fds.c      |  15 ++--
- src/lib/libcmd/fmt.c      |  28 ++++----
- src/lib/libcmd/fold.c     |  20 +++---
- src/lib/libcmd/getconf.c  |   4 +-
- src/lib/libcmd/grep.c     |  70 ++++++++++---------
- src/lib/libcmd/id.c       |  18 ++---
- src/lib/libcmd/join.c     | 140 +++++++++++++++++++-------------------
- src/lib/libcmd/logname.c  |   2 +-
- src/lib/libcmd/mkdir.c    |   8 +--
- src/lib/libcmd/mktemp.c   |   4 +-
- src/lib/libcmd/paste.c    |  28 ++++----
- src/lib/libcmd/pathchk.c  |   4 +-
- src/lib/libcmd/rev.c      |  10 +--
- src/lib/libcmd/rev.h      |   5 +-
- src/lib/libcmd/revlib.c   |  15 ++--
- src/lib/libcmd/rm.c       |  10 +--
- src/lib/libcmd/stty.c     |  58 ++++++++--------
- src/lib/libcmd/tail.c     |  38 +++++------
- src/lib/libcmd/tee.c      |   6 +-
- src/lib/libcmd/uname.c    |   4 +-
- src/lib/libcmd/uniq.c     |  37 +++++-----
- src/lib/libcmd/wclib.c    |  32 ++++-----
- 35 files changed, 490 insertions(+), 474 deletions(-)
+ src/lib/libast/include/recfmt.h |   1 +
+ src/lib/libcmd/basename.c       |   8 +-
+ src/lib/libcmd/cat.c            |  39 ++++-----
+ src/lib/libcmd/chgrp.c          |  59 +++++++------
+ src/lib/libcmd/chmod.c          |  27 +++---
+ src/lib/libcmd/cksum.c          |  30 +++----
+ src/lib/libcmd/cmp.c            |  16 ++--
+ src/lib/libcmd/comm.c           |  14 ++--
+ src/lib/libcmd/context.c        |  33 ++++----
+ src/lib/libcmd/cp.c             |  60 +++++++-------
+ src/lib/libcmd/cut.c            | 105 +++++++++++------------
+ src/lib/libcmd/date.c           |  16 ++--
+ src/lib/libcmd/dirname.c        |   4 +-
+ src/lib/libcmd/expr.c           |  23 +++---
+ src/lib/libcmd/fds.c            |  17 ++--
+ src/lib/libcmd/fmt.c            |  30 +++----
+ src/lib/libcmd/fold.c           |  22 ++---
+ src/lib/libcmd/getconf.c        |   6 +-
+ src/lib/libcmd/grep.c           |  74 +++++++++--------
+ src/lib/libcmd/id.c             |  20 ++---
+ src/lib/libcmd/join.c           | 142 ++++++++++++++++----------------
+ src/lib/libcmd/logname.c        |   4 +-
+ src/lib/libcmd/mkdir.c          |  10 +--
+ src/lib/libcmd/mktemp.c         |   6 +-
+ src/lib/libcmd/paste.c          |  30 +++----
+ src/lib/libcmd/pathchk.c        |   6 +-
+ src/lib/libcmd/rev.c            |  12 +--
+ src/lib/libcmd/rev.h            |   5 +-
+ src/lib/libcmd/revlib.c         |  15 ++--
+ src/lib/libcmd/rm.c             |  12 +--
+ src/lib/libcmd/stty.c           |  66 ++++++++-------
+ src/lib/libcmd/tail.c           |  40 ++++-----
+ src/lib/libcmd/tee.c            |   8 +-
+ src/lib/libcmd/uname.c          |   6 +-
+ src/lib/libcmd/uniq.c           |  39 +++++----
+ src/lib/libcmd/wclib.c          |  34 ++++----
+ 36 files changed, 528 insertions(+), 511 deletions(-)
 
+diff --git a/src/lib/libast/include/recfmt.h b/src/lib/libast/include/recfmt.h
+index d26ad6648..3be06b27d 100644
+--- a/src/lib/libast/include/recfmt.h
++++ b/src/lib/libast/include/recfmt.h
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
-index 9377f9bdb..91b54cb33 100644
+index 9377f9bdb..c1130cb9b 100644
 --- a/src/lib/libcmd/basename.c
 +++ b/src/lib/libcmd/basename.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -69,7 +69,7 @@ static const char usage[] =
  static void namebase(Sfio_t *outfile, char *pathname, char *suffix, char termch)
  {
@@ -96,9 +118,18 @@ index 9377f9bdb..91b54cb33 100644
  }
  
 diff --git a/src/lib/libcmd/cat.c b/src/lib/libcmd/cat.c
-index ed91813c4..57a59ad1b 100644
+index ed91813c4..7eb113d91 100644
 --- a/src/lib/libcmd/cat.c
 +++ b/src/lib/libcmd/cat.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -126,14 +126,15 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
  	unsigned char*	end;
  	unsigned char*	buf;
@@ -230,9 +261,18 @@ index ed91813c4..57a59ad1b 100644
  			n = vcat(states, fp, sfstdout, reserve, flags);
  		else if (sfmove(fp, sfstdout, SFIO_UNBOUND, -1) >= 0 && sfeof(fp))
 diff --git a/src/lib/libcmd/chgrp.c b/src/lib/libcmd/chgrp.c
-index 30957f958..dbac5303f 100644
+index 30957f958..741f01454 100644
 --- a/src/lib/libcmd/chgrp.c
 +++ b/src/lib/libcmd/chgrp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -140,61 +140,60 @@ static void
  getids(char* s, char** e, Key_t* key, int options)
  {
@@ -390,9 +430,18 @@ index 30957f958..dbac5303f 100644
  			}
  			break;
 diff --git a/src/lib/libcmd/chmod.c b/src/lib/libcmd/chmod.c
-index 49343b46b..49fa0e5da 100644
+index 49343b46b..5c26c20e9 100644
 --- a/src/lib/libcmd/chmod.c
 +++ b/src/lib/libcmd/chmod.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -24,6 +24,16 @@
   * chmod
   */
@@ -447,9 +496,18 @@ index 49343b46b..49fa0e5da 100644
  	int		chlink = 0;
  	struct stat	st;
 diff --git a/src/lib/libcmd/cksum.c b/src/lib/libcmd/cksum.c
-index 0e71981c7..2dbfbdc46 100644
+index 0e71981c7..4bdc33602 100644
 --- a/src/lib/libcmd/cksum.c
 +++ b/src/lib/libcmd/cksum.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -203,7 +203,7 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
  				if (*p != '\n')
  					sumblock(state->sum, "\r", 1);
@@ -562,9 +620,18 @@ index 0e71981c7..2dbfbdc46 100644
  		case 'x':
  			method = opt_info.arg;
 diff --git a/src/lib/libcmd/cmp.c b/src/lib/libcmd/cmp.c
-index 92018b05b..43ef7c55c 100644
+index 92018b05b..d37f18bc0 100644
 --- a/src/lib/libcmd/cmp.c
 +++ b/src/lib/libcmd/cmp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -124,7 +124,7 @@ pretty(Sfio_t *out, int o, int delim, int flags)
  			*s++ = ' ';
  			*s++ = ' ';
@@ -621,9 +688,18 @@ index 92018b05b..43ef7c55c 100644
  					}
  					else
 diff --git a/src/lib/libcmd/comm.c b/src/lib/libcmd/comm.c
-index ab3d3e887..292cd42c8 100644
+index ab3d3e887..af5236fed 100644
 --- a/src/lib/libcmd/comm.c
 +++ b/src/lib/libcmd/comm.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -63,7 +63,7 @@ static const char usage[] =
  static int comm(Sfio_t *in1, Sfio_t *in2, Sfio_t *out,int mode)
  {
@@ -679,9 +755,18 @@ index ab3d3e887..292cd42c8 100644
  		if(!(cp1 = sfgetr(in1,'\n',0)))
  			return 0;
 diff --git a/src/lib/libcmd/context.c b/src/lib/libcmd/context.c
-index 10b4b2c39..579f01b26 100644
+index 10b4b2c39..f42f20827 100644
 --- a/src/lib/libcmd/context.c
 +++ b/src/lib/libcmd/context.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2014 AT&T Intellectual Property          *
+-*             Copyright (c) 2025 Contributors to ksh 93u+m             *
++*          Copyright (c) 2025-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -13,10 +13,11 @@
  *                 Glenn Fowler <gsf@research.att.com>                  *
  *                  David Korn <dgk@research.att.com>                   *
@@ -770,9 +855,18 @@ index 10b4b2c39..579f01b26 100644
  	for (j = 0; j < cp->total; j++)
  	{
 diff --git a/src/lib/libcmd/cp.c b/src/lib/libcmd/cp.c
-index 37f6f842c..2087baef4 100644
+index 37f6f842c..d5d6070e2 100644
 --- a/src/lib/libcmd/cp.c
 +++ b/src/lib/libcmd/cp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -135,7 +135,7 @@ static const char usage_tail[] =
  #include <stk.h>
  #include <tmx.h>
@@ -975,9 +1069,18 @@ index 37f6f842c..2087baef4 100644
  	if (!standard)
  	{
 diff --git a/src/lib/libcmd/cut.c b/src/lib/libcmd/cut.c
-index c5249faa5..40bbffc0c 100644
+index c5249faa5..a5bf05a2a 100644
 --- a/src/lib/libcmd/cut.c
 +++ b/src/lib/libcmd/cut.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -78,23 +78,23 @@ static const char usage[] =
  typedef struct Delim_s
  {
@@ -1272,9 +1375,18 @@ index c5249faa5..40bbffc0c 100644
  		case 's':
  			mode |= C_SUPPRESS;
 diff --git a/src/lib/libcmd/date.c b/src/lib/libcmd/date.c
-index 1acbec5da..6e87c8e9a 100644
+index 1acbec5da..e90f3dd19 100644
 --- a/src/lib/libcmd/date.c
 +++ b/src/lib/libcmd/date.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -23,6 +23,12 @@
   * date -- set/display date
   */
@@ -1311,9 +1423,18 @@ index 1acbec5da..6e87c8e9a 100644
  	return -1;
  }
 diff --git a/src/lib/libcmd/dirname.c b/src/lib/libcmd/dirname.c
-index b5316af5f..064eb19e9 100644
+index b5316af5f..cc470cf41 100644
 --- a/src/lib/libcmd/dirname.c
 +++ b/src/lib/libcmd/dirname.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -96,7 +96,7 @@ static void l_dirname(Sfio_t *outfile, const char *pathname, char termch)
  		if(last!=pathname && pathname[0]=='/' && pathname[1]=='/' && *astconf("PATH_LEADING_SLASHES",NULL,NULL)!='1')
  			pathname++;
@@ -1324,9 +1445,18 @@ index b5316af5f..064eb19e9 100644
  }
  
 diff --git a/src/lib/libcmd/expr.c b/src/lib/libcmd/expr.c
-index 7c1fcdb9c..d8a2baa13 100644
+index 7c1fcdb9c..1ca6b6171 100644
 --- a/src/lib/libcmd/expr.c
 +++ b/src/lib/libcmd/expr.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -183,9 +183,10 @@ static int getnode(State_t* state, Node_t *np)
  {
  	char*	sp;
@@ -1386,9 +1516,18 @@ index 7c1fcdb9c..d8a2baa13 100644
  	UNREACHABLE();
  }
 diff --git a/src/lib/libcmd/fds.c b/src/lib/libcmd/fds.c
-index 8b1a17d60..d428705ba 100644
+index 8b1a17d60..e0c1e76be 100644
 --- a/src/lib/libcmd/fds.c
 +++ b/src/lib/libcmd/fds.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -47,13 +47,6 @@ static const char usage[] =
  #undef	S_IFSOCK
  #endif
@@ -1440,9 +1579,18 @@ index 8b1a17d60..d428705ba 100644
  			}
  			if (port)
 diff --git a/src/lib/libcmd/fmt.c b/src/lib/libcmd/fmt.c
-index 8125fdf94..357d40ebd 100644
+index 8125fdf94..b77296f19 100644
 --- a/src/lib/libcmd/fmt.c
 +++ b/src/lib/libcmd/fmt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -56,10 +56,10 @@ typedef struct Fmt_s
  	char*	endbuf;
  	Sfio_t*	in;
@@ -1555,9 +1703,18 @@ index 8125fdf94..357d40ebd 100644
  			fmt.endbuf = &outbuf[opt_info.num];
  			continue;
 diff --git a/src/lib/libcmd/fold.c b/src/lib/libcmd/fold.c
-index 49d476fd0..5635b4de6 100644
+index 49d476fd0..3ebd1f822 100644
 --- a/src/lib/libcmd/fold.c
 +++ b/src/lib/libcmd/fold.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -83,10 +83,11 @@ static const char usage[] =
  #define T_SP	5
  #define T_RET	6
@@ -1636,9 +1793,18 @@ index 49d476fd0..5635b4de6 100644
  			continue;
  		case ':':
 diff --git a/src/lib/libcmd/getconf.c b/src/lib/libcmd/getconf.c
-index f762ae7da..8c40ee8ff 100644
+index f762ae7da..d58b8af5d 100644
 --- a/src/lib/libcmd/getconf.c
 +++ b/src/lib/libcmd/getconf.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -276,11 +276,11 @@ b_getconf(int argc, char** argv, Shbltin_t* context)
  	/*
  	 * Run the external getconf command
@@ -1654,9 +1820,27 @@ index f762ae7da..8c40ee8ff 100644
  		error(ERROR_SYSTEM|2, "%s: exec error [%d]", native, n);
  	return n;
 diff --git a/src/lib/libcmd/grep.c b/src/lib/libcmd/grep.c
-index 3f42fb3a6..e507c3e07 100644
+index ff19c6b10..a2685a02f 100644
 --- a/src/lib/libcmd/grep.c
 +++ b/src/lib/libcmd/grep.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2014 AT&T Intellectual Property          *
+-*             Copyright (c) 2025 Contributors to ksh 93u+m             *
++*          Copyright (c) 2025-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -23,7 +23,7 @@ static const char usage[] =
+ "[-author?Glenn Fowler <gsf@research.att.com>]"
+ "[-author?Doug McIlroy <doug@research.bell-labs.com>]"
+ "[-copyright?(c) 1992-2014 AT&T Intellectual Property]"
+-"[-copyright?(c) 2025 Contributors to ksh 93u+m]"
++"[-copyright?(c) 2025-2026 Contributors to ksh 93u+m]"
+ "[-license?https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html]"
+ #ifndef ERROR_CATALOG
+ #define ERROR_CATALOG "libcmd"
 @@ -178,11 +178,11 @@ struct State_s				/* program state		*/
  
  	regmatch_t	posvec[1];	/* match position vector	*/
@@ -1893,9 +2077,18 @@ index 3f42fb3a6..e507c3e07 100644
  	NoP(argc);
  	options = 0;
 diff --git a/src/lib/libcmd/id.c b/src/lib/libcmd/id.c
-index d11997d5c..b57510c97 100644
+index d11997d5c..0a6010072 100644
 --- a/src/lib/libcmd/id.c
 +++ b/src/lib/libcmd/id.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -178,11 +178,11 @@ putid(Sfio_t* sp, int flags, const char* label, const char* name, long number)
  	if (flags & O_FLAG)
  	{
@@ -1961,9 +2154,18 @@ index d11997d5c..b57510c97 100644
  		}
  		sfputc(sp,'\n');
 diff --git a/src/lib/libcmd/join.c b/src/lib/libcmd/join.c
-index 7dd3ad507..7a11772b2 100644
+index 7dd3ad507..30275e3fb 100644
 --- a/src/lib/libcmd/join.c
 +++ b/src/lib/libcmd/join.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -129,14 +129,14 @@ typedef struct File_s
  	Sfio_t*		iop;
  	char*		name;
@@ -2358,9 +2560,18 @@ index 7dd3ad507..7a11772b2 100644
  	jp->outfile = sfstdout;
  	if (!jp->outlist)
 diff --git a/src/lib/libcmd/logname.c b/src/lib/libcmd/logname.c
-index d73cc3809..fad82d829 100644
+index d73cc3809..a4df60e82 100644
 --- a/src/lib/libcmd/logname.c
 +++ b/src/lib/libcmd/logname.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -72,7 +72,7 @@ b_logname(int argc, char** argv, Shbltin_t* context)
  		UNREACHABLE();
  	}
@@ -2371,9 +2582,18 @@ index d73cc3809..fad82d829 100644
  	return 0;
  }
 diff --git a/src/lib/libcmd/mkdir.c b/src/lib/libcmd/mkdir.c
-index f76b3df66..c0ca509a7 100644
+index f76b3df66..43c478161 100644
 --- a/src/lib/libcmd/mkdir.c
 +++ b/src/lib/libcmd/mkdir.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -62,7 +62,7 @@ int
  b_mkdir(int argc, char** argv, Shbltin_t* context)
  {
@@ -2408,9 +2628,18 @@ index f76b3df66..c0ca509a7 100644
  					made = 1;
  					break;
 diff --git a/src/lib/libcmd/mktemp.c b/src/lib/libcmd/mktemp.c
-index 95654e7be..9e8f949c8 100644
+index 95654e7be..836465746 100644
 --- a/src/lib/libcmd/mktemp.c
 +++ b/src/lib/libcmd/mktemp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -66,7 +66,7 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
  	mode_t		mode = 0;
  	mode_t		mask;
@@ -2430,9 +2659,18 @@ index 95654e7be..9e8f949c8 100644
  		memcpy(dir, pfx, i);
  		dir[i] = 0;
 diff --git a/src/lib/libcmd/paste.c b/src/lib/libcmd/paste.c
-index 35a8475cd..65788b7d6 100644
+index 35a8475cd..7ca967407 100644
 --- a/src/lib/libcmd/paste.c
 +++ b/src/lib/libcmd/paste.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -79,10 +79,10 @@ typedef struct Delim_s
   * to <out>
   */
@@ -2536,9 +2774,18 @@ index 35a8475cd..65788b7d6 100644
  			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
  			UNREACHABLE();
 diff --git a/src/lib/libcmd/pathchk.c b/src/lib/libcmd/pathchk.c
-index 90a394367..e773da2a5 100644
+index 90a394367..2153f21e8 100644
 --- a/src/lib/libcmd/pathchk.c
 +++ b/src/lib/libcmd/pathchk.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -179,7 +179,7 @@ static int pathchk(char* path, int mode)
  			errno=0;
  			cp[-1] = 0;
@@ -2558,9 +2805,18 @@ index 90a394367..e773da2a5 100644
  				error(2,"%s: '%s' not in portable character set",path,fmtquote(buf, NULL, "'", 1, 0));
  				return -1;
 diff --git a/src/lib/libcmd/rev.c b/src/lib/libcmd/rev.c
-index bc95f0da2..89f28f3bb 100644
+index bc95f0da2..c9a0c1a13 100644
 --- a/src/lib/libcmd/rev.c
 +++ b/src/lib/libcmd/rev.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -56,7 +56,7 @@ static const char usage[] =
   */
  static int rev_char(Sfio_t *in, Sfio_t *out)
@@ -2602,7 +2858,7 @@ index bc95f0da2..89f28f3bb 100644
  			{
  				c = *--ep;
 diff --git a/src/lib/libcmd/rev.h b/src/lib/libcmd/rev.h
-index acee00226..2489f334e 100644
+index acee00226..ab19569c9 100644
 --- a/src/lib/libcmd/rev.h
 +++ b/src/lib/libcmd/rev.h
 @@ -2,7 +2,7 @@
@@ -2610,7 +2866,7 @@ index acee00226..2489f334e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1992-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2631,7 +2887,7 @@ index acee00226..2489f334e 100644
  
  #endif
 diff --git a/src/lib/libcmd/revlib.c b/src/lib/libcmd/revlib.c
-index e79a5c4e2..cdc4b6ede 100644
+index e79a5c4e2..208d7aa0d 100644
 --- a/src/lib/libcmd/revlib.c
 +++ b/src/lib/libcmd/revlib.c
 @@ -2,7 +2,7 @@
@@ -2639,7 +2895,7 @@ index e79a5c4e2..cdc4b6ede 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1992-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2693,9 +2949,18 @@ index e79a5c4e2..cdc4b6ede 100644
  			if(nleft)
  			{
 diff --git a/src/lib/libcmd/rm.c b/src/lib/libcmd/rm.c
-index 80c73851f..92a5db97d 100644
+index 57aaadc5d..a89d9a1e0 100644
 --- a/src/lib/libcmd/rm.c
 +++ b/src/lib/libcmd/rm.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -68,11 +68,11 @@ static const char usage[] =
  
  #define RM_ENTRY	1
@@ -2719,7 +2984,7 @@ index 80c73851f..92a5db97d 100644
  	int		unconditional;	/* enable dir rwx on preorder	*/
  	int		verbose;	/* display each file		*/
  #if _lib_fsync
-@@ -291,9 +291,9 @@ rm(State_t* state, FTSENT* ent)
+@@ -278,9 +278,9 @@ rm(State_t* state, FTSENT* ent)
  						error(ERROR_SYSTEM|2, "%s: data clear error", ent->fts_path);
  						break;
  					}
@@ -2732,9 +2997,18 @@ index 80c73851f..92a5db97d 100644
  				fsync(n);
  				close(n);
 diff --git a/src/lib/libcmd/stty.c b/src/lib/libcmd/stty.c
-index 83699631e..804a09f16 100644
+index 83699631e..9e0da31cb 100644
 --- a/src/lib/libcmd/stty.c
 +++ b/src/lib/libcmd/stty.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -395,38 +395,38 @@ static void sane(struct termios *sp)
  
  static int gin(char *arg,struct termios *sp)
@@ -2870,7 +3144,7 @@ index 83699631e..804a09f16 100644
  				}
  				else
  				{
-@@ -777,13 +778,13 @@ static void set(char *argv[], struct termios *sp)
+@@ -777,16 +778,16 @@ static void set(char *argv[], struct termios *sp)
  				}
  				break;
  			case T_CHAR:
@@ -2886,7 +3160,22 @@ index 83699631e..804a09f16 100644
 +			cfsetispeed(sp, (speed_t)tp->mask);
  			break;
  		    case SIZE:
- 			sp->c_cflag &= ~CSIZE;
+-			sp->c_cflag &= ~CSIZE;
++			sp->c_cflag &= (tcflag_t)~CSIZE;
+ 			sp->c_cflag |= tp->mask;
+ 			break;
+ 		    case SANE:
+@@ -801,8 +802,8 @@ static void set(char *argv[], struct termios *sp)
+ 			}
+ 			else
+ 			{
+-				sp->c_iflag &= ~IUCLC;
+-				sp->c_oflag &= ~OLCUC;
++				sp->c_iflag &= (tcflag_t)~IUCLC;
++				sp->c_oflag &= (tcflag_t)~OLCUC;
+ 			}
+ 			break;
+ #endif /* OLCUC && IUCLC */
 @@ -813,7 +814,8 @@ static void set(char *argv[], struct termios *sp)
  
  static void listchars(Sfio_t *sp,int type)
@@ -2925,9 +3214,18 @@ index 83699631e..804a09f16 100644
  	{
  		if(Ttable[i].field==field &&  Ttable[i].type==BIT && *Ttable[i].description)
 diff --git a/src/lib/libcmd/tail.c b/src/lib/libcmd/tail.c
-index 9df44c599..228f7a8bf 100644
+index 9df44c599..89e682a83 100644
 --- a/src/lib/libcmd/tail.c
 +++ b/src/lib/libcmd/tail.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -140,8 +140,8 @@ struct Tail_s
  	Sfoff_t		cur;
  	Sfoff_t		end;
@@ -3048,9 +3346,18 @@ index 9df44c599..228f7a8bf 100644
  					}
  					goto next;
 diff --git a/src/lib/libcmd/tee.c b/src/lib/libcmd/tee.c
-index 3333a4301..069c69ee3 100644
+index 3333a4301..215a2a60e 100644
 --- a/src/lib/libcmd/tee.c
 +++ b/src/lib/libcmd/tee.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -79,12 +79,12 @@ tee_write(Sfio_t* fp, const void* buf, size_t n, Sfdisc_t* handle)
  		ep = bp + n;
  		while (bp < ep)
@@ -3076,9 +3383,18 @@ index 3333a4301..069c69ee3 100644
  			memset(&tp->disc, 0, sizeof(tp->disc));
  			tp->disc.writef = tee_write;
 diff --git a/src/lib/libcmd/uname.c b/src/lib/libcmd/uname.c
-index f16a10608..866740c1a 100644
+index f16a10608..c7313810c 100644
 --- a/src/lib/libcmd/uname.c
 +++ b/src/lib/libcmd/uname.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -274,7 +274,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
  			continue;
  		case ':':
@@ -3098,9 +3414,18 @@ index f16a10608..866740c1a 100644
  			sfprintf(sfstdout, "%s%c", *(t = astconf(buf, NULL, NULL)) ? t : *(t = astconf(buf+3, NULL, NULL)) ? t :  "unknown", *argv ? ' ' : '\n');
  		}
 diff --git a/src/lib/libcmd/uniq.c b/src/lib/libcmd/uniq.c
-index 17b1679df..f07d00797 100644
+index 17b1679df..11a0f78fd 100644
 --- a/src/lib/libcmd/uniq.c
 +++ b/src/lib/libcmd/uniq.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -79,12 +79,14 @@ static const char usage[] =
  
  typedef int (*Compare_f)(const char*, const char*, size_t);
@@ -3222,9 +3547,18 @@ index 17b1679df..f07d00797 100644
  		case ':':
  			error(2, "%s", opt_info.arg);
 diff --git a/src/lib/libcmd/wclib.c b/src/lib/libcmd/wclib.c
-index ea5996b79..ccdfe6f4f 100644
+index ea5996b79..12031483f 100644
 --- a/src/lib/libcmd/wclib.c
 +++ b/src/lib/libcmd/wclib.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -108,7 +108,7 @@ static int invalid(const char *file, int nlines)
   * handle UTF space characters
   */
@@ -3345,5 +3679,5 @@ index ea5996b79..ccdfe6f4f 100644
  							c=type[*cp++];
  						if(eol(c) && (cp > endbuff))
 -- 
-2.49.0
+2.52.0
 

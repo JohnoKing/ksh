@@ -1,7 +1,8 @@
-From 82c3eafdd0357a49184f32c030090b109b1a3942 Mon Sep 17 00:00:00 2001
+From 5408926eaf83161a6c541798dfcc3c298dbf3c8a Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
-Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and subshells
+Date: Wed, 28 Jan 2026 21:34:12 -0800
+Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
+ subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -15,24 +16,25 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-671 => 555 => 248 (progression from part 11 => part 12 => part 13)
+519 => 396 => 86 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/include/fcin.h    |  15 ++--
- src/cmd/ksh93/include/shlex.h   |  16 ++--
+ src/cmd/ksh93/include/fcin.h    |  17 ++--
+ src/cmd/ksh93/include/shlex.h   |  18 ++--
  src/cmd/ksh93/include/shnodes.h |   6 +-
- src/cmd/ksh93/sh/fcin.c         |  16 ++--
- src/cmd/ksh93/sh/lex.c          | 138 +++++++++++++++++---------------
- src/cmd/ksh93/sh/parse.c        |  81 ++++++++++---------
+ src/cmd/ksh93/sh/fcin.c         |  25 +++---
+ src/cmd/ksh93/sh/lex.c          | 142 +++++++++++++++++---------------
+ src/cmd/ksh93/sh/parse.c        |  83 ++++++++++---------
+ src/cmd/ksh93/sh/shcomp.c       |   4 +-
  src/cmd/ksh93/sh/subshell.c     |  14 ++--
- src/cmd/ksh93/sh/tdump.c        |  34 ++++----
+ src/cmd/ksh93/sh/tdump.c        |  36 ++++----
  src/cmd/ksh93/sh/timers.c       |   4 +-
- src/cmd/ksh93/sh/trestore.c     |  46 +++++------
- 10 files changed, 192 insertions(+), 178 deletions(-)
+ src/cmd/ksh93/sh/trestore.c     |  50 +++++------
+ 11 files changed, 207 insertions(+), 192 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/fcin.h b/src/cmd/ksh93/include/fcin.h
-index 7aee58561..420a397e2 100644
+index 460d27575..605be211e 100644
 --- a/src/cmd/ksh93/include/fcin.h
 +++ b/src/cmd/ksh93/include/fcin.h
 @@ -2,7 +2,7 @@
@@ -40,7 +42,7 @@ index 7aee58561..420a397e2 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -52,16 +54,19 @@ index 7aee58561..420a397e2 100644
  *                                                                      *
  ***********************************************************************/
  #ifndef fcgetc
-@@ -33,7 +34,7 @@ typedef struct _fcin
+@@ -33,9 +34,9 @@ typedef struct _fcin
  	unsigned char	*fcptr;		/* pointer to next input char */
  	unsigned char	fcchar;		/* saved character */
  	short		fclen;		/* last multibyte char len */
 -	void (*fcfun)(Sfio_t*,const char*,int,void*);	/* advance function */
 +	void (*fcfun)(Sfio_t*,const char*,ptrdiff_t,void*);	/* advance function */
  	void		*context;	/* context pointer */
- 	int		fcleft;		/* for multibyte boundary */
- 	Sfoff_t		fcoff;		/* offset for last read */
-@@ -46,9 +47,9 @@ typedef struct _fcin
+-	int		fcleft;		/* for multibyte boundary */
++	ptrdiff_t	fcleft;		/* for multibyte boundary */
+ } Fcin_t;
+ 
+ #if SHOPT_MULTIBYTE
+@@ -45,9 +46,9 @@ typedef struct _fcin
  #   define fcmbget(x)	(fcget())
  #endif
  #define fcfile()	(_Fcin._fcfile)
@@ -74,7 +79,7 @@ index 7aee58561..420a397e2 100644
  #define fcseek(n)	((char*)(_Fcin.fcptr+=(n)))
  #define fcfirst()	((char*)_Fcin.fcbuff)
  #define fclast()	((char*)_Fcin.fclast)
-@@ -58,9 +59,9 @@ typedef struct _fcin
+@@ -56,9 +57,9 @@ typedef struct _fcin
  #define fcsave(x)	(*(x) = _Fcin)
  #define fcrestore(x)	(_Fcin = *(x))
  extern int		fcfill(void);
@@ -87,9 +92,18 @@ index 7aee58561..420a397e2 100644
  extern Fcin_t		_Fcin;		/* used by macros */
  
 diff --git a/src/cmd/ksh93/include/shlex.h b/src/cmd/ksh93/include/shlex.h
-index 0894a732f..8a8272d4a 100644
+index 0894a732f..9489ca8a8 100644
 --- a/src/cmd/ksh93/include/shlex.h
 +++ b/src/cmd/ksh93/include/shlex.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -70,21 +70,21 @@ typedef struct  _shlex_
  {
  	struct argnod	*arg;		/* current word */
@@ -150,7 +164,7 @@ index 0894a732f..8a8272d4a 100644
  
  #endif /* !NOTSYM */
 diff --git a/src/cmd/ksh93/include/shnodes.h b/src/cmd/ksh93/include/shnodes.h
-index 59236e1b6..7d99ddbff 100644
+index 59236e1b6..615ea2379 100644
 --- a/src/cmd/ksh93/include/shnodes.h
 +++ b/src/cmd/ksh93/include/shnodes.h
 @@ -2,7 +2,7 @@
@@ -158,7 +172,7 @@ index 59236e1b6..7d99ddbff 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -174,7 +188,7 @@ index 59236e1b6..7d99ddbff 100644
  
  #endif /* _SHNODES_H */
 diff --git a/src/cmd/ksh93/sh/fcin.c b/src/cmd/ksh93/sh/fcin.c
-index cb18e96ef..358280570 100644
+index 2badaa5b0..5fc2984c7 100644
 --- a/src/cmd/ksh93/sh/fcin.c
 +++ b/src/cmd/ksh93/sh/fcin.c
 @@ -2,7 +2,7 @@
@@ -182,7 +196,7 @@ index cb18e96ef..358280570 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -198,7 +212,7 @@ index cb18e96ef..358280570 100644
  	char	*buff;
  	Fcin_t	save;
  	errno = 0;
-@@ -71,9 +71,9 @@ int	fcfopen(Sfio_t* f)
+@@ -70,9 +70,9 @@ int	fcfopen(Sfio_t* f)
   * If last is non-zero, and the stream is a file, 0 is returned when
   * the previous character is a 0 byte.
   */
@@ -210,16 +224,16 @@ index cb18e96ef..358280570 100644
  	Sfio_t	*f;
  	unsigned char	*last=_Fcin.fclast, *ptr=_Fcin.fcptr;
  	if(!(f=fcfile()))
-@@ -96,7 +96,7 @@ int	fcfill(void)
+@@ -93,7 +93,7 @@ int	fcfill(void)
  	}
  	if((n = ptr-_Fcin.fcbuff) && _Fcin.fcfun)
  		(*_Fcin.fcfun)(f,(const char*)_Fcin.fcbuff,n,_Fcin.context);
 -	sfread(f, (char*)_Fcin.fcbuff, n);
 +	sfread(f, (char*)_Fcin.fcbuff, (size_t)n);
- 	_Fcin.fcoff +=n;
  	_Fcin._fcfile = 0;
  	if(!last)
-@@ -126,7 +126,7 @@ int fcclose(void)
+ 		return 0;
+@@ -122,7 +122,7 @@ int fcclose(void)
  /*
   * Set the notify function that is called for each fcfill()
   */
@@ -228,19 +242,61 @@ index cb18e96ef..358280570 100644
  {
  	_Fcin.fcfun = fun;
  	_Fcin.context = context;
-@@ -148,7 +148,7 @@ extern void fcrestore(Fcin_t *fp)
+@@ -151,7 +151,8 @@ struct Extra
  int _fcmbget(short *len)
  {
- 	int	c;
+ 	static struct Extra	extra;
+-	int			i, c, n;
++	int			c;
++	ptrdiff_t		i, n;
+ 	/*
+ 	 * Check if we need to piece together a split multibyte
+ 	 * character started at the end of the previous buffer.
+@@ -165,7 +166,7 @@ int _fcmbget(short *len)
+ 			_Fcin.fcptr = (unsigned char*)fcfirst() - _Fcin.fcleft; 
+ 			_Fcin.fcleft = 0;
+ 		}
+-		*len = c;
++		*len = (short)c;
+ 		if(c==1)
+ 			c = *extra.next++;
+ 		else if(c==0)
+@@ -174,7 +175,7 @@ int _fcmbget(short *len)
+ 			c = mbchar(extra.next);
+ 		return c;
+ 	}
 -	switch(*len = mbsize(_Fcin.fcptr))
 +	switch(*len = (short)mbsize(_Fcin.fcptr))
  	{
  	    case -1:
- 		*len = 1;
+ 		/*
+@@ -183,11 +184,11 @@ int _fcmbget(short *len)
+ 		 */
+ 		if(_Fcin._fcfile && (n=(_Fcin.fclast-_Fcin.fcptr)) < MB_LEN_MAX)
+ 		{
+-			memcpy(extra.buff, _Fcin.fcptr, n);
++			memcpy(extra.buff, _Fcin.fcptr, (size_t)n);
+ 			_Fcin.fcptr = _Fcin.fclast;
+ 			/* fcgetc() will read the next buffer via fcfill() */
+ 			for(i=n; i < MB_LEN_MAX+n; i++)
+-				if((extra.buff[i] = fcgetc())==0)
++				if((extra.buff[i] = (unsigned char)fcgetc())==0)
+ 					break;
+ 			_Fcin.fcleft = n;
+ 			extra.next = extra.buff;
 diff --git a/src/cmd/ksh93/sh/lex.c b/src/cmd/ksh93/sh/lex.c
-index 0c642ac91..37d819478 100644
+index 32f8c2d97..5aab031c4 100644
 --- a/src/cmd/ksh93/sh/lex.c
 +++ b/src/cmd/ksh93/sh/lex.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -73,7 +73,7 @@ static int		alias_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
  static void		setupalias(Lex_t*,const char*, Namval_t*);
  static int		comsub(Lex_t*,int);
@@ -325,7 +381,7 @@ index 0c642ac91..37d819478 100644
  	savelex = *lp;
  	ap = lp->arg;
  	c = fcfill();
-@@ -249,10 +250,11 @@ int sh_lex(Lex_t *lp)
+@@ -254,10 +255,11 @@ int sh_lex(Lex_t *lp)
  int sh_lex(Lex_t* lp)
  {
  	const char	*state;
@@ -339,7 +395,7 @@ index 0c642ac91..37d819478 100644
  	SETLEN(1);
  	if(lp->lexd.paren)
  	{
-@@ -402,7 +404,7 @@ int sh_lex(Lex_t* lp)
+@@ -407,7 +409,7 @@ int sh_lex(Lex_t* lp)
  						fcseek(1);
  				}
  				while(c=='#');
@@ -348,7 +404,7 @@ index 0c642ac91..37d819478 100644
  				if(c<0)
  					return lp->token=EOFSYM;
  				n = S_NLTOK;
-@@ -632,9 +634,9 @@ int sh_lex(Lex_t* lp)
+@@ -637,9 +639,9 @@ int sh_lex(Lex_t* lp)
  						fcsopen((char*)state);
  					/* remove \new-line */
  					n = stktell(sh.stk)-c;
@@ -360,7 +416,7 @@ index 0c642ac91..37d819478 100644
  					{
  						mode = 0;
  						lp->lexd.first = 0;
-@@ -809,7 +811,7 @@ int sh_lex(Lex_t* lp)
+@@ -814,7 +816,7 @@ int sh_lex(Lex_t* lp)
  				else if((n=endchar(lp))==c)
  				{
  					if(sh.inlineno > lp->lastline)
@@ -369,7 +425,7 @@ index 0c642ac91..37d819478 100644
  					/*
  					 * At this point, we know that the previous skipping of characters was done
  					 * according to the ST_QUOTE state table. We also know that the character that
-@@ -848,7 +850,7 @@ int sh_lex(Lex_t* lp)
+@@ -853,7 +855,7 @@ int sh_lex(Lex_t* lp)
  				fcseek(-LEN);
  				n = lp->digits;
  				wordflags |= comsub(lp,c);
@@ -378,7 +434,7 @@ index 0c642ac91..37d819478 100644
  				continue;
  			case S_RBRA:
  				if((n=endchar(lp)) == '$')
-@@ -882,7 +884,7 @@ int sh_lex(Lex_t* lp)
+@@ -887,7 +889,7 @@ int sh_lex(Lex_t* lp)
  					if(n>0)
  						fcseek(-LEN);
  				}
@@ -387,7 +443,7 @@ index 0c642ac91..37d819478 100644
  					continue;
  				if(mode==ST_NAME)
  				{
-@@ -993,7 +995,7 @@ int sh_lex(Lex_t* lp)
+@@ -998,7 +1000,7 @@ int sh_lex(Lex_t* lp)
  						{
  							if(c!='%')
  							{
@@ -396,7 +452,7 @@ index 0c642ac91..37d819478 100644
  								sh_syntax(lp,0);
  							}
  							else if(lp->lexd.warn)
-@@ -1277,11 +1279,11 @@ breakloop:
+@@ -1282,11 +1284,11 @@ breakloop:
  	if(!lp->arg)
  		lp->arg = stkseek(sh.stk,ARGVAL);
  	if(n>0)
@@ -410,7 +466,7 @@ index 0c642ac91..37d819478 100644
  	lp->lexd.first=0;
  	if(n==1)
  	{
-@@ -1290,13 +1292,13 @@ breakloop:
+@@ -1295,13 +1297,13 @@ breakloop:
  		if(!lp->lex.intest && (c=='<' || c=='>') && isadigit(n))
  		{
  			c = sh_lex(lp);
@@ -426,7 +482,7 @@ index 0c642ac91..37d819478 100644
  		else if(n=='~')
  			c = ARG_MAC;
  		else
-@@ -1341,7 +1343,7 @@ breakloop:
+@@ -1346,7 +1348,7 @@ breakloop:
  	else
  		lp->arg = endword(0);
  	state = lp->arg->argval;
@@ -435,7 +491,7 @@ index 0c642ac91..37d819478 100644
  	if(assignment)
  	{
  		lp->arg->argflag |= ARG_ASSIGN;
-@@ -1394,7 +1396,7 @@ breakloop:
+@@ -1399,7 +1401,7 @@ breakloop:
  			lp->token = ETESTSYM;
  			return lp->token;
  		}
@@ -444,7 +500,7 @@ index 0c642ac91..37d819478 100644
  		switch(c)
  		{
  		case TEST_SEQ:
-@@ -1476,7 +1478,7 @@ breakloop:
+@@ -1481,7 +1483,7 @@ breakloop:
  	if(!lp->lex.skipword)
  	{
  		if(n>1 && lp->lex.reservok==1 && mode==ST_NAME &&
@@ -453,7 +509,7 @@ index 0c642ac91..37d819478 100644
  		{
  			if(lp->lex.incase)
  			{
-@@ -1558,15 +1560,17 @@ breakloop:
+@@ -1563,15 +1565,17 @@ breakloop:
   */
  static int comsub(Lex_t *lp, int endtok)
  {
@@ -474,7 +530,7 @@ index 0c642ac91..37d819478 100644
  	sh_lexopen(lp,1);
  	lp->lexd.dolparen++;
  	lp->lexd.dolparen_arithexp = endtok==LPAREN && fcpeek(1)==LPAREN;  /* $(( */
-@@ -1581,7 +1585,7 @@ static int comsub(Lex_t *lp, int endtok)
+@@ -1586,7 +1590,7 @@ static int comsub(Lex_t *lp, int endtok)
  		c=*cp, *cp=0;
  	n = sh_lex(lp);
  	if(off<0)
@@ -483,7 +539,7 @@ index 0c642ac91..37d819478 100644
  	if(n==endtok || off<0)
  	{
  		if(endtok==LPAREN && lp->lexd.paren)
-@@ -1616,7 +1620,7 @@ static int comsub(Lex_t *lp, int endtok)
+@@ -1621,7 +1625,7 @@ static int comsub(Lex_t *lp, int endtok)
  					}
  					goto skip;
  				}
@@ -492,7 +548,7 @@ index 0c642ac91..37d819478 100644
  			}
  			if(sh_lexstates[ST_NAME][c]==S_BREAK)
  			{
-@@ -1716,14 +1720,15 @@ done:
+@@ -1721,14 +1725,15 @@ done:
  static void nested_here(Lex_t *lp)
  {
  	struct ionod	*iop;
@@ -511,7 +567,7 @@ index 0c642ac91..37d819478 100644
  	iop->iolst = lp->heredoc;
  	stkseek(sh.stk,ARGVAL);
  	if(lp->lexd.docextra)
-@@ -1753,7 +1758,7 @@ static void nested_here(Lex_t *lp)
+@@ -1758,7 +1763,7 @@ static void nested_here(Lex_t *lp)
   * if <copy> is non,zero, then the characters are copied to the stack
   * <state> is the initial lexical state
   */
@@ -520,7 +576,7 @@ index 0c642ac91..37d819478 100644
  {
  	char	*cp;
  	lp->lexd.nest = close;
-@@ -1767,11 +1772,12 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+@@ -1772,11 +1777,12 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
  	lp->lexd.inlexskip = 0;
  	if(copy)
  	{
@@ -535,7 +591,7 @@ index 0c642ac91..37d819478 100644
  	}
  	else
  		lp->lexd.nocopy--;
-@@ -1781,21 +1787,21 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+@@ -1786,21 +1792,21 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
      ssize_t _sfwrite(Sfio_t *sp, const void *buff, size_t n)
      {
  	const char *cp = (const char*)buff, *next=cp, *ep = cp + n;
@@ -562,7 +618,7 @@ index 0c642ac91..37d819478 100644
      }
  #   define sfwrite	_sfwrite
  #endif /* SHOPT_CRNL */
-@@ -1806,13 +1812,13 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+@@ -1811,13 +1817,13 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
   * noted with the IOQUOTE flag
   * returns 1 for complete here-doc, 0 for EOF
   */
@@ -579,7 +635,16 @@ index 0c642ac91..37d819478 100644
  	if(iop->iolst)
  		here_copy(lp,iop->iolst);
  	iop->iooffset = sfseek(sp,0,SEEK_END);
-@@ -1856,7 +1862,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1831,7 +1837,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+ 		/* skip over leading tabs in document */
+ 		if(iop->iofile&IOLSEEK)
+ 		{
+-			iop->iofile &= ~IOLSEEK;
++			iop->iofile &= (unsigned)~IOLSEEK;
+ 			while((c = fcgetc())=='\t' || c==' ')
+ 			{
+ 				if(c==' ')
+@@ -1861,7 +1867,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  				if(mbsize(fcseek(0)) < 0 && fcleft() < MB_LEN_MAX)
  				{
  					n = S_EOF;
@@ -588,7 +653,7 @@ index 0c642ac91..37d819478 100644
  					break;
  				}
  			}
-@@ -1872,7 +1878,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1877,7 +1883,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  			{
  				if(n==S_ESC)
  					c--;
@@ -597,7 +662,7 @@ index 0c642ac91..37d819478 100644
  					iop->iosize += c;
  			}
  			if(LEN==0)
-@@ -1881,7 +1887,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1886,7 +1892,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  			{
  				n = LEN;
  				c = fcmbget(&LEN);
@@ -606,7 +671,7 @@ index 0c642ac91..37d819478 100644
  			}
  			else
  				c = lexfill(lp);
-@@ -1916,8 +1922,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1921,8 +1927,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  				if(!lp->lexd.dolparen)
  				{
  					/* write out line */
@@ -616,7 +681,7 @@ index 0c642ac91..37d819478 100644
  						iop->iosize += n;
  				}
  				/* skip over tabs */
-@@ -1952,7 +1957,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1957,7 +1962,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  				{
  					if(!lp->lexd.dolparen && (c=cp-bufp))
  					{
@@ -625,7 +690,7 @@ index 0c642ac91..37d819478 100644
  							iop->iosize+=c;
  					}
  					nsave = n;
-@@ -1976,7 +1981,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1981,7 +1986,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  				{
  					if(!lp->lexd.dolparen && (n=cp-bufp))
  					{
@@ -634,7 +699,7 @@ index 0c642ac91..37d819478 100644
  							iop->iosize += n;
  					}
  					sh.inlineno--;
-@@ -1994,7 +1999,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -1999,7 +2004,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  					 */
  					if(!lp->lexd.dolparen && nsave>0)
  					{
@@ -643,7 +708,7 @@ index 0c642ac91..37d819478 100644
  							iop->iosize += n;
  						bufp = fcfirst();
  					}
-@@ -2027,7 +2032,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
+@@ -2032,7 +2037,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
  				sh.inlineno++;
  				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
  				{
@@ -652,7 +717,7 @@ index 0c642ac91..37d819478 100644
  						iop->iosize += n;
  					bufp = fcseek(0)+1;
  				}
-@@ -2065,7 +2070,7 @@ static char	*fmttoken(Lex_t *lp, int sym)
+@@ -2070,7 +2075,7 @@ static char	*fmttoken(Lex_t *lp, int sym)
  	if(sym&SYMRES)
  	{
  		const Shtable_t *tp=shtab_reserved;
@@ -661,7 +726,7 @@ index 0c642ac91..37d819478 100644
  			tp++;
  		return (char*)tp->sh_name;
  	}
-@@ -2157,9 +2162,9 @@ noreturn void sh_syntax(Lex_t *lp, int special)
+@@ -2162,9 +2167,9 @@ noreturn void sh_syntax(Lex_t *lp, int special)
  static unsigned char *stack_shift(unsigned char *sp, unsigned char *dp)
  {
  	unsigned char *ep;
@@ -674,7 +739,7 @@ index 0c642ac91..37d819478 100644
  	offset += shift;
  	stkseek(sh.stk,offset);
  	sp = (unsigned char*)stkptr(sh.stk,offset);
-@@ -2182,7 +2187,8 @@ static struct argnod *endword(int mode)
+@@ -2187,7 +2192,8 @@ static struct argnod *endword(int mode)
  	const char *const state = sh_lexstates[ST_NESTED];
  	unsigned char *sp, *dp, *ep=0, *xp=0;	/* must be unsigned: pointed-to values used as index to 256-byte state table */
  	int inquote=0, inlit=0;			/* set within quoted strings */
@@ -684,7 +749,7 @@ index 0c642ac91..37d819478 100644
  	sfputc(sh.stk,0);
  	sp =  (unsigned char*)stkptr(sh.stk,ARGVAL);
  	if(mbwide())
-@@ -2269,7 +2275,7 @@ static struct argnod *endword(int mode)
+@@ -2274,7 +2280,7 @@ static struct argnod *endword(int mode)
  					}
  					*--dp = 0;
  					msg = ERROR_translate(0,error_info.id,0,ep);
@@ -693,7 +758,7 @@ index 0c642ac91..37d819478 100644
  					dp = ep+n;
  					if(sp-dp <= 1)
  					{
-@@ -2277,7 +2283,7 @@ static struct argnod *endword(int mode)
+@@ -2282,7 +2288,7 @@ static struct argnod *endword(int mode)
  						dp = sp-1;
  						ep = dp-n;
  					}
@@ -702,7 +767,7 @@ index 0c642ac91..37d819478 100644
  					*dp++ = '"';
  				}
  				ep = 0;
-@@ -2337,7 +2343,7 @@ static struct argnod *endword(int mode)
+@@ -2342,7 +2348,7 @@ static struct argnod *endword(int mode)
  				if(n=='\n')
  					dp--;
  				else
@@ -711,7 +776,7 @@ index 0c642ac91..37d819478 100644
  				sp++;
  			}
  			break;
-@@ -2457,9 +2463,9 @@ static int alias_exceptf(Sfio_t *iop,int type,void *data, Sfdisc_t *handle)
+@@ -2462,9 +2468,9 @@ static int alias_exceptf(Sfio_t *iop,int type,void *data, Sfdisc_t *handle)
  	{
  		/* if last character is a blank, then next word can be an alias */
  		int c = fcpeek(-1);
@@ -723,7 +788,7 @@ index 0c642ac91..37d819478 100644
  		ap->nextc = 0;
  		sfsetbuf(iop,ap->buf,1);
  		return 1;
-@@ -2510,6 +2516,6 @@ static void setupalias(Lex_t *lp, const char *string,Namval_t *np)
+@@ -2515,6 +2521,6 @@ static void setupalias(Lex_t *lp, const char *string,Namval_t *np)
  static int stack_grow(void)
  {
  	lex_max += STACK_ARRAY;
@@ -732,9 +797,18 @@ index 0c642ac91..37d819478 100644
  	return 1;
  }
 diff --git a/src/cmd/ksh93/sh/parse.c b/src/cmd/ksh93/sh/parse.c
-index a78992d53..363858df5 100644
+index a78992d53..774cf8927 100644
 --- a/src/cmd/ksh93/sh/parse.c
 +++ b/src/cmd/ksh93/sh/parse.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -79,8 +79,9 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
  {
  	struct argnod *argp = arglist;
@@ -987,11 +1061,33 @@ index a78992d53..363858df5 100644
  	}
  	return sfclose(kia.file);
  }
+diff --git a/src/cmd/ksh93/sh/shcomp.c b/src/cmd/ksh93/sh/shcomp.c
+index feeccb79f..ee53aaeb8 100644
+--- a/src/cmd/ksh93/sh/shcomp.c
++++ b/src/cmd/ksh93/sh/shcomp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
+ 			UNREACHABLE();
+ 		}
+ 		if(fstat(sffileno(out),&statb) >=0)
+-			chmod(cp,(statb.st_mode&~S_IFMT)|S_IXUSR|S_IXGRP|S_IXOTH);
++			chmod(cp,(statb.st_mode&(mode_t)~S_IFMT)|S_IXUSR|S_IXGRP|S_IXOTH);
+ 	}
+ 	else
+ 		out = sfstdout;
 diff --git a/src/cmd/ksh93/sh/subshell.c b/src/cmd/ksh93/sh/subshell.c
-index 0b51ee470..6821cd5a5 100644
+index f95f20791..d4ca84015 100644
 --- a/src/cmd/ksh93/sh/subshell.c
 +++ b/src/cmd/ksh93/sh/subshell.c
-@@ -320,7 +320,8 @@ static void nv_restore(struct subshell *sp)
+@@ -316,7 +316,8 @@ static void nv_restore(struct subshell *sp)
  	struct Link	*lp, *lq;
  	Namval_t	*mp, *np;
  	Namval_t	*mpnext;
@@ -1001,7 +1097,7 @@ index 0b51ee470..6821cd5a5 100644
  	sh.nv_restore = 1;
  	for(lp=sp->svar; lp; lp=lq)
  	{
-@@ -492,7 +493,7 @@ int sh_validate_subpwdfd(void)
+@@ -488,7 +489,7 @@ int sh_validate_subpwdfd(void)
   * If comsub is not null, the return value will be a stream consisting of
   * output of command <t>.  Otherwise, NULL will be returned.
   */
@@ -1010,7 +1106,7 @@ index 0b51ee470..6821cd5a5 100644
  {
  	struct subshell sub_data;
  	struct subshell *sp = &sub_data;
-@@ -595,7 +596,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -591,7 +592,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  		sh.st.otrap = savst.trap;
  		if((nsig=sh.st.trapmax)>0 || sh.st.trapcom[0])
  		{
@@ -1019,7 +1115,7 @@ index 0b51ee470..6821cd5a5 100644
  			/*
  			 * the data is, usually, modified in code like:
  			 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
-@@ -718,7 +719,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -714,7 +715,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  		{
  			if(sh.spid)
  			{
@@ -1029,7 +1125,7 @@ index 0b51ee470..6821cd5a5 100644
  				job_wait(sh.spid);
  				sh.exitval = e, sh.chldexitsig = c;
  				if(sh.pipepid==sh.spid)
-@@ -835,7 +837,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -831,7 +833,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  		n = sh.st.trapmax-savst.trapmax;
  		sh_sigreset(1);
  		if(n>0)
@@ -1038,7 +1134,7 @@ index 0b51ee470..6821cd5a5 100644
  		sh.st = savst;
  		sh.st.otrap = 0;
  		if(nsig)
-@@ -843,7 +845,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -839,7 +841,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  			for (isig = 0; isig < nsig; ++isig)
  				if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
  					free(sh.st.trapcom[isig]);
@@ -1048,9 +1144,18 @@ index 0b51ee470..6821cd5a5 100644
  		}
  		sh.options = sp->options;
 diff --git a/src/cmd/ksh93/sh/tdump.c b/src/cmd/ksh93/sh/tdump.c
-index 19da2f796..19c5c7ed0 100644
+index 19da2f796..e4ff9a1c8 100644
 --- a/src/cmd/ksh93/sh/tdump.c
 +++ b/src/cmd/ksh93/sh/tdump.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -29,17 +29,17 @@
  #include	"path.h"
  #include	"io.h"
@@ -1148,7 +1253,7 @@ index 19da2f796..19c5c7ed0 100644
  	size_t n=strlen(string);
  	if(sfputu(outfile,n+1)<0)
 diff --git a/src/cmd/ksh93/sh/timers.c b/src/cmd/ksh93/sh/timers.c
-index 26e96d854..35911f609 100644
+index 26e96d854..18552cee7 100644
 --- a/src/cmd/ksh93/sh/timers.c
 +++ b/src/cmd/ksh93/sh/timers.c
 @@ -2,7 +2,7 @@
@@ -1156,7 +1261,7 @@ index 26e96d854..35911f609 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1170,7 +1275,7 @@ index 26e96d854..35911f609 100644
  		tp = tptop;
  	}
 diff --git a/src/cmd/ksh93/sh/trestore.c b/src/cmd/ksh93/sh/trestore.c
-index 8911b507e..aba4c84f5 100644
+index 8911b507e..53de8d44d 100644
 --- a/src/cmd/ksh93/sh/trestore.c
 +++ b/src/cmd/ksh93/sh/trestore.c
 @@ -2,7 +2,7 @@
@@ -1178,7 +1283,7 @@ index 8911b507e..aba4c84f5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1300,6 +1405,15 @@ index 8911b507e..aba4c84f5 100644
  			if(sh.heredocs)
  				iop->iooffset = sfseek(sh.heredocs,0,SEEK_END);
  			else
+@@ -237,7 +237,7 @@ static struct ionod *r_redirect(void)
+ 			iop->iovname = r_string();
+ 		else
+ 			iop->iovname = 0;
+-		iop->iofile &= ~IOVNM;
++		iop->iofile &= (unsigned)~IOVNM;
+ 	}
+ 	if(iop)
+ 		iop->ionxt = 0;
 @@ -258,7 +258,7 @@ static void r_comarg(struct comnod *com)
  	}
  	else if(com->comarg.dp = r_comlist())
@@ -1334,6 +1448,15 @@ index 8911b507e..aba4c84f5 100644
  	struct regnod *reg=0,*regold,*regtop=0;
  	while((l=sfgetl(infile))>=0)
  	{
+@@ -302,7 +302,7 @@ static struct regnod *r_switch(void)
+ 			regtop = reg;
+ 		else
+ 			regold->regnxt = reg;
+-		reg->regflag = l;
++		reg->regflag = (char)l;
+ 		reg->regptr = r_arg();
+ 		reg->regcom = r_tree();
+ 		regold = reg;
 @@ -315,12 +315,12 @@ static struct regnod *r_switch(void)
  static char *r_string(void)
  {
@@ -1351,5 +1474,5 @@ index 8911b507e..aba4c84f5 100644
  	ptr[l] = 0;
  	return ptr;
 -- 
-2.49.0
+2.52.0
 

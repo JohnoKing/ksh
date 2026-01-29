@@ -1,7 +1,8 @@
-From 12d6dc12da847c8ec093c6d643781b94c3da8298 Mon Sep 17 00:00:00 2001
+From 71499b424c26f9b70054478a68f8744f3ab3a6e2 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
-Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
+Date: Wed, 28 Jan 2026 21:33:52 -0800
+Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
+ expansion, init and stk(3)
 
 This is the first of a thirteen(!!) part patch series that enables
 ksh93 to operate within a 64-bit address space (currently dubbed
@@ -54,34 +55,42 @@ so I've decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,042 => 3,808 => 248 (progression from cc5e0692 => part 1 => part 13)
+4,042 => 3,797 => 86 (progression from d462de66 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on it's own). The full suite of
 changes can be found on the thickfold-size_t branch.
 This first part has been submitted severed from the other
 changes to make code review less laborious (I hope).
-The full patch series can be found here:
-https://github.com/JohnoKing/ksh/tree/ad588c003d/patches
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/test.c   |  36 ++--
- src/cmd/ksh93/include/defs.h  |  10 +-
- src/cmd/ksh93/include/shell.h |  22 +--
+ src/cmd/ksh93/bltins/test.c   |  38 ++--
+ src/cmd/ksh93/include/defs.h  |  12 +-
+ src/cmd/ksh93/include/shell.h |  24 +--
  src/cmd/ksh93/include/test.h  |   4 +-
  src/cmd/ksh93/sh/init.c       | 107 +++++-----
- src/cmd/ksh93/sh/macro.c      | 361 ++++++++++++++++++----------------
+ src/cmd/ksh93/sh/macro.c      | 363 ++++++++++++++++++----------------
  src/cmd/ksh93/shell.3         |   6 +-
- src/lib/libast/include/stk.h  |   5 +-
+ src/lib/libast/include/stk.h  |   7 +-
  src/lib/libast/man/stk.3      |  12 +-
- src/lib/libast/misc/stk.c     |  56 +++---
- 10 files changed, 324 insertions(+), 295 deletions(-)
+ src/lib/libast/misc/stk.c     |  58 +++---
+ src/lib/libast/tm/tmxdate.c   |   2 +-
+ 11 files changed, 331 insertions(+), 302 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
-index 610b56d47..93552e0c6 100644
+index 610b56d47..dbea27f21 100644
 --- a/src/cmd/ksh93/bltins/test.c
 +++ b/src/cmd/ksh93/bltins/test.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -86,8 +86,9 @@ static inline int posix_andor(char *arg)
  
  static int test_strmatch(const char *str, const char *pat)
@@ -213,9 +222,18 @@ index 610b56d47..93552e0c6 100644
  
  /*
 diff --git a/src/cmd/ksh93/include/defs.h b/src/cmd/ksh93/include/defs.h
-index ca20ab43f..0b777d82e 100644
+index ca20ab43f..f08ec1e79 100644
 --- a/src/cmd/ksh93/include/defs.h
 +++ b/src/cmd/ksh93/include/defs.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -113,9 +113,9 @@ extern void		*sh_arithcomp(char*);
  extern pid_t 		sh_fork(int,int*);
  extern pid_t		_sh_fork(pid_t, int ,int*);
@@ -256,9 +274,18 @@ index ca20ab43f..0b777d82e 100644
  #else
  #define is_option(s,x)	((s)->v[((x)&WMASK)/WBITS] & ((uint64_t)1 << ((x) % WBITS)))
 diff --git a/src/cmd/ksh93/include/shell.h b/src/cmd/ksh93/include/shell.h
-index 0745d11ee..afbc8cf61 100644
+index 0745d11ee..6f7e27c8a 100644
 --- a/src/cmd/ksh93/include/shell.h
 +++ b/src/cmd/ksh93/include/shell.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -229,8 +229,8 @@ struct sh_scoped
  
  struct limits
@@ -326,7 +353,7 @@ index 0745d11ee..afbc8cf61 100644
  
  /*
 diff --git a/src/cmd/ksh93/include/test.h b/src/cmd/ksh93/include/test.h
-index a2daaf59b..6605fc41a 100644
+index a2daaf59b..fb260b198 100644
 --- a/src/cmd/ksh93/include/test.h
 +++ b/src/cmd/ksh93/include/test.h
 @@ -2,7 +2,7 @@
@@ -334,7 +361,7 @@ index a2daaf59b..6605fc41a 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -348,7 +375,7 @@ index a2daaf59b..6605fc41a 100644
  extern const char	sh_opttest[];
  extern const char	test_opchars[];
 diff --git a/src/cmd/ksh93/sh/init.c b/src/cmd/ksh93/sh/init.c
-index 4e5f7fd28..b9278659d 100644
+index 67f394ac0..71b9ecf64 100644
 --- a/src/cmd/ksh93/sh/init.c
 +++ b/src/cmd/ksh93/sh/init.c
 @@ -165,14 +165,14 @@ struct match
@@ -569,7 +596,7 @@ index 4e5f7fd28..b9278659d 100644
  	sh.ed_context = ed_open();
  	error_info.id = path_basename(argv[0]);
  	umask(sh.mask = umask(0));
-@@ -1570,8 +1576,8 @@ struct Stats
+@@ -1576,8 +1582,8 @@ struct Stats
  {
  	Namfun_t	hdr;
  	char		*nodes;
@@ -580,7 +607,7 @@ index 4e5f7fd28..b9278659d 100644
  };
  
  static Namval_t *next_stat(Namval_t *np, Dt_t *root,Namfun_t *fp)
-@@ -1589,17 +1595,19 @@ static Namval_t *create_stat(Namval_t *np,const char *name,int flag,Namfun_t *fp
+@@ -1595,17 +1601,19 @@ static Namval_t *create_stat(Namval_t *np,const char *name,int flag,Namfun_t *fp
  {
  	struct Stats		*sp = (struct Stats*)fp;
  	const char		*cp=name;
@@ -604,7 +631,7 @@ index 4e5f7fd28..b9278659d 100644
  			goto found;
  	}
  	nq = 0;
-@@ -1645,7 +1653,7 @@ static Namfun_t	 stat_child_fun =
+@@ -1651,7 +1659,7 @@ static Namfun_t	 stat_child_fun =
  
  static void stat_init(void)
  {
@@ -613,7 +640,7 @@ index 4e5f7fd28..b9278659d 100644
  	size_t		extrasize = nstat*(sizeof(int)+NV_MINSZ);
  	struct Stats	*sp = sh_newof(0,struct Stats,1,extrasize);
  	Namval_t	*np;
-@@ -1806,7 +1814,7 @@ Dt_t *sh_inittree(const struct shtable2 *name_vals)
+@@ -1812,7 +1820,7 @@ Dt_t *sh_inittree(const struct shtable2 *name_vals)
  {
  	Namval_t *np;
  	const struct shtable2 *tp;
@@ -622,7 +649,7 @@ index 4e5f7fd28..b9278659d 100644
  	Dt_t *treep;
  	Dt_t *base_treep, *dict = 0;
  	for(tp=name_vals;*tp->sh_name;tp++)
-@@ -1863,9 +1871,9 @@ static inline int is_ctype_var(char *cp)
+@@ -1869,9 +1877,9 @@ static inline int is_ctype_var(char *cp)
  }
  
  /* for env_init: import one env var */
@@ -634,7 +661,7 @@ index 4e5f7fd28..b9278659d 100644
  	if(nv_open(cp,sh.var_tree,NV_EXPORT|NV_IDENT|NV_ASSIGN|NV_NOFAIL))
  		return;
  	/*
-@@ -1886,7 +1894,7 @@ static void env_init(void)
+@@ -1892,7 +1900,7 @@ static void env_init(void)
  {
  	char		*cp;
  	char		**ep=environ;
@@ -643,7 +670,7 @@ index 4e5f7fd28..b9278659d 100644
  	if(ep)
  	{
  		/* Import LC_ALL/LANG/LC_CTYPE first; the check for valid varname depends on the locale being set. */
-@@ -1918,17 +1926,17 @@ static void env_init(void)
+@@ -1924,17 +1932,17 @@ static void env_init(void)
   */
  #define BYPASS_MACRO
  
@@ -664,7 +691,7 @@ index 4e5f7fd28..b9278659d 100644
  {
  	return sh_offoption(opt);
  }
-@@ -1952,7 +1960,8 @@ struct Mapchar
+@@ -1958,7 +1966,8 @@ struct Mapchar
  static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
  {
  	struct Mapchar *mp = (struct Mapchar*)fp;
@@ -674,7 +701,7 @@ index 4e5f7fd28..b9278659d 100644
  	if(val)
  	{
  		if(mp->lctype!=lctype)
-@@ -1964,7 +1973,7 @@ static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
+@@ -1970,7 +1979,7 @@ static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
  			goto skip;
  		while(c = mbchar(val))
  		{
@@ -684,9 +711,18 @@ index 4e5f7fd28..b9278659d 100644
  			stkseek(sh.stk,off);
  			c  = mbconv(stkptr(sh.stk,off),c);
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index 4c77dea20..02f765578 100644
+index 4c77dea20..4d168b0b5 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -49,7 +49,7 @@
  #include	"streval.h"
  
@@ -1835,9 +1871,18 @@ index a1b2f39c4..ea2903974 100644
  void		*sh_parse(Sfio_t *\fIsp\fP, int \fIflags\fP);
  int 		sh_trap(const char *\fIstring\fP, int \fImode\fP);
 diff --git a/src/lib/libast/include/stk.h b/src/lib/libast/include/stk.h
-index a28599355..0d08cc949 100644
+index a28599355..0011dcf15 100644
 --- a/src/lib/libast/include/stk.h
 +++ b/src/lib/libast/include/stk.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -1883,9 +1928,18 @@ index 739a0dce7..7dac70f56 100644
  .fi
  .SH DESCRIPTION
 diff --git a/src/lib/libast/misc/stk.c b/src/lib/libast/misc/stk.c
-index 7eacec2ed..209f2faf5 100644
+index 7eacec2ed..6e43e7d7b 100644
 --- a/src/lib/libast/misc/stk.c
 +++ b/src/lib/libast/misc/stk.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -49,7 +49,7 @@
   *	data
   */
@@ -2084,6 +2138,19 @@ index 7eacec2ed..209f2faf5 100644
 +	sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
  	return (char*)(stream->_next = stream->_data+m);
  }
+diff --git a/src/lib/libast/tm/tmxdate.c b/src/lib/libast/tm/tmxdate.c
+index c63be9396..2972b6778 100644
+--- a/src/lib/libast/tm/tmxdate.c
++++ b/src/lib/libast/tm/tmxdate.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 -- 
-2.49.0
+2.52.0
 

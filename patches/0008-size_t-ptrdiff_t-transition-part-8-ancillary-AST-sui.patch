@@ -1,6 +1,6 @@
-From 4118b69290290e96fd23610ffa9d7e77c90b1ab9 Mon Sep 17 00:00:00 2001
+From 8a0108662f75ec9bbbcc9ad2ef0bf36d36200d91 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
+Date: Wed, 28 Jan 2026 21:34:03 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -18,30 +18,30 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,359 => 1,208 => 248 (progression from part 7 => part 8 => part 13)
+1,216 => 1,062 => 86 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/INIT/mamake.c        | 62 ++++++++++++++++++------------------
  src/cmd/builtin/features/pty |  2 ++
- src/cmd/builtin/pty.c        | 53 +++++++++++++++---------------
- src/lib/libdll/dll_lib.c     | 10 +++---
+ src/cmd/builtin/pty.c        | 61 ++++++++++++++++++-----------------
+ src/lib/libdll/dll_lib.c     | 12 ++++---
  src/lib/libdll/dllopen.c     | 58 +--------------------------------
- src/lib/libdll/dllscan.c     | 38 +++++++++++-----------
- src/lib/libsum/sum-ast4.c    |  2 +-
+ src/lib/libdll/dllscan.c     | 40 +++++++++++------------
+ src/lib/libsum/sum-ast4.c    |  4 +--
  src/lib/libsum/sum-crc.c     | 29 +++++++++--------
  src/lib/libsum/sum-lmd.c     |  6 ++--
  src/lib/libsum/sum-md5.c     |  2 +-
  src/lib/libsum/sum-prng.c    | 17 +++++-----
  src/lib/libsum/sum-sha1.c    |  4 +--
  src/lib/libsum/sumlib.c      | 14 ++++----
- 13 files changed, 124 insertions(+), 173 deletions(-)
+ 13 files changed, 131 insertions(+), 180 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
-index 0b1cd5ccd..26dc61a2f 100644
+index ff3c2bd5a..c72458f60 100644
 --- a/src/cmd/INIT/mamake.c
 +++ b/src/cmd/INIT/mamake.c
-@@ -293,13 +293,13 @@ static struct				/* program state		*/
+@@ -295,13 +295,13 @@ static struct				/* program state		*/
  	int		force;		/* all targets out of date	*/
  	int		ignore;		/* ignore command errors	*/
  	int		indent;		/* debug indent			*/
@@ -57,7 +57,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  
  	Stream_t	streams[4];	/* input file stream stack	*/
  	Stream_t	*sp;		/* input stream stack pointer	*/
-@@ -501,8 +501,8 @@ static char *appendn(Buf_t *buf, char *str, size_t n)
+@@ -503,8 +503,8 @@ static char *appendn(Buf_t *buf, char *str, size_t n)
  
  	if ((n + 1) >= (size_t)(buf->end - buf->nxt))
  	{
@@ -68,7 +68,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  		if (!(buf->buf = realloc(buf->buf, m)))
  			out_of_memory();
  		buf->end = buf->buf + m;
-@@ -835,7 +835,7 @@ static void view(void)
+@@ -837,7 +837,7 @@ static void view(void)
  				zp = zp->next = vp;
  			if (!c)
  				break;
@@ -77,7 +77,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  			s = t;
  		}
  	}
-@@ -926,7 +926,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -928,7 +928,7 @@ static void substitute(Buf_t *buf, char *s)
  			if (c == '[')
  			{
  				append(buf, b);
@@ -86,7 +86,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  				continue;
  			}
  
-@@ -946,7 +946,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -948,7 +948,7 @@ static void substitute(Buf_t *buf, char *s)
  			if ((c == ':' || c == '=') && (state.strict >= 2 || !v || c == ':' && !*v))
  			{
  				append(buf, b);
@@ -95,7 +95,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  				continue;
  			}
  
-@@ -957,7 +957,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -959,7 +959,7 @@ static void substitute(Buf_t *buf, char *s)
  
  			/* Un-terminate the variable name */
  
@@ -104,7 +104,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  
  			/* Find the ending '}', dealing with nesting */
  
-@@ -981,7 +981,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -983,7 +983,7 @@ static void substitute(Buf_t *buf, char *s)
  				q = cond(t - 1);
  				if (v)
  				{
@@ -113,7 +113,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  						v = 0;
  				}
  				else if (q == t)
-@@ -994,7 +994,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -996,7 +996,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *t;
  						*t = 0;
  						substitute(buf, q + 1);
@@ -122,7 +122,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  					}
  				}
  				else
-@@ -1005,7 +1005,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1007,7 +1007,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *q;
  						*q = 0;
  						substitute(buf, t + 1);
@@ -131,7 +131,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  					}
  				}
  				break;
-@@ -1026,9 +1026,9 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1028,9 +1028,9 @@ static void substitute(Buf_t *buf, char *s)
  							q++;
  						n++;
  						c = *q, *q = 0;  /* terminate for duplicate() */
@@ -143,7 +143,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  					}
  					if (!argv)
  						break;
-@@ -1074,13 +1074,13 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1076,13 +1076,13 @@ static void substitute(Buf_t *buf, char *s)
  					q = use(scr);
  					if ((argv ? (argv[2] = q, execute_v(NULL, argv)) : execute(NULL, q)) != 0)
  						error_out("expansion script error", t);
@@ -159,7 +159,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  					if (final_newline)
  						unadd(buf);
  					if (ferror(f) || fclose(f) == EOF)
-@@ -1104,7 +1104,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1106,7 +1106,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					substitute(buf, t);
@@ -168,7 +168,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  					break;
  				}
  				if (c != '-')
-@@ -1164,7 +1164,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1167,7 +1167,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					append(buf, b);
@@ -177,7 +177,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  					continue;
  				}
  				break;
-@@ -1173,7 +1173,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1176,7 +1176,7 @@ static void substitute(Buf_t *buf, char *s)
  				s++;
  		}
  		else
@@ -186,7 +186,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  	}
  }
  
-@@ -1267,7 +1267,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1270,7 +1270,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					c = vp->dir[vp->node];
  					vp->dir[vp->node] = 0;
  					append(buf, vp->dir);
@@ -195,7 +195,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  				}
  				else
  				{
-@@ -1275,7 +1275,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1278,7 +1278,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					append(buf, "/");
  				}
  				append(buf, file);
@@ -204,7 +204,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  				s = use(buf);
  				if (s = status(buf, o, s, st))
  				{
-@@ -1707,7 +1707,7 @@ static void run(Rule_t *r, char *s)
+@@ -1710,7 +1710,7 @@ static void run(Rule_t *r, char *s)
  					else
  					{
  						for (i = 3; isspace(*(t + i)); i++);
@@ -213,7 +213,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  						for (s = t + i; *s && !isspace(*s); s++);
  						c = *s;
  						*s = 0;
-@@ -1731,7 +1731,7 @@ static void run(Rule_t *r, char *s)
+@@ -1734,7 +1734,7 @@ static void run(Rule_t *r, char *s)
  					}
  				}
  			}
@@ -249,7 +249,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  {
  	append(buf, "lib");
  	append(buf, name);
-@@ -1973,7 +1973,7 @@ static char *require(char *lib, int dontcare)
+@@ -1971,7 +1971,7 @@ static char *require(char *lib, int dontcare)
  					break;
  				do
  				{
@@ -258,7 +258,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  				} while ((c = fgetc(f)) != EOF && !isspace(c));
  				s = use(tmp);
  				if (s[0] && (s[0] != '-' || s[1]))
-@@ -2814,7 +2814,7 @@ int main(int argc, char **argv)
+@@ -2812,7 +2812,7 @@ int main(int argc, char **argv)
  		case 'j':
  			append(state.opt, " -j");
  			append(state.opt, opt_info.arg);
@@ -267,7 +267,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  			continue;
  		case 'k':
  			append(state.opt, " -k");
-@@ -2847,7 +2847,7 @@ int main(int argc, char **argv)
+@@ -2845,7 +2845,7 @@ int main(int argc, char **argv)
  		case 'D':
  			append(state.opt, " -D");
  			append(state.opt, opt_info.arg);
@@ -276,7 +276,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  			if (state.debug > 0)
  				state.debug = 0;
  			continue;
-@@ -2887,7 +2887,7 @@ int main(int argc, char **argv)
+@@ -2885,7 +2885,7 @@ int main(int argc, char **argv)
  				break;
  			}
  			for (t = s += 2; *t && *t != '='; t++);
@@ -285,7 +285,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  			{
  				if (*t)
  				{
-@@ -2904,7 +2904,7 @@ int main(int argc, char **argv)
+@@ -2902,7 +2902,7 @@ int main(int argc, char **argv)
  				}
  				setval(state.vars, s - 1, v);
  				if (c)
@@ -294,7 +294,7 @@ index 0b1cd5ccd..26dc61a2f 100644
  				continue;
  			}
  			usage();
-@@ -3068,7 +3068,7 @@ int main(int argc, char **argv)
+@@ -3066,7 +3066,7 @@ int main(int argc, char **argv)
  				append(tmp, ".FORCE");
  				setval(state.vars, use(tmp), v);
  				drop(tmp);
@@ -317,9 +317,35 @@ index 73a44e473..55a83e148 100644
  	#include	<fcntl.h>
  	#if _lib_ptsname
 diff --git a/src/cmd/builtin/pty.c b/src/cmd/builtin/pty.c
-index 1f464dced..25b76bca4 100644
+index 1f464dced..71682f75d 100644
 --- a/src/cmd/builtin/pty.c
 +++ b/src/cmd/builtin/pty.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1992-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -257,13 +257,13 @@ mkpty(int* master, int* minion)
+ #endif
+ 	tty.c_oflag |= (ONLCR | OPOST);
+ #ifdef OCRNL
+-	tty.c_oflag &= ~OCRNL;
++	tty.c_oflag &= (tcflag_t)~OCRNL;
+ #endif
+ #ifdef ONLRET
+-	tty.c_oflag &= ~ONLRET;
++	tty.c_oflag &= (tcflag_t)~ONLRET;
+ #endif
+ 	tty.c_iflag |= BRKINT;
+-	tty.c_iflag &= ~IGNBRK;
++	tty.c_iflag &= (tcflag_t)~IGNBRK;
+ 	tty.c_cc[VTIME] = 0;
+ 	tty.c_cc[VMIN] = CMIN;
+ #ifdef B115200
 @@ -374,7 +374,7 @@ runcmd(char** argv, int minion, int session)
   */
  
@@ -525,9 +551,18 @@ index 1f464dced..25b76bca4 100644
  		ap->argv = (char**)(ap + 1);
  		ap->args = (char*)(ap->argv + n + 2);
 diff --git a/src/lib/libdll/dll_lib.c b/src/lib/libdll/dll_lib.c
-index 172c0fb79..f0c1a6788 100644
+index 172c0fb79..8e835803c 100644
 --- a/src/lib/libdll/dll_lib.c
 +++ b/src/lib/libdll/dll_lib.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1997-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -12,6 +12,7 @@
  *                                                                      *
  *                 Glenn Fowler <gsf@research.att.com>                  *
@@ -570,7 +605,7 @@ index 172c0fb79..f0c1a6788 100644
  		loaded = lib;
  		errorf("dll", NULL, -1, "dll_lib: %s version %lu loaded from %s", names->name, version, lib->path);
 diff --git a/src/lib/libdll/dllopen.c b/src/lib/libdll/dllopen.c
-index 6003c592c..d1b836bea 100644
+index 6003c592c..d7f980db9 100644
 --- a/src/lib/libdll/dllopen.c
 +++ b/src/lib/libdll/dllopen.c
 @@ -2,7 +2,7 @@
@@ -578,7 +613,7 @@ index 6003c592c..d1b836bea 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1997-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -650,9 +685,18 @@ index 6003c592c..d1b836bea 100644
 -
 -#endif
 diff --git a/src/lib/libdll/dllscan.c b/src/lib/libdll/dllscan.c
-index d4ff7b598..9e97e104d 100644
+index d4ff7b598..08f1c01b0 100644
 --- a/src/lib/libdll/dllscan.c
 +++ b/src/lib/libdll/dllscan.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1997-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -40,9 +40,9 @@
  	char*		pb; \
  	char*		pp; \
@@ -761,9 +805,18 @@ index d4ff7b598..9e97e104d 100644
  					break;
  				}
 diff --git a/src/lib/libsum/sum-ast4.c b/src/lib/libsum/sum-ast4.c
-index 14bd47680..1c57eab8f 100644
+index 14bd47680..e175ce52d 100644
 --- a/src/lib/libsum/sum-ast4.c
 +++ b/src/lib/libsum/sum-ast4.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -80,7 +80,7 @@ ast4_block(Sum_t* p, const void* s, size_t n)
  	Ast4_sum_t*	a = &((Ast4_t*)p)->cur;
  	unsigned char*	b = (unsigned char*)s;
@@ -774,7 +827,7 @@ index 14bd47680..1c57eab8f 100644
  	while (b < e)
  	{
 diff --git a/src/lib/libsum/sum-crc.c b/src/lib/libsum/sum-crc.c
-index bfdc734ae..6f8c913bb 100644
+index bfdc734ae..64f372b3c 100644
 --- a/src/lib/libsum/sum-crc.c
 +++ b/src/lib/libsum/sum-crc.c
 @@ -2,7 +2,7 @@
@@ -782,7 +835,7 @@ index bfdc734ae..6f8c913bb 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -847,7 +900,7 @@ index bfdc734ae..6f8c913bb 100644
  				x = (x>>1) ^ ((x & 1) ? polynomial : 0);
  			sum->tabdata[i] = x;
 diff --git a/src/lib/libsum/sum-lmd.c b/src/lib/libsum/sum-lmd.c
-index fbc59cabf..ed42e5585 100644
+index fbc59cabf..82991d7b3 100644
 --- a/src/lib/libsum/sum-lmd.c
 +++ b/src/lib/libsum/sum-lmd.c
 @@ -2,7 +2,7 @@
@@ -855,7 +908,7 @@ index fbc59cabf..ed42e5585 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -891,7 +944,7 @@ index c009254f8..1a9035afc 100644
  	NOT_USED(scale);
  	d = (flags & SUM_TOTAL) ? x->digest_sum : x->digest;
 diff --git a/src/lib/libsum/sum-prng.c b/src/lib/libsum/sum-prng.c
-index edf06a45b..dfae78230 100644
+index edf06a45b..d5c3d2364 100644
 --- a/src/lib/libsum/sum-prng.c
 +++ b/src/lib/libsum/sum-prng.c
 @@ -2,7 +2,7 @@
@@ -899,7 +952,7 @@ index edf06a45b..dfae78230 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -962,7 +1015,7 @@ index f9f52b57d..3b91fd323 100644
  	NOT_USED(scale);
  	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
 diff --git a/src/lib/libsum/sumlib.c b/src/lib/libsum/sumlib.c
-index 0771f5932..872193a56 100644
+index 0771f5932..3d31da80e 100644
 --- a/src/lib/libsum/sumlib.c
 +++ b/src/lib/libsum/sumlib.c
 @@ -2,7 +2,7 @@
@@ -970,7 +1023,7 @@ index 0771f5932..872193a56 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1996-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1016,5 +1069,5 @@ index 0771f5932..872193a56 100644
  		n += sfprintf(sp, "[+%s?%s]", methods[i].match, methods[i].description);
  		if (methods[i].options)
 -- 
-2.49.0
+2.52.0
 

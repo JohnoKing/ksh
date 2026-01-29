@@ -1,7 +1,8 @@
-From cb8bb87e439250fc19b653fe425a11a0374571fc Mon Sep 17 00:00:00 2001
+From d14db01cf7d1e7aae1e4ebfec96810adc175c65f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
-Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin commands
+Date: Wed, 28 Jan 2026 21:34:07 -0800
+Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
+ commands
 
 This is the tenth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -14,29 +15,38 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,097 => 990 => 248 (progression from part 9 => part 10 => part 13)
+947 => 840 => 86 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/alarm.c     |  2 +-
- src/cmd/ksh93/bltins/cd_pwd.c    |  2 +-
- src/cmd/ksh93/bltins/enum.c      | 16 +++---
- src/cmd/ksh93/bltins/getopts.c   |  6 +--
- src/cmd/ksh93/bltins/hist.c      |  8 +--
- src/cmd/ksh93/bltins/misc.c      | 18 +++----
- src/cmd/ksh93/bltins/mkservice.c |  6 +--
+ src/cmd/ksh93/bltins/alarm.c     |  4 +-
+ src/cmd/ksh93/bltins/cd_pwd.c    |  4 +-
+ src/cmd/ksh93/bltins/enum.c      | 18 ++++---
+ src/cmd/ksh93/bltins/getopts.c   |  8 +--
+ src/cmd/ksh93/bltins/hist.c      | 10 ++--
+ src/cmd/ksh93/bltins/misc.c      | 20 ++++----
+ src/cmd/ksh93/bltins/mkservice.c |  8 +--
  src/cmd/ksh93/bltins/read.c      | 83 +++++++++++++++++---------------
  src/cmd/ksh93/bltins/trap.c      | 16 +++---
  src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
- src/cmd/ksh93/bltins/ulimit.c    | 16 +++---
+ src/cmd/ksh93/bltins/ulimit.c    | 18 +++----
  src/cmd/ksh93/bltins/umask.c     |  8 +--
- src/cmd/ksh93/include/builtins.h |  2 +-
- 13 files changed, 113 insertions(+), 104 deletions(-)
+ src/cmd/ksh93/include/builtins.h |  4 +-
+ 13 files changed, 122 insertions(+), 113 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
-index 399b3c24d..4c2a4bad6 100644
+index 399b3c24d..eb8226144 100644
 --- a/src/cmd/ksh93/bltins/alarm.c
 +++ b/src/cmd/ksh93/bltins/alarm.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -70,7 +70,7 @@ static void *time_add(struct tevent *item, void *list)
  		tp->next = item;
  	}
@@ -47,9 +57,18 @@ index 399b3c24d..4c2a4bad6 100644
  }
  
 diff --git a/src/cmd/ksh93/bltins/cd_pwd.c b/src/cmd/ksh93/bltins/cd_pwd.c
-index 66a49780a..89cada6f1 100644
+index 66a49780a..3755e0ee7 100644
 --- a/src/cmd/ksh93/bltins/cd_pwd.c
 +++ b/src/cmd/ksh93/bltins/cd_pwd.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -371,7 +371,7 @@ int	b_pwd(int argc, char *argv[],Shbltin_t *context)
  	}
  	if(flag)
@@ -60,9 +79,18 @@ index 66a49780a..89cada6f1 100644
  	}
  	sfputr(sfstdout,cp,'\n');
 diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
-index 37f2bdd38..40c81c05a 100644
+index 37f2bdd38..10935a943 100644
 --- a/src/cmd/ksh93/bltins/enum.c
 +++ b/src/cmd/ksh93/bltins/enum.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -103,15 +103,15 @@ extern const char is_spcbuiltin[];
  struct Enum
  {
@@ -114,9 +142,18 @@ index 37f2bdd38..40c81c05a 100644
  		nv_putsub(np, NULL, ARRAY_SCAN);
  		ep->values[n] = 0;
 diff --git a/src/cmd/ksh93/bltins/getopts.c b/src/cmd/ksh93/bltins/getopts.c
-index 2c356dda7..2b59c4d4b 100644
+index 2c356dda7..47897b597 100644
 --- a/src/cmd/ksh93/bltins/getopts.c
 +++ b/src/cmd/ksh93/bltins/getopts.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -42,7 +42,7 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
  	if(nv_search(s,sh.fun_tree,0))
  #endif /* SHOPT_NAMESPACE */
@@ -145,9 +182,18 @@ index 2c356dda7..2b59c4d4b 100644
  	np = sh_scoped(OPTARGNOD);
  	if(opt_info.num == LONG_MIN)
 diff --git a/src/cmd/ksh93/bltins/hist.c b/src/cmd/ksh93/bltins/hist.c
-index fde5e36a7..571cd3539 100644
+index fde5e36a7..501e60b77 100644
 --- a/src/cmd/ksh93/bltins/hist.c
 +++ b/src/cmd/ksh93/bltins/hist.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -91,7 +91,7 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
  	    case 'N':
  		if(indx<=0)
@@ -178,9 +224,18 @@ index fde5e36a7..571cd3539 100644
  	string[c] = 0;
  	*newp++ =  0;
 diff --git a/src/cmd/ksh93/bltins/misc.c b/src/cmd/ksh93/bltins/misc.c
-index 168633f61..510735da2 100644
+index 168633f61..541eb166d 100644
 --- a/src/cmd/ksh93/bltins/misc.c
 +++ b/src/cmd/ksh93/bltins/misc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -155,12 +155,12 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
  		sh_onstate(SH_EXEC);
  		if(sh.subshell && !sh.subshare)
@@ -225,9 +280,18 @@ index 168633f61..510735da2 100644
  	times(&cpu_times);
  	/* Print the time (user & system) consumed by the shell. */
 diff --git a/src/cmd/ksh93/bltins/mkservice.c b/src/cmd/ksh93/bltins/mkservice.c
-index b60980b2f..07cae7a26 100644
+index b60980b2f..882b28e5d 100644
 --- a/src/cmd/ksh93/bltins/mkservice.c
 +++ b/src/cmd/ksh93/bltins/mkservice.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -237,7 +237,7 @@ static int waitnotify(int fd, long timeout, int rw)
  			sfprintf(sfstderr," %d",sffileno(poll_list[i]));
  		sfputc(sfstderr,'\n');
@@ -256,7 +320,7 @@ index b60980b2f..07cae7a26 100644
  
  	for (i = 0; cp = disctab[i]; i++)
 diff --git a/src/cmd/ksh93/bltins/read.c b/src/cmd/ksh93/bltins/read.c
-index 1568948cb..9c6b4100e 100644
+index 4c7c2c0fc..24123fc30 100644
 --- a/src/cmd/ksh93/bltins/read.c
 +++ b/src/cmd/ksh93/bltins/read.c
 @@ -52,11 +52,11 @@ struct read_save
@@ -357,7 +421,7 @@ index 1568948cb..9c6b4100e 100644
  			ep->e_nttyparm.c_lflag |= ISIG;
  			tty_set(fd,TCSADRAIN,&ep->e_nttyparm);
  		}
-@@ -339,13 +342,13 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -344,13 +347,13 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		{
  			Namval_t *mp = nv_open(name,sh.var_tree,oflags|NV_NOREF);
  			if((c=(*nfp->disc->readf)(mp,iop,delim,nfp))>=0)
@@ -373,7 +437,7 @@ index 1568948cb..9c6b4100e 100644
  	}
  	was_write = (sfset(iop,SFIO_WRITE,0)&SFIO_WRITE)!=0;
  	if(fd==0)
-@@ -357,7 +360,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -362,7 +365,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		if(jmpval)
  			goto done;
  		if(timeout)
@@ -382,7 +446,7 @@ index 1568948cb..9c6b4100e 100644
  	}
  #if !SHOPT_SCRIPTONLY
  	if((flags&S_FLAG) && !sh.hist_ptr)
-@@ -371,9 +374,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -376,9 +379,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  	{
  		char buf[256],*var=buf,*cur,*end,*up,*v;
  		/* reserved buffer */
@@ -394,7 +458,7 @@ index 1568948cb..9c6b4100e 100644
  			end = var + c;
  		}
  		else
-@@ -388,8 +391,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -393,8 +396,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		}
  		else
  		{
@@ -405,7 +469,7 @@ index 1568948cb..9c6b4100e 100644
  			for (;;)
  			{
  				c = size;
-@@ -398,7 +401,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -403,7 +406,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  					cp = 0;
  					f = 0;
  					m = 0;
@@ -414,7 +478,7 @@ index 1568948cb..9c6b4100e 100644
  						m++;
  					if(m>0)
  						cp = (unsigned char*)buf;
-@@ -420,7 +423,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -425,7 +428,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
  					}
  				}
@@ -423,7 +487,7 @@ index 1568948cb..9c6b4100e 100644
  				{
  					*v++ = 0;
  					m = v-(char*)cp;
-@@ -431,23 +434,23 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -436,23 +439,23 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  				{
  					if(c > (end-cur))
  					{
@@ -453,7 +517,7 @@ index 1568948cb..9c6b4100e 100644
  					cur += c;
  					if(mbwide() && !binary)
  					{
-@@ -479,7 +482,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -484,7 +487,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		}
  		if(timeslot)
  			sh_timerdel(timeslot);
@@ -462,7 +526,7 @@ index 1568948cb..9c6b4100e 100644
  		{
  #if SHOPT_OPTIMIZE
  			/* only optimize this operation if the loop invariants optimizer is not being used */
-@@ -488,16 +491,16 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -493,16 +496,16 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  			int optimize = 1;
  #endif
  			if(optimize && c==size && np->nvalue && !nv_isarray(np))
@@ -483,7 +547,7 @@ index 1568948cb..9c6b4100e 100644
  			}
  		}
  		else
-@@ -529,10 +532,10 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -534,10 +537,10 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  			cpmax--;
  #endif /* SHOPT_CRNL */
  		if(*(cpmax-1) != delim)
@@ -496,7 +560,7 @@ index 1568948cb..9c6b4100e 100644
  #endif
  		c = sh.ifstable[*cp++];
  #if !SHOPT_MULTIBYTE
-@@ -657,7 +660,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -662,7 +665,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  				{
  #if !SHOPT_SCRIPTONLY
  					if(flags&S_FLAG)
@@ -505,7 +569,7 @@ index 1568948cb..9c6b4100e 100644
  #endif
  					cpmax = cp + c;
  					c = sh.ifstable[*cp++];
-@@ -731,7 +734,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -736,7 +739,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  						{
  							if(val)
  							{
@@ -514,7 +578,7 @@ index 1568948cb..9c6b4100e 100644
  								use_stak = 1;
  							}
  							val = (char*)++cp;
-@@ -745,7 +748,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -750,7 +753,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  						{
  							if(val)
  							{
@@ -524,10 +588,10 @@ index 1568948cb..9c6b4100e 100644
  							}
  							if(cp = (unsigned char*)sfgetr(iop,delim,0))
 diff --git a/src/cmd/ksh93/bltins/trap.c b/src/cmd/ksh93/bltins/trap.c
-index cf06556aa..e9a657f99 100644
+index fa4d6085b..e8e59c82d 100644
 --- a/src/cmd/ksh93/bltins/trap.c
 +++ b/src/cmd/ksh93/bltins/trap.c
-@@ -164,7 +164,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
+@@ -172,7 +172,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
  				if(sh.subshell && !sh.subshare)
  					sh_subfork();
  				if(sig >= sh.st.trapmax)
@@ -536,7 +600,7 @@ index cf06556aa..e9a657f99 100644
  				arg = sh.st.trapcom[sig];
  				sh_sigtrap(sig);
  				sh.st.trapcom[sig] = (sh.sigflag[sig]&SH_SIGOFF) ? Empty : sh_strdup(action);
-@@ -345,18 +345,18 @@ int	b_suspend(int argc,char *argv[],Shbltin_t *context)
+@@ -353,18 +353,18 @@ int	b_suspend(int argc,char *argv[],Shbltin_t *context)
  static int sig_number(const char *string)
  {
  	const Shtable_t	*tp;
@@ -558,7 +622,7 @@ index cf06556aa..e9a657f99 100644
  		do
  		{
  			c = *string++;
-@@ -372,20 +372,20 @@ static int sig_number(const char *string)
+@@ -380,20 +380,20 @@ static int sig_number(const char *string)
  			o += 3;
  			if(isdigit(*stkptr(sh.stk,o)))
  			{
@@ -582,7 +646,7 @@ index cf06556aa..e9a657f99 100644
  		}
  		if((n>>SH_SIGBITS)&SH_SIGRUNTIME)
  			n = sh.sigruntime[(n&((1<<SH_SIGBITS)-1))-1];
-@@ -492,7 +492,7 @@ static void sig_list(int flag)
+@@ -500,7 +500,7 @@ static void sig_list(int flag)
  		}
  		else if(sig&SH_TRAP)
  			traps[sig&~SH_TRAP] = (char*)tp->sh_name;
@@ -592,7 +656,7 @@ index cf06556aa..e9a657f99 100644
  	}
  	if(flag > 0)
 diff --git a/src/cmd/ksh93/bltins/typeset.c b/src/cmd/ksh93/bltins/typeset.c
-index bb5a2e8ea..eaa0f96f3 100644
+index fc515ae92..d3b491989 100644
 --- a/src/cmd/ksh93/bltins/typeset.c
 +++ b/src/cmd/ksh93/bltins/typeset.c
 @@ -69,7 +69,7 @@ struct tdata
@@ -604,7 +668,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  	int		noref;
  };
  
-@@ -239,7 +239,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
+@@ -238,7 +238,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
  	}
  	else if(argv[0][0] != 't')		/* not <t>ypeset */
  	{
@@ -613,7 +677,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  		error_info.id = new_argv[0] = SYSTYPESET->nvname;
  		if(argv[0][0] == 'a')		/* <a>utoload == typeset -fu */
  			new_argv[1] = "-fu";
-@@ -294,7 +294,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
+@@ -293,7 +293,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
  				/* FALLTHROUGH */
  			case 'F':
  			case 'X':
@@ -622,7 +686,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  					tdata.argnum = (n=='X'?2*sizeof(Sfdouble_t):10);
  				else if (tdata.argnum==0)
  					tdata.argnum = NV_FLTSIZEZERO;
-@@ -371,7 +371,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
+@@ -370,7 +370,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
  				troot = sh.fun_tree;
  				break;
  			case 'i':
@@ -631,7 +695,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  					tdata.argnum = 10;
  				if(isfloat)
  				{
-@@ -526,9 +526,9 @@ endargs:
+@@ -525,9 +525,9 @@ endargs:
  	{
  		Stk_t *stkp = sh.stk;
  #if SHOPT_NAMESPACE
@@ -643,7 +707,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  		if(!tdata.prefix)
  			return sh_outtype(sfstdout);
  		sfputr(stkp,NV_CLASS,-1);
-@@ -761,7 +761,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
+@@ -760,7 +760,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
  					r++;
  				if(tp->help)
  				{
@@ -652,7 +716,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  					if(!np)
  					{
  						sfputr(sh.stk,sh.prefix,'.');
-@@ -967,7 +967,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
+@@ -966,7 +966,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
  					if(flag&NV_RDONLY && !tp->argnum && !(flag&(NV_INTEGER|NV_BINARY)) && !(flag&(NV_LJUST|NV_RJUST|NV_ZFILL)))
  						/* New requested attribute(s) are readonly, have a provided or defaulted size of 0, and are
  						   not a string justification nor numeric. Justified or binary strings can have a size of 0. */
@@ -661,7 +725,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  					else
  						nv_newattr(np, newflag&~NV_ASSIGN, tp->argnum);
  				}
-@@ -1095,7 +1095,7 @@ int sh_addlib(void* dll, char* name, Pathcomp_t* pp)
+@@ -1094,7 +1094,7 @@ int sh_addlib(void* dll, char* name, Pathcomp_t* pp)
  	if (nlib >= maxlib)
  	{
  		maxlib += GROWLIB;
@@ -670,7 +734,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  	}
  	liblist[nlib].dll = dll;
  	liblist[nlib].attr = (sp->nosfio?BLT_NOSFIO:0);
-@@ -1130,8 +1130,9 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+@@ -1129,8 +1129,9 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
  {
  	char *arg=0, *name;
  	int n, r=0, flag=0;
@@ -681,7 +745,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  	struct tdata tdata;
  	Shbltin_f addr;
  	Stk_t	*stkp;
-@@ -1213,7 +1214,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+@@ -1220,7 +1221,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
  		return 0;
  	}
  	r = 0;
@@ -689,8 +753,8 @@ index bb5a2e8ea..eaa0f96f3 100644
 +	offset = stktell(stkp);
  	while(arg = *argv)
  	{
- 		name = path_basename(arg);
-@@ -1227,7 +1228,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+ 		if(tdata.prefix)
+@@ -1246,7 +1247,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
  			{
  				if(!dlete && !liblist[n].dll)
  					continue;
@@ -699,7 +763,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  #else
  		if(dlete)
  			for(n=dlete; --n>=0;)
-@@ -1260,7 +1261,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
+@@ -1279,7 +1280,7 @@ int	b_builtin(int argc,char *argv[],Shbltin_t *context)
  			errormsg(SH_DICT,ERROR_exit(0),"%s: %s",*argv,errmsg);
  			r = 1;
  		}
@@ -708,7 +772,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  		argv++;
  	}
  	return r;
-@@ -1476,7 +1477,8 @@ static int unall(int argc, char **argv, Dt_t *troot)
+@@ -1495,7 +1496,8 @@ static int unall(int argc, char **argv, Dt_t *troot)
  static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
  {
  	char	*cp;
@@ -718,7 +782,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  	char	tempexport=0;
  	sh_sigcheck();
  	if(flag)
-@@ -1554,7 +1556,7 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
+@@ -1577,7 +1579,7 @@ static int print_namval(Sfio_t *file,Namval_t *np,int flag, struct tdata *tp)
  			sfputc(file, '\n');
  			sh_deparse(file, (Shnode_t*)(rp->ptree), 2 | nv_isattr(np,NV_FPOSIX), 0);
  		}
@@ -727,7 +791,7 @@ index bb5a2e8ea..eaa0f96f3 100644
  	}
  	if(nv_arrayptr(np))
  	{
-@@ -1642,7 +1644,7 @@ static void print_scan(Sfio_t *file, int flag, Dt_t *root, int option,struct tda
+@@ -1665,7 +1667,7 @@ static void print_scan(Sfio_t *file, int flag, Dt_t *root, int option,struct tda
  	if(flag==NV_LTOU || flag==NV_UTOL)
  		tp->scanmask |= NV_UTOL|NV_LTOU;
  	namec = nv_scan(root, nullscan, tp, tp->scanmask, flag&~NV_IARRAY);
@@ -737,9 +801,18 @@ index bb5a2e8ea..eaa0f96f3 100644
  	if(mbcoll())
  		strsort(argv,namec,strcoll);
 diff --git a/src/cmd/ksh93/bltins/ulimit.c b/src/cmd/ksh93/bltins/ulimit.c
-index 930b32a68..10a5c40cd 100644
+index 930b32a68..5de1b0220 100644
 --- a/src/cmd/ksh93/bltins/ulimit.c
 +++ b/src/cmd/ksh93/bltins/ulimit.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -70,14 +70,14 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
  {
  	char *limit;
@@ -792,20 +865,20 @@ index 930b32a68..10a5c40cd 100644
  						errormsg(SH_DICT,ERROR_system(1),e_number,limit);
  						UNREACHABLE();
 diff --git a/src/cmd/ksh93/bltins/umask.c b/src/cmd/ksh93/bltins/umask.c
-index 7b9819dd3..d27e999b7 100644
+index c6a79d12f..46300d00e 100644
 --- a/src/cmd/ksh93/bltins/umask.c
 +++ b/src/cmd/ksh93/bltins/umask.c
 @@ -39,7 +39,8 @@
  int	b_umask(int argc,char *argv[],Shbltin_t *context)
  {
  	char *mask;
--	int flag = 0, sflag = 0;
+-	int flag = 0, pflag = 0, sflag = 0;
 +	mode_t flag = 0;
-+	int sflag = 0;
++	int pflag = 0, sflag = 0;
  	NOT_USED(context);
  	while((argc = optget(argv,sh_optumask))) switch(argc)
  	{
-@@ -62,13 +63,13 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
+@@ -65,13 +66,13 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
  	argv += opt_info.index;
  	if(mask = *argv)
  	{
@@ -821,7 +894,7 @@ index 7b9819dd3..d27e999b7 100644
  				else
  				{
  					errormsg(SH_DICT,ERROR_exit(1),e_number,*argv);
-@@ -79,6 +80,7 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
+@@ -82,6 +83,7 @@ int	b_umask(int argc,char *argv[],Shbltin_t *context)
  		else
  		{
  			char *cp = mask;
@@ -830,9 +903,18 @@ index 7b9819dd3..d27e999b7 100644
  			c = strperm(cp,&cp,~flag&0777);
  			if(*cp)
 diff --git a/src/cmd/ksh93/include/builtins.h b/src/cmd/ksh93/include/builtins.h
-index 8522c4ac7..e5f8f2c75 100644
+index 61991df24..268544ac2 100644
 --- a/src/cmd/ksh93/include/builtins.h
 +++ b/src/cmd/ksh93/include/builtins.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -112,7 +112,7 @@ extern int b_times(int, char*[],Shbltin_t*);
      extern int B_echo(int, char*[],Shbltin_t*);
  #endif /* SHOPT_ECHOPRINT */
@@ -843,5 +925,5 @@ index 8522c4ac7..e5f8f2c75 100644
  extern const char	e_alrm1[];
  extern const char	e_alrm2[];
 -- 
-2.49.0
+2.52.0
 

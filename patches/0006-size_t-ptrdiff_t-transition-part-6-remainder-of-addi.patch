@@ -1,7 +1,8 @@
-From 16fcb43f0d835a7983427e81075761397656ba8e Mon Sep 17 00:00:00 2001
+From f7a8e93909fd09b6753ec5f9286b25b472cf0108 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
-Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to libast
+Date: Wed, 28 Jan 2026 21:33:59 -0800
+Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
+ libast
 
 This is the sixth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -17,26 +18,27 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,131 => 1,752 => 248 (progression from part 5 => part 6 => part 13)
+1,977 => 1,612 => 86 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/dir/dirlib.h        |   7 +-
- src/lib/libast/disc/sfdcdos.c      |  30 ++++---
- src/lib/libast/disc/sfdcfilter.c   |   3 +-
- src/lib/libast/disc/sfdcmore.c     |  20 ++---
- src/lib/libast/disc/sfdcprefix.c   |   9 +-
- src/lib/libast/disc/sfdcseekable.c |  17 ++--
- src/lib/libast/disc/sfdcsubstr.c   |   7 +-
- src/lib/libast/disc/sfdcunion.c    |  15 ++--
- src/lib/libast/disc/sfkeyprintf.c  |  63 ++++---------
+ src/lib/libast/disc/sfdcdos.c      |  32 +++----
+ src/lib/libast/disc/sfdcfilter.c   |   5 +-
+ src/lib/libast/disc/sfdcmore.c     |  24 +++---
+ src/lib/libast/disc/sfdcprefix.c   |  11 +--
+ src/lib/libast/disc/sfdcseekable.c |  19 ++--
+ src/lib/libast/disc/sfdcsubstr.c   |   9 +-
+ src/lib/libast/disc/sfdcunion.c    |  17 ++--
+ src/lib/libast/disc/sfkeyprintf.c  |  65 ++++----------
  src/lib/libast/features/tty        |   2 +-
- src/lib/libast/include/ast_std.h   |  20 ++---
+ src/lib/libast/include/ast_std.h   |  22 ++---
  src/lib/libast/include/find.h      |   4 +-
  src/lib/libast/include/hashpart.h  |   5 +-
+ src/lib/libast/include/recfmt.h    |   4 +-
  src/lib/libast/include/sfdisc.h    |   6 +-
  src/lib/libast/include/tm.h        |   5 +-
- src/lib/libast/include/vmalloc.h   |   5 +-
+ src/lib/libast/include/vmalloc.h   |   7 +-
  src/lib/libast/path/pathcanon.c    |   4 +-
  src/lib/libast/path/pathcd.c       |  15 ++--
  src/lib/libast/path/pathpath.c     |   4 +-
@@ -51,7 +53,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tmscan.c         |   5 +-
  src/lib/libast/tm/tmsleep.c        |   5 +-
  src/lib/libast/tm/tmtime.c         |   5 +-
- src/lib/libast/tm/tmxdate.c        | 136 ++++++++++++++---------------
+ src/lib/libast/tm/tmxdate.c        | 134 ++++++++++++++---------------
  src/lib/libast/tm/tmxduration.c    |   5 +-
  src/lib/libast/tm/tmxfmt.c         |  28 +++---
  src/lib/libast/tm/tmxleap.c        |   9 +-
@@ -65,18 +67,18 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
  src/lib/libast/tm/tvtouch.c        |   4 +-
- 44 files changed, 324 insertions(+), 326 deletions(-)
+ 45 files changed, 336 insertions(+), 338 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
-index 109348990..d3e794014 100644
+index a7e8f227c..4bce98d61 100644
 --- a/src/lib/libast/dir/dirlib.h
 +++ b/src/lib/libast/dir/dirlib.h
 @@ -2,7 +2,7 @@
  *                                                                      *
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -100,9 +102,18 @@ index 109348990..d3e794014 100644
  
  #undef	_DIRENT_H
 diff --git a/src/lib/libast/disc/sfdcdos.c b/src/lib/libast/disc/sfdcdos.c
-index 41812895d..246a45d71 100644
+index 41812895d..034c5576c 100644
 --- a/src/lib/libast/disc/sfdcdos.c
 +++ b/src/lib/libast/disc/sfdcdos.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -198,9 +209,18 @@ index 41812895d..246a45d71 100644
  	{
  		sfsk(iop,mp->physical,SEEK_SET,disc);
 diff --git a/src/lib/libast/disc/sfdcfilter.c b/src/lib/libast/disc/sfdcfilter.c
-index e83067b8e..bce5c36d8 100644
+index e83067b8e..5aaf4fa43 100644
 --- a/src/lib/libast/disc/sfdcfilter.c
 +++ b/src/lib/libast/disc/sfdcfilter.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -219,9 +239,18 @@ index e83067b8e..bce5c36d8 100644
  				else if(errno != EAGAIN)
  					return 0;
 diff --git a/src/lib/libast/disc/sfdcmore.c b/src/lib/libast/disc/sfdcmore.c
-index 06a107ed5..d178ac0b9 100644
+index 06a107ed5..404326fa6 100644
 --- a/src/lib/libast/disc/sfdcmore.c
 +++ b/src/lib/libast/disc/sfdcmore.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -37,11 +37,11 @@ typedef struct
  	Sfdisc_t	disc;		/* sfio discipline		*/
  	Sfio_t*		input;		/* tied with this input stream	*/
@@ -244,9 +273,12 @@ index 06a107ed5..d178ac0b9 100644
  
  #ifdef TCSADRAIN
  	unsigned char	c;
-@@ -90,7 +90,7 @@ static int ttyquery(Sfio_t* rp, Sfio_t* wp, const char* label, Sfdisc_t* dp)
+@@ -88,9 +88,9 @@ static int ttyquery(Sfio_t* rp, Sfio_t* wp, const char* label, Sfdisc_t* dp)
+ 	tty = old;
+ 	tty.c_cc[VTIME] = 0;
  	tty.c_cc[VMIN] = 1;
- 	tty.c_lflag &= ~(ICANON|ECHO|ECHOK|ISIG);
+-	tty.c_lflag &= ~(ICANON|ECHO|ECHOK|ISIG);
++	tty.c_lflag &= (tcflag_t)~(ICANON|ECHO|ECHOK|ISIG);
  	tcsetattr(rfd, TCSADRAIN, &tty);
 -	if ((r = read(rfd, &c, 1)) == 1)
 +	if ((r = (int)read(rfd, &c, 1)) == 1)
@@ -308,9 +340,18 @@ index 06a107ed5..d178ac0b9 100644
  }
  
 diff --git a/src/lib/libast/disc/sfdcprefix.c b/src/lib/libast/disc/sfdcprefix.c
-index 91a9ca8cb..cc4c75821 100644
+index 91a9ca8cb..df1d68201 100644
 --- a/src/lib/libast/disc/sfdcprefix.c
 +++ b/src/lib/libast/disc/sfdcprefix.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -353,9 +394,18 @@ index 91a9ca8cb..cc4c75821 100644
  		n++;
  	pfx->empty = n;
 diff --git a/src/lib/libast/disc/sfdcseekable.c b/src/lib/libast/disc/sfdcseekable.c
-index 9012596cd..f8c67ed88 100644
+index 9012596cd..94c4b8056 100644
 --- a/src/lib/libast/disc/sfdcseekable.c
 +++ b/src/lib/libast/disc/sfdcseekable.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -417,9 +467,18 @@ index 9012596cd..f8c67ed88 100644
  			if(w != r)
  			{	sk->eof = 1;
 diff --git a/src/lib/libast/disc/sfdcsubstr.c b/src/lib/libast/disc/sfdcsubstr.c
-index 03a4f084e..f561c30de 100644
+index 03a4f084e..6e03144bc 100644
 --- a/src/lib/libast/disc/sfdcsubstr.c
 +++ b/src/lib/libast/disc/sfdcsubstr.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -442,9 +501,18 @@ index 03a4f084e..f561c30de 100644
  	/* save current location in parent stream */
  	parent = sfsk(f,0,SEEK_CUR,disc);
 diff --git a/src/lib/libast/disc/sfdcunion.c b/src/lib/libast/disc/sfdcunion.c
-index 5b4eacf53..608b7502e 100644
+index 5b4eacf53..24756af92 100644
 --- a/src/lib/libast/disc/sfdcunion.c
 +++ b/src/lib/libast/disc/sfdcunion.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -498,9 +566,18 @@ index 5b4eacf53..608b7502e 100644
  	memset(un, 0, sizeof(*un));
  
 diff --git a/src/lib/libast/disc/sfkeyprintf.c b/src/lib/libast/disc/sfkeyprintf.c
-index 91c4d6806..e5f0cef86 100644
+index 91c4d6806..e53b0aa1e 100644
 --- a/src/lib/libast/disc/sfkeyprintf.c
 +++ b/src/lib/libast/disc/sfkeyprintf.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -657,9 +734,18 @@ index 7096a1284..d4c8680b4 100644
  cat{
  
 diff --git a/src/lib/libast/include/ast_std.h b/src/lib/libast/include/ast_std.h
-index 5ffcea191..f63cca420 100644
+index 1a522fbd8..4559daec2 100644
 --- a/src/lib/libast/include/ast_std.h
 +++ b/src/lib/libast/include/ast_std.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -166,15 +166,15 @@ extern char*		setlocale(int, const char*);
  #define AST_LC_COUNT		13	/* number of preceding AST_LC_* defines */
  #define AST_LC_LANG		255
@@ -695,7 +781,7 @@ index 5ffcea191..f63cca420 100644
  	wchar_t		tmp_w;		/* scratch */
  	int		tmp_i;		/* scratch */
 diff --git a/src/lib/libast/include/find.h b/src/lib/libast/include/find.h
-index e834dbb36..0f3494ed5 100644
+index e834dbb36..ec0a9729e 100644
 --- a/src/lib/libast/include/find.h
 +++ b/src/lib/libast/include/find.h
 @@ -2,7 +2,7 @@
@@ -703,7 +789,7 @@ index e834dbb36..0f3494ed5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -717,7 +803,7 @@ index e834dbb36..0f3494ed5 100644
  #ifdef _FIND_PRIVATE_
  	_FIND_PRIVATE_
 diff --git a/src/lib/libast/include/hashpart.h b/src/lib/libast/include/hashpart.h
-index 15e802448..14ebe9d42 100644
+index 15e802448..0a94117aa 100644
 --- a/src/lib/libast/include/hashpart.h
 +++ b/src/lib/libast/include/hashpart.h
 @@ -2,7 +2,7 @@
@@ -725,7 +811,7 @@ index 15e802448..14ebe9d42 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -745,8 +831,30 @@ index 15e802448..14ebe9d42 100644
 +#define HASHPART(h,c)	(h = (size_t)(HASH_MPY(h) + HASH_ADD(h) + (c)))
  
  #endif
+diff --git a/src/lib/libast/include/recfmt.h b/src/lib/libast/include/recfmt.h
+index 9e7b55a5c..d26ad6648 100644
+--- a/src/lib/libast/include/recfmt.h
++++ b/src/lib/libast/include/recfmt.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -48,7 +48,7 @@ typedef uint32_t Recfmt_t;
+ #define REC_F_SIZE(f)		((f)&((1<<28)-1))
+ 
+ #define REC_U_TYPE(t,a)		(((t)<<28)|((a)&((1<<28)-1)))
+-#define REC_U_ATTRIBUTES(f)	((f)&~((1<<28)-1))
++#define REC_U_ATTRIBUTES(f)	((f)&(Recfmt_t)~((1<<28)-1))
+ 
+ #define REC_V_TYPE(h,o,z,l,i)	((REC_variable<<28)|((h)<<23)|((o)<<19)|(((z)-1)<<18)|((l)<<17)|((i)<<16))
+ #define REC_V_RECORD(f,s)	(((f)&(((1<<16)-1)<<16))|(s))
 diff --git a/src/lib/libast/include/sfdisc.h b/src/lib/libast/include/sfdisc.h
-index 787953e5c..ae7f3d83b 100644
+index 787953e5c..dcbf09efb 100644
 --- a/src/lib/libast/include/sfdisc.h
 +++ b/src/lib/libast/include/sfdisc.h
 @@ -2,7 +2,7 @@
@@ -754,7 +862,7 @@ index 787953e5c..ae7f3d83b 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -777,7 +885,7 @@ index 787953e5c..ae7f3d83b 100644
  /*
   * pure sfio read and/or write disciplines
 diff --git a/src/lib/libast/include/tm.h b/src/lib/libast/include/tm.h
-index 2ed18bb81..775234b26 100644
+index 2ed18bb81..eb05bf516 100644
 --- a/src/lib/libast/include/tm.h
 +++ b/src/lib/libast/include/tm.h
 @@ -2,7 +2,7 @@
@@ -785,7 +893,7 @@ index 2ed18bb81..775234b26 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -807,9 +915,18 @@ index 2ed18bb81..775234b26 100644
  extern Tm_zone_t*	tmtype(const char*, char**);
  extern int		tmweek(Tm_t*, int, int, int);
 diff --git a/src/lib/libast/include/vmalloc.h b/src/lib/libast/include/vmalloc.h
-index 7d8ac6c82..0047d56f7 100644
+index 7d8ac6c82..19c317417 100644
 --- a/src/lib/libast/include/vmalloc.h
 +++ b/src/lib/libast/include/vmalloc.h
+@@ -1,7 +1,7 @@
+ /***********************************************************************
+ *                                                                      *
+ *              This file is part of the ksh 93u+m package              *
+-*             Copyright (c) 2025 Contributors to ksh 93u+m             *
++*          Copyright (c) 2025-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -10,6 +10,7 @@
  *         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
  *                                                                      *
@@ -830,7 +947,7 @@ index 7d8ac6c82..0047d56f7 100644
  /* legacy */
  #define vmnewof(v,p,t,n,x)	( (t*)_Vm_newoldof_((v), (p), sizeof(t)*(n)+(x), 1) )
 diff --git a/src/lib/libast/path/pathcanon.c b/src/lib/libast/path/pathcanon.c
-index 15d20b28b..f128a842d 100644
+index 15d20b28b..be0b5eceb 100644
 --- a/src/lib/libast/path/pathcanon.c
 +++ b/src/lib/libast/path/pathcanon.c
 @@ -2,7 +2,7 @@
@@ -838,7 +955,7 @@ index 15d20b28b..f128a842d 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -854,7 +971,7 @@ index 15d20b28b..f128a842d 100644
  	int	oerrno;
  
 diff --git a/src/lib/libast/path/pathcd.c b/src/lib/libast/path/pathcd.c
-index 662d18766..29d581722 100644
+index 662d18766..80a4efd9a 100644
 --- a/src/lib/libast/path/pathcd.c
 +++ b/src/lib/libast/path/pathcd.c
 @@ -2,7 +2,7 @@
@@ -862,7 +979,7 @@ index 662d18766..29d581722 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -901,7 +1018,7 @@ index 662d18766..29d581722 100644
  #ifdef ENAMETOOLONG
  		if (errno != ENAMETOOLONG)
 diff --git a/src/lib/libast/path/pathpath.c b/src/lib/libast/path/pathpath.c
-index e5a45ab82..bcb8ee271 100644
+index e5a45ab82..6c09b03fc 100644
 --- a/src/lib/libast/path/pathpath.c
 +++ b/src/lib/libast/path/pathpath.c
 @@ -2,7 +2,7 @@
@@ -909,7 +1026,7 @@ index e5a45ab82..bcb8ee271 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -923,7 +1040,7 @@ index e5a45ab82..bcb8ee271 100644
  					strcpy(path, buf);
  			}
 diff --git a/src/lib/libast/path/pathtemp.c b/src/lib/libast/path/pathtemp.c
-index 5b5c099ad..8b59053be 100644
+index 5b5c099ad..d0d8c5160 100644
 --- a/src/lib/libast/path/pathtemp.c
 +++ b/src/lib/libast/path/pathtemp.c
 @@ -2,7 +2,7 @@
@@ -931,7 +1048,7 @@ index 5b5c099ad..8b59053be 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1002,7 +1119,7 @@ index 5b5c099ad..8b59053be 100644
  			/*
  			 * get a quasi-random coefficient
 diff --git a/src/lib/libast/tm/tmdate.c b/src/lib/libast/tm/tmdate.c
-index 831ffa642..70e37d11e 100644
+index 831ffa642..38fcf4cff 100644
 --- a/src/lib/libast/tm/tmdate.c
 +++ b/src/lib/libast/tm/tmdate.c
 @@ -2,7 +2,7 @@
@@ -1010,7 +1127,7 @@ index 831ffa642..70e37d11e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1030,7 +1147,7 @@ index 831ffa642..70e37d11e 100644
 +	return (time_t)tmxsec(tmxdate(s, e, tmxclock(clock)));
  }
 diff --git a/src/lib/libast/tm/tmfix.c b/src/lib/libast/tm/tmfix.c
-index 94c14e8da..a4cc05d34 100644
+index 94c14e8da..147c3ffee 100644
 --- a/src/lib/libast/tm/tmfix.c
 +++ b/src/lib/libast/tm/tmfix.c
 @@ -2,7 +2,7 @@
@@ -1038,7 +1155,7 @@ index 94c14e8da..a4cc05d34 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1064,15 +1181,15 @@ index 94c14e8da..a4cc05d34 100644
  	else if (n >= TMX_RESOLUTION)
  	{
 diff --git a/src/lib/libast/tm/tminit.c b/src/lib/libast/tm/tminit.c
-index ad7e97a22..716c1ce54 100644
+index 6676c8eac..06b2db7f3 100644
 --- a/src/lib/libast/tm/tminit.c
 +++ b/src/lib/libast/tm/tminit.c
 @@ -2,7 +2,7 @@
  *                                                                      *
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1127,7 +1244,7 @@ index ad7e97a22..716c1ce54 100644
  					local.daylight = strdup(buf);
  			}
 diff --git a/src/lib/libast/tm/tmleap.c b/src/lib/libast/tm/tmleap.c
-index 78b212f47..c6ff92c6c 100644
+index 78b212f47..df5150974 100644
 --- a/src/lib/libast/tm/tmleap.c
 +++ b/src/lib/libast/tm/tmleap.c
 @@ -2,7 +2,7 @@
@@ -1135,7 +1252,7 @@ index 78b212f47..c6ff92c6c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1155,7 +1272,7 @@ index 78b212f47..c6ff92c6c 100644
 +	return (time_t)tmxsec(tmxleap(tmxclock(clock)));
  }
 diff --git a/src/lib/libast/tm/tmlex.c b/src/lib/libast/tm/tmlex.c
-index bf3ecd2ac..c46e0d7b4 100644
+index bf3ecd2ac..61e8ab831 100644
 --- a/src/lib/libast/tm/tmlex.c
 +++ b/src/lib/libast/tm/tmlex.c
 @@ -2,7 +2,7 @@
@@ -1163,7 +1280,7 @@ index bf3ecd2ac..c46e0d7b4 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1194,7 +1311,7 @@ index bf3ecd2ac..c46e0d7b4 100644
  	return -1;
  }
 diff --git a/src/lib/libast/tm/tmlocale.c b/src/lib/libast/tm/tmlocale.c
-index fbe1d1984..61c128ca1 100644
+index fbe1d1984..c8ac531f4 100644
 --- a/src/lib/libast/tm/tmlocale.c
 +++ b/src/lib/libast/tm/tmlocale.c
 @@ -2,7 +2,7 @@
@@ -1202,7 +1319,7 @@ index fbe1d1984..61c128ca1 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1296,7 +1413,7 @@ index fbe1d1984..61c128ca1 100644
  				s[n] = '\n';
  				while (v < e)
 diff --git a/src/lib/libast/tm/tmpoff.c b/src/lib/libast/tm/tmpoff.c
-index 0d0d1f1ea..187aa73c3 100644
+index 0d0d1f1ea..de1c6ceb0 100644
 --- a/src/lib/libast/tm/tmpoff.c
 +++ b/src/lib/libast/tm/tmpoff.c
 @@ -2,7 +2,7 @@
@@ -1304,7 +1421,7 @@ index 0d0d1f1ea..187aa73c3 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1326,7 +1443,7 @@ index 0d0d1f1ea..187aa73c3 100644
  	return s;
  }
 diff --git a/src/lib/libast/tm/tmscan.c b/src/lib/libast/tm/tmscan.c
-index 11adc1210..a1077edff 100644
+index 11adc1210..4bc5f11e9 100644
 --- a/src/lib/libast/tm/tmscan.c
 +++ b/src/lib/libast/tm/tmscan.c
 @@ -2,7 +2,7 @@
@@ -1334,7 +1451,7 @@ index 11adc1210..a1077edff 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1354,7 +1471,7 @@ index 11adc1210..a1077edff 100644
 +	return (time_t)tmxsec(tmxscan(s, e, format, f, tmxclock(clock), flags));
  }
 diff --git a/src/lib/libast/tm/tmsleep.c b/src/lib/libast/tm/tmsleep.c
-index e35502ea5..a0e5010f6 100644
+index e35502ea5..2ff837030 100644
 --- a/src/lib/libast/tm/tmsleep.c
 +++ b/src/lib/libast/tm/tmsleep.c
 @@ -2,7 +2,7 @@
@@ -1362,7 +1479,7 @@ index e35502ea5..a0e5010f6 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1384,7 +1501,7 @@ index e35502ea5..a0e5010f6 100644
  	Tv_t	tv;
  
 diff --git a/src/lib/libast/tm/tmtime.c b/src/lib/libast/tm/tmtime.c
-index 8a15f25a0..368983665 100644
+index 8a15f25a0..09c7ca6fc 100644
 --- a/src/lib/libast/tm/tmtime.c
 +++ b/src/lib/libast/tm/tmtime.c
 @@ -2,7 +2,7 @@
@@ -1392,7 +1509,7 @@ index 8a15f25a0..368983665 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1412,18 +1529,9 @@ index 8a15f25a0..368983665 100644
 +	return (time_t)tmxsec(tmxtime(tm, west));
  }
 diff --git a/src/lib/libast/tm/tmxdate.c b/src/lib/libast/tm/tmxdate.c
-index 45ef6fd5d..f475377bb 100644
+index 2972b6778..49ef24ef4 100644
 --- a/src/lib/libast/tm/tmxdate.c
 +++ b/src/lib/libast/tm/tmxdate.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -39,27 +39,27 @@
  
  #undef	BREAK
@@ -1817,7 +1925,7 @@ index 45ef6fd5d..f475377bb 100644
  		else
  			break;
 diff --git a/src/lib/libast/tm/tmxduration.c b/src/lib/libast/tm/tmxduration.c
-index e470001b2..c89530113 100644
+index e470001b2..c575780b0 100644
 --- a/src/lib/libast/tm/tmxduration.c
 +++ b/src/lib/libast/tm/tmxduration.c
 @@ -2,7 +2,7 @@
@@ -1825,7 +1933,7 @@ index e470001b2..c89530113 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1847,7 +1955,7 @@ index e470001b2..c89530113 100644
  	now = TMX_NOW;
  	while (isspace(*s))
 diff --git a/src/lib/libast/tm/tmxfmt.c b/src/lib/libast/tm/tmxfmt.c
-index 873d2aafa..9fe6d1353 100644
+index 873d2aafa..5e4ba7204 100644
 --- a/src/lib/libast/tm/tmxfmt.c
 +++ b/src/lib/libast/tm/tmxfmt.c
 @@ -2,7 +2,7 @@
@@ -1855,7 +1963,7 @@ index 873d2aafa..9fe6d1353 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1940,7 +2048,7 @@ index 873d2aafa..9fe6d1353 100644
  		}
  	index:
 diff --git a/src/lib/libast/tm/tmxleap.c b/src/lib/libast/tm/tmxleap.c
-index b6c0dde44..7a498796d 100644
+index b6c0dde44..f3e9d0daa 100644
 --- a/src/lib/libast/tm/tmxleap.c
 +++ b/src/lib/libast/tm/tmxleap.c
 @@ -2,7 +2,7 @@
@@ -1948,7 +2056,7 @@ index b6c0dde44..7a498796d 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1979,7 +2087,7 @@ index b6c0dde44..7a498796d 100644
  	return t;
  }
 diff --git a/src/lib/libast/tm/tmxmake.c b/src/lib/libast/tm/tmxmake.c
-index a0217e30d..8fc8b7615 100644
+index a0217e30d..a35895c06 100644
 --- a/src/lib/libast/tm/tmxmake.c
 +++ b/src/lib/libast/tm/tmxmake.c
 @@ -2,7 +2,7 @@
@@ -1987,7 +2095,7 @@ index a0217e30d..8fc8b7615 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2089,7 +2197,7 @@ index a0217e30d..8fc8b7615 100644
  		if ((tp = tmlocaltime(&now)) && ((tm->tm_isdst = tp->tm_isdst) || o))
  		{
 diff --git a/src/lib/libast/tm/tmxscan.c b/src/lib/libast/tm/tmxscan.c
-index ba883e62e..e306a94f8 100644
+index ba883e62e..dc0c27cff 100644
 --- a/src/lib/libast/tm/tmxscan.c
 +++ b/src/lib/libast/tm/tmxscan.c
 @@ -2,7 +2,7 @@
@@ -2097,7 +2205,7 @@ index ba883e62e..e306a94f8 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2014 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2144,7 +2252,7 @@ index ba883e62e..e306a94f8 100644
  						free(p);
  						p = 0;
 diff --git a/src/lib/libast/tm/tmxsettime.c b/src/lib/libast/tm/tmxsettime.c
-index f0421c04d..6e15751c2 100644
+index f0421c04d..efe92a61f 100644
 --- a/src/lib/libast/tm/tmxsettime.c
 +++ b/src/lib/libast/tm/tmxsettime.c
 @@ -2,7 +2,7 @@
@@ -2152,7 +2260,7 @@ index f0421c04d..6e15751c2 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2174,7 +2282,7 @@ index f0421c04d..6e15751c2 100644
  	return tvsettime(&tv);
  }
 diff --git a/src/lib/libast/tm/tmxsleep.c b/src/lib/libast/tm/tmxsleep.c
-index fb6972350..236200fae 100644
+index fb6972350..b39ea3870 100644
 --- a/src/lib/libast/tm/tmxsleep.c
 +++ b/src/lib/libast/tm/tmxsleep.c
 @@ -2,7 +2,7 @@
@@ -2182,7 +2290,7 @@ index fb6972350..236200fae 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2204,7 +2312,7 @@ index fb6972350..236200fae 100644
  	return tvsleep(&tv, NULL);
  }
 diff --git a/src/lib/libast/tm/tmxtime.c b/src/lib/libast/tm/tmxtime.c
-index 1f66f646f..8dc52fad5 100644
+index 1f66f646f..e0fe0aa11 100644
 --- a/src/lib/libast/tm/tmxtime.c
 +++ b/src/lib/libast/tm/tmxtime.c
 @@ -2,7 +2,7 @@
@@ -2212,7 +2320,7 @@ index 1f66f646f..8dc52fad5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2304,7 +2412,7 @@ index 1f66f646f..8dc52fad5 100644
  	return tmxsns(t, tm->tm_nsec);
  }
 diff --git a/src/lib/libast/tm/tmxtouch.c b/src/lib/libast/tm/tmxtouch.c
-index 7922071fd..c8b3f5133 100644
+index 7922071fd..7ddf06b12 100644
 --- a/src/lib/libast/tm/tmxtouch.c
 +++ b/src/lib/libast/tm/tmxtouch.c
 @@ -2,7 +2,7 @@
@@ -2312,7 +2420,7 @@ index 7922071fd..c8b3f5133 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2352,7 +2460,7 @@ index 7922071fd..c8b3f5133 100644
  		cp = &cv;
  	}
 diff --git a/src/lib/libast/tm/tmzone.c b/src/lib/libast/tm/tmzone.c
-index efb06e1ab..a9e1d752f 100644
+index efb06e1ab..625491df3 100644
 --- a/src/lib/libast/tm/tmzone.c
 +++ b/src/lib/libast/tm/tmzone.c
 @@ -2,7 +2,7 @@
@@ -2360,7 +2468,7 @@ index efb06e1ab..a9e1d752f 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2394,7 +2502,7 @@ index efb06e1ab..a9e1d752f 100644
  		if (end)
  			*end = e;
 diff --git a/src/lib/libast/tm/tvgettime.c b/src/lib/libast/tm/tvgettime.c
-index f6387f071..1d1b5cab3 100644
+index f6387f071..9f927697b 100644
 --- a/src/lib/libast/tm/tvgettime.c
 +++ b/src/lib/libast/tm/tvgettime.c
 @@ -2,7 +2,7 @@
@@ -2402,7 +2510,7 @@ index f6387f071..1d1b5cab3 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2424,7 +2532,7 @@ index f6387f071..1d1b5cab3 100644
  #else
  
 diff --git a/src/lib/libast/tm/tvsleep.c b/src/lib/libast/tm/tvsleep.c
-index 1c68f7bae..f9ecf4d99 100644
+index 1c68f7bae..3ab50b86a 100644
 --- a/src/lib/libast/tm/tvsleep.c
 +++ b/src/lib/libast/tm/tvsleep.c
 @@ -2,7 +2,7 @@
@@ -2432,7 +2540,7 @@ index 1c68f7bae..f9ecf4d99 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2446,7 +2554,7 @@ index 1c68f7bae..f9ecf4d99 100644
  	return r;
  
 diff --git a/src/lib/libast/tm/tvtouch.c b/src/lib/libast/tm/tvtouch.c
-index aca8c4d97..a702a4de9 100644
+index aca8c4d97..445297f3f 100644
 --- a/src/lib/libast/tm/tvtouch.c
 +++ b/src/lib/libast/tm/tvtouch.c
 @@ -2,7 +2,7 @@
@@ -2454,7 +2562,7 @@ index aca8c4d97..a702a4de9 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2468,5 +2576,5 @@ index aca8c4d97..a702a4de9 100644
  	struct stat	st;
  	Tv_t		now;
 -- 
-2.49.0
+2.52.0
 

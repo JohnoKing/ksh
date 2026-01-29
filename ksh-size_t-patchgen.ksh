@@ -100,15 +100,13 @@ so I\'ve decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,042 => 3,808 => 248 (progression from cc5e0692 => part 1 => part 13)
+4,042 => 3,797 => 86 (progression from d462de66 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on it\'s own). The full suite of
 changes can be found on the thickfold-size_t branch.
 This first part has been submitted severed from the other
 changes to make code review less laborious (I hope).
-The full patch series can be found here:
-https://github.com/JohnoKing/ksh/tree/ad588c003d/patches
 
 
 Progresses https://github.com/ksh93/ksh/issues/592'
@@ -186,7 +184,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,808 => 3,291 => 248 (progression from part 1 => part 2 => part 13)
+3,797 => 3,154 => 86 (progression from part 1 => part 2 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -213,7 +211,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,291 => 3,214 => 248 (progression from part 2 => part 3 => part 13)
+3,154 => 3,075 => 86 (progression from part 2 => part 3 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -237,7 +235,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,214 => 2,617 => 248 (progression from part 3 => part 4 => part 13)
+3,075 => 2,483 => 86 (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -279,7 +277,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,617 => 2,131 => 248 (progression from part 4 => part 5 => part 13)
+2,483 => 1,977 => 86 (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -302,7 +300,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,131 => 1,752 => 248 (progression from part 5 => part 6 => part 13)
+1,977 => 1,612 => 86 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -333,7 +331,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,752 => 1,359 => 248 (progression from part 6 => part 7 => part 13)
+1,612 => 1,216 => 86 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -360,7 +358,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,359 => 1,208 => 248 (progression from part 7 => part 8 => part 13)
+1,216 => 1,062 => 86 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -384,7 +382,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,208 => 1,097 => 248 (progression from part 8 => part 9 => part 13)
+1,062 => 947 => 86 (progression from part 8 => part 9 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -405,7 +403,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,097 => 990 => 248 (progression from part 9 => part 10 => part 13)
+947 => 840 => 86 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -451,7 +449,7 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-990 => 671 => 248 (progression from part 10 => part 11 => part 13)
+840 => 519 => 86 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -481,7 +479,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-671 => 555 => 248 (progression from part 11 => part 12 => part 13)
+519 => 396 => 86 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -525,7 +523,8 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-555 => 248 (progression from part 12 => part 13)
+396 => 86 (progression from part 12 => part 13)
+
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 Some, like those pertaining to getrlimit(2), are bugs in the underlying operating
 system and cannot be fixed.

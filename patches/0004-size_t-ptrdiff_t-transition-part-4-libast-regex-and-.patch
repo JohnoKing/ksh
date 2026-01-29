@@ -1,7 +1,8 @@
-From 18f14bf69332ab5ee273e8ef5e8d7b84139a65b7 Mon Sep 17 00:00:00 2001
+From 0ce78e851597f4791e3b04ec4e93f7eec4bdb3f9 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
-Subject: size_t/ptrdiff_t transition part 4: libast regex and string sublibraries
+Date: Wed, 28 Jan 2026 21:33:55 -0800
+Subject: size_t/ptrdiff_t transition part 4: libast regex and string
+ sublibraries
 
 This is the fourth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -12,7 +13,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,214 => 2,617 => 248 (progression from part 3 => part 4 => part 13)
+3,075 => 2,483 => 86 (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -21,18 +22,18 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/man/swap.3           |   6 +-
  src/lib/libast/regex/regcache.c     |  41 +++---
  src/lib/libast/regex/regclass.c     |  66 ++++-----
- src/lib/libast/regex/regcoll.c      |  20 +--
- src/lib/libast/regex/regcomp.c      | 205 ++++++++++++++--------------
- src/lib/libast/regex/regerror.c     |   2 +-
+ src/lib/libast/regex/regcoll.c      |  22 +--
+ src/lib/libast/regex/regcomp.c      | 207 ++++++++++++++--------------
+ src/lib/libast/regex/regerror.c     |   4 +-
  src/lib/libast/regex/regexec.c      |  10 +-
- src/lib/libast/regex/reglib.h       |  28 ++--
- src/lib/libast/regex/regnexec.c     | 119 ++++++++--------
+ src/lib/libast/regex/reglib.h       |  30 ++--
+ src/lib/libast/regex/regnexec.c     | 121 ++++++++--------
  src/lib/libast/regex/regsubcomp.c   |  37 ++---
- src/lib/libast/regex/regsubexec.c   |  38 +++---
+ src/lib/libast/regex/regsubexec.c   |  38 ++---
  src/lib/libast/string/base64.c      |  45 +++---
  src/lib/libast/string/ccmap.c       |   6 +-
  src/lib/libast/string/ccmapid.c     |   4 +-
- src/lib/libast/string/chresc.c      |  11 +-
+ src/lib/libast/string/chresc.c      |  13 +-
  src/lib/libast/string/fmtbuf.c      |   4 +-
  src/lib/libast/string/fmtclock.c    |  14 +-
  src/lib/libast/string/fmtdev.c      |  16 +--
@@ -40,7 +41,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/fmtfmt.c      |  17 +--
  src/lib/libast/string/fmtgid.c      |   6 +-
  src/lib/libast/string/fmtident.c    |   7 +-
- src/lib/libast/string/fmtint.c      |  13 +-
+ src/lib/libast/string/fmtint.c      |  17 ++-
  src/lib/libast/string/fmtip4.c      |   9 +-
  src/lib/libast/string/fmtip6.c      |   4 +-
  src/lib/libast/string/fmtls.c       |   7 +-
@@ -51,11 +52,11 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/fmtsignal.c   |   5 +-
  src/lib/libast/string/fmttime.c     |   5 +-
  src/lib/libast/string/fmttmx.c      |   5 +-
- src/lib/libast/string/fmttv.c       |   5 +-
+ src/lib/libast/string/fmttv.c       |  41 ++++++
  src/lib/libast/string/fmtuid.c      |   6 +-
- src/lib/libast/string/fmtversion.c  |  11 +-
+ src/lib/libast/string/fmtversion.c  |  50 +++++++
  src/lib/libast/string/strelapsed.c  |  14 +-
- src/lib/libast/string/stresc.c      |   5 +-
+ src/lib/libast/string/stresc.c      |   7 +-
  src/lib/libast/string/strgid.c      |  16 +--
  src/lib/libast/string/strlcat.c     |   4 +-
  src/lib/libast/string/strlcpy.c     |   4 +-
@@ -63,7 +64,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/stropt.c      |  15 +-
  src/lib/libast/string/strpsearch.c  |   5 +-
  src/lib/libast/string/strsearch.c   |   5 +-
- src/lib/libast/string/strtoi.h      |  38 +++---
+ src/lib/libast/string/strtoi.h      |  38 ++---
  src/lib/libast/string/strtoip4.c    |  11 +-
  src/lib/libast/string/strtoip6.c    |  30 ++--
  src/lib/libast/string/struid.c      |  12 +-
@@ -75,11 +76,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/swapput.c     |   7 +-
  src/lib/libast/string/tokline.c     |   8 +-
  src/lib/libast/string/tokscan.c     |   7 +-
- src/lib/libast/string/utf32toutf8.c |  16 +--
- 60 files changed, 572 insertions(+), 535 deletions(-)
+ src/lib/libast/string/utf32toutf8.c |  18 +--
+ 60 files changed, 664 insertions(+), 538 deletions(-)
+ create mode 100644 src/lib/libast/string/fmttv.c
+ create mode 100644 src/lib/libast/string/fmtversion.c
 
 diff --git a/src/lib/libast/include/swap.h b/src/lib/libast/include/swap.h
-index e7b054b41..fb7e1cdd4 100644
+index e7b054b41..00c38b1d5 100644
 --- a/src/lib/libast/include/swap.h
 +++ b/src/lib/libast/include/swap.h
 @@ -2,7 +2,7 @@
@@ -87,7 +90,7 @@ index e7b054b41..fb7e1cdd4 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -144,7 +147,7 @@ index 28db4c2bc..7bc12c9c1 100644
  .L "void* swapmem(int op, const void* from, void* to, size_t n);"
  .SH DESCRIPTION
 diff --git a/src/lib/libast/regex/regcache.c b/src/lib/libast/regex/regcache.c
-index 8b251cfc9..18fb76215 100644
+index 8b251cfc9..12ae77348 100644
 --- a/src/lib/libast/regex/regcache.c
 +++ b/src/lib/libast/regex/regcache.c
 @@ -2,7 +2,7 @@
@@ -152,7 +155,7 @@ index 8b251cfc9..18fb76215 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -270,7 +273,7 @@ index 8b251cfc9..18fb76215 100644
  		}
  		cp->keep = 1;
 diff --git a/src/lib/libast/regex/regclass.c b/src/lib/libast/regex/regclass.c
-index 04885549d..a0b9f92ae 100644
+index 04885549d..d697d316e 100644
 --- a/src/lib/libast/regex/regclass.c
 +++ b/src/lib/libast/regex/regclass.c
 @@ -2,7 +2,7 @@
@@ -278,7 +281,7 @@ index 04885549d..a0b9f92ae 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -376,9 +379,18 @@ index 04885549d..a0b9f92ae 100644
  	for (cp = ctypes; cp; cp = cp->next)
  		if (n == cp->size && strneq(s, cp->name, n))
 diff --git a/src/lib/libast/regex/regcoll.c b/src/lib/libast/regex/regcoll.c
-index 078255be8..1109f0beb 100644
+index 078255be8..ce302a84f 100644
 --- a/src/lib/libast/regex/regcoll.c
 +++ b/src/lib/libast/regex/regcoll.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -38,13 +38,13 @@
  int
  regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
@@ -437,9 +449,18 @@ index 078255be8..1109f0beb 100644
   	s--;
   nope:
 diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
-index 09997ecda..f13f90f01 100644
+index 09997ecda..2bb4d850c 100644
 --- a/src/lib/libast/regex/regcomp.c
 +++ b/src/lib/libast/regex/regcomp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -30,6 +30,7 @@
  
  #define C_ESC			(-1)
@@ -1109,9 +1130,18 @@ index 09997ecda..f13f90f01 100644
  			p->re_npat++;
  		else if (env.flags & REG_MUSTDELIM)
 diff --git a/src/lib/libast/regex/regerror.c b/src/lib/libast/regex/regerror.c
-index bb055b688..706f0e852 100644
+index bb055b688..3210412f6 100644
 --- a/src/lib/libast/regex/regerror.c
 +++ b/src/lib/libast/regex/regerror.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -60,7 +60,7 @@ regerror(int code, const regex_t* p, char* buf, size_t size)
  	NoP(p);
  	if (code++ == REG_VERSIONID)
@@ -1122,7 +1152,7 @@ index bb055b688..706f0e852 100644
  	else
  		s = (const char*)"unknown error";
 diff --git a/src/lib/libast/regex/regexec.c b/src/lib/libast/regex/regexec.c
-index 2a9280c13..be8f12991 100644
+index 2a9280c13..3ad83b895 100644
 --- a/src/lib/libast/regex/regexec.c
 +++ b/src/lib/libast/regex/regexec.c
 @@ -2,7 +2,7 @@
@@ -1130,7 +1160,7 @@ index 2a9280c13..be8f12991 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1159,9 +1189,18 @@ index 2a9280c13..be8f12991 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/regex/reglib.h b/src/lib/libast/regex/reglib.h
-index 67388c9ac..378ae8499 100644
+index 280a6a107..17705821d 100644
 --- a/src/lib/libast/regex/reglib.h
 +++ b/src/lib/libast/regex/reglib.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -38,11 +38,15 @@
  #define fatal		_reg_fatal
  #define state		_reg_state
@@ -1239,9 +1278,18 @@ index 67388c9ac..378ae8499 100644
  	union
  	{
 diff --git a/src/lib/libast/regex/regnexec.c b/src/lib/libast/regex/regnexec.c
-index d19b15398..7ecdac3ae 100644
+index d19b15398..67e136c85 100644
 --- a/src/lib/libast/regex/regnexec.c
 +++ b/src/lib/libast/regex/regnexec.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -130,16 +130,16 @@ typedef struct
  {
  	unsigned char*	p;		/* where in string		*/
@@ -1669,7 +1717,7 @@ index d19b15398..7ecdac3ae 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/regex/regsubcomp.c b/src/lib/libast/regex/regsubcomp.c
-index cdb7312dd..190631c16 100644
+index cdb7312dd..66d54aa4e 100644
 --- a/src/lib/libast/regex/regsubcomp.c
 +++ b/src/lib/libast/regex/regsubcomp.c
 @@ -2,7 +2,7 @@
@@ -1677,7 +1725,7 @@ index cdb7312dd..190631c16 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1812,7 +1860,7 @@ index cdb7312dd..190631c16 100644
  		if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
  		{
 diff --git a/src/lib/libast/regex/regsubexec.c b/src/lib/libast/regex/regsubexec.c
-index 0d8c1dc5a..df83dddcc 100644
+index 0d8c1dc5a..0c10cbd98 100644
 --- a/src/lib/libast/regex/regsubexec.c
 +++ b/src/lib/libast/regex/regsubexec.c
 @@ -2,7 +2,7 @@
@@ -1820,7 +1868,7 @@ index 0d8c1dc5a..df83dddcc 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1944,7 +1992,7 @@ index 0d8c1dc5a..df83dddcc 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/string/base64.c b/src/lib/libast/string/base64.c
-index 66dfe7414..7038daef0 100644
+index 66dfe7414..08b7b08c9 100644
 --- a/src/lib/libast/string/base64.c
 +++ b/src/lib/libast/string/base64.c
 @@ -2,7 +2,7 @@
@@ -1952,7 +2000,7 @@ index 66dfe7414..7038daef0 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2098,7 +2146,7 @@ index 66dfe7414..7038daef0 100644
  				{
  					n = tp - (unsigned char*)tb + 2;
 diff --git a/src/lib/libast/string/ccmap.c b/src/lib/libast/string/ccmap.c
-index 785fcd9fa..41f2dd78d 100644
+index 785fcd9fa..48ab0b578 100644
 --- a/src/lib/libast/string/ccmap.c
 +++ b/src/lib/libast/string/ccmap.c
 @@ -2,7 +2,7 @@
@@ -2106,7 +2154,7 @@ index 785fcd9fa..41f2dd78d 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2129,7 +2177,7 @@ index 785fcd9fa..41f2dd78d 100644
  		m[n] = a[z[n]];
  	map->next = maps;
 diff --git a/src/lib/libast/string/ccmapid.c b/src/lib/libast/string/ccmapid.c
-index c5773ca18..fc5f5b3c9 100644
+index c5773ca18..1d7a0e0c8 100644
 --- a/src/lib/libast/string/ccmapid.c
 +++ b/src/lib/libast/string/ccmapid.c
 @@ -2,7 +2,7 @@
@@ -2137,7 +2185,7 @@ index c5773ca18..fc5f5b3c9 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2151,9 +2199,18 @@ index c5773ca18..fc5f5b3c9 100644
  
  	bp = 0;
 diff --git a/src/lib/libast/string/chresc.c b/src/lib/libast/string/chresc.c
-index 7d7bf97cc..0ad0cca38 100644
+index 7d7bf97cc..46ca26ea9 100644
 --- a/src/lib/libast/string/chresc.c
 +++ b/src/lib/libast/string/chresc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -2204,7 +2261,7 @@ index 7d7bf97cc..0ad0cca38 100644
  					s = b;
  					goto noexpand;
 diff --git a/src/lib/libast/string/fmtbuf.c b/src/lib/libast/string/fmtbuf.c
-index 5827f7f82..20e65a309 100644
+index 5827f7f82..70fa798d3 100644
 --- a/src/lib/libast/string/fmtbuf.c
 +++ b/src/lib/libast/string/fmtbuf.c
 @@ -2,7 +2,7 @@
@@ -2212,7 +2269,7 @@ index 5827f7f82..20e65a309 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2226,7 +2283,7 @@ index 5827f7f82..20e65a309 100644
  					return NULL;
  			}
 diff --git a/src/lib/libast/string/fmtclock.c b/src/lib/libast/string/fmtclock.c
-index d829748a8..c0a1b1383 100644
+index d829748a8..c91c27d6e 100644
 --- a/src/lib/libast/string/fmtclock.c
 +++ b/src/lib/libast/string/fmtclock.c
 @@ -2,7 +2,7 @@
@@ -2234,7 +2291,7 @@ index d829748a8..c0a1b1383 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2276,7 +2333,7 @@ index d829748a8..c0a1b1383 100644
  	sfsprintf(buf, z, "%I*u%cs", sizeof(t), t, u);
  	return buf;
 diff --git a/src/lib/libast/string/fmtdev.c b/src/lib/libast/string/fmtdev.c
-index b5241a493..7e817719a 100644
+index b5241a493..27bbe2d70 100644
 --- a/src/lib/libast/string/fmtdev.c
 +++ b/src/lib/libast/string/fmtdev.c
 @@ -2,7 +2,7 @@
@@ -2284,7 +2341,7 @@ index b5241a493..7e817719a 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2320,7 +2377,7 @@ index b5241a493..7e817719a 100644
  	}
  	else
 diff --git a/src/lib/libast/string/fmtesc.c b/src/lib/libast/string/fmtesc.c
-index 1a358cc4b..7a4b1d4b6 100644
+index 1a358cc4b..3a9715f08 100644
 --- a/src/lib/libast/string/fmtesc.c
 +++ b/src/lib/libast/string/fmtesc.c
 @@ -2,7 +2,7 @@
@@ -2328,7 +2385,7 @@ index 1a358cc4b..7a4b1d4b6 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2368,7 +2425,7 @@ index 1a358cc4b..7a4b1d4b6 100644
  					}
  				}
 diff --git a/src/lib/libast/string/fmtfmt.c b/src/lib/libast/string/fmtfmt.c
-index ed4e29fff..4845cc0c9 100644
+index ed4e29fff..479f82f0e 100644
 --- a/src/lib/libast/string/fmtfmt.c
 +++ b/src/lib/libast/string/fmtfmt.c
 @@ -2,7 +2,7 @@
@@ -2376,7 +2433,7 @@ index ed4e29fff..4845cc0c9 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2431,7 +2488,7 @@ index ed4e29fff..4845cc0c9 100644
  	{
  		if (extra[i])
 diff --git a/src/lib/libast/string/fmtgid.c b/src/lib/libast/string/fmtgid.c
-index ecbfccdc8..d4e1905db 100644
+index ecbfccdc8..0d69e6287 100644
 --- a/src/lib/libast/string/fmtgid.c
 +++ b/src/lib/libast/string/fmtgid.c
 @@ -2,7 +2,7 @@
@@ -2439,7 +2496,7 @@ index ecbfccdc8..d4e1905db 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2462,7 +2519,7 @@ index ecbfccdc8..d4e1905db 100644
  		name = gr->gr_name;
  #if _WINIX
 diff --git a/src/lib/libast/string/fmtident.c b/src/lib/libast/string/fmtident.c
-index f0c761aac..5b6699885 100644
+index f0c761aac..01c25e641 100644
 --- a/src/lib/libast/string/fmtident.c
 +++ b/src/lib/libast/string/fmtident.c
 @@ -2,7 +2,7 @@
@@ -2470,7 +2527,7 @@ index f0c761aac..5b6699885 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2501,7 +2558,7 @@ index f0c761aac..5b6699885 100644
  		memcpy(buf, s, i);
  		s = buf;
 diff --git a/src/lib/libast/string/fmtint.c b/src/lib/libast/string/fmtint.c
-index f3b90e7e9..ff9560d7c 100644
+index f3b90e7e9..97db0f0d6 100644
 --- a/src/lib/libast/string/fmtint.c
 +++ b/src/lib/libast/string/fmtint.c
 @@ -2,7 +2,7 @@
@@ -2509,7 +2566,7 @@ index f3b90e7e9..ff9560d7c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2521,7 +2578,7 @@ index f3b90e7e9..ff9560d7c 100644
  *                                                                      *
  ***********************************************************************/
  /*
-@@ -83,7 +84,8 @@ fmtint(intmax_t ll, int unsign)
+@@ -83,22 +84,24 @@ fmtint(intmax_t ll, int unsign)
  {
  	char		*buff;
  	uintmax_t	n,m;
@@ -2529,9 +2586,13 @@ index f3b90e7e9..ff9560d7c 100644
 +	int		j=0;
 +	ptrdiff_t	k=3*(ptrdiff_t)sizeof(ll);
  	if(unsign || ll>=0)
- 		n = ll;
+-		n = ll;
++		n = (uintmax_t)ll;
  	else
-@@ -93,12 +95,13 @@ fmtint(intmax_t ll, int unsign)
+ 	{
+-		n = -ll;
++		n = (uintmax_t)-ll;
+ 		j = 1;
  	}
  	if(n<10)
  	{
@@ -2549,7 +2610,7 @@ index f3b90e7e9..ff9560d7c 100644
  	do
  	{
 diff --git a/src/lib/libast/string/fmtip4.c b/src/lib/libast/string/fmtip4.c
-index 7f59b2a4f..5c2b50095 100644
+index 7f59b2a4f..85d277464 100644
 --- a/src/lib/libast/string/fmtip4.c
 +++ b/src/lib/libast/string/fmtip4.c
 @@ -2,7 +2,7 @@
@@ -2557,7 +2618,7 @@ index 7f59b2a4f..5c2b50095 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2586,7 +2647,7 @@ index 7f59b2a4f..5c2b50095 100644
  	return buf;
  }
 diff --git a/src/lib/libast/string/fmtip6.c b/src/lib/libast/string/fmtip6.c
-index 750cedecd..57cf794fa 100644
+index 750cedecd..9c4dfd7fa 100644
 --- a/src/lib/libast/string/fmtip6.c
 +++ b/src/lib/libast/string/fmtip6.c
 @@ -2,7 +2,7 @@
@@ -2594,7 +2655,7 @@ index 750cedecd..57cf794fa 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2608,7 +2669,7 @@ index 750cedecd..57cf794fa 100644
  	}
  	if (!m)
 diff --git a/src/lib/libast/string/fmtls.c b/src/lib/libast/string/fmtls.c
-index bb7383092..2953b3253 100644
+index bb7383092..9758930f2 100644
 --- a/src/lib/libast/string/fmtls.c
 +++ b/src/lib/libast/string/fmtls.c
 @@ -2,7 +2,7 @@
@@ -2616,7 +2677,7 @@ index bb7383092..2953b3253 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2646,7 +2707,7 @@ index bb7383092..2953b3253 100644
  		if (S_ISBLK(st->st_mode) || S_ISCHR(st->st_mode))
  			s += sfsprintf(s, LS_W_MAX, "%8s ", fmtdev(st));
 diff --git a/src/lib/libast/string/fmtmatch.c b/src/lib/libast/string/fmtmatch.c
-index dd8b41a14..fb1a39a08 100644
+index dd8b41a14..a370522d9 100644
 --- a/src/lib/libast/string/fmtmatch.c
 +++ b/src/lib/libast/string/fmtmatch.c
 @@ -2,7 +2,7 @@
@@ -2654,7 +2715,7 @@ index dd8b41a14..fb1a39a08 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2781,7 +2842,7 @@ index dd8b41a14..fb1a39a08 100644
  		}
  		break;
 diff --git a/src/lib/libast/string/fmtnum.c b/src/lib/libast/string/fmtnum.c
-index 05996adad..261c49ffa 100644
+index 05996adad..ace98f0b8 100644
 --- a/src/lib/libast/string/fmtnum.c
 +++ b/src/lib/libast/string/fmtnum.c
 @@ -2,7 +2,7 @@
@@ -2789,7 +2850,7 @@ index 05996adad..261c49ffa 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2819,7 +2880,7 @@ index 05996adad..261c49ffa 100644
  	}
  	else
 diff --git a/src/lib/libast/string/fmtre.c b/src/lib/libast/string/fmtre.c
-index eb2e5e1f0..f51396ec0 100644
+index eb2e5e1f0..7765ec526 100644
 --- a/src/lib/libast/string/fmtre.c
 +++ b/src/lib/libast/string/fmtre.c
 @@ -2,7 +2,7 @@
@@ -2827,7 +2888,7 @@ index eb2e5e1f0..f51396ec0 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2877,7 +2938,7 @@ index eb2e5e1f0..f51396ec0 100644
  				*t++ = '?';
  			continue;
 diff --git a/src/lib/libast/string/fmtscale.c b/src/lib/libast/string/fmtscale.c
-index 6d0a0bc11..f31a686ba 100644
+index 6d0a0bc11..f94d7a402 100644
 --- a/src/lib/libast/string/fmtscale.c
 +++ b/src/lib/libast/string/fmtscale.c
 @@ -2,7 +2,7 @@
@@ -2885,7 +2946,7 @@ index 6d0a0bc11..f31a686ba 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2916,7 +2977,7 @@ index 6d0a0bc11..f31a686ba 100644
  			m = n;
  			n /= k;
 diff --git a/src/lib/libast/string/fmtsignal.c b/src/lib/libast/string/fmtsignal.c
-index aa6defbb7..8c2b20c29 100644
+index aa6defbb7..909fe8136 100644
 --- a/src/lib/libast/string/fmtsignal.c
 +++ b/src/lib/libast/string/fmtsignal.c
 @@ -2,7 +2,7 @@
@@ -2924,7 +2985,7 @@ index aa6defbb7..8c2b20c29 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2946,7 +3007,7 @@ index aa6defbb7..8c2b20c29 100644
  	if (sig >= 0)
  	{
 diff --git a/src/lib/libast/string/fmttime.c b/src/lib/libast/string/fmttime.c
-index dab05a9e4..1f469dfa4 100644
+index dab05a9e4..934d8b443 100644
 --- a/src/lib/libast/string/fmttime.c
 +++ b/src/lib/libast/string/fmttime.c
 @@ -2,7 +2,7 @@
@@ -2954,7 +3015,7 @@ index dab05a9e4..1f469dfa4 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2976,7 +3037,7 @@ index dab05a9e4..1f469dfa4 100644
  	buf = fmtbuf(z = 80);
  	tmfmt(buf, z, format, &clock);
 diff --git a/src/lib/libast/string/fmttmx.c b/src/lib/libast/string/fmttmx.c
-index 357eb0be2..2df6af02b 100644
+index 357eb0be2..2b6f2fb7e 100644
 --- a/src/lib/libast/string/fmttmx.c
 +++ b/src/lib/libast/string/fmttmx.c
 @@ -2,7 +2,7 @@
@@ -2984,7 +3045,7 @@ index 357eb0be2..2df6af02b 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3006,37 +3067,54 @@ index 357eb0be2..2df6af02b 100644
  	z = 0;
  	do
 diff --git a/src/lib/libast/string/fmttv.c b/src/lib/libast/string/fmttv.c
-index 4d95138e6..1d146d8a2 100644
---- a/src/lib/libast/string/fmttv.c
+new file mode 100644
+index 000000000..1c2534572
+--- /dev/null
 +++ b/src/lib/libast/string/fmttv.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
+@@ -0,0 +1,41 @@
++/***********************************************************************
++*                                                                      *
++*               This software is part of the ast package               *
++*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
++*                      and is licensed under the                       *
++*                 Eclipse Public License, Version 2.0                  *
++*                                                                      *
++*                A copy of the License is available at                 *
++*      https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html      *
++*         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
++*                                                                      *
++*                 Glenn Fowler <gsf@research.att.com>                  *
++*                  David Korn <dgk@research.att.com>                   *
++*                   Phong Vo <kpv@research.att.com>                    *
++*                  Martijn Dekker <martijn@inlv.org>                   *
 +*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- 
-@@ -29,7 +30,7 @@ fmttv(const char* fmt, Tv_t* tv)
- {
- 	char*	s;
- 	char*	t;
--	int	n;
++*                                                                      *
++***********************************************************************/
++
++#include <tv.h>
++#include <tm.h>
++
++/*
++ * Tv_t fmttime()
++ */
++
++char*
++fmttv(const char* fmt, Tv_t* tv)
++{
++	char*	s;
++	char*	t;
 +	size_t	n;
- 
- 	s = fmttime(fmt, (time_t)tv->tv_sec);
- 	if (!tv->tv_nsec || tv->tv_nsec == TV_NSEC_IGNORE)
++
++	s = fmttime(fmt, (time_t)tv->tv_sec);
++	if (!tv->tv_nsec || tv->tv_nsec == TV_NSEC_IGNORE)
++		return s;
++	t = fmtbuf(n = strlen(s) + 11);
++	sfsprintf(t, n, "%s.%09lu", s, (unsigned long)tv->tv_nsec);
++	return t;
++}
 diff --git a/src/lib/libast/string/fmtuid.c b/src/lib/libast/string/fmtuid.c
-index 4b41eb7e6..729109170 100644
+index 4b41eb7e6..b80ea50f6 100644
 --- a/src/lib/libast/string/fmtuid.c
 +++ b/src/lib/libast/string/fmtuid.c
 @@ -2,7 +2,7 @@
@@ -3044,7 +3122,7 @@ index 4b41eb7e6..729109170 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3067,47 +3145,63 @@ index 4b41eb7e6..729109170 100644
  		name = pw->pw_name;
  #if _WINIX
 diff --git a/src/lib/libast/string/fmtversion.c b/src/lib/libast/string/fmtversion.c
-index aaf4a2a42..35b9edd13 100644
---- a/src/lib/libast/string/fmtversion.c
+new file mode 100644
+index 000000000..74055953b
+--- /dev/null
 +++ b/src/lib/libast/string/fmtversion.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
+@@ -0,0 +1,50 @@
++/***********************************************************************
++*                                                                      *
++*               This software is part of the ast package               *
++*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
++*                      and is licensed under the                       *
++*                 Eclipse Public License, Version 2.0                  *
++*                                                                      *
++*                A copy of the License is available at                 *
++*      https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html      *
++*         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
++*                                                                      *
++*                 Glenn Fowler <gsf@research.att.com>                  *
++*                  David Korn <dgk@research.att.com>                   *
++*                   Phong Vo <kpv@research.att.com>                    *
++*                  Martijn Dekker <martijn@inlv.org>                   *
 +*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-@@ -36,14 +37,14 @@ fmtversion(unsigned long v)
- 	buf = cur = fmtbuf(n = 18);
- 	end = cur + n;
- 	if (v >= 19700101L && v <= 29991231L)
--		sfsprintf(cur, end - cur, "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
++*                                                                      *
++***********************************************************************/
++/*
++ * Glenn Fowler
++ * AT&T Bell Laboratories
++ *
++ * return formatted <magicid.h> version string
++ */
++
++#include <ast.h>
++
++char*
++fmtversion(unsigned long v)
++{
++	char*	cur;
++	char*	end;
++	char*	buf;
++	int	n;
++
++	buf = cur = fmtbuf(n = 18);
++	end = cur + n;
++	if (v >= 19700101L && v <= 29991231L)
 +		sfsprintf(cur, (size_t)(end - cur), "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
- 	else
- 	{
- 		if (n = (v >> 24) & 0xff)
--			cur += sfsprintf(cur, end - cur, "%d.", n);
++	else
++	{
++		if (n = (v >> 24) & 0xff)
 +			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
- 		if (n = (v >> 16) & 0xff)
--			cur += sfsprintf(cur, end - cur, "%d.", n);
--		sfsprintf(cur, end - cur, "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
++		if (n = (v >> 16) & 0xff)
 +			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
 +		sfsprintf(cur, (size_t)(end - cur), "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
- 	}
- 	return buf;
- }
++	}
++	return buf;
++}
 diff --git a/src/lib/libast/string/strelapsed.c b/src/lib/libast/string/strelapsed.c
-index 0916c9863..d72859ab8 100644
+index 0916c9863..3b70c61ee 100644
 --- a/src/lib/libast/string/strelapsed.c
 +++ b/src/lib/libast/string/strelapsed.c
 @@ -2,7 +2,7 @@
@@ -3115,7 +3209,7 @@ index 0916c9863..d72859ab8 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3149,9 +3243,18 @@ index 0916c9863..d72859ab8 100644
  		{
  			t = ~t;
 diff --git a/src/lib/libast/string/stresc.c b/src/lib/libast/string/stresc.c
-index 9988d78c9..36c22b3ba 100644
+index 9988d78c9..cf17a1906 100644
 --- a/src/lib/libast/string/stresc.c
 +++ b/src/lib/libast/string/stresc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -3174,7 +3277,7 @@ index 9988d78c9..36c22b3ba 100644
  
  int
 diff --git a/src/lib/libast/string/strgid.c b/src/lib/libast/string/strgid.c
-index 27de3fcd5..014d9e28c 100644
+index 27de3fcd5..fd829d110 100644
 --- a/src/lib/libast/string/strgid.c
 +++ b/src/lib/libast/string/strgid.c
 @@ -2,7 +2,7 @@
@@ -3182,7 +3285,7 @@ index 27de3fcd5..014d9e28c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3223,7 +3326,7 @@ index 27de3fcd5..014d9e28c 100644
  #endif
  	}
 diff --git a/src/lib/libast/string/strlcat.c b/src/lib/libast/string/strlcat.c
-index aaac16c5a..5d1d0a030 100644
+index aaac16c5a..2da00c30a 100644
 --- a/src/lib/libast/string/strlcat.c
 +++ b/src/lib/libast/string/strlcat.c
 @@ -2,7 +2,7 @@
@@ -3231,7 +3334,7 @@ index aaac16c5a..5d1d0a030 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3245,7 +3348,7 @@ index aaac16c5a..5d1d0a030 100644
  
  #endif
 diff --git a/src/lib/libast/string/strlcpy.c b/src/lib/libast/string/strlcpy.c
-index 0aab4a77a..e0dbba8ce 100644
+index 0aab4a77a..1764056e3 100644
 --- a/src/lib/libast/string/strlcpy.c
 +++ b/src/lib/libast/string/strlcpy.c
 @@ -2,7 +2,7 @@
@@ -3253,7 +3356,7 @@ index 0aab4a77a..e0dbba8ce 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3267,7 +3370,7 @@ index 0aab4a77a..e0dbba8ce 100644
  
  #endif
 diff --git a/src/lib/libast/string/strnvcmp.c b/src/lib/libast/string/strnvcmp.c
-index 0b2013c19..792e1cb56 100644
+index 0b2013c19..74906ddf5 100644
 --- a/src/lib/libast/string/strnvcmp.c
 +++ b/src/lib/libast/string/strnvcmp.c
 @@ -2,7 +2,7 @@
@@ -3275,7 +3378,7 @@ index 0b2013c19..792e1cb56 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3300,7 +3403,7 @@ index 0b2013c19..792e1cb56 100644
  				return -1;
  			if (na > nb)
 diff --git a/src/lib/libast/string/stropt.c b/src/lib/libast/string/stropt.c
-index d859cf4bb..f149cb3c2 100644
+index d859cf4bb..b3bb79220 100644
 --- a/src/lib/libast/string/stropt.c
 +++ b/src/lib/libast/string/stropt.c
 @@ -2,7 +2,7 @@
@@ -3308,7 +3411,7 @@ index d859cf4bb..f149cb3c2 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3367,7 +3470,7 @@ index d859cf4bb..f149cb3c2 100644
  				break;
  		}
 diff --git a/src/lib/libast/string/strpsearch.c b/src/lib/libast/string/strpsearch.c
-index fb8d79ff9..6c91a5345 100644
+index fb8d79ff9..1273d169d 100644
 --- a/src/lib/libast/string/strpsearch.c
 +++ b/src/lib/libast/string/strpsearch.c
 @@ -2,7 +2,7 @@
@@ -3375,7 +3478,7 @@ index fb8d79ff9..6c91a5345 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3397,7 +3500,7 @@ index fb8d79ff9..6c91a5345 100644
  		{
  			t = (unsigned char*)name;
 diff --git a/src/lib/libast/string/strsearch.c b/src/lib/libast/string/strsearch.c
-index 859ab6afa..e9c6b61cf 100644
+index 859ab6afa..9fa1dfb1c 100644
 --- a/src/lib/libast/string/strsearch.c
 +++ b/src/lib/libast/string/strsearch.c
 @@ -2,7 +2,7 @@
@@ -3405,7 +3508,7 @@ index 859ab6afa..e9c6b61cf 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3427,15 +3530,15 @@ index 859ab6afa..e9c6b61cf 100644
  			return mid;
  		else if (v > 0)
 diff --git a/src/lib/libast/string/strtoi.h b/src/lib/libast/string/strtoi.h
-index 546195f41..b56a85947 100644
+index e8daf55d2..07b6b45c2 100644
 --- a/src/lib/libast/string/strtoi.h
 +++ b/src/lib/libast/string/strtoi.h
 @@ -2,7 +2,7 @@
  *                                                                      *
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3564,7 +3667,7 @@ index 546195f41..b56a85947 100644
 +	return negative ? (S2I_type)-n : (S2I_type)n;
  }
 diff --git a/src/lib/libast/string/strtoip4.c b/src/lib/libast/string/strtoip4.c
-index 90a77c465..ca0768506 100644
+index 90a77c465..ccec32bed 100644
 --- a/src/lib/libast/string/strtoip4.c
 +++ b/src/lib/libast/string/strtoip4.c
 @@ -2,7 +2,7 @@
@@ -3572,7 +3675,7 @@ index 90a77c465..ca0768506 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3621,7 +3724,7 @@ index 90a77c465..ca0768506 100644
  			{
  				if (part == 4 && (z & 0x8000001) == 1)
 diff --git a/src/lib/libast/string/strtoip6.c b/src/lib/libast/string/strtoip6.c
-index 52d553f63..4c424e044 100644
+index 52d553f63..2d658d678 100644
 --- a/src/lib/libast/string/strtoip6.c
 +++ b/src/lib/libast/string/strtoip6.c
 @@ -2,7 +2,7 @@
@@ -3629,7 +3732,7 @@ index 52d553f63..4c424e044 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3725,7 +3828,7 @@ index 52d553f63..4c424e044 100644
  	}
  	if (e)
 diff --git a/src/lib/libast/string/struid.c b/src/lib/libast/string/struid.c
-index 21cbcaefb..e4d755a54 100644
+index 21cbcaefb..39bab9895 100644
 --- a/src/lib/libast/string/struid.c
 +++ b/src/lib/libast/string/struid.c
 @@ -2,7 +2,7 @@
@@ -3733,7 +3836,7 @@ index 21cbcaefb..e4d755a54 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3766,7 +3869,7 @@ index 21cbcaefb..e4d755a54 100644
  #endif
  	}
 diff --git a/src/lib/libast/string/struniq.c b/src/lib/libast/string/struniq.c
-index 65af528bf..f195df131 100644
+index 65af528bf..78bf4b462 100644
 --- a/src/lib/libast/string/struniq.c
 +++ b/src/lib/libast/string/struniq.c
 @@ -2,7 +2,7 @@
@@ -3774,7 +3877,7 @@ index 65af528bf..f195df131 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3798,7 +3901,7 @@ index 65af528bf..f195df131 100644
 +	return (int)(ao - argv + 1);
  }
 diff --git a/src/lib/libast/string/strvcmp.c b/src/lib/libast/string/strvcmp.c
-index 6f7d919fe..f7d610693 100644
+index 6f7d919fe..5297be163 100644
 --- a/src/lib/libast/string/strvcmp.c
 +++ b/src/lib/libast/string/strvcmp.c
 @@ -2,7 +2,7 @@
@@ -3806,7 +3909,7 @@ index 6f7d919fe..f7d610693 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3831,7 +3934,7 @@ index 6f7d919fe..f7d610693 100644
  				return -1;
  			if (na > nb)
 diff --git a/src/lib/libast/string/swapget.c b/src/lib/libast/string/swapget.c
-index 1b16b71f8..b53daf2b3 100644
+index 1b16b71f8..fdd0a0b3e 100644
 --- a/src/lib/libast/string/swapget.c
 +++ b/src/lib/libast/string/swapget.c
 @@ -2,7 +2,7 @@
@@ -3839,7 +3942,7 @@ index 1b16b71f8..b53daf2b3 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3861,7 +3964,7 @@ index 1b16b71f8..b53daf2b3 100644
  	unsigned char*	p;
  	unsigned char*	d;
 diff --git a/src/lib/libast/string/swapmem.c b/src/lib/libast/string/swapmem.c
-index c8f99612b..c9b8d55f0 100644
+index c8f99612b..58cd43ec8 100644
 --- a/src/lib/libast/string/swapmem.c
 +++ b/src/lib/libast/string/swapmem.c
 @@ -2,7 +2,7 @@
@@ -3869,7 +3972,7 @@ index c8f99612b..c9b8d55f0 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3894,7 +3997,7 @@ index c8f99612b..c9b8d55f0 100644
  	case 0:
  		if (t != f)
 diff --git a/src/lib/libast/string/swapop.c b/src/lib/libast/string/swapop.c
-index 473f80894..d0633cf25 100644
+index 473f80894..a79684985 100644
 --- a/src/lib/libast/string/swapop.c
 +++ b/src/lib/libast/string/swapop.c
 @@ -2,7 +2,7 @@
@@ -3902,7 +4005,7 @@ index 473f80894..d0633cf25 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3941,7 +4044,7 @@ index 473f80894..d0633cf25 100644
  				if (size < 0 && z == 4 && op == 3)
  					op = 7;
 diff --git a/src/lib/libast/string/swapput.c b/src/lib/libast/string/swapput.c
-index 6e2b53a10..2c9ce7299 100644
+index 6e2b53a10..40c302f90 100644
 --- a/src/lib/libast/string/swapput.c
 +++ b/src/lib/libast/string/swapput.c
 @@ -2,7 +2,7 @@
@@ -3949,7 +4052,7 @@ index 6e2b53a10..2c9ce7299 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3978,7 +4081,7 @@ index 6e2b53a10..2c9ce7299 100644
  	}
  	if (op)
 diff --git a/src/lib/libast/string/tokline.c b/src/lib/libast/string/tokline.c
-index 5eed4f3f4..7886f871e 100644
+index 5eed4f3f4..ca0a2d6b0 100644
 --- a/src/lib/libast/string/tokline.c
 +++ b/src/lib/libast/string/tokline.c
 @@ -2,7 +2,7 @@
@@ -3986,7 +4089,7 @@ index 5eed4f3f4..7886f871e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -4018,7 +4121,7 @@ index 5eed4f3f4..7886f871e 100644
  	}
  	d->disc.exceptf = spliceline;
 diff --git a/src/lib/libast/string/tokscan.c b/src/lib/libast/string/tokscan.c
-index c3aae5e15..ea7d6f12f 100644
+index c3aae5e15..4876aff29 100644
 --- a/src/lib/libast/string/tokscan.c
 +++ b/src/lib/libast/string/tokscan.c
 @@ -2,7 +2,7 @@
@@ -4026,7 +4129,7 @@ index c3aae5e15..ea7d6f12f 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -4057,9 +4160,18 @@ index c3aae5e15..ea7d6f12f 100644
  				num++;
  			}
 diff --git a/src/lib/libast/string/utf32toutf8.c b/src/lib/libast/string/utf32toutf8.c
-index ed5402b74..9f5d1abc1 100644
+index ed5402b74..32e5c332d 100644
 --- a/src/lib/libast/string/utf32toutf8.c
 +++ b/src/lib/libast/string/utf32toutf8.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -51,7 +51,7 @@ static const Utf8_t	ops[] =
  size_t
  utf32toutf8(char* s, uint32_t w)
@@ -4098,5 +4210,5 @@ index ed5402b74..9f5d1abc1 100644
  	}
  	return 0;
 -- 
-2.49.0
+2.52.0
 

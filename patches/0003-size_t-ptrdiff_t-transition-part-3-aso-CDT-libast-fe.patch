@@ -1,6 +1,6 @@
-From ec50f5a5310a5ca45fefd8475730b071541fc6fa Mon Sep 17 00:00:00 2001
+From 3037db632e7ba6584a46490afa3b79b74bb44742 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
+Date: Wed, 28 Jan 2026 21:33:54 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -13,21 +13,22 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,291 => 3,214 => 248 (progression from part 2 => part 3 => part 13)
+3,154 => 3,075 => 86 (progression from part 2 => part 3 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/aso/aso-fcntl.c   | 33 +++++------
  src/lib/libast/aso/aso-sem.c     | 20 +++----
- src/lib/libast/aso/aso.c         | 96 ++++++++++++++++----------------
+ src/lib/libast/aso/aso.c         | 98 ++++++++++++++++----------------
  src/lib/libast/aso/asorelax.c    |  5 +-
  src/lib/libast/cdt/dtclose.c     |  6 +-
- src/lib/libast/cdt/dthash.c      |  9 +--
- src/lib/libast/cdt/dtlist.c      |  2 +-
+ src/lib/libast/cdt/dthash.c      | 11 ++--
+ src/lib/libast/cdt/dtlist.c      |  4 +-
+ src/lib/libast/cdt/dtmethod.c    |  6 +-
  src/lib/libast/cdt/dtopen.c      |  6 +-
  src/lib/libast/cdt/dtstat.c      |  7 ++-
  src/lib/libast/cdt/dtstrhash.c   |  5 +-
- src/lib/libast/cdt/dttree.c      |  3 +-
+ src/lib/libast/cdt/dttree.c      |  5 +-
  src/lib/libast/features/align.c  |  6 +-
  src/lib/libast/features/api      |  4 --
  src/lib/libast/features/mode.c   |  4 +-
@@ -36,13 +37,19 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/features/signal.c | 10 ++--
  src/lib/libast/features/sizeof   | 10 ++--
  src/lib/libast/features/tv       | 24 ++++----
+ src/lib/libast/hash/hashfree.c   |  1 +
+ src/lib/libast/hash/hashscan.c   |  1 +
+ src/lib/libast/hash/hashview.c   |  1 +
  src/lib/libast/include/aso.h     |  8 +--
  src/lib/libast/include/cdt.h     | 10 ++--
  src/lib/libast/man/aso.3         |  6 +-
- 22 files changed, 142 insertions(+), 136 deletions(-)
+ src/lib/libast/sfio/_sfopen.c    |  1 +
+ src/lib/libast/sfio/sfclose.c    |  1 +
+ src/lib/libast/sfio/sfstack.c    |  1 +
+ 29 files changed, 155 insertions(+), 143 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
-index abc8227f5..02d6c5ca9 100644
+index abc8227f5..fda7817f3 100644
 --- a/src/lib/libast/aso/aso-fcntl.c
 +++ b/src/lib/libast/aso/aso-fcntl.c
 @@ -2,7 +2,7 @@
@@ -50,7 +57,7 @@ index abc8227f5..02d6c5ca9 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -164,7 +171,7 @@ index abc8227f5..02d6c5ca9 100644
  	lock.l_whence = SEEK_SET;
  	lock.l_start = k - 1;
 diff --git a/src/lib/libast/aso/aso-sem.c b/src/lib/libast/aso/aso-sem.c
-index ac6d5478b..ac7208bec 100644
+index ac6d5478b..74c2a78a0 100644
 --- a/src/lib/libast/aso/aso-sem.c
 +++ b/src/lib/libast/aso/aso-sem.c
 @@ -2,7 +2,7 @@
@@ -172,7 +179,7 @@ index ac6d5478b..ac7208bec 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -245,9 +252,18 @@ index ac6d5478b..ac7208bec 100644
  	return semop(apl->id, &sem, 1) < 0 ? -1 : k;
  }
 diff --git a/src/lib/libast/aso/aso.c b/src/lib/libast/aso/aso.c
-index bac133110..dddfa3b3f 100644
+index bac133110..207222714 100644
 --- a/src/lib/libast/aso/aso.c
 +++ b/src/lib/libast/aso/aso.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -97,8 +97,8 @@ typedef struct State_s
  
  static unsigned int		_aso_data_signal;
@@ -535,7 +551,7 @@ index bac133110..dddfa3b3f 100644
  #if defined(_aso_casptr)
  	if (!state.lockf)
 diff --git a/src/lib/libast/aso/asorelax.c b/src/lib/libast/aso/asorelax.c
-index 317a5ee75..f76d5db1c 100644
+index 317a5ee75..f4a718ce5 100644
 --- a/src/lib/libast/aso/asorelax.c
 +++ b/src/lib/libast/aso/asorelax.c
 @@ -2,7 +2,7 @@
@@ -543,7 +559,7 @@ index 317a5ee75..f76d5db1c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -565,7 +581,7 @@ index 317a5ee75..f76d5db1c 100644
  	Tv_t		tv;
  
 diff --git a/src/lib/libast/cdt/dtclose.c b/src/lib/libast/cdt/dtclose.c
-index 8bd9640ab..853625fbe 100644
+index 8bd9640ab..17784f6af 100644
 --- a/src/lib/libast/cdt/dtclose.c
 +++ b/src/lib/libast/cdt/dtclose.c
 @@ -2,7 +2,7 @@
@@ -573,7 +589,7 @@ index 8bd9640ab..853625fbe 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -596,9 +612,18 @@ index 8bd9640ab..853625fbe 100644
  	Dtdisc_t	*disc = dt->disc;
  
 diff --git a/src/lib/libast/cdt/dthash.c b/src/lib/libast/cdt/dthash.c
-index ce96ad65f..37b88fc89 100644
+index ce96ad65f..bc6d292cd 100644
 --- a/src/lib/libast/cdt/dthash.c
 +++ b/src/lib/libast/cdt/dthash.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -633,9 +658,18 @@ index ce96ad65f..37b88fc89 100644
  		for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
  		{	for(n = 0, l = *t; l; l = l->_rght)
 diff --git a/src/lib/libast/cdt/dtlist.c b/src/lib/libast/cdt/dtlist.c
-index f5789e2f5..ee75003b6 100644
+index f5789e2f5..249d0f896 100644
 --- a/src/lib/libast/cdt/dtlist.c
 +++ b/src/lib/libast/cdt/dtlist.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -127,7 +127,7 @@ static void* listat(Dt_t* dt, Dtstat_t* st)
  	{	memset(st, 0, sizeof(Dtstat_t));
  		st->meth  = dt->meth->type;
@@ -645,8 +679,39 @@ index f5789e2f5..ee75003b6 100644
  	}
  
  	return (void*)dt->data->size;
+diff --git a/src/lib/libast/cdt/dtmethod.c b/src/lib/libast/cdt/dtmethod.c
+index 22fca65e7..3af61fec6 100644
+--- a/src/lib/libast/cdt/dtmethod.c
++++ b/src/lib/libast/cdt/dtmethod.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -78,7 +78,7 @@ int dtcustomize(Dt_t* dt, int type, int action)
+ 	if((type&DT_SHARE) &&
+ 	   (!dt->meth->eventf || (*dt->meth->eventf)(dt, DT_SHARE, (void*)((long)action)) >= 0) )
+ 	{	if(action <= 0 )
+-			dt->data->type &= ~DT_SHARE;
++			dt->data->type &= (unsigned)~DT_SHARE;
+ 		else	dt->data->type |=  DT_SHARE;
+ 		done |= DT_SHARE;
+ 	}
+@@ -86,7 +86,7 @@ int dtcustomize(Dt_t* dt, int type, int action)
+ 	if((type&DT_ANNOUNCE) &&
+ 	   (!dt->meth->eventf || (*dt->meth->eventf)(dt, DT_ANNOUNCE, (void*)((long)action)) >= 0) )
+ 	{	if(action <= 0 )
+-			dt->data->type &= ~DT_ANNOUNCE;
++			dt->data->type &= (unsigned)~DT_ANNOUNCE;
+ 		else	dt->data->type |=  DT_ANNOUNCE;
+ 		done |= DT_ANNOUNCE;
+ 	}
 diff --git a/src/lib/libast/cdt/dtopen.c b/src/lib/libast/cdt/dtopen.c
-index 699551584..2b2d8e06f 100644
+index 699551584..a6d4c79b8 100644
 --- a/src/lib/libast/cdt/dtopen.c
 +++ b/src/lib/libast/cdt/dtopen.c
 @@ -2,7 +2,7 @@
@@ -654,7 +719,7 @@ index 699551584..2b2d8e06f 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -677,7 +742,7 @@ index 699551584..2b2d8e06f 100644
  	if(!disc || !meth)
  		return NULL;
 diff --git a/src/lib/libast/cdt/dtstat.c b/src/lib/libast/cdt/dtstat.c
-index b1db14e6c..31be71a7e 100644
+index b1db14e6c..2f0a44ff8 100644
 --- a/src/lib/libast/cdt/dtstat.c
 +++ b/src/lib/libast/cdt/dtstat.c
 @@ -2,7 +2,7 @@
@@ -685,7 +750,7 @@ index b1db14e6c..31be71a7e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -716,7 +781,7 @@ index b1db14e6c..31be71a7e 100644
  		*str++ = ')';
  	*str = 0;
 diff --git a/src/lib/libast/cdt/dtstrhash.c b/src/lib/libast/cdt/dtstrhash.c
-index 60dc98e4b..a7c156cfc 100644
+index 60dc98e4b..9cac32774 100644
 --- a/src/lib/libast/cdt/dtstrhash.c
 +++ b/src/lib/libast/cdt/dtstrhash.c
 @@ -2,7 +2,7 @@
@@ -724,7 +789,7 @@ index 60dc98e4b..a7c156cfc 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -746,9 +811,18 @@ index 60dc98e4b..a7c156cfc 100644
  	{	for(; *s != 0; ++s )
  			h = (h ^ s[0]) * FNV_PRIME;
 diff --git a/src/lib/libast/cdt/dttree.c b/src/lib/libast/cdt/dttree.c
-index 790d1f28c..6904dd191 100644
+index 790d1f28c..97209adf8 100644
 --- a/src/lib/libast/cdt/dttree.c
 +++ b/src/lib/libast/cdt/dttree.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -767,15 +841,15 @@ index 790d1f28c..6904dd191 100644
  	}
  }
 diff --git a/src/lib/libast/features/align.c b/src/lib/libast/features/align.c
-index 038814d6a..a5e416b3c 100644
+index 3ebf1b21e..df37dfd52 100644
 --- a/src/lib/libast/features/align.c
 +++ b/src/lib/libast/features/align.c
 @@ -2,7 +2,7 @@
  *                                                                      *
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -813,7 +887,7 @@ index 830f0f281..5d92a9ae6 100644
 -
  print	#define _AST_VERSION	AST_VERSION	/* pre-20100601 compatibility */
 diff --git a/src/lib/libast/features/mode.c b/src/lib/libast/features/mode.c
-index a31b734a0..5b867a24f 100644
+index a31b734a0..8db6a3ae5 100644
 --- a/src/lib/libast/features/mode.c
 +++ b/src/lib/libast/features/mode.c
 @@ -2,7 +2,7 @@
@@ -821,7 +895,7 @@ index a31b734a0..5b867a24f 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -861,15 +935,15 @@ index 89076c35d..7e723a408 100644
  	}
  }end fail{
 diff --git a/src/lib/libast/features/signal.c b/src/lib/libast/features/signal.c
-index be5488bb9..43a48fd2a 100644
+index 323d2c479..e1ee287cc 100644
 --- a/src/lib/libast/features/signal.c
 +++ b/src/lib/libast/features/signal.c
 @@ -2,7 +2,7 @@
  *                                                                      *
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -917,7 +991,7 @@ index 3cc5ef1cd..eed7b12e8 100644
  	}
  }end fail{
 diff --git a/src/lib/libast/features/tv b/src/lib/libast/features/tv
-index b63ade820..b483682e6 100644
+index 47dd64a67..157240356 100644
 --- a/src/lib/libast/features/tv
 +++ b/src/lib/libast/features/tv
 @@ -22,24 +22,24 @@ cat{
@@ -957,8 +1031,44 @@ index b63ade820..b483682e6 100644
  }
  else pass{ no_stat_nsec=1 }end {
  	#define ST_ATIME_NSEC_GET(st)	0
+diff --git a/src/lib/libast/hash/hashfree.c b/src/lib/libast/hash/hashfree.c
+index e5f921f60..af25e6b3a 100644
+--- a/src/lib/libast/hash/hashfree.c
++++ b/src/lib/libast/hash/hashfree.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+diff --git a/src/lib/libast/hash/hashscan.c b/src/lib/libast/hash/hashscan.c
+index 41bd58611..67207f752 100644
+--- a/src/lib/libast/hash/hashscan.c
++++ b/src/lib/libast/hash/hashscan.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+diff --git a/src/lib/libast/hash/hashview.c b/src/lib/libast/hash/hashview.c
+index 40f0c4893..7b92d5cfe 100644
+--- a/src/lib/libast/hash/hashview.c
++++ b/src/lib/libast/hash/hashview.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
 diff --git a/src/lib/libast/include/aso.h b/src/lib/libast/include/aso.h
-index 9aacfc44b..430d2f7fb 100644
+index 9aacfc44b..988d058cb 100644
 --- a/src/lib/libast/include/aso.h
 +++ b/src/lib/libast/include/aso.h
 @@ -2,7 +2,7 @@
@@ -966,7 +1076,7 @@ index 9aacfc44b..430d2f7fb 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -992,7 +1102,7 @@ index 9aacfc44b..430d2f7fb 100644
  extern uint8_t			asoinc8(uint8_t volatile*);
  extern uint8_t			asodec8(uint8_t volatile*);
 diff --git a/src/lib/libast/include/cdt.h b/src/lib/libast/include/cdt.h
-index f1ae3a241..2368477c8 100644
+index f1ae3a241..b2eb3628a 100644
 --- a/src/lib/libast/include/cdt.h
 +++ b/src/lib/libast/include/cdt.h
 @@ -2,7 +2,7 @@
@@ -1000,7 +1110,7 @@ index f1ae3a241..2368477c8 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1057,6 +1167,42 @@ index c256d6896..1733d2013 100644
  This function causes the calling process or thread to briefly pause
  for \f3nsec\fP nanoseconds.
  It is useful to implement tight loops that occasionally yield control.
+diff --git a/src/lib/libast/sfio/_sfopen.c b/src/lib/libast/sfio/_sfopen.c
+index 222a9e051..c46186a60 100644
+--- a/src/lib/libast/sfio/_sfopen.c
++++ b/src/lib/libast/sfio/_sfopen.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfhdr.h"
+diff --git a/src/lib/libast/sfio/sfclose.c b/src/lib/libast/sfio/sfclose.c
+index 11a68e320..81b37722a 100644
+--- a/src/lib/libast/sfio/sfclose.c
++++ b/src/lib/libast/sfio/sfclose.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfhdr.h"
+diff --git a/src/lib/libast/sfio/sfstack.c b/src/lib/libast/sfio/sfstack.c
+index db32ef7dc..682200271 100644
+--- a/src/lib/libast/sfio/sfstack.c
++++ b/src/lib/libast/sfio/sfstack.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfhdr.h"
 -- 
-2.49.0
+2.52.0
 

@@ -1,6 +1,6 @@
-From 00f337cab2a1fc52071e12713192651ee089caca Mon Sep 17 00:00:00 2001
+From 6f1a8b78ff0ed98c61ac61a4ad35683e978d6ee7 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
+Date: Wed, 28 Jan 2026 21:33:53 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -39,27 +39,30 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,808 => 3,291 => 248 (progression from part 1 => part 2 => part 13)
+3,797 => 3,154 => 86 (progression from part 1 => part 2 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/print.c       |  93 ++++++++++---------
+ src/cmd/ksh93/bltins/print.c       |  95 ++++++++++----------
  src/lib/libast/features/stdio      |  18 ++--
- src/lib/libast/hash/hashalloc.c    |  15 ++--
+ src/lib/libast/hash/hashalloc.c    |  17 ++--
  src/lib/libast/hash/hashdump.c     |  15 ++--
+ src/lib/libast/hash/hashfree.c     |   6 +-
  src/lib/libast/hash/hashlib.h      |  13 +--
- src/lib/libast/hash/hashlook.c     |  15 ++--
+ src/lib/libast/hash/hashlook.c     |  19 ++--
+ src/lib/libast/hash/hashscan.c     |   6 +-
  src/lib/libast/hash/hashsize.c     |  11 +--
+ src/lib/libast/hash/hashview.c     |   4 +-
  src/lib/libast/hash/memhash.c      |   7 +-
  src/lib/libast/hash/strhash.c      |   8 +-
  src/lib/libast/hash/strsum.c       |   5 +-
- src/lib/libast/include/ast.h       |  35 ++++----
+ src/lib/libast/include/ast.h       |  37 ++++----
  src/lib/libast/include/hash.h      |   9 +-
  src/lib/libast/include/modex.h     |   7 +-
- src/lib/libast/include/regex.h     |  97 ++++++++++----------
- src/lib/libast/include/sfio.h      |  50 +++++------
+ src/lib/libast/include/regex.h     |  99 ++++++++++-----------
+ src/lib/libast/include/sfio.h      |  52 +++++------
  src/lib/libast/include/sfio_s.h    |   5 +-
- src/lib/libast/include/sfio_t.h    |   2 +-
+ src/lib/libast/include/sfio_t.h    |   4 +-
  src/lib/libast/man/fmt.3           |   6 +-
  src/lib/libast/man/hash.3          |  10 +--
  src/lib/libast/man/modecanon.3     |   4 +-
@@ -70,59 +73,63 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/path/pathgetlink.c  |  11 +--
  src/lib/libast/sfio/_sfgetl.c      |   5 +-
  src/lib/libast/sfio/_sfgetu.c      |   5 +-
+ src/lib/libast/sfio/_sfopen.c      |   6 +-
  src/lib/libast/sfio/_sfputc.c      |   5 +-
  src/lib/libast/sfio/_sfputd.c      |  11 +--
  src/lib/libast/sfio/_sfputl.c      |  10 +--
  src/lib/libast/sfio/_sfputm.c      |  14 +--
  src/lib/libast/sfio/_sfputu.c      |  12 +--
- src/lib/libast/sfio/sfcvt.c        |  18 ++--
- src/lib/libast/sfio/sfdisc.c       |  12 +--
+ src/lib/libast/sfio/sfclose.c      |   4 +-
+ src/lib/libast/sfio/sfcvt.c        |  20 ++---
+ src/lib/libast/sfio/sfdisc.c       |  16 ++--
  src/lib/libast/sfio/sfdlen.c       |   5 +-
  src/lib/libast/sfio/sfecvt.c       |   7 +-
  src/lib/libast/sfio/sfexcept.c     |   5 +-
  src/lib/libast/sfio/sffcvt.c       |   7 +-
- src/lib/libast/sfio/sffilbuf.c     |  34 +++----
- src/lib/libast/sfio/sfflsbuf.c     |  17 ++--
+ src/lib/libast/sfio/sffilbuf.c     |  36 ++++----
+ src/lib/libast/sfio/sfflsbuf.c     |  19 ++--
  src/lib/libast/sfio/sfgetd.c       |   6 +-
  src/lib/libast/sfio/sfgetl.c       |   5 +-
  src/lib/libast/sfio/sfgetm.c       |   5 +-
  src/lib/libast/sfio/sfgetr.c       |   9 +-
  src/lib/libast/sfio/sfgetu.c       |   5 +-
- src/lib/libast/sfio/sfhdr.h        |  32 +++----
- src/lib/libast/sfio/sfmode.c       |  27 +++---
+ src/lib/libast/sfio/sfhdr.h        |  44 ++++-----
+ src/lib/libast/sfio/sfmode.c       |  39 ++++----
  src/lib/libast/sfio/sfmove.c       |  14 +--
  src/lib/libast/sfio/sfnew.c        |   7 +-
  src/lib/libast/sfio/sfnputc.c      |  17 ++--
  src/lib/libast/sfio/sfpeek.c       |   5 +-
  src/lib/libast/sfio/sfpkrd.c       |  20 ++---
  src/lib/libast/sfio/sfpoll.c       |   4 +-
- src/lib/libast/sfio/sfpool.c       |  14 +--
+ src/lib/libast/sfio/sfpool.c       |  22 ++---
  src/lib/libast/sfio/sfpopen.c      |   4 +-
  src/lib/libast/sfio/sfprintf.c     |  19 ++--
  src/lib/libast/sfio/sfprints.c     |  15 ++--
+ src/lib/libast/sfio/sfpurge.c      |   4 +-
  src/lib/libast/sfio/sfputd.c       |   5 +-
  src/lib/libast/sfio/sfputl.c       |   5 +-
  src/lib/libast/sfio/sfputm.c       |   5 +-
  src/lib/libast/sfio/sfputr.c       |  31 +++----
  src/lib/libast/sfio/sfputu.c       |   5 +-
- src/lib/libast/sfio/sfrd.c         |  29 +++---
- src/lib/libast/sfio/sfread.c       |  33 +++----
- src/lib/libast/sfio/sfreserve.c    |   7 +-
+ src/lib/libast/sfio/sfrd.c         |  33 +++----
+ src/lib/libast/sfio/sfread.c       |  41 ++++-----
+ src/lib/libast/sfio/sfreserve.c    |   9 +-
  src/lib/libast/sfio/sfresize.c     |  13 +--
  src/lib/libast/sfio/sfscanf.c      |   5 +-
  src/lib/libast/sfio/sfseek.c       |  15 ++--
- src/lib/libast/sfio/sfsetbuf.c     |  49 +++++-----
- src/lib/libast/sfio/sfsetfd.c      |   3 +-
+ src/lib/libast/sfio/sfsetbuf.c     |  51 ++++++-----
+ src/lib/libast/sfio/sfstack.c      |   6 +-
  src/lib/libast/sfio/sfstrtod.c     |  11 +--
- src/lib/libast/sfio/sfstrtof.h     |  17 ++--
+ src/lib/libast/sfio/sfstrtof.h     |  19 ++--
  src/lib/libast/sfio/sfswap.c       |   5 +-
- src/lib/libast/sfio/sftable.c      |  40 +++++----
- src/lib/libast/sfio/sftmp.c        |   2 +-
+ src/lib/libast/sfio/sfsync.c       |  11 +--
+ src/lib/libast/sfio/sftable.c      |  42 ++++-----
+ src/lib/libast/sfio/sftmp.c        |   4 +-
  src/lib/libast/sfio/sfungetc.c     |   6 +-
  src/lib/libast/sfio/sfvprintf.c    | 138 ++++++++++++++---------------
  src/lib/libast/sfio/sfvscanf.c     |  94 ++++++++++----------
  src/lib/libast/sfio/sfwr.c         |  28 +++---
- src/lib/libast/sfio/sfwrite.c      |  32 +++----
+ src/lib/libast/sfio/sfwrite.c      |  38 ++++----
  src/lib/libast/stdio/_doprnt.c     |   5 +-
  src/lib/libast/stdio/_filbuf.c     |   5 +-
  src/lib/libast/stdio/fgets.c       |   9 +-
@@ -143,7 +150,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/stdio/vasprintf.c   |   5 +-
  src/lib/libast/stdio/vfprintf.c    |   5 +-
  src/lib/libast/stdio/vfwprintf.c   |   7 +-
- src/lib/libast/stdio/vfwscanf.c    |   2 +-
+ src/lib/libast/stdio/vfwscanf.c    |   4 +-
  src/lib/libast/stdio/vprintf.c     |   5 +-
  src/lib/libast/stdio/vsnprintf.c   |  13 +--
  src/lib/libast/stdio/vswprintf.c   |   5 +-
@@ -158,12 +165,21 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++--------
  src/lib/libast/string/strmode.c    |  11 +--
  src/lib/libast/string/strperm.c    |  16 ++--
- 115 files changed, 912 insertions(+), 840 deletions(-)
+ 122 files changed, 978 insertions(+), 906 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
-index 346f55960..fa199036d 100644
+index 346f55960..91ec8a65d 100644
 --- a/src/cmd/ksh93/bltins/print.c
 +++ b/src/cmd/ksh93/bltins/print.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -53,11 +53,11 @@ union types_t
  struct printf
  {
@@ -467,10 +483,10 @@ index 346f55960..fa199036d 100644
 +	return d;
  }
 diff --git a/src/lib/libast/features/stdio b/src/lib/libast/features/stdio
-index ee89b4536..6b263e68d 100644
+index 1b79e91a5..130cfd307 100644
 --- a/src/lib/libast/features/stdio
 +++ b/src/lib/libast/features/stdio
-@@ -270,7 +270,7 @@ cat{
+@@ -267,7 +267,7 @@ cat{
  	extern int	setbuffer(FILE*, char*, int);
  	extern int	setlinebuf(FILE*);
  	extern int	setvbuf(FILE*, char*, int, size_t);
@@ -479,7 +495,7 @@ index ee89b4536..6b263e68d 100644
  	extern int	sprintf(char*, const char*, ...);
  	extern int	sscanf(const char*, const char*, ...);
  	extern FILE*	tmpfile(void);
-@@ -280,7 +280,7 @@ cat{
+@@ -277,7 +277,7 @@ cat{
  	extern int	vfscanf(FILE*, const char*, va_list);
  	extern int	vprintf(const char*, va_list);
  	extern int	vscanf(const char*, va_list);
@@ -488,7 +504,7 @@ index ee89b4536..6b263e68d 100644
  	extern int	vsprintf(char*, const char*, va_list);
  	extern int	vsscanf(const char*, const char*, va_list);
  
-@@ -331,11 +331,11 @@ cat{
+@@ -326,11 +326,11 @@ cat{
  	#define feof(f)		sfeof(f)
  	#define ferror(f)	sferror(f)
  	#define fileno(f)	sffileno(f)
@@ -503,7 +519,7 @@ index ee89b4536..6b263e68d 100644
  
  	#else
  
-@@ -346,14 +346,14 @@ cat{
+@@ -341,14 +341,14 @@ cat{
  	#define feof(f)		(_sf_(f)->_flags&_SFIO_EOF)
  	#define ferror(f)	(_sf_(f)->_flags&_SFIO_ERROR)
  	#define fileno(f)	(_sf_(f)->_file)
@@ -523,7 +539,7 @@ index ee89b4536..6b263e68d 100644
  	#endif
  }end
 diff --git a/src/lib/libast/hash/hashalloc.c b/src/lib/libast/hash/hashalloc.c
-index c8832e48e..fcc6d99a4 100644
+index c8832e48e..f7121a1b7 100644
 --- a/src/lib/libast/hash/hashalloc.c
 +++ b/src/lib/libast/hash/hashalloc.c
 @@ -2,7 +2,7 @@
@@ -531,7 +547,7 @@ index c8832e48e..fcc6d99a4 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -543,6 +559,15 @@ index c8832e48e..fcc6d99a4 100644
  *                                                                      *
  ***********************************************************************/
  /*
+@@ -66,7 +67,7 @@ hashalloc(Hash_table_t* ref, ...)
+ 	tab->bucketsize = (sizeof(Hash_header_t) + sizeof(char*) - 1) / sizeof(char*);
+ 	if (ref)
+ 	{
+-		tab->flags = ref->flags & ~HASH_RESET;
++		tab->flags = (short)(ref->flags & ~HASH_RESET);
+ 		tab->root = ref->root;
+ 		internal = HASH_INTERNAL;
+ 	}
 @@ -97,9 +98,9 @@ hashalloc(Hash_table_t* ref, ...)
  			tab->root->local->alloc = va_arg(ap, Hash_alloc_f);
  			break;
@@ -580,7 +605,7 @@ index c8832e48e..fcc6d99a4 100644
  			if (!ref)
  			{
 diff --git a/src/lib/libast/hash/hashdump.c b/src/lib/libast/hash/hashdump.c
-index 607b722fd..07660dc9a 100644
+index 607b722fd..6760f06f9 100644
 --- a/src/lib/libast/hash/hashdump.c
 +++ b/src/lib/libast/hash/hashdump.c
 @@ -2,7 +2,7 @@
@@ -588,7 +613,7 @@ index 607b722fd..07660dc9a 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -643,8 +668,39 @@ index 607b722fd..07660dc9a 100644
  	if (root->local->alloc) sfprintf(sfstderr, "alloc=0x%08lx ", (unsigned long)root->local->alloc);
  	if (root->local->compare) sfprintf(sfstderr, "compare=0x%08lx ", (unsigned long)root->local->compare);
  	if (root->local->free) sfprintf(sfstderr, "free=0x%08lx ", (unsigned long)root->local->free);
+diff --git a/src/lib/libast/hash/hashfree.c b/src/lib/libast/hash/hashfree.c
+index 5d1b79a97..e5f921f60 100644
+--- a/src/lib/libast/hash/hashfree.c
++++ b/src/lib/libast/hash/hashfree.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -71,7 +71,7 @@ hashfree(Hash_table_t* tab)
+ 				else if (freevalue && p->value) (*freevalue)(p->value);
+ 				if (p->hash & HASH_FREENAME)
+ 				{
+-					p->hash &= ~HASH_FREENAME;
++					p->hash &= (unsigned long)~HASH_FREENAME;
+ 					if (region) (*region)(handle, p->name, 0, 0);
+ 					else free(p->name);
+ 				}
+@@ -82,7 +82,7 @@ hashfree(Hash_table_t* tab)
+ 				}
+ 				else if (p->hash & HASH_HIDES)
+ 				{
+-					p->hash &= ~HASH_HIDES;
++					p->hash &= (unsigned long)~HASH_HIDES;
+ 					p->name = ((Hash_bucket_t*)p->name)->name;
+ 				}
+ 			}
 diff --git a/src/lib/libast/hash/hashlib.h b/src/lib/libast/hash/hashlib.h
-index e96b70149..758fa9756 100644
+index e96b70149..b9a6b4342 100644
 --- a/src/lib/libast/hash/hashlib.h
 +++ b/src/lib/libast/hash/hashlib.h
 @@ -2,7 +2,7 @@
@@ -652,7 +708,7 @@ index e96b70149..758fa9756 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -699,7 +755,7 @@ index e96b70149..758fa9756 100644
  
  typedef struct				/* library private info		*/
 diff --git a/src/lib/libast/hash/hashlook.c b/src/lib/libast/hash/hashlook.c
-index a02b25bcf..693f90440 100644
+index a02b25bcf..e100c58d3 100644
 --- a/src/lib/libast/hash/hashlook.c
 +++ b/src/lib/libast/hash/hashlook.c
 @@ -2,7 +2,7 @@
@@ -707,7 +763,7 @@ index a02b25bcf..693f90440 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -742,6 +798,15 @@ index a02b25bcf..693f90440 100644
  		}
  		i = n;
  		for (;;)
+@@ -162,7 +163,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
+ 				value = 0;
+ 				if (tab == top || (flags & HASH_SCOPE))
+ 				{
+-					if (flags & HASH_OPAQUE) b->hash &= ~HASH_OPAQUED;
++					if (flags & HASH_OPAQUE) b->hash &= (unsigned long)~HASH_OPAQUED;
+ 					else if (!(tab->root->flags & HASH_BUCKET))
+ 					{
+ 						if (tab->root->local->free && b->value)
 @@ -209,7 +210,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
  				}
  				else
@@ -751,6 +816,15 @@ index a02b25bcf..693f90440 100644
  					char*	t;
  
  					if (!(i = tab->bucketsize))
+@@ -231,7 +232,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
+ 				}
+ 				if (name && (b->hash & HASH_FREENAME))
+ 				{
+-					b->hash &= ~HASH_FREENAME;
++					b->hash &= (unsigned long)~HASH_FREENAME;
+ 					if (tab->root->local->region) (*tab->root->local->region)(tab->root->local->handle, (char*)name, 0, 0);
+ 					else free((void*)name);
+ 				}
 @@ -279,7 +280,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
  	}
  	else
@@ -769,8 +843,39 @@ index a02b25bcf..693f90440 100644
  		}
  		else if (n < m) n = m;
  		if (!prev && (tab->flags & HASH_ALLOCATE))
+diff --git a/src/lib/libast/hash/hashscan.c b/src/lib/libast/hash/hashscan.c
+index 89ac48f99..41bd58611 100644
+--- a/src/lib/libast/hash/hashscan.c
++++ b/src/lib/libast/hash/hashscan.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -65,7 +65,7 @@ hashscan(Hash_table_t* tab, int flags)
+ 
+ 				while (sp < sx)
+ 					for (b = *sp++; b; b = b->next)
+-						b->hash &= ~HASH_HIDDEN;
++						b->hash &= (unsigned long)~HASH_HIDDEN;
+ 			}
+ 		} while (tab = tab->scope);
+ 		tab = pos->tab;
+@@ -114,7 +114,7 @@ hashnext(Hash_position_t* pos)
+ 				if (!(b->hash & HASH_DELETED)) break;
+ 			}
+ 		}
+-		else b->hash &= ~HASH_HIDDEN;
++		else b->hash &= (unsigned long)~HASH_HIDDEN;
+ 	}
+ 	return pos->tab->root->last.bucket = pos->bucket = b;
+ }
 diff --git a/src/lib/libast/hash/hashsize.c b/src/lib/libast/hash/hashsize.c
-index b13a8286d..6193535cf 100644
+index b13a8286d..5f5ab92a2 100644
 --- a/src/lib/libast/hash/hashsize.c
 +++ b/src/lib/libast/hash/hashsize.c
 @@ -2,7 +2,7 @@
@@ -778,7 +883,7 @@ index b13a8286d..6193535cf 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -819,8 +924,30 @@ index b13a8286d..6193535cf 100644
  		if (!new_s) tab->flags |= HASH_FIXED;
  		else
  		{
+diff --git a/src/lib/libast/hash/hashview.c b/src/lib/libast/hash/hashview.c
+index 6316e3259..40f0c4893 100644
+--- a/src/lib/libast/hash/hashview.c
++++ b/src/lib/libast/hash/hashview.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -74,7 +74,7 @@ hashview(Hash_table_t* top, Hash_table_t* bot)
+ 			for (b = *sp++; b; b = b->next)
+ 				if (b->hash & HASH_HIDES)
+ 				{
+-					b->hash &= ~HASH_HIDES;
++					b->hash &= (unsigned long)~HASH_HIDES;
+ 					b->name = ((Hash_bucket_t*)b->name)->name;
+ 				}
+ 		top->scope = 0;
 diff --git a/src/lib/libast/hash/memhash.c b/src/lib/libast/hash/memhash.c
-index 452133175..e93a03d80 100644
+index 452133175..61d9606ff 100644
 --- a/src/lib/libast/hash/memhash.c
 +++ b/src/lib/libast/hash/memhash.c
 @@ -2,7 +2,7 @@
@@ -828,7 +955,7 @@ index 452133175..e93a03d80 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -856,7 +983,7 @@ index 452133175..e93a03d80 100644
  	while (s < e) HASHPART(c, *s++);
  	return c;
 diff --git a/src/lib/libast/hash/strhash.c b/src/lib/libast/hash/strhash.c
-index 933e84d0e..6a2361de3 100644
+index 933e84d0e..52d84face 100644
 --- a/src/lib/libast/hash/strhash.c
 +++ b/src/lib/libast/hash/strhash.c
 @@ -2,7 +2,7 @@
@@ -864,7 +991,7 @@ index 933e84d0e..6a2361de3 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -885,7 +1012,7 @@ index 933e84d0e..6a2361de3 100644
  	while (c = *s++) HASHPART(i, c);
  	return i;
 diff --git a/src/lib/libast/hash/strsum.c b/src/lib/libast/hash/strsum.c
-index b0d0336ca..e51365296 100644
+index b0d0336ca..c489e8847 100644
 --- a/src/lib/libast/hash/strsum.c
 +++ b/src/lib/libast/hash/strsum.c
 @@ -2,7 +2,7 @@
@@ -893,7 +1020,7 @@ index b0d0336ca..e51365296 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -915,9 +1042,18 @@ index b0d0336ca..e51365296 100644
  	return c & 0xffffffff;
  #else
 diff --git a/src/lib/libast/include/ast.h b/src/lib/libast/include/ast.h
-index 9f2897c9e..bfc29fcd6 100644
+index c2ce95f13..b2fe8a6a8 100644
 --- a/src/lib/libast/include/ast.h
 +++ b/src/lib/libast/include/ast.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -166,6 +166,11 @@ typedef struct
  	char*		user;
  } Pathcheck_t;
@@ -986,16 +1122,16 @@ index 9f2897c9e..bfc29fcd6 100644
  extern char*		fmtquote(const char*, const char*, const char*, size_t, int);
  extern char*		fmtre(const char*);
  extern char*		fmtscale(Sfulong_t, int);
-@@ -353,7 +356,7 @@ extern char*		fmttime(const char*, time_t);
+@@ -352,7 +355,7 @@ extern char*		fmtsignal(int);
+ extern char*		fmttime(const char*, time_t);
  extern char*		fmtuid(int);
- extern char*		fmtversion(unsigned long);
  extern void*		memdup(const void*, size_t);
 -extern unsigned int	memhash(const void*, int);
 +extern size_t		memhash(const void*, int);
  extern unsigned long	memsum(const void*, int, unsigned long);
  extern char*		pathaccess(char*, const char*, const char*, const char*, int);
  extern char*		pathaccess_20100601(const char*, const char*, const char*, int, char*, size_t);
-@@ -366,7 +369,7 @@ extern int		pathcd(const char*, const char*);
+@@ -365,7 +368,7 @@ extern int		pathcd(const char*, const char*);
  extern int		pathcheck(const char*, const char*, Pathcheck_t*);
  extern int		pathexists(char*, int);
  extern char*		pathfind(const char*, const char*, const char*, char*, size_t);
@@ -1004,7 +1140,7 @@ index 9f2897c9e..bfc29fcd6 100644
  extern int		pathicase(const char*);
  extern int		pathinclude(const char*);
  extern size_t		pathnative(const char*, char*, size_t);
-@@ -388,12 +391,12 @@ extern int		strexp(char*, int);
+@@ -387,12 +390,12 @@ extern int		strexp(char*, int);
  extern long		streval(const char*, char**, long(*)(const char*, char**));
  extern long		strexpr(const char*, char**, long(*)(const char*, char**, void*), void*);
  extern int		strgid(const char*);
@@ -1022,7 +1158,7 @@ index 9f2897c9e..bfc29fcd6 100644
  extern int		strnacmp(const char*, const char*, size_t);
  extern char*		strncopy(char*, const char*, size_t);
  extern int		strnpcmp(const char*, const char*, size_t);
-@@ -408,11 +411,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
+@@ -407,11 +410,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
  extern int		strnvcmp(const char*, const char*, size_t);
  extern int		stropt(const char*, const void*, int, int(*)(void*, const void*, int, const char*), void*);
  extern int		strpcmp(const char*, const char*);
@@ -1037,7 +1173,7 @@ index 9f2897c9e..bfc29fcd6 100644
  extern char*		strtape(const char*, char**);
  extern int		strtoip4(const char*, char**, uint32_t*, unsigned char*);
 diff --git a/src/lib/libast/include/hash.h b/src/lib/libast/include/hash.h
-index 52f6a9041..26fe02818 100644
+index 52f6a9041..938ca2f11 100644
 --- a/src/lib/libast/include/hash.h
 +++ b/src/lib/libast/include/hash.h
 @@ -2,7 +2,7 @@
@@ -1045,7 +1181,7 @@ index 52f6a9041..26fe02818 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1085,7 +1221,7 @@ index 52f6a9041..26fe02818 100644
  extern int		hashwalk(Hash_table_t*, int, int (*)(const char*, char*, void*), void*);
  
 diff --git a/src/lib/libast/include/modex.h b/src/lib/libast/include/modex.h
-index edc8b1298..e1670c187 100644
+index edc8b1298..bccbfc81d 100644
 --- a/src/lib/libast/include/modex.h
 +++ b/src/lib/libast/include/modex.h
 @@ -2,7 +2,7 @@
@@ -1093,7 +1229,7 @@ index edc8b1298..e1670c187 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1117,9 +1253,18 @@ index edc8b1298..e1670c187 100644
  #if _S_IDPERM
  #define modei(m)	((m)&X_IPERM)
 diff --git a/src/lib/libast/include/regex.h b/src/lib/libast/include/regex.h
-index 0bff25463..57a3571ba 100644
+index 0bff25463..e3d163ff2 100644
 --- a/src/lib/libast/include/regex.h
 +++ b/src/lib/libast/include/regex.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -40,66 +40,66 @@
  
  /* regcomp flags */
@@ -1261,9 +1406,18 @@ index 0bff25463..57a3571ba 100644
  } regstat_t;
  
 diff --git a/src/lib/libast/include/sfio.h b/src/lib/libast/include/sfio.h
-index 4ab3b6de2..7dea7637b 100644
+index 4ab3b6de2..af2718573 100644
 --- a/src/lib/libast/include/sfio.h
 +++ b/src/lib/libast/include/sfio.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -60,7 +60,7 @@ struct _sfdisc_s
  typedef struct _sffmt_s	Sffmt_t;
  typedef int		(*Sffmtext_f)(Sfio_t*, void*, Sffmt_t*);
@@ -1371,7 +1525,7 @@ index 4ab3b6de2..7dea7637b 100644
  
  #define sfstrseek(f,p,m) \
 diff --git a/src/lib/libast/include/sfio_s.h b/src/lib/libast/include/sfio_s.h
-index 2d4645ee3..db1717330 100644
+index 2d4645ee3..2270ffe2d 100644
 --- a/src/lib/libast/include/sfio_s.h
 +++ b/src/lib/libast/include/sfio_s.h
 @@ -2,7 +2,7 @@
@@ -1379,7 +1533,7 @@ index 2d4645ee3..db1717330 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1401,9 +1555,18 @@ index 2d4645ee3..db1717330 100644
  	ssize_t		_size;	/* buffer size				*/
  	ssize_t		_val;	/* values or string lengths		*/
 diff --git a/src/lib/libast/include/sfio_t.h b/src/lib/libast/include/sfio_t.h
-index 81811bc68..8fa7d9673 100644
+index 81811bc68..bf0066ac6 100644
 --- a/src/lib/libast/include/sfio_t.h
 +++ b/src/lib/libast/include/sfio_t.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -76,7 +76,7 @@
  	  (short)(file),				/* file		*/ \
  	  (unsigned char*)(data),			/* data		*/ \
@@ -1689,7 +1852,7 @@ index 448b354de..16b38bae4 100644
  .I strperm
  applies a file permission expression in the null-terminated string
 diff --git a/src/lib/libast/path/pathgetlink.c b/src/lib/libast/path/pathgetlink.c
-index 6ef0f9e0e..d1cb84978 100644
+index 6ef0f9e0e..8a8875be1 100644
 --- a/src/lib/libast/path/pathgetlink.c
 +++ b/src/lib/libast/path/pathgetlink.c
 @@ -2,7 +2,7 @@
@@ -1697,7 +1860,7 @@ index 6ef0f9e0e..d1cb84978 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1728,7 +1891,7 @@ index 6ef0f9e0e..d1cb84978 100644
  		errno = EINVAL;
  		return -1;
 diff --git a/src/lib/libast/sfio/_sfgetl.c b/src/lib/libast/sfio/_sfgetl.c
-index 5ea3c7adb..ee85bfe3e 100644
+index 5ea3c7adb..c0df3ddcb 100644
 --- a/src/lib/libast/sfio/_sfgetl.c
 +++ b/src/lib/libast/sfio/_sfgetl.c
 @@ -2,7 +2,7 @@
@@ -1736,7 +1899,7 @@ index 5ea3c7adb..ee85bfe3e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1757,7 +1920,7 @@ index 5ea3c7adb..ee85bfe3e 100644
  	return sfgetl(f);
  }
 diff --git a/src/lib/libast/sfio/_sfgetu.c b/src/lib/libast/sfio/_sfgetu.c
-index 1ae8ced0d..4ed2faee5 100644
+index 1ae8ced0d..5c2387409 100644
 --- a/src/lib/libast/sfio/_sfgetu.c
 +++ b/src/lib/libast/sfio/_sfgetu.c
 @@ -2,7 +2,7 @@
@@ -1765,7 +1928,7 @@ index 1ae8ced0d..4ed2faee5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1785,8 +1948,32 @@ index 1ae8ced0d..4ed2faee5 100644
 +	sfungetc(f, (uchar)_SFIO_(f)->val);
  	return sfgetu(f);
  }
+diff --git a/src/lib/libast/sfio/_sfopen.c b/src/lib/libast/sfio/_sfopen.c
+index 2d80b24d1..222a9e051 100644
+--- a/src/lib/libast/sfio/_sfopen.c
++++ b/src/lib/libast/sfio/_sfopen.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -49,8 +49,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
+ 				else	f->bits &= ~SFIO_BOTH;
+ 
+ 				if(f->flags&SFIO_READ)
+-					f->mode = (f->mode&~SFIO_WRITE)|SFIO_READ;
+-				else	f->mode = (f->mode&~SFIO_READ)|SFIO_WRITE;
++					f->mode = (f->mode&(uint32_t)~SFIO_WRITE)|SFIO_READ;
++				else	f->mode = (f->mode&(uint32_t)~SFIO_READ)|SFIO_WRITE;
+ 			}
+ 		}
+ 		else /* make sure there is no buffered data */
 diff --git a/src/lib/libast/sfio/_sfputc.c b/src/lib/libast/sfio/_sfputc.c
-index 53cab1886..63af3ed0c 100644
+index 53cab1886..5546b8e9a 100644
 --- a/src/lib/libast/sfio/_sfputc.c
 +++ b/src/lib/libast/sfio/_sfputc.c
 @@ -2,7 +2,7 @@
@@ -1794,7 +1981,7 @@ index 53cab1886..63af3ed0c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1815,7 +2002,7 @@ index 53cab1886..63af3ed0c 100644
  	return __sf_putc(f,c);
  }
 diff --git a/src/lib/libast/sfio/_sfputd.c b/src/lib/libast/sfio/_sfputd.c
-index 953d98339..aa4708160 100644
+index 953d98339..1a6864e79 100644
 --- a/src/lib/libast/sfio/_sfputd.c
 +++ b/src/lib/libast/sfio/_sfputd.c
 @@ -2,7 +2,7 @@
@@ -1823,7 +2010,7 @@ index 953d98339..aa4708160 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1867,7 +2054,7 @@ index 953d98339..aa4708160 100644
  	SFOPEN(f,0);
  	return w;
 diff --git a/src/lib/libast/sfio/_sfputl.c b/src/lib/libast/sfio/_sfputl.c
-index de189b38f..aec527597 100644
+index de189b38f..05251ae09 100644
 --- a/src/lib/libast/sfio/_sfputl.c
 +++ b/src/lib/libast/sfio/_sfputl.c
 @@ -2,7 +2,7 @@
@@ -1875,7 +2062,7 @@ index de189b38f..aec527597 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1905,7 +2092,7 @@ index de189b38f..aec527597 100644
  	{	switch(n)
  		{
 diff --git a/src/lib/libast/sfio/_sfputm.c b/src/lib/libast/sfio/_sfputm.c
-index 348ca21d2..deda965df 100644
+index 348ca21d2..b31c3d800 100644
 --- a/src/lib/libast/sfio/_sfputm.c
 +++ b/src/lib/libast/sfio/_sfputm.c
 @@ -2,7 +2,7 @@
@@ -1913,7 +2100,7 @@ index 348ca21d2..deda965df 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1952,7 +2139,7 @@ index 348ca21d2..deda965df 100644
 +	return n;
  }
 diff --git a/src/lib/libast/sfio/_sfputu.c b/src/lib/libast/sfio/_sfputu.c
-index 33f57610b..bb9a5a75c 100644
+index 33f57610b..80eccf913 100644
 --- a/src/lib/libast/sfio/_sfputu.c
 +++ b/src/lib/libast/sfio/_sfputu.c
 @@ -2,7 +2,7 @@
@@ -1960,7 +2147,7 @@ index 33f57610b..bb9a5a75c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -1996,10 +2183,41 @@ index 33f57610b..bb9a5a75c 100644
 -	return (int)n;
 +	return n;
  }
+diff --git a/src/lib/libast/sfio/sfclose.c b/src/lib/libast/sfio/sfclose.c
+index 2f8370c33..11a68e320 100644
+--- a/src/lib/libast/sfio/sfclose.c
++++ b/src/lib/libast/sfio/sfclose.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -82,7 +82,7 @@ int sfclose(Sfio_t* f)
+ 			}
+ 		}
+ 		else
+-		{	f->mode &= ~SFIO_LOCK;	/**/ASSERT(_Sfpmove);
++		{	f->mode &= (uint32_t)~SFIO_LOCK;	/**/ASSERT(_Sfpmove);
+ 			if((*_Sfpmove)(f,-1) < 0)
+ 			{	SFOPEN(f,0);
+ 				return -1;
 diff --git a/src/lib/libast/sfio/sfcvt.c b/src/lib/libast/sfio/sfcvt.c
-index 65f321807..8bf059c47 100644
+index 65f321807..ddcc6a28a 100644
 --- a/src/lib/libast/sfio/sfcvt.c
 +++ b/src/lib/libast/sfio/sfcvt.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -79,11 +79,11 @@ static int neg0d(double f)
  char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
  	     char*	buf,		/* conversion goes here		*/
@@ -2056,9 +2274,18 @@ index 65f321807..8bf059c47 100644
   around:
  	if (((m >> x) & 0xf) >= 8)
 diff --git a/src/lib/libast/sfio/sfdisc.c b/src/lib/libast/sfio/sfdisc.c
-index 5295dca51..44c48c21b 100644
+index 5295dca51..281d07333 100644
 --- a/src/lib/libast/sfio/sfdisc.c
 +++ b/src/lib/libast/sfio/sfdisc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -70,14 +70,14 @@ static ssize_t _dccaread(Sfio_t* f, void* buf, size_t size, Sfdisc_t* disc)
  	if(!prev)
  		return -1;
@@ -2077,6 +2304,15 @@ index 5295dca51..44c48c21b 100644
  
  	if((dcca->data += sz) >= dcca->endb) /* free empty cache */
  	{	prev->disc = disc->disc;
+@@ -123,7 +123,7 @@ Sfdisc_t* sfdisc(Sfio_t* f, Sfdisc_t* disc)
+ 	if(!(f->flags&SFIO_STRING))
+ 	{	(void)SFSYNC(f); /* do a silent buffer synch */
+ 		if((f->mode&SFIO_READ) && (f->mode&SFIO_SYNCED) )
+-		{	f->mode &= ~SFIO_SYNCED;
++		{	f->mode &= (uint32_t)~SFIO_SYNCED;
+ 			f->endb = f->next = f->endr = f->endw = f->data;
+ 		}
+ 
 @@ -147,7 +147,7 @@ Sfdisc_t* sfdisc(Sfio_t* f, Sfdisc_t* disc)
  
  		/* trick the new discipline into processing already buffered data */
@@ -2105,7 +2341,7 @@ index 5295dca51..44c48c21b 100644
  			}
  		}
 diff --git a/src/lib/libast/sfio/sfdlen.c b/src/lib/libast/sfio/sfdlen.c
-index 36bb25510..922a04da4 100644
+index 36bb25510..b13bb861c 100644
 --- a/src/lib/libast/sfio/sfdlen.c
 +++ b/src/lib/libast/sfio/sfdlen.c
 @@ -2,7 +2,7 @@
@@ -2113,7 +2349,7 @@ index 36bb25510..922a04da4 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2135,7 +2371,7 @@ index 36bb25510..922a04da4 100644
  	Sfdouble_t	x;
  	int		exp;
 diff --git a/src/lib/libast/sfio/sfecvt.c b/src/lib/libast/sfio/sfecvt.c
-index 4c9ab04f1..8b9bbb118 100644
+index 4c9ab04f1..70bccceb1 100644
 --- a/src/lib/libast/sfio/sfecvt.c
 +++ b/src/lib/libast/sfio/sfecvt.c
 @@ -2,7 +2,7 @@
@@ -2143,7 +2379,7 @@ index 4c9ab04f1..8b9bbb118 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2168,7 +2404,7 @@ index 4c9ab04f1..8b9bbb118 100644
  
  	return _sfcvt(&dval,buf,sizeof(buf),n_digit,decpt,sign,&len,SFFMT_EFORMAT);
 diff --git a/src/lib/libast/sfio/sfexcept.c b/src/lib/libast/sfio/sfexcept.c
-index 5833b5af6..3bcc7f8db 100644
+index 5833b5af6..470290698 100644
 --- a/src/lib/libast/sfio/sfexcept.c
 +++ b/src/lib/libast/sfio/sfexcept.c
 @@ -2,7 +2,7 @@
@@ -2176,7 +2412,7 @@ index 5833b5af6..3bcc7f8db 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2198,7 +2434,7 @@ index 5833b5af6..3bcc7f8db 100644
  			f->endb = data + size;
  			f->next = data + (f->next - f->data);
 diff --git a/src/lib/libast/sfio/sffcvt.c b/src/lib/libast/sfio/sffcvt.c
-index 29872f701..1efc833f8 100644
+index 29872f701..fc0165833 100644
 --- a/src/lib/libast/sfio/sffcvt.c
 +++ b/src/lib/libast/sfio/sffcvt.c
 @@ -2,7 +2,7 @@
@@ -2206,7 +2442,7 @@ index 29872f701..1efc833f8 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2231,7 +2467,7 @@ index 29872f701..1efc833f8 100644
  
  	return _sfcvt(&dval,buf,sizeof(buf),n_digit,decpt,sign,&len,0);
 diff --git a/src/lib/libast/sfio/sffilbuf.c b/src/lib/libast/sfio/sffilbuf.c
-index 7c8f64a5b..7a03001bb 100644
+index 7c8f64a5b..640ffdc19 100644
 --- a/src/lib/libast/sfio/sffilbuf.c
 +++ b/src/lib/libast/sfio/sffilbuf.c
 @@ -2,7 +2,7 @@
@@ -2239,7 +2475,7 @@ index 7c8f64a5b..7a03001bb 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2268,6 +2504,15 @@ index 7c8f64a5b..7a03001bb 100644
  
  	if(!f)
  		return -1;
+@@ -45,7 +47,7 @@ int _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
+ 
+ 	justseek = f->bits&SFIO_JUSTSEEK; f->bits &= ~SFIO_JUSTSEEK;
+ 
+-	for(first = 1;; first = 0, (f->mode &= ~SFIO_LOCK) )
++	for(first = 1;; first = 0, (f->mode &= (uint32_t)~SFIO_LOCK) )
+ 	{	/* check mode */
+ 		if(SFMODE(f,local) != SFIO_READ && _sfmode(f,SFIO_READ,local) < 0)
+ 			return -1;
 @@ -62,17 +64,17 @@ int _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
  			/* try shifting left to make room for new data */
  			if(!(f->bits&SFIO_MMAP) && f->next > f->data &&
@@ -2322,7 +2567,7 @@ index 7c8f64a5b..7a03001bb 100644
 +	return ret;
  }
 diff --git a/src/lib/libast/sfio/sfflsbuf.c b/src/lib/libast/sfio/sfflsbuf.c
-index d48e7c4e0..faf70e94f 100644
+index d48e7c4e0..2e954aee6 100644
 --- a/src/lib/libast/sfio/sfflsbuf.c
 +++ b/src/lib/libast/sfio/sfflsbuf.c
 @@ -2,7 +2,7 @@
@@ -2330,7 +2575,7 @@ index d48e7c4e0..faf70e94f 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2342,7 +2587,7 @@ index d48e7c4e0..faf70e94f 100644
  *                                                                      *
  ***********************************************************************/
  #include	"sfhdr.h"
-@@ -24,14 +25,14 @@
+@@ -24,21 +25,21 @@
  **	Written by Kiem-Phong Vo
  */
  
@@ -2360,6 +2605,14 @@ index d48e7c4e0..faf70e94f 100644
  
  	if(!f)
  		return -1;
+ 
+ 	GETLOCAL(f,local);
+ 
+-	for(written = 0;; f->mode &= ~SFIO_LOCK)
++	for(written = 0;; f->mode &= (uint32_t)~SFIO_LOCK)
+ 	{	/* check stream mode */
+ 		if(SFMODE(f,local) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,local) < 0)
+ 			return -1;
 @@ -50,7 +51,7 @@ int _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
  		if(n == (f->endb-data) && (f->flags&SFIO_STRING))
  		{	/* call sfwr() to extend string buffer and process events */
@@ -2391,7 +2644,7 @@ index d48e7c4e0..faf70e94f 100644
  			f->next = f->data+n;
  			if(c < 0 && (!isall || n == 0))
 diff --git a/src/lib/libast/sfio/sfgetd.c b/src/lib/libast/sfio/sfgetd.c
-index c7bef0a7c..445fbb6ca 100644
+index c7bef0a7c..932389492 100644
 --- a/src/lib/libast/sfio/sfgetd.c
 +++ b/src/lib/libast/sfio/sfgetd.c
 @@ -2,7 +2,7 @@
@@ -2399,7 +2652,7 @@ index c7bef0a7c..445fbb6ca 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2422,7 +2675,7 @@ index c7bef0a7c..445fbb6ca 100644
  
  	if(!f || (sign = sfgetc(f)) < 0 || (exp = (int)sfgetu(f)) < 0)
 diff --git a/src/lib/libast/sfio/sfgetl.c b/src/lib/libast/sfio/sfgetl.c
-index 7328fba60..568e14605 100644
+index 7328fba60..fce701155 100644
 --- a/src/lib/libast/sfio/sfgetl.c
 +++ b/src/lib/libast/sfio/sfgetl.c
 @@ -2,7 +2,7 @@
@@ -2430,7 +2683,7 @@ index 7328fba60..568e14605 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2452,7 +2705,7 @@ index 7328fba60..568e14605 100644
  	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
  		return (Sflong_t)(-1);
 diff --git a/src/lib/libast/sfio/sfgetm.c b/src/lib/libast/sfio/sfgetm.c
-index 554909cbc..fb2435844 100644
+index 554909cbc..f7950070a 100644
 --- a/src/lib/libast/sfio/sfgetm.c
 +++ b/src/lib/libast/sfio/sfgetm.c
 @@ -2,7 +2,7 @@
@@ -2460,7 +2713,7 @@ index 554909cbc..fb2435844 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2482,7 +2735,7 @@ index 554909cbc..fb2435844 100644
  	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
  		return (Sfulong_t)(-1);
 diff --git a/src/lib/libast/sfio/sfgetr.c b/src/lib/libast/sfio/sfgetr.c
-index 10803c6ec..cc047c9d6 100644
+index 10803c6ec..b16b8d8f6 100644
 --- a/src/lib/libast/sfio/sfgetr.c
 +++ b/src/lib/libast/sfio/sfgetr.c
 @@ -2,7 +2,7 @@
@@ -2490,7 +2743,7 @@ index 10803c6ec..cc047c9d6 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2530,7 +2783,7 @@ index 10803c6ec..cc047c9d6 100644
  
  done:
 diff --git a/src/lib/libast/sfio/sfgetu.c b/src/lib/libast/sfio/sfgetu.c
-index d80bc0241..c18dbaa72 100644
+index d80bc0241..b520f3d86 100644
 --- a/src/lib/libast/sfio/sfgetu.c
 +++ b/src/lib/libast/sfio/sfgetu.c
 @@ -2,7 +2,7 @@
@@ -2538,7 +2791,7 @@ index d80bc0241..c18dbaa72 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2560,9 +2813,18 @@ index d80bc0241..c18dbaa72 100644
  	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
  		return (Sfulong_t)(-1);
 diff --git a/src/lib/libast/sfio/sfhdr.h b/src/lib/libast/sfio/sfhdr.h
-index e3ce56470..d7cd7bf0b 100644
+index e3ce56470..71f78a505 100644
 --- a/src/lib/libast/sfio/sfhdr.h
 +++ b/src/lib/libast/sfio/sfhdr.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -268,9 +268,9 @@
  typedef struct _sfpool_s	Sfpool_t;
  struct _sfpool_s
@@ -2605,6 +2867,42 @@ index e3ce56470..d7cd7bf0b 100644
  };
  
  #define LEFTP		'('
+@@ -484,9 +484,9 @@ typedef struct _sfextern_s
+ #define SFIO_ECONT	3	/* can continue normally		*/
+ 
+ #define SETLOCAL(f)	((f)->mode |= SFIO_LOCAL)
+-#define GETLOCAL(f,v)	((v) = ((f)->mode&SFIO_LOCAL), (f)->mode &= ~SFIO_LOCAL, (v))
++#define GETLOCAL(f,v)	((v) = ((f)->mode&SFIO_LOCAL), (f)->mode &= (uint32_t)~SFIO_LOCAL, (v))
+ #define SFWRALL(f)	((f)->mode |= SFIO_RV)
+-#define SFISALL(f,v)	((((v) = (f)->mode&SFIO_RV) ? ((f)->mode &= ~SFIO_RV) : 0), \
++#define SFISALL(f,v)	((((v) = (f)->mode&SFIO_RV) ? ((f)->mode &= (uint32_t)~SFIO_RV) : 0), \
+ 			 ((v) || ((f)->flags&(SFIO_SHARE|SFIO_APPENDWR|SFIO_WHOLE)) ) )
+ #define SFSK(f,a,o,d)	(SETLOCAL(f),sfsk(f,(Sfoff_t)a,o,d))
+ #define SFRD(f,b,n,d)	(SETLOCAL(f),sfrd(f,b,n,d))
+@@ -503,7 +503,7 @@ typedef struct _sfextern_s
+ #define SFRAISE(f,e,d)	(SETLOCAL(f),sfraise(f,e,d))
+ 
+ /* lock/open a stream */
+-#define SFMODE(f,l)	((f)->mode & ~(SFIO_RV|SFIO_RC|((l) ? SFIO_LOCK : 0)) )
++#define SFMODE(f,l)	((f)->mode & (uint32_t)~(SFIO_RV|SFIO_RC|((l) ? SFIO_LOCK : 0)) )
+ #define SFLOCK(f,l)	(void)((f)->mode |= SFIO_LOCK, (f)->endr = (f)->endw = (f)->data)
+ #define _SFOPENRD(f)	((f)->endr = (f)->endb)
+ #define _SFOPENWR(f)	((f)->endw = ((f)->flags&SFIO_LINE) ? (f)->data : (f)->endb)
+@@ -511,12 +511,12 @@ typedef struct _sfextern_s
+ 			 (f)->mode == SFIO_WRITE ? _SFOPENWR(f) : \
+ 			 ((f)->endw = (f)->endr = (f)->data) )
+ #define SFOPEN(f,l)	(void)((l) ? 0 : \
+-				((f)->mode &= ~(SFIO_LOCK|SFIO_RC|SFIO_RV), _SFOPEN(f), 0) )
++				((f)->mode &= (uint32_t)~(SFIO_LOCK|SFIO_RC|SFIO_RV), _SFOPEN(f), 0) )
+ 
+ /* check to see if the stream can be accessed */
+ #define SFFROZEN(f)	(((f)->mode&(SFIO_PUSH|SFIO_LOCK|SFIO_PEEK)) ? 1 : \
+ 			 !((f)->mode&SFIO_STDIO) ? 0 : \
+-			 _Sfstdsync ? (*_Sfstdsync)(f) : (((f)->mode &= ~SFIO_STDIO),0) )
++			 _Sfstdsync ? (*_Sfstdsync)(f) : (((f)->mode &= (uint32_t)~SFIO_STDIO),0) )
+ 
+ 
+ /* set discipline code */
 @@ -632,7 +632,7 @@ typedef struct _sftab_
  	int		(*sf_cvinitf)(void);	/* initialization function	*/
  	int		sf_cvinit;		/* initialization state		*/
@@ -2651,7 +2949,7 @@ index e3ce56470..d7cd7bf0b 100644
  
  extern Sfextern_t	_Sfextern;
 diff --git a/src/lib/libast/sfio/sfmode.c b/src/lib/libast/sfio/sfmode.c
-index 677df4614..d5a31dcf3 100644
+index 677df4614..41a06ab39 100644
 --- a/src/lib/libast/sfio/sfmode.c
 +++ b/src/lib/libast/sfio/sfmode.c
 @@ -2,7 +2,7 @@
@@ -2659,7 +2957,7 @@ index 677df4614..d5a31dcf3 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2672,6 +2970,15 @@ index 677df4614..d5a31dcf3 100644
  
  	f = (Sfio_t*)Version; /* shut compiler warning */
  
+@@ -83,7 +83,7 @@ static void _sfcleanup(void)
+ 
+ 			/* from now on, write streams are unbuffered */
+ 			pool = f->mode&SFIO_POOL;
+-			f->mode &= ~SFIO_POOL;
++			f->mode &= (uint32_t)~SFIO_POOL;
+ 			if((f->flags&SFIO_WRITE) && !(f->mode&SFIO_WRITE))
+ 				(void)_sfmode(f,SFIO_WRITE,1);
+ 			if(f->data &&
 @@ -102,7 +102,8 @@ int _sfsetpool(Sfio_t* f)
  {
  	Sfpool_t*	p;
@@ -2738,15 +3045,55 @@ index 677df4614..d5a31dcf3 100644
  			f->endb = f->data+p->ndata;
  			p->ndata = 0;
  		}
+@@ -298,10 +299,10 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
+ 
+ 
+ 	if(wanted&SFIO_SYNCED) /* for (SFIO_SYNCED|SFIO_READ) stream, just junk data */
+-	{	wanted &= ~SFIO_SYNCED;
++	{	wanted &= (uint32_t)~SFIO_SYNCED;
+ 		if((f->mode&(SFIO_SYNCED|SFIO_READ)) == (SFIO_SYNCED|SFIO_READ) )
+ 		{	f->next = f->endb = f->endr = f->data;
+-			f->mode &= ~SFIO_SYNCED;
++			f->mode &= (uint32_t)~SFIO_SYNCED;
+ 		}
+ 	}
+ 
+@@ -327,7 +328,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
+ 	}
+ 
+ 	if(f->mode&SFIO_GETR)
+-	{	f->mode &= ~SFIO_GETR;
++	{	f->mode &= (uint32_t)~SFIO_GETR;
+ #ifdef MAP_TYPE
+ 		if(f->bits&SFIO_MMAP)
+ 		{
 @@ -341,7 +342,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
  		}
  #endif
  		if(f->getr)
 -		{	f->next[-1] = f->getr;
-+		{	f->next[-1] = (char)f->getr;
++		{	f->next[-1] = (uchar)f->getr;
  			f->getr = 0;
  		}
  	}
+@@ -361,7 +362,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
+ 		{	local = 1;
+ 			goto err_notify;
+ 		}
+-		f->mode &= ~SFIO_POOL;
++		f->mode &= (uint32_t)~SFIO_POOL;
+ 	}
+ 
+ 	SFLOCK(f,local);
+@@ -382,7 +383,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
+ 			goto err_notify;
+ 
+ 		if((f->flags&SFIO_STRING) && f->size >= 0 && f->data)
+-		{	f->mode &= ~SFIO_INIT;
++		{	f->mode &= (uint32_t)~SFIO_INIT;
+ 			f->extent = ((f->flags&SFIO_READ) || (f->bits&SFIO_BOTH)) ?
+ 					f->size : 0;
+ 			f->here = 0;
 @@ -394,7 +395,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
  		}
  		else
@@ -2766,7 +3113,7 @@ index 677df4614..d5a31dcf3 100644
  
  		if(_Sfnotify) /* notify application of the error */
 diff --git a/src/lib/libast/sfio/sfmove.c b/src/lib/libast/sfio/sfmove.c
-index ba770a5c0..e6462394d 100644
+index ba770a5c0..68d4bcccf 100644
 --- a/src/lib/libast/sfio/sfmove.c
 +++ b/src/lib/libast/sfio/sfmove.c
 @@ -2,7 +2,7 @@
@@ -2774,7 +3121,7 @@ index ba770a5c0..e6462394d 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2828,7 +3175,7 @@ index ba770a5c0..e6462394d 100644
  				if(w > 0)
  				{	r -= w;
 diff --git a/src/lib/libast/sfio/sfnew.c b/src/lib/libast/sfio/sfnew.c
-index 76b9db52e..8870c72cf 100644
+index 76b9db52e..f74e0f93f 100644
 --- a/src/lib/libast/sfio/sfnew.c
 +++ b/src/lib/libast/sfio/sfnew.c
 @@ -2,7 +2,7 @@
@@ -2836,7 +3183,7 @@ index 76b9db52e..8870c72cf 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2860,7 +3207,7 @@ index 76b9db52e..8870c72cf 100644
  	f->endb = f->endr = f->endw = f->next = f->data;
  
 diff --git a/src/lib/libast/sfio/sfnputc.c b/src/lib/libast/sfio/sfnputc.c
-index 6a8bc9c56..6207ee5c9 100644
+index 6a8bc9c56..7a0798b39 100644
 --- a/src/lib/libast/sfio/sfnputc.c
 +++ b/src/lib/libast/sfio/sfnputc.c
 @@ -2,7 +2,7 @@
@@ -2868,7 +3215,7 @@ index 6a8bc9c56..6207ee5c9 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2913,7 +3260,7 @@ index 6a8bc9c56..6207ee5c9 100644
  done :
  	SFOPEN(f,local);
 diff --git a/src/lib/libast/sfio/sfpeek.c b/src/lib/libast/sfio/sfpeek.c
-index eb8da4766..f40309e93 100644
+index eb8da4766..56a5946bc 100644
 --- a/src/lib/libast/sfio/sfpeek.c
 +++ b/src/lib/libast/sfio/sfpeek.c
 @@ -2,7 +2,7 @@
@@ -2921,7 +3268,7 @@ index eb8da4766..f40309e93 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -2943,7 +3290,7 @@ index eb8da4766..f40309e93 100644
  			(void)_sfmode(f,0,0);
  
 diff --git a/src/lib/libast/sfio/sfpkrd.c b/src/lib/libast/sfio/sfpkrd.c
-index 59ae234bc..7d3cacce0 100644
+index 59ae234bc..c16587da3 100644
 --- a/src/lib/libast/sfio/sfpkrd.c
 +++ b/src/lib/libast/sfio/sfpkrd.c
 @@ -2,7 +2,7 @@
@@ -2951,7 +3298,7 @@ index 59ae234bc..7d3cacce0 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3007,7 +3354,7 @@ index 59ae234bc..7d3cacce0 100644
  	return r;
  }
 diff --git a/src/lib/libast/sfio/sfpoll.c b/src/lib/libast/sfio/sfpoll.c
-index b09df6531..12b89ac04 100644
+index b09df6531..e6fe35f20 100644
 --- a/src/lib/libast/sfio/sfpoll.c
 +++ b/src/lib/libast/sfio/sfpoll.c
 @@ -2,7 +2,7 @@
@@ -3015,7 +3362,7 @@ index b09df6531..12b89ac04 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3029,7 +3376,7 @@ index b09df6531..12b89ac04 100644
  	check = status+n; /* streams that need polling */
  
 diff --git a/src/lib/libast/sfio/sfpool.c b/src/lib/libast/sfio/sfpool.c
-index b08f463cf..d1dd7ea43 100644
+index b08f463cf..e61493aff 100644
 --- a/src/lib/libast/sfio/sfpool.c
 +++ b/src/lib/libast/sfio/sfpool.c
 @@ -2,7 +2,7 @@
@@ -3037,7 +3384,7 @@ index b08f463cf..d1dd7ea43 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3065,7 +3412,7 @@ index b08f463cf..d1dd7ea43 100644
  				}
  				head->next = head->data+v;
  				goto done;
-@@ -120,7 +120,7 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
+@@ -120,11 +120,11 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
  
  		/* move data from head to f */
  		if((head->data+k) != f->data )
@@ -3074,6 +3421,20 @@ index b08f463cf..d1dd7ea43 100644
  		f->next = f->data+v;
  	}
  
+-	f->mode &= ~SFIO_POOL;
++	f->mode &= (uint32_t)~SFIO_POOL;
+ 	head->mode |= SFIO_POOL;
+ 	head->next = head->endr = head->endw = head->data; /* clear write buffer */
+ 
+@@ -133,7 +133,7 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
+ 	rv = 0;
+ 
+ done:
+-	head->mode &= ~SFIO_LOCK; /* partially unlock because it's no longer head */
++	head->mode &= (uint32_t)~SFIO_LOCK; /* partially unlock because it's no longer head */
+ 
+ 	return rv;
+ }
 @@ -141,7 +141,7 @@ done:
  /* delete a stream from its pool */
  static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
@@ -3083,6 +3444,24 @@ index b08f463cf..d1dd7ea43 100644
  {
  
  	p->n_sf -= 1;
+@@ -149,7 +149,7 @@ static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
+ 		p->sf[n] = p->sf[n+1];
+ 
+ 	f->pool = NULL;
+-	f->mode &= ~SFIO_POOL;
++	f->mode &= (uint32_t)~SFIO_POOL;
+ 
+ 	if(p->n_sf == 0 || p == &_Sfpool)
+ 	{	if(p != &_Sfpool)
+@@ -169,7 +169,7 @@ static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
+ 
+ 	/* head stream has SFIO_POOL off */
+ 	f = p->sf[0];
+-	f->mode &= ~SFIO_POOL;
++	f->mode &= (uint32_t)~SFIO_POOL;
+ 	if(!SFFROZEN(f))
+ 		_SFOPEN(f);
+ 
 @@ -187,7 +187,7 @@ static int _sfpmove(Sfio_t*	f,
  		    int	type)	/* <0 : deleting, 0: move-to-front, >0: inserting */
  {
@@ -3093,7 +3472,7 @@ index b08f463cf..d1dd7ea43 100644
  	if(type > 0)
  		return _sfsetpool(f);
 diff --git a/src/lib/libast/sfio/sfpopen.c b/src/lib/libast/sfio/sfpopen.c
-index 5e877dbeb..382016d96 100644
+index 5e877dbeb..d6b5cfcd9 100644
 --- a/src/lib/libast/sfio/sfpopen.c
 +++ b/src/lib/libast/sfio/sfpopen.c
 @@ -2,7 +2,7 @@
@@ -3101,7 +3480,7 @@ index 5e877dbeb..382016d96 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3115,7 +3494,7 @@ index 5e877dbeb..382016d96 100644
  	char*		av[4];
  
 diff --git a/src/lib/libast/sfio/sfprintf.c b/src/lib/libast/sfio/sfprintf.c
-index 2fa6633b8..8faa29888 100644
+index 2fa6633b8..8ab2f337b 100644
 --- a/src/lib/libast/sfio/sfprintf.c
 +++ b/src/lib/libast/sfio/sfprintf.c
 @@ -2,7 +2,7 @@
@@ -3123,7 +3502,7 @@ index 2fa6633b8..8faa29888 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3187,7 +3566,7 @@ index 2fa6633b8..8faa29888 100644
  	rv = sfvsprintf(s,n,form,args);
  	va_end(args);
 diff --git a/src/lib/libast/sfio/sfprints.c b/src/lib/libast/sfio/sfprints.c
-index e4f6dade1..419ee41c5 100644
+index e4f6dade1..77d10f7b0 100644
 --- a/src/lib/libast/sfio/sfprints.c
 +++ b/src/lib/libast/sfio/sfprints.c
 @@ -2,7 +2,7 @@
@@ -3195,7 +3574,7 @@ index e4f6dade1..419ee41c5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3246,8 +3625,30 @@ index e4f6dade1..419ee41c5 100644
  	va_list	args;
  	va_start(args,form);
  	n = sfvaprints(sp, form, args);
+diff --git a/src/lib/libast/sfio/sfpurge.c b/src/lib/libast/sfio/sfpurge.c
+index c2e634fd7..bc9ed0211 100644
+--- a/src/lib/libast/sfio/sfpurge.c
++++ b/src/lib/libast/sfio/sfpurge.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -56,7 +56,7 @@ int sfpurge(Sfio_t* f)
+ 	}
+ #endif
+ 
+-	switch(f->mode&~SFIO_LOCK)
++	switch(f->mode&(uint32_t)~SFIO_LOCK)
+ 	{
+ 	default :
+ 		SFOPEN(f,0);
 diff --git a/src/lib/libast/sfio/sfputd.c b/src/lib/libast/sfio/sfputd.c
-index 6e1b66ae0..3fc49bf8e 100644
+index 6e1b66ae0..2d3453e21 100644
 --- a/src/lib/libast/sfio/sfputd.c
 +++ b/src/lib/libast/sfio/sfputd.c
 @@ -2,7 +2,7 @@
@@ -3255,7 +3656,7 @@ index 6e1b66ae0..3fc49bf8e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3276,7 +3677,7 @@ index 6e1b66ae0..3fc49bf8e 100644
  	return __sf_putd(f,d);
  }
 diff --git a/src/lib/libast/sfio/sfputl.c b/src/lib/libast/sfio/sfputl.c
-index e11c7a98b..9cdc8e6de 100644
+index e11c7a98b..b6896f102 100644
 --- a/src/lib/libast/sfio/sfputl.c
 +++ b/src/lib/libast/sfio/sfputl.c
 @@ -2,7 +2,7 @@
@@ -3284,7 +3685,7 @@ index e11c7a98b..9cdc8e6de 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3305,7 +3706,7 @@ index e11c7a98b..9cdc8e6de 100644
  	return __sf_putl(f,l);
  }
 diff --git a/src/lib/libast/sfio/sfputm.c b/src/lib/libast/sfio/sfputm.c
-index ecc74e57a..3aa964813 100644
+index ecc74e57a..2ff607bb4 100644
 --- a/src/lib/libast/sfio/sfputm.c
 +++ b/src/lib/libast/sfio/sfputm.c
 @@ -2,7 +2,7 @@
@@ -3313,7 +3714,7 @@ index ecc74e57a..3aa964813 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3334,7 +3735,7 @@ index ecc74e57a..3aa964813 100644
  	return __sf_putm(f, u, m);
  }
 diff --git a/src/lib/libast/sfio/sfputr.c b/src/lib/libast/sfio/sfputr.c
-index 5e6ed2ee3..c68d985b5 100644
+index 5e6ed2ee3..85cc938ac 100644
 --- a/src/lib/libast/sfio/sfputr.c
 +++ b/src/lib/libast/sfio/sfputr.c
 @@ -2,7 +2,7 @@
@@ -3342,7 +3743,7 @@ index 5e6ed2ee3..c68d985b5 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3441,7 +3842,7 @@ index 5e6ed2ee3..c68d985b5 100644
  
  	SFOPEN(f,0);
 diff --git a/src/lib/libast/sfio/sfputu.c b/src/lib/libast/sfio/sfputu.c
-index 8b22a9685..7bb7bf863 100644
+index 8b22a9685..98d788d68 100644
 --- a/src/lib/libast/sfio/sfputu.c
 +++ b/src/lib/libast/sfio/sfputu.c
 @@ -2,7 +2,7 @@
@@ -3449,7 +3850,7 @@ index 8b22a9685..7bb7bf863 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3470,7 +3871,7 @@ index 8b22a9685..7bb7bf863 100644
  	return __sf_putu(f,u);
  }
 diff --git a/src/lib/libast/sfio/sfrd.c b/src/lib/libast/sfio/sfrd.c
-index be7677aef..0d73c81a1 100644
+index be7677aef..6db16e3fc 100644
 --- a/src/lib/libast/sfio/sfrd.c
 +++ b/src/lib/libast/sfio/sfrd.c
 @@ -2,7 +2,7 @@
@@ -3478,11 +3879,11 @@ index be7677aef..0d73c81a1 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -55,7 +55,8 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
+@@ -55,14 +55,15 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
  {
  	Sfoff_t		r;
  	Sfdisc_t*	dc;
@@ -3492,6 +3893,23 @@ index be7677aef..0d73c81a1 100644
  
  	if(!f)
  		return -1;
+ 
+ 	GETLOCAL(f,local);
+ 	if((rcrv = f->mode & (SFIO_RC|SFIO_RV)) )
+-		f->mode &= ~(SFIO_RC|SFIO_RV);
++		f->mode &= (uint32_t)~(SFIO_RC|SFIO_RV);
+ 	f->bits &= ~SFIO_JUSTSEEK;
+ 
+ 	if(f->mode&SFIO_PKRD)
+@@ -76,7 +77,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
+ 				return -1;
+ 			if((f->mode&(SFIO_SYNCED|SFIO_READ)) == (SFIO_SYNCED|SFIO_READ) )
+ 			{	f->endb = f->next = f->endr = f->data;
+-				f->mode &= ~SFIO_SYNCED;
++				f->mode &= (uint32_t)~SFIO_SYNCED;
+ 			}
+ #ifdef MAP_TYPE
+ 			if((f->bits&SFIO_MMAP) && f->data)
 @@ -107,11 +108,11 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
  		/* warn that a read is about to happen */
  		SFDISC(f,dc,readf);
@@ -3570,7 +3988,7 @@ index be7677aef..0d73c81a1 100644
  			if(!local && !(f->flags&SFIO_STRING))
  				goto do_continue;
 diff --git a/src/lib/libast/sfio/sfread.c b/src/lib/libast/sfio/sfread.c
-index b82ec9139..f6e9bcf4b 100644
+index b82ec9139..ac02330d2 100644
 --- a/src/lib/libast/sfio/sfread.c
 +++ b/src/lib/libast/sfio/sfread.c
 @@ -2,7 +2,7 @@
@@ -3578,7 +3996,7 @@ index b82ec9139..f6e9bcf4b 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3590,7 +4008,7 @@ index b82ec9139..f6e9bcf4b 100644
  *                                                                      *
  ***********************************************************************/
  #include	"sfhdr.h"
-@@ -32,41 +33,41 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
+@@ -32,49 +33,49 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
  	int		local, justseek;
  
  	if(!f)
@@ -3614,18 +4032,21 @@ index b82ec9139..f6e9bcf4b 100644
  		{	if(((uchar*)buf + f->val) != f->next &&
  			   (!f->rsrv || f->rsrv->data != (uchar*)buf) )
 -				return (ssize_t)(-1);
+-			f->mode &= ~SFIO_PEEK;
 +				return -1;
- 			f->mode &= ~SFIO_PEEK;
++			f->mode &= (uint32_t)~SFIO_PEEK;
  			return 0;
  		}
  		else
  		{	if((uchar*)buf != f->next)
 -				return (ssize_t)(-1);
+-			f->mode &= ~SFIO_PEEK;
 +				return -1;
- 			f->mode &= ~SFIO_PEEK;
++			f->mode &= (uint32_t)~SFIO_PEEK;
  			if(f->mode&SFIO_PKRD)
  			{	/* actually read the data now */
- 				f->mode &= ~SFIO_PKRD;
+-				f->mode &= ~SFIO_PKRD;
++				f->mode &= (uint32_t)~SFIO_PKRD;
  				if(n > 0)
 -					n = (r = read(f->file,f->data,n)) < 0 ? 0 : r;
 +					n = (r = read(f->file,f->data,n)) < 0 ? 0 : (size_t)r;
@@ -3639,8 +4060,9 @@ index b82ec9139..f6e9bcf4b 100644
  		}
  	}
  
-@@ -74,7 +75,7 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
- 	for(;; f->mode &= ~SFIO_LOCK)
+ 	s = begs = (uchar*)buf;
+-	for(;; f->mode &= ~SFIO_LOCK)
++	for(;; f->mode &= (uint32_t)~SFIO_LOCK)
  	{	/* check stream mode */
  		if(SFMODE(f,local) != SFIO_READ && _sfmode(f,SFIO_READ,local) < 0)
 -		{	n = s > begs ? s-begs : (size_t)(-1);
@@ -3689,7 +4111,7 @@ index b82ec9139..f6e9bcf4b 100644
  					break;
  			}
 diff --git a/src/lib/libast/sfio/sfreserve.c b/src/lib/libast/sfio/sfreserve.c
-index 8eef92193..aa03b3cdb 100644
+index 8eef92193..0eaf07ad3 100644
 --- a/src/lib/libast/sfio/sfreserve.c
 +++ b/src/lib/libast/sfio/sfreserve.c
 @@ -2,7 +2,7 @@
@@ -3697,7 +4119,7 @@ index 8eef92193..aa03b3cdb 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3709,6 +4131,15 @@ index 8eef92193..aa03b3cdb 100644
  *                                                                      *
  ***********************************************************************/
  #include	"sfhdr.h"
+@@ -127,7 +128,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
+ 			if((n = f->endb - f->next) < sz)
+ 			{	if(f->mode&SFIO_PKRD)
+ 				{	f->endb = f->endr = f->next;
+-					f->mode &= ~SFIO_PKRD;
++					f->mode &= (uint32_t)~SFIO_PKRD;
+ 				}
+ 				break;
+ 			}
 @@ -166,7 +167,7 @@ done:	/* compute the buffer to be returned */
  		data = f->next;
  	else if(f->flags&SFIO_STRING) /* try extending string buffer */
@@ -3728,7 +4159,7 @@ index 8eef92193..aa03b3cdb 100644
  		else	rsrv->slen = -n;
  	}
 diff --git a/src/lib/libast/sfio/sfresize.c b/src/lib/libast/sfio/sfresize.c
-index 5ba081c92..dd9b2848c 100644
+index 5ba081c92..c27706a64 100644
 --- a/src/lib/libast/sfio/sfresize.c
 +++ b/src/lib/libast/sfio/sfresize.c
 @@ -2,7 +2,7 @@
@@ -3736,7 +4167,7 @@ index 5ba081c92..dd9b2848c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3773,7 +4204,7 @@ index 5ba081c92..dd9b2848c 100644
  	}
  	else
 diff --git a/src/lib/libast/sfio/sfscanf.c b/src/lib/libast/sfio/sfscanf.c
-index 633a8ef43..fc9c45738 100644
+index 633a8ef43..3ff2253f7 100644
 --- a/src/lib/libast/sfio/sfscanf.c
 +++ b/src/lib/libast/sfio/sfscanf.c
 @@ -2,7 +2,7 @@
@@ -3781,7 +4212,7 @@ index 633a8ef43..fc9c45738 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3803,7 +4234,7 @@ index 633a8ef43..fc9c45738 100644
  	f.endb = f.endr = f.data+f.size;
  
 diff --git a/src/lib/libast/sfio/sfseek.c b/src/lib/libast/sfio/sfseek.c
-index 6e7285d9b..3e14057d1 100644
+index 6e7285d9b..b4b52981c 100644
 --- a/src/lib/libast/sfio/sfseek.c
 +++ b/src/lib/libast/sfio/sfseek.c
 @@ -2,7 +2,7 @@
@@ -3811,7 +4242,7 @@ index 6e7285d9b..3e14057d1 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3862,7 +4293,7 @@ index 6e7285d9b..3e14057d1 100644
  			f->next = f->endb - (size_t)(f->here-p);
  		else /* recover from read failure by just seeking to p */
 diff --git a/src/lib/libast/sfio/sfsetbuf.c b/src/lib/libast/sfio/sfsetbuf.c
-index 13c334ab3..981d24873 100644
+index 13c334ab3..17e7ee36b 100644
 --- a/src/lib/libast/sfio/sfsetbuf.c
 +++ b/src/lib/libast/sfio/sfsetbuf.c
 @@ -2,7 +2,7 @@
@@ -3870,7 +4301,7 @@ index 13c334ab3..981d24873 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -3906,6 +4337,15 @@ index 13c334ab3..981d24873 100644
  #ifdef MAP_TYPE
  	int		okmmap;
  #endif
+@@ -139,7 +139,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+ 			return NULL;
+ 
+ 		/* turn off the SFIO_SYNCED bit because buffer is changing */
+-		f->mode &= ~SFIO_SYNCED;
++		f->mode &= (uint32_t)~SFIO_SYNCED;
+ 	}
+ 
+ 	SFLOCK(f,local);
 @@ -147,7 +147,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
  	if((Sfio_t*)buf != f)
  		blksz = -1;
@@ -4007,29 +4447,39 @@ index 13c334ab3..981d24873 100644
  
  	SFOPEN(f,local);
  
-diff --git a/src/lib/libast/sfio/sfsetfd.c b/src/lib/libast/sfio/sfsetfd.c
-index d48722ede..4804657ba 100644
---- a/src/lib/libast/sfio/sfsetfd.c
-+++ b/src/lib/libast/sfio/sfsetfd.c
+diff --git a/src/lib/libast/sfio/sfstack.c b/src/lib/libast/sfio/sfstack.c
+index 64ba7fc2c..db32ef7dc 100644
+--- a/src/lib/libast/sfio/sfstack.c
++++ b/src/lib/libast/sfio/sfstack.c
 @@ -2,7 +2,7 @@
  *                                                                      *
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfhdr.h"
+@@ -44,7 +44,7 @@ Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
+ 	if(f2 == SFIO_POPSTACK)
+ 	{	if(!(f2 = f1->push))
+ 			return NULL;
+-		f2->mode &= ~SFIO_PUSH;
++		f2->mode &= (uint32_t)~SFIO_PUSH;
+ 	}
+ 	else
+ 	{	if(f2->push)
+@@ -81,7 +81,7 @@ Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
+ 	}
+ 	else
+ 	{	/* unfreeze the just exposed stream */
+-		f1->mode &= ~SFIO_PUSH;
++		f1->mode &= (uint32_t)~SFIO_PUSH;
+ 		f2->push = NULL;
+ 		rf = f2;
+ 	}
 diff --git a/src/lib/libast/sfio/sfstrtod.c b/src/lib/libast/sfio/sfstrtod.c
-index 29217aa5d..3ca6d2e22 100644
+index 29217aa5d..63f5ec278 100644
 --- a/src/lib/libast/sfio/sfstrtod.c
 +++ b/src/lib/libast/sfio/sfstrtod.c
 @@ -2,7 +2,7 @@
@@ -4037,7 +4487,7 @@ index 29217aa5d..3ca6d2e22 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -4065,9 +4515,18 @@ index 29217aa5d..3ca6d2e22 100644
  static Sfdouble_t sfpow10(int n)
  {
 diff --git a/src/lib/libast/sfio/sfstrtof.h b/src/lib/libast/sfio/sfstrtof.h
-index df34e5744..63b19a138 100644
+index df34e5744..42cb16c81 100644
 --- a/src/lib/libast/sfio/sfstrtof.h
 +++ b/src/lib/libast/sfio/sfstrtof.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -4130,7 +4589,7 @@ index df34e5744..63b19a138 100644
  		}
  		if (enegative)
 diff --git a/src/lib/libast/sfio/sfswap.c b/src/lib/libast/sfio/sfswap.c
-index 26206807a..d6f347a8c 100644
+index 26206807a..ffa0ff974 100644
 --- a/src/lib/libast/sfio/sfswap.c
 +++ b/src/lib/libast/sfio/sfswap.c
 @@ -2,7 +2,7 @@
@@ -4138,7 +4597,7 @@ index 26206807a..d6f347a8c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -4152,10 +4611,69 @@ index 26206807a..d6f347a8c 100644
  	unsigned int	f1mode, f2mode;
  
  	if(!f1 || (f1->mode&SFIO_AVAIL) || (SFFROZEN(f1) && (f1->mode&SFIO_PUSH)) )
+diff --git a/src/lib/libast/sfio/sfsync.c b/src/lib/libast/sfio/sfsync.c
+index 7f41f8e0b..af129dca9 100644
+--- a/src/lib/libast/sfio/sfsync.c
++++ b/src/lib/libast/sfio/sfsync.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -75,7 +75,8 @@ static int _sfall(void)
+ 
+ int sfsync(Sfio_t* f)
+ {
+-	int	local, rv, lock;
++	int		local, rv;
++	uint32_t	lock;
+ 	Sfio_t*	origf;
+ 
+ 	if(!(origf = f) )
+@@ -110,7 +111,7 @@ int sfsync(Sfio_t* f)
+ 
+ 		/* pretend that this stream is not on a stack */
+ 		mode = f->mode&SFIO_PUSH;
+-		f->mode &= ~SFIO_PUSH;
++		f->mode &= (uint32_t)~SFIO_PUSH;
+ 
+ 		/* these streams do not need synchronization */
+ 		if((f->flags&SFIO_STRING) || (f->mode&SFIO_SYNCED))
+@@ -119,7 +120,7 @@ int sfsync(Sfio_t* f)
+ 		if((f->mode&SFIO_WRITE) && (f->next > f->data || (f->bits&SFIO_HOLE)) )
+ 		{	/* sync the buffer, make sure pool doesn't move */
+ 			unsigned int pool = f->mode&SFIO_POOL;
+-			f->mode &= ~SFIO_POOL;
++			f->mode &= (uint32_t)~SFIO_POOL;
+ 			if(f->next > f->data && (SFWRALL(f), SFFLSBUF(f,-1)) < 0)
+ 				rv = -1;
+ 			if(!SFISNULL(f) && (f->bits&SFIO_HOLE) )
+@@ -142,7 +143,7 @@ int sfsync(Sfio_t* f)
+ 			if((f->flags&SFIO_SHARE) && !(f->flags&SFIO_PUBLIC) &&
+ 			   !(f->bits&SFIO_MMAP) )
+ 			{	f->endb = f->next = f->data;
+-				f->mode &= ~SFIO_SYNCED;
++				f->mode &= (uint32_t)~SFIO_SYNCED;
+ 			}
+ 		}
+ 
 diff --git a/src/lib/libast/sfio/sftable.c b/src/lib/libast/sfio/sftable.c
-index 29c9eb1f2..71a92931c 100644
+index 29c9eb1f2..c87ead9d6 100644
 --- a/src/lib/libast/sfio/sftable.c
 +++ b/src/lib/libast/sfio/sftable.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -26,7 +26,7 @@
  **	Written by Kiem-Phong Vo.
  */
@@ -4254,9 +4772,18 @@ index 29c9eb1f2..71a92931c 100644
  
  	_Sftype['d'] = _Sftype['i'] = SFFMT_INT;
 diff --git a/src/lib/libast/sfio/sftmp.c b/src/lib/libast/sfio/sftmp.c
-index 3474fa0b1..063dacfb5 100644
+index 3474fa0b1..56846b5b1 100644
 --- a/src/lib/libast/sfio/sftmp.c
 +++ b/src/lib/libast/sfio/sftmp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -207,7 +207,7 @@ static int _tmpexcept(Sfio_t* f, int type, void* val, Sfdisc_t* disc)
  	if(savf.data)
  	{	SFSTRSIZE(&savf);
@@ -4267,7 +4794,7 @@ index 3474fa0b1..063dacfb5 100644
  			(void)sfwrite(f,savf.data,(size_t)savf.extent);
  		(void)sfseek(f,(Sfoff_t)(savf.next - savf.data),SEEK_SET);
 diff --git a/src/lib/libast/sfio/sfungetc.c b/src/lib/libast/sfio/sfungetc.c
-index e1bf2912a..f55e571c7 100644
+index e1bf2912a..9b3d285c0 100644
 --- a/src/lib/libast/sfio/sfungetc.c
 +++ b/src/lib/libast/sfio/sfungetc.c
 @@ -2,7 +2,7 @@
@@ -4275,7 +4802,7 @@ index e1bf2912a..f55e571c7 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -4296,7 +4823,7 @@ index e1bf2912a..f55e571c7 100644
  		f->data  = data;
  		f->next  = data+16;
 diff --git a/src/lib/libast/sfio/sfvprintf.c b/src/lib/libast/sfio/sfvprintf.c
-index bd6505de1..110371852 100644
+index bd6505de1..9484b1114 100644
 --- a/src/lib/libast/sfio/sfvprintf.c
 +++ b/src/lib/libast/sfio/sfvprintf.c
 @@ -2,7 +2,7 @@
@@ -4304,7 +4831,7 @@ index bd6505de1..110371852 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -4731,7 +5258,7 @@ index bd6505de1..110371852 100644
  	SFOPEN(f,0);
  	return n_output;
 diff --git a/src/lib/libast/sfio/sfvscanf.c b/src/lib/libast/sfio/sfvscanf.c
-index 05a3c6033..c96f25400 100644
+index 05a3c6033..da69552a2 100644
 --- a/src/lib/libast/sfio/sfvscanf.c
 +++ b/src/lib/libast/sfio/sfvscanf.c
 @@ -2,7 +2,7 @@
@@ -4739,7 +5266,7 @@ index 05a3c6033..c96f25400 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5022,7 +5549,7 @@ index 05a3c6033..c96f25400 100644
  			}
  
 diff --git a/src/lib/libast/sfio/sfwr.c b/src/lib/libast/sfio/sfwr.c
-index a4fb80e3a..5d3ef2a95 100644
+index a4fb80e3a..5ef0be1c6 100644
 --- a/src/lib/libast/sfio/sfwr.c
 +++ b/src/lib/libast/sfio/sfwr.c
 @@ -2,7 +2,7 @@
@@ -5030,7 +5557,7 @@ index a4fb80e3a..5d3ef2a95 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5128,7 +5655,7 @@ index a4fb80e3a..5d3ef2a95 100644
  
  	do_continue:
 diff --git a/src/lib/libast/sfio/sfwrite.c b/src/lib/libast/sfio/sfwrite.c
-index 1bc061dc8..5c841fdac 100644
+index 1bc061dc8..18858c950 100644
 --- a/src/lib/libast/sfio/sfwrite.c
 +++ b/src/lib/libast/sfio/sfwrite.c
 @@ -2,7 +2,7 @@
@@ -5136,7 +5663,7 @@ index 1bc061dc8..5c841fdac 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5157,7 +5684,7 @@ index 1bc061dc8..5c841fdac 100644
  
  	GETLOCAL(f,local);
  
-@@ -42,11 +43,11 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
+@@ -42,30 +43,30 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
  	/* release peek lock */
  	if(f->mode&SFIO_PEEK)
  	{	if(!(f->mode&SFIO_WRITE) && (f->flags&SFIO_RDWR) != SFIO_RDWR)
@@ -5169,9 +5696,11 @@ index 1bc061dc8..5c841fdac 100644
 -			return (ssize_t)(-1);
 +			return -1;
  
- 		f->mode &= ~SFIO_PEEK;
+-		f->mode &= ~SFIO_PEEK;
++		f->mode &= (uint32_t)~SFIO_PEEK;
  
-@@ -55,11 +56,11 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
+ 		if(f->mode&SFIO_PKRD)
+ 		{	/* read past peeked data */
  			char		buf[16];
  			ssize_t	r;
  
@@ -5187,6 +5716,22 @@ index 1bc061dc8..5c841fdac 100644
  					break;
  				}
  				else	w -= r;
+ 			}
+ 
+-			f->mode &= ~SFIO_PKRD;
++			f->mode &= (uint32_t)~SFIO_PKRD;
+ 			f->endb = f->data + n;
+ 			f->here += n;
+ 		}
+@@ -75,7 +76,7 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
+ 	}
+ 
+ 	s = begs = (uchar*)buf;
+-	for(;; f->mode &= ~SFIO_LOCK)
++	for(;; f->mode &= (uint32_t)~SFIO_LOCK)
+ 	{	/* check stream mode */
+ 		if(SFMODE(f,local) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,local) < 0 )
+ 		{	w = s > begs ? s-begs : -1;
 @@ -90,14 +91,14 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
  		{	if(w > (ssize_t)n)
  				w = (ssize_t)n;
@@ -5241,7 +5786,7 @@ index 1bc061dc8..5c841fdac 100644
  		{	for(next = f->next-1; n > 0; --n, --next)
  			{	if(*next == '\n')
 diff --git a/src/lib/libast/stdio/_doprnt.c b/src/lib/libast/stdio/_doprnt.c
-index bd5c80d98..031d8b513 100644
+index bd5c80d98..602f36d13 100644
 --- a/src/lib/libast/stdio/_doprnt.c
 +++ b/src/lib/libast/stdio/_doprnt.c
 @@ -2,7 +2,7 @@
@@ -5249,7 +5794,7 @@ index bd5c80d98..031d8b513 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5269,7 +5814,7 @@ index bd5c80d98..031d8b513 100644
 +	return (int)sfvprintf(f, fmt, args);
  }
 diff --git a/src/lib/libast/stdio/_filbuf.c b/src/lib/libast/stdio/_filbuf.c
-index ed6e7f903..f4a61828e 100644
+index ed6e7f903..195f0c87a 100644
 --- a/src/lib/libast/stdio/_filbuf.c
 +++ b/src/lib/libast/stdio/_filbuf.c
 @@ -2,7 +2,7 @@
@@ -5277,7 +5822,7 @@ index ed6e7f903..f4a61828e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5297,7 +5842,7 @@ index ed6e7f903..f4a61828e 100644
 +	return (int)_sffilbuf(f, 0);
  }
 diff --git a/src/lib/libast/stdio/fgets.c b/src/lib/libast/stdio/fgets.c
-index 958dba6bf..af8dc360a 100644
+index 958dba6bf..157f7f937 100644
 --- a/src/lib/libast/stdio/fgets.c
 +++ b/src/lib/libast/stdio/fgets.c
 @@ -2,7 +2,7 @@
@@ -5305,7 +5850,7 @@ index 958dba6bf..af8dc360a 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5338,7 +5883,7 @@ index 958dba6bf..af8dc360a 100644
  		is += p;
  		ps  = f->next+p;
 diff --git a/src/lib/libast/stdio/fgetwc.c b/src/lib/libast/stdio/fgetwc.c
-index 4069d688c..f1ca555c1 100644
+index 4069d688c..5309b89b9 100644
 --- a/src/lib/libast/stdio/fgetwc.c
 +++ b/src/lib/libast/stdio/fgetwc.c
 @@ -2,7 +2,7 @@
@@ -5346,7 +5891,7 @@ index 4069d688c..f1ca555c1 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5368,7 +5913,7 @@ index 4069d688c..f1ca555c1 100644
  
  #endif /* !_has_multibyte */
 diff --git a/src/lib/libast/stdio/fgetws.c b/src/lib/libast/stdio/fgetws.c
-index 5c0d8e283..912253d7e 100644
+index 5c0d8e283..10729ad9c 100644
 --- a/src/lib/libast/stdio/fgetws.c
 +++ b/src/lib/libast/stdio/fgetws.c
 @@ -2,7 +2,7 @@
@@ -5376,7 +5921,7 @@ index 5c0d8e283..912253d7e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5407,7 +5952,7 @@ index 5c0d8e283..912253d7e 100644
  	return s;
  }
 diff --git a/src/lib/libast/stdio/fprintf.c b/src/lib/libast/stdio/fprintf.c
-index 1317c5b37..7aa0d88a1 100644
+index 1317c5b37..43a697016 100644
 --- a/src/lib/libast/stdio/fprintf.c
 +++ b/src/lib/libast/stdio/fprintf.c
 @@ -2,7 +2,7 @@
@@ -5415,7 +5960,7 @@ index 1317c5b37..7aa0d88a1 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5437,7 +5982,7 @@ index 1317c5b37..7aa0d88a1 100644
  	return v;
  }
 diff --git a/src/lib/libast/stdio/fputs.c b/src/lib/libast/stdio/fputs.c
-index 41ab11143..a559f4faa 100644
+index 41ab11143..00ef963f1 100644
 --- a/src/lib/libast/stdio/fputs.c
 +++ b/src/lib/libast/stdio/fputs.c
 @@ -2,7 +2,7 @@
@@ -5445,7 +5990,7 @@ index 41ab11143..a559f4faa 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5465,7 +6010,7 @@ index 41ab11143..a559f4faa 100644
 +	return (int)sfputr(f, s, -1);
  }
 diff --git a/src/lib/libast/stdio/fputwc.c b/src/lib/libast/stdio/fputwc.c
-index 00eff9a78..f4ebbe1f0 100644
+index 00eff9a78..13a6bbd7f 100644
 --- a/src/lib/libast/stdio/fputwc.c
 +++ b/src/lib/libast/stdio/fputwc.c
 @@ -2,7 +2,7 @@
@@ -5473,7 +6018,7 @@ index 00eff9a78..f4ebbe1f0 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5495,7 +6040,7 @@ index 00eff9a78..f4ebbe1f0 100644
  
  #endif /* !_has_multibyte */
 diff --git a/src/lib/libast/stdio/fputws.c b/src/lib/libast/stdio/fputws.c
-index 82e439649..a454d0dd7 100644
+index 82e439649..c74cdc874 100644
 --- a/src/lib/libast/stdio/fputws.c
 +++ b/src/lib/libast/stdio/fputws.c
 @@ -2,7 +2,7 @@
@@ -5503,7 +6048,7 @@ index 82e439649..a454d0dd7 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5525,7 +6070,7 @@ index 82e439649..a454d0dd7 100644
  
  #endif /* !_has_multibyte */
 diff --git a/src/lib/libast/stdio/fread.c b/src/lib/libast/stdio/fread.c
-index 1d60006dd..efe7eb310 100644
+index 1d60006dd..f4e87b8c3 100644
 --- a/src/lib/libast/stdio/fread.c
 +++ b/src/lib/libast/stdio/fread.c
 @@ -2,7 +2,7 @@
@@ -5533,7 +6078,7 @@ index 1d60006dd..efe7eb310 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5553,7 +6098,7 @@ index 1d60006dd..efe7eb310 100644
 +	return ((v = sfread(f, p, s * n)) <= 0) ? 0 : ((size_t)v / s);
  }
 diff --git a/src/lib/libast/stdio/fwrite.c b/src/lib/libast/stdio/fwrite.c
-index 4f1c520fc..327ebf589 100644
+index 4f1c520fc..93db802aa 100644
 --- a/src/lib/libast/stdio/fwrite.c
 +++ b/src/lib/libast/stdio/fwrite.c
 @@ -2,7 +2,7 @@
@@ -5561,7 +6106,7 @@ index 4f1c520fc..327ebf589 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5581,7 +6126,7 @@ index 4f1c520fc..327ebf589 100644
 +	return ((v = sfwrite(f, p, s * n)) <= 0) ? 0 : ((size_t)v / s);
  }
 diff --git a/src/lib/libast/stdio/getdelim.c b/src/lib/libast/stdio/getdelim.c
-index 850dfae3d..a861ef4fc 100644
+index 850dfae3d..6826b3176 100644
 --- a/src/lib/libast/stdio/getdelim.c
 +++ b/src/lib/libast/stdio/getdelim.c
 @@ -2,7 +2,7 @@
@@ -5589,7 +6134,7 @@ index 850dfae3d..a861ef4fc 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5630,7 +6175,7 @@ index 850dfae3d..a861ef4fc 100644
  
  		if(s[m-1] == delim)
 diff --git a/src/lib/libast/stdio/printf.c b/src/lib/libast/stdio/printf.c
-index 6fa8d63fe..a8167a782 100644
+index 6fa8d63fe..a20383836 100644
 --- a/src/lib/libast/stdio/printf.c
 +++ b/src/lib/libast/stdio/printf.c
 @@ -2,7 +2,7 @@
@@ -5638,7 +6183,7 @@ index 6fa8d63fe..a8167a782 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5660,7 +6205,7 @@ index 6fa8d63fe..a8167a782 100644
  	return v;
  }
 diff --git a/src/lib/libast/stdio/puts.c b/src/lib/libast/stdio/puts.c
-index 7448d32a5..575b501ad 100644
+index 7448d32a5..d76bde220 100644
 --- a/src/lib/libast/stdio/puts.c
 +++ b/src/lib/libast/stdio/puts.c
 @@ -2,7 +2,7 @@
@@ -5668,7 +6213,7 @@ index 7448d32a5..575b501ad 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5688,7 +6233,7 @@ index 7448d32a5..575b501ad 100644
 +	return (int)sfputr(sfstdout, s, '\n');
  }
 diff --git a/src/lib/libast/stdio/setbuffer.c b/src/lib/libast/stdio/setbuffer.c
-index 3f54d95dd..4c1aa4069 100644
+index 3f54d95dd..0f06aedbd 100644
 --- a/src/lib/libast/stdio/setbuffer.c
 +++ b/src/lib/libast/stdio/setbuffer.c
 @@ -2,7 +2,7 @@
@@ -5696,7 +6241,7 @@ index 3f54d95dd..4c1aa4069 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5716,7 +6261,7 @@ index 3f54d95dd..4c1aa4069 100644
 +	return sfsetbuf(f, b, (size_t)n) ? 0 : -1;
  }
 diff --git a/src/lib/libast/stdio/snprintf.c b/src/lib/libast/stdio/snprintf.c
-index 1d6dd44c6..1bff6f265 100644
+index 1d6dd44c6..98d071e69 100644
 --- a/src/lib/libast/stdio/snprintf.c
 +++ b/src/lib/libast/stdio/snprintf.c
 @@ -2,7 +2,7 @@
@@ -5724,7 +6269,7 @@ index 1d6dd44c6..1bff6f265 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5752,7 +6297,7 @@ index 1d6dd44c6..1bff6f265 100644
  	return v;
  }
 diff --git a/src/lib/libast/stdio/sprintf.c b/src/lib/libast/stdio/sprintf.c
-index 50312018f..a94d0ef13 100644
+index 50312018f..19aca8186 100644
 --- a/src/lib/libast/stdio/sprintf.c
 +++ b/src/lib/libast/stdio/sprintf.c
 @@ -2,7 +2,7 @@
@@ -5760,7 +6305,7 @@ index 50312018f..a94d0ef13 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5782,7 +6327,7 @@ index 50312018f..a94d0ef13 100644
  	return v;
  }
 diff --git a/src/lib/libast/stdio/vasprintf.c b/src/lib/libast/stdio/vasprintf.c
-index 008eed4ab..4e2f60536 100644
+index 008eed4ab..d521af340 100644
 --- a/src/lib/libast/stdio/vasprintf.c
 +++ b/src/lib/libast/stdio/vasprintf.c
 @@ -2,7 +2,7 @@
@@ -5790,7 +6335,7 @@ index 008eed4ab..4e2f60536 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5812,7 +6357,7 @@ index 008eed4ab..4e2f60536 100644
  			v = -1;
  		sfstrclose(f);
 diff --git a/src/lib/libast/stdio/vfprintf.c b/src/lib/libast/stdio/vfprintf.c
-index 69aa23de7..6f0e50b8c 100644
+index 69aa23de7..a555828f2 100644
 --- a/src/lib/libast/stdio/vfprintf.c
 +++ b/src/lib/libast/stdio/vfprintf.c
 @@ -2,7 +2,7 @@
@@ -5820,7 +6365,7 @@ index 69aa23de7..6f0e50b8c 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5840,7 +6385,7 @@ index 69aa23de7..6f0e50b8c 100644
 +	return (int)sfvprintf(f, fmt, args);
  }
 diff --git a/src/lib/libast/stdio/vfwprintf.c b/src/lib/libast/stdio/vfwprintf.c
-index f4aa40e0f..161006994 100644
+index f4aa40e0f..a04450097 100644
 --- a/src/lib/libast/stdio/vfwprintf.c
 +++ b/src/lib/libast/stdio/vfwprintf.c
 @@ -2,7 +2,7 @@
@@ -5848,7 +6393,7 @@ index f4aa40e0f..161006994 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5872,9 +6417,18 @@ index f4aa40e0f..161006994 100644
  					v = -1;
  			}
 diff --git a/src/lib/libast/stdio/vfwscanf.c b/src/lib/libast/stdio/vfwscanf.c
-index 837e814cc..edddd9f1b 100644
+index 837e814cc..ee7c019ee 100644
 --- a/src/lib/libast/stdio/vfwscanf.c
 +++ b/src/lib/libast/stdio/vfwscanf.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -77,7 +77,7 @@ wideread(Sfio_t* f, void* buf, size_t size, Sfdisc_t* dp)
  	if (r != sizeof(wuf[0]))
  		return -1;
@@ -5885,7 +6439,7 @@ index 837e814cc..edddd9f1b 100644
  }
  
 diff --git a/src/lib/libast/stdio/vprintf.c b/src/lib/libast/stdio/vprintf.c
-index 6f0727953..e7c54cfc1 100644
+index 6f0727953..fc527dd68 100644
 --- a/src/lib/libast/stdio/vprintf.c
 +++ b/src/lib/libast/stdio/vprintf.c
 @@ -2,7 +2,7 @@
@@ -5893,7 +6447,7 @@ index 6f0727953..e7c54cfc1 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5913,7 +6467,7 @@ index 6f0727953..e7c54cfc1 100644
 +	return (int)sfvprintf(sfstdout, fmt, args);
  }
 diff --git a/src/lib/libast/stdio/vsnprintf.c b/src/lib/libast/stdio/vsnprintf.c
-index 61a7dcd52..d22da464e 100644
+index 61a7dcd52..8d8ccca8b 100644
 --- a/src/lib/libast/stdio/vsnprintf.c
 +++ b/src/lib/libast/stdio/vsnprintf.c
 @@ -2,7 +2,7 @@
@@ -5921,7 +6475,7 @@ index 61a7dcd52..d22da464e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5961,7 +6515,7 @@ index 61a7dcd52..d22da464e 100644
  			s[n] = 0;
  		}
 diff --git a/src/lib/libast/stdio/vswprintf.c b/src/lib/libast/stdio/vswprintf.c
-index d336e2fc0..8a20472a6 100644
+index d336e2fc0..b5f3aa2a9 100644
 --- a/src/lib/libast/stdio/vswprintf.c
 +++ b/src/lib/libast/stdio/vswprintf.c
 @@ -2,7 +2,7 @@
@@ -5969,7 +6523,7 @@ index d336e2fc0..8a20472a6 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -5991,7 +6545,7 @@ index d336e2fc0..8a20472a6 100644
  	f.endb = f.endw = f.data + f.size;
  
 diff --git a/src/lib/libast/stdio/vswscanf.c b/src/lib/libast/stdio/vswscanf.c
-index c9d8f2cf0..6c332ca3e 100644
+index c9d8f2cf0..fbd6afc9c 100644
 --- a/src/lib/libast/stdio/vswscanf.c
 +++ b/src/lib/libast/stdio/vswscanf.c
 @@ -2,7 +2,7 @@
@@ -5999,7 +6553,7 @@ index c9d8f2cf0..6c332ca3e 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6021,7 +6575,7 @@ index c9d8f2cf0..6c332ca3e 100644
  	f.endb = f.endr = f.data + f.size;
  
 diff --git a/src/lib/libast/string/fmtelapsed.c b/src/lib/libast/string/fmtelapsed.c
-index fbea4d580..75cd107ac 100644
+index fbea4d580..a42a3f592 100644
 --- a/src/lib/libast/string/fmtelapsed.c
 +++ b/src/lib/libast/string/fmtelapsed.c
 @@ -2,7 +2,7 @@
@@ -6029,7 +6583,7 @@ index fbea4d580..75cd107ac 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6062,7 +6616,7 @@ index fbea4d580..75cd107ac 100644
  	buf = fmtbuf(z = 8);
  	t = u / n;
 diff --git a/src/lib/libast/string/fmtmode.c b/src/lib/libast/string/fmtmode.c
-index f995a9117..1c10c6b84 100644
+index f995a9117..ed0f285e0 100644
 --- a/src/lib/libast/string/fmtmode.c
 +++ b/src/lib/libast/string/fmtmode.c
 @@ -2,7 +2,7 @@
@@ -6070,7 +6624,7 @@ index f995a9117..1c10c6b84 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6097,7 +6651,7 @@ index f995a9117..1c10c6b84 100644
  	if (!external)
  		mode = modex(mode);
 diff --git a/src/lib/libast/string/fmtperm.c b/src/lib/libast/string/fmtperm.c
-index 63057fd1e..0ec3917c3 100644
+index 63057fd1e..0bd9cce56 100644
 --- a/src/lib/libast/string/fmtperm.c
 +++ b/src/lib/libast/string/fmtperm.c
 @@ -2,7 +2,7 @@
@@ -6105,7 +6659,7 @@ index 63057fd1e..0ec3917c3 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6127,7 +6681,7 @@ index 63057fd1e..0ec3917c3 100644
  	char*	s;
  	char*		buf;
 diff --git a/src/lib/libast/string/modedata.c b/src/lib/libast/string/modedata.c
-index dbb35998e..a6486ed02 100644
+index dbb35998e..f38836642 100644
 --- a/src/lib/libast/string/modedata.c
 +++ b/src/lib/libast/string/modedata.c
 @@ -2,7 +2,7 @@
@@ -6135,7 +6689,7 @@ index dbb35998e..a6486ed02 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6157,7 +6711,7 @@ index dbb35998e..a6486ed02 100644
  	S_ISUID, X_ISUID,
  	S_ISGID, X_ISGID,
 diff --git a/src/lib/libast/string/modei.c b/src/lib/libast/string/modei.c
-index 44ab05922..e4ee7982f 100644
+index 44ab05922..a2dac2a60 100644
 --- a/src/lib/libast/string/modei.c
 +++ b/src/lib/libast/string/modei.c
 @@ -2,7 +2,7 @@
@@ -6165,7 +6719,7 @@ index 44ab05922..e4ee7982f 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6197,7 +6751,7 @@ index 44ab05922..e4ee7982f 100644
  	i = 0;
  	for (c = 0; c < PERMLEN; c += 2)
 diff --git a/src/lib/libast/string/modelib.h b/src/lib/libast/string/modelib.h
-index ea8f98148..2cd7ec658 100644
+index ea8f98148..07bd62fd1 100644
 --- a/src/lib/libast/string/modelib.h
 +++ b/src/lib/libast/string/modelib.h
 @@ -2,7 +2,7 @@
@@ -6205,7 +6759,7 @@ index ea8f98148..2cd7ec658 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6238,7 +6792,7 @@ index ea8f98148..2cd7ec658 100644
  
  #endif
 diff --git a/src/lib/libast/string/modex.c b/src/lib/libast/string/modex.c
-index 8313b3824..44899bc69 100644
+index 8313b3824..2a0271ed7 100644
 --- a/src/lib/libast/string/modex.c
 +++ b/src/lib/libast/string/modex.c
 @@ -2,7 +2,7 @@
@@ -6246,7 +6800,7 @@ index 8313b3824..44899bc69 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6278,7 +6832,7 @@ index 8313b3824..44899bc69 100644
  	x = 0;
  #if _S_IDPERM
 diff --git a/src/lib/libast/string/strmatch.c b/src/lib/libast/string/strmatch.c
-index 9ff1d96ea..b9d5b5650 100644
+index 9ff1d96ea..39d297239 100644
 --- a/src/lib/libast/string/strmatch.c
 +++ b/src/lib/libast/string/strmatch.c
 @@ -2,7 +2,7 @@
@@ -6286,7 +6840,7 @@ index 9ff1d96ea..b9d5b5650 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6404,7 +6958,7 @@ index 9ff1d96ea..b9d5b5650 100644
  	return strngrpmatch(b, b ? strlen(b) : 0, p, sub, n, flags);
  }
 diff --git a/src/lib/libast/string/strmode.c b/src/lib/libast/string/strmode.c
-index ab645a8b0..e08a55f59 100644
+index ab645a8b0..8120bd599 100644
 --- a/src/lib/libast/string/strmode.c
 +++ b/src/lib/libast/string/strmode.c
 @@ -2,7 +2,7 @@
@@ -6412,7 +6966,7 @@ index ab645a8b0..e08a55f59 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6451,7 +7005,7 @@ index ab645a8b0..e08a55f59 100644
  			}
  	return mode;
 diff --git a/src/lib/libast/string/strperm.c b/src/lib/libast/string/strperm.c
-index a35bb5403..706d58c96 100644
+index a35bb5403..98af0bcfa 100644
 --- a/src/lib/libast/string/strperm.c
 +++ b/src/lib/libast/string/strperm.c
 @@ -2,7 +2,7 @@
@@ -6459,7 +7013,7 @@ index a35bb5403..706d58c96 100644
  *               This software is part of the ast package               *
  *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
 -*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
@@ -6495,5 +7049,5 @@ index a35bb5403..706d58c96 100644
  	else
  		masked = 0;
 -- 
-2.49.0
+2.52.0
 

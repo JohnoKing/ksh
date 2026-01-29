@@ -1,6 +1,6 @@
-From e96d673e86c9ebc57c1e9283d258302b8fc9a420 Mon Sep 17 00:00:00 2001
+From 1dead942a2ac5f2ecd3e1b62fcb9fe6327f35438 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Mon, 16 Jun 2025 19:33:51 -0700
+Date: Wed, 28 Jan 2026 21:34:05 -0800
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -16,24 +16,33 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,208 => 1,097 => 248 (progression from part 8 => part 9 => part 13)
+1,062 => 947 => 86 (progression from part 8 => part 9 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/edit/completion.c | 65 +++++++++++-----------
- src/cmd/ksh93/edit/edit.c       | 67 +++++++++++------------
- src/cmd/ksh93/edit/emacs.c      | 46 ++++++++--------
- src/cmd/ksh93/edit/hexpand.c    | 51 +++++++++---------
- src/cmd/ksh93/edit/history.c    | 95 ++++++++++++++++++---------------
- src/cmd/ksh93/edit/vi.c         | 40 +++++++-------
- src/cmd/ksh93/include/edit.h    |  6 +--
- src/cmd/ksh93/include/history.h | 13 ++---
- 8 files changed, 199 insertions(+), 184 deletions(-)
+ src/cmd/ksh93/edit/completion.c | 67 ++++++++++++-----------
+ src/cmd/ksh93/edit/edit.c       | 77 +++++++++++++-------------
+ src/cmd/ksh93/edit/emacs.c      | 48 ++++++++--------
+ src/cmd/ksh93/edit/hexpand.c    | 53 +++++++++---------
+ src/cmd/ksh93/edit/history.c    | 97 ++++++++++++++++++---------------
+ src/cmd/ksh93/edit/vi.c         | 42 +++++++-------
+ src/cmd/ksh93/include/edit.h    |  8 +--
+ src/cmd/ksh93/include/history.h | 15 ++---
+ 8 files changed, 211 insertions(+), 196 deletions(-)
 
 diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
-index 431de2984..18684e8c5 100644
+index 431de2984..2f8350ffe 100644
 --- a/src/cmd/ksh93/edit/completion.c
 +++ b/src/cmd/ksh93/edit/completion.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -39,7 +39,7 @@ static char *fmtx(const char *string)
  	int	 	n = 0, c;
  	int		pos = 0;
@@ -231,9 +240,18 @@ index 431de2984..18684e8c5 100644
  	return 0;
  }
 diff --git a/src/cmd/ksh93/edit/edit.c b/src/cmd/ksh93/edit/edit.c
-index c0eea1b15..716e79052 100644
+index c0eea1b15..152d9a9a0 100644
 --- a/src/cmd/ksh93/edit/edit.c
 +++ b/src/cmd/ksh93/edit/edit.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -67,7 +67,7 @@ static char *erase_eos;  /* erase to end of screen */
  #define ECHOMODE	3
  #define SYSERR	-1
@@ -243,6 +261,26 @@ index c0eea1b15..716e79052 100644
  
  #ifndef _POSIX_DISABLE
  #   define _POSIX_DISABLE	0
+@@ -190,15 +190,15 @@ int tty_raw(int fd, int echomode)
+ 		echo = 0;
+ 	}
+ #ifdef FLUSHO
+-	ttyparm.c_lflag &= ~FLUSHO;
++	ttyparm.c_lflag &= (tcflag_t)~FLUSHO;
+ #endif /* FLUSHO */
+ 	nttyparm = ttyparm;
+-	nttyparm.c_iflag &= ~(IGNPAR|PARMRK|INLCR|IGNCR|ICRNL);
++	nttyparm.c_iflag &= (tcflag_t)~(IGNPAR|PARMRK|INLCR|IGNCR|ICRNL);
+ 	nttyparm.c_iflag |= BRKINT;
+ 	if(echo)
+-		nttyparm.c_lflag &= ~(ICANON);
++		nttyparm.c_lflag &= (tcflag_t)~(ICANON);
+ 	else
+-		nttyparm.c_lflag &= ~(ICANON|ISIG|ECHO|ECHOK);
++		nttyparm.c_lflag &= (tcflag_t)~(ICANON|ISIG|ECHO|ECHOK);
+ 	nttyparm.c_cc[VTIME] = 0;
+ 	nttyparm.c_cc[VMIN] = 1;
+ #ifdef VREPRINT
 @@ -264,11 +264,11 @@ int ed_window(void)
  
  void ed_flush(Edit_t *ep)
@@ -504,9 +542,18 @@ index c0eea1b15..716e79052 100644
  	else
  		insize = 0;
 diff --git a/src/cmd/ksh93/edit/emacs.c b/src/cmd/ksh93/edit/emacs.c
-index 3c72f1859..dcd5b109a 100644
+index 3c72f1859..2a781a4d8 100644
 --- a/src/cmd/ksh93/edit/emacs.c
 +++ b/src/cmd/ksh93/edit/emacs.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -256,7 +256,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
  			{
  				/* accept a backslashed character */
@@ -699,9 +746,18 @@ index 3c72f1859..dcd5b109a 100644
  		if(!isspace(out[x]))
  #endif /* SHOPT_MULTIBYTE */
 diff --git a/src/cmd/ksh93/edit/hexpand.c b/src/cmd/ksh93/edit/hexpand.c
-index 2b7a41e62..9f8c39f5e 100644
+index 2b7a41e62..b7314af98 100644
 --- a/src/cmd/ksh93/edit/hexpand.c
 +++ b/src/cmd/ksh93/edit/hexpand.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -62,7 +62,8 @@ struct subst
  static char *parse_subst(const char *s, struct subst *sb)
  {
@@ -864,9 +920,18 @@ index 2b7a41e62..9f8c39f5e 100644
  					}
  					/* loop if g modifier specified */
 diff --git a/src/cmd/ksh93/edit/history.c b/src/cmd/ksh93/edit/history.c
-index c4c2d427c..49f729cd4 100644
+index c4c2d427c..2ea8a5e96 100644
 --- a/src/cmd/ksh93/edit/history.c
 +++ b/src/cmd/ksh93/edit/history.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -44,7 +44,7 @@
  
  #if !SHOPT_SCRIPTONLY
@@ -1183,9 +1248,18 @@ index c4c2d427c..49f729cd4 100644
  		is_boundary = !quoted && hist_iswordbndry(c);
  		if(is_boundary && flag)
 diff --git a/src/cmd/ksh93/edit/vi.c b/src/cmd/ksh93/edit/vi.c
-index 9833e3731..ddaf4d2df 100644
+index 9833e3731..771fb7a29 100644
 --- a/src/cmd/ksh93/edit/vi.c
 +++ b/src/cmd/ksh93/edit/vi.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -371,7 +371,7 @@ static void append(Vi_t *vp,int c, int mode)
  			for(i = ++last_virt;  i > j; --i)
  				virtual[i] = virtual[i-1];
@@ -1354,9 +1428,18 @@ index 9833e3731..ddaf4d2df 100644
  		if(!isspace(virtual[x]))
  #endif /* SHOPT_MULTIBYTE */
 diff --git a/src/cmd/ksh93/include/edit.h b/src/cmd/ksh93/include/edit.h
-index 6a3f492d1..f9aa60928 100644
+index 6718a1d12..22acd90da 100644
 --- a/src/cmd/ksh93/include/edit.h
 +++ b/src/cmd/ksh93/include/edit.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -112,7 +112,7 @@ typedef struct edit
  	void	*e_vi;		/* vi specific data */
  	void	*e_emacs;	/* emacs specific data */
@@ -1378,9 +1461,18 @@ index 6a3f492d1..f9aa60928 100644
  
  extern const char	e_runvi[];
 diff --git a/src/cmd/ksh93/include/history.h b/src/cmd/ksh93/include/history.h
-index d218ed85e..08d35784f 100644
+index d218ed85e..c2fbe5168 100644
 --- a/src/cmd/ksh93/include/history.h
 +++ b/src/cmd/ksh93/include/history.h
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -12,6 +12,7 @@
  *                                                                      *
  *                  David Korn <dgk@research.att.com>                   *
@@ -1432,5 +1524,5 @@ index d218ed85e..08d35784f 100644
  #if !_BLD_ksh || SHOPT_ESH
      extern Histloc_t	hist_locate(History_t*,int, int, int);
 -- 
-2.49.0
+2.52.0
 
