@@ -111,7 +111,7 @@
 #define _DIRENT_H	1
 #endif
 
-#ifndef	DIRBLKSIZ
+#ifndef DIRBLKSIZ
 #ifdef	DIRBLK
 #define DIRBLKSIZ	DIRBLK
 #else

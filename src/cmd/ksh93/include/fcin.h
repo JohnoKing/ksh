@@ -36,8 +36,7 @@ typedef struct _fcin
 	short		fclen;		/* last multibyte char len */
 	void (*fcfun)(Sfio_t*,const char*,ptrdiff_t,void*);	/* advance function */
 	void		*context;	/* context pointer */
-	int		fcleft;		/* for multibyte boundary */
-	Sfoff_t		fcoff;		/* offset for last read */
+	ptrdiff_t	fcleft;		/* for multibyte boundary */
 } Fcin_t;
 
 #if SHOPT_MULTIBYTE
@@ -55,7 +54,6 @@ typedef struct _fcin
 #define fclast()	((char*)_Fcin.fclast)
 #define fcleft()	(_Fcin.fclast-_Fcin.fcptr)
 #define fcsopen(s)	(_Fcin._fcfile=NULL,_Fcin.fclen=1,_Fcin.fcbuff=_Fcin.fcptr=(unsigned char*)(s))
-#define fctell()	(_Fcin.fcoff + (_Fcin.fcptr-_Fcin.fcbuff))
 #define fcsave(x)	(*(x) = _Fcin)
 #define fcrestore(x)	(_Fcin = *(x))
 extern int		fcfill(void);
