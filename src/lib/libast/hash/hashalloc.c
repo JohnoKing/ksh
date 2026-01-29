@@ -67,7 +67,7 @@ hashalloc(Hash_table_t* ref, ...)
 	tab->bucketsize = (sizeof(Hash_header_t) + sizeof(char*) - 1) / sizeof(char*);
 	if (ref)
 	{
-		tab->flags = ref->flags & ~HASH_RESET;
+		tab->flags = (short)(ref->flags & ~HASH_RESET);
 		tab->root = ref->root;
 		internal = HASH_INTERNAL;
 	}

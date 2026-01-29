@@ -63,7 +63,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 
 	GETLOCAL(f,local);
 	if((rcrv = f->mode & (SFIO_RC|SFIO_RV)) )
-		f->mode &= ~(SFIO_RC|SFIO_RV);
+		f->mode &= (uint32_t)~(SFIO_RC|SFIO_RV);
 	f->bits &= ~SFIO_JUSTSEEK;
 
 	if(f->mode&SFIO_PKRD)
@@ -77,7 +77,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 				return -1;
 			if((f->mode&(SFIO_SYNCED|SFIO_READ)) == (SFIO_SYNCED|SFIO_READ) )
 			{	f->endb = f->next = f->endr = f->data;
-				f->mode &= ~SFIO_SYNCED;
+				f->mode &= (uint32_t)~SFIO_SYNCED;
 			}
 #ifdef MAP_TYPE
 			if((f->bits&SFIO_MMAP) && f->data)

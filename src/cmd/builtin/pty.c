@@ -257,13 +257,13 @@ mkpty(int* master, int* minion)
 #endif
 	tty.c_oflag |= (ONLCR | OPOST);
 #ifdef OCRNL
-	tty.c_oflag &= ~OCRNL;
+	tty.c_oflag &= (tcflag_t)~OCRNL;
 #endif
 #ifdef ONLRET
-	tty.c_oflag &= ~ONLRET;
+	tty.c_oflag &= (tcflag_t)~ONLRET;
 #endif
 	tty.c_iflag |= BRKINT;
-	tty.c_iflag &= ~IGNBRK;
+	tty.c_iflag &= (tcflag_t)~IGNBRK;
 	tty.c_cc[VTIME] = 0;
 	tty.c_cc[VMIN] = CMIN;
 #ifdef B115200

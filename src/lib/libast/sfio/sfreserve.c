@@ -128,7 +128,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 			if((n = f->endb - f->next) < sz)
 			{	if(f->mode&SFIO_PKRD)
 				{	f->endb = f->endr = f->next;
-					f->mode &= ~SFIO_PKRD;
+					f->mode &= (uint32_t)~SFIO_PKRD;
 				}
 				break;
 			}

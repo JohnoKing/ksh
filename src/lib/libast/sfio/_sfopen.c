@@ -49,8 +49,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 				else	f->bits &= ~SFIO_BOTH;
 
 				if(f->flags&SFIO_READ)
-					f->mode = (f->mode&~SFIO_WRITE)|SFIO_READ;
-				else	f->mode = (f->mode&~SFIO_READ)|SFIO_WRITE;
+					f->mode = (f->mode&(uint32_t)~SFIO_WRITE)|SFIO_READ;
+				else	f->mode = (f->mode&(uint32_t)~SFIO_READ)|SFIO_WRITE;
 			}
 		}
 		else /* make sure there is no buffered data */

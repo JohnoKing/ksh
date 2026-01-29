@@ -484,9 +484,9 @@ typedef struct _sfextern_s
 #define SFIO_ECONT	3	/* can continue normally		*/
 
 #define SETLOCAL(f)	((f)->mode |= SFIO_LOCAL)
-#define GETLOCAL(f,v)	((v) = ((f)->mode&SFIO_LOCAL), (f)->mode &= ~SFIO_LOCAL, (v))
+#define GETLOCAL(f,v)	((v) = ((f)->mode&SFIO_LOCAL), (f)->mode &= (uint32_t)~SFIO_LOCAL, (v))
 #define SFWRALL(f)	((f)->mode |= SFIO_RV)
-#define SFISALL(f,v)	((((v) = (f)->mode&SFIO_RV) ? ((f)->mode &= ~SFIO_RV) : 0), \
+#define SFISALL(f,v)	((((v) = (f)->mode&SFIO_RV) ? ((f)->mode &= (uint32_t)~SFIO_RV) : 0), \
 			 ((v) || ((f)->flags&(SFIO_SHARE|SFIO_APPENDWR|SFIO_WHOLE)) ) )
 #define SFSK(f,a,o,d)	(SETLOCAL(f),sfsk(f,(Sfoff_t)a,o,d))
 #define SFRD(f,b,n,d)	(SETLOCAL(f),sfrd(f,b,n,d))
@@ -503,7 +503,7 @@ typedef struct _sfextern_s
 #define SFRAISE(f,e,d)	(SETLOCAL(f),sfraise(f,e,d))
 
 /* lock/open a stream */
-#define SFMODE(f,l)	((f)->mode & ~(SFIO_RV|SFIO_RC|((l) ? SFIO_LOCK : 0)) )
+#define SFMODE(f,l)	((f)->mode & (uint32_t)~(SFIO_RV|SFIO_RC|((l) ? SFIO_LOCK : 0)) )
 #define SFLOCK(f,l)	(void)((f)->mode |= SFIO_LOCK, (f)->endr = (f)->endw = (f)->data)
 #define _SFOPENRD(f)	((f)->endr = (f)->endb)
 #define _SFOPENWR(f)	((f)->endw = ((f)->flags&SFIO_LINE) ? (f)->data : (f)->endb)
@@ -511,12 +511,12 @@ typedef struct _sfextern_s
 			 (f)->mode == SFIO_WRITE ? _SFOPENWR(f) : \
 			 ((f)->endw = (f)->endr = (f)->data) )
 #define SFOPEN(f,l)	(void)((l) ? 0 : \
-				((f)->mode &= ~(SFIO_LOCK|SFIO_RC|SFIO_RV), _SFOPEN(f), 0) )
+				((f)->mode &= (uint32_t)~(SFIO_LOCK|SFIO_RC|SFIO_RV), _SFOPEN(f), 0) )
 
 /* check to see if the stream can be accessed */
 #define SFFROZEN(f)	(((f)->mode&(SFIO_PUSH|SFIO_LOCK|SFIO_PEEK)) ? 1 : \
 			 !((f)->mode&SFIO_STDIO) ? 0 : \
-			 _Sfstdsync ? (*_Sfstdsync)(f) : (((f)->mode &= ~SFIO_STDIO),0) )
+			 _Sfstdsync ? (*_Sfstdsync)(f) : (((f)->mode &= (uint32_t)~SFIO_STDIO),0) )
 
 
 /* set discipline code */

@@ -624,7 +624,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 	NOT_USED(flags);
 #endif
 	if (value)
-		fp->flags &= ~CONF_GLOBAL;
+		fp->flags &= (unsigned)~CONF_GLOBAL;
 	else if (fp->flags & CONF_GLOBAL)
 		return fp->value;
 	switch (fp->op)
@@ -1146,7 +1146,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 			s = p->limit.string;
 			break;
 		}
-		flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+		flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		v = -1;
 		errno = EINVAL;
 		defined = 0;
@@ -1157,10 +1157,10 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 		if (!errno)
 		{
 			if ((p->flags & CONF_FEATURE) || !(p->flags & (CONF_LIMIT|CONF_MINMAX)))
-				flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+				flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		}
 		else if (flags & CONF_PREFIXED)
-			flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+			flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		else if (errno != EINVAL || !i)
 		{
 			if (!sp)
@@ -1176,7 +1176,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 			}
 			else
 			{
-				flags &= ~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
+				flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 				flags |= CONF_ERROR;
 			}
 		}
@@ -1310,7 +1310,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 	if (!(listflags & ~(ASTCONF_error|ASTCONF_system)))
 		for (fp = state.features; fp; fp = fp->next)
 			if (streq(name, fp->name))
-				return format(fp, path, 0, listflags, conferror);
+				return format(fp, path, 0, (unsigned)listflags, conferror);
 	return (listflags & ASTCONF_error) ? NULL : null;
 }
 
@@ -1401,9 +1401,9 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 	INITIALIZE();
 	if (!path)
 		path = root;
-	if (state.recent && streq(name, state.recent->name) && (s = format(state.recent, path, value, flags, conferror)))
+	if (state.recent && streq(name, state.recent->name) && (s = format(state.recent, path, value, (unsigned)flags, conferror)))
 		return s;
-	if (lookup(&look, name, flags))
+	if (lookup(&look, name, (unsigned)flags))
 	{
 		if (value)
 		{
@@ -1444,7 +1444,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 
 			strcpy(altname, name);
 			altname[n - 3] = 0;
-			if (lookup(&altlook, altname, flags))
+			if (lookup(&altlook, altname, (unsigned)flags))
 			{
 				if (value)
 				{
@@ -1476,7 +1476,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 			}
 		}
 	}
-	if ((look.standard < 0 || look.standard == CONF_AST) && look.call <= 0 && look.section <= 1 && (s = feature(0, look.name, path, value, flags, conferror)))
+	if ((look.standard < 0 || look.standard == CONF_AST) && look.call <= 0 && look.section <= 1 && (s = feature(0, look.name, path, value, (unsigned)flags, conferror)))
 		return s;
 	errno = EINVAL;
 	if (conferror && !(flags & ASTCONF_system))
@@ -1592,7 +1592,7 @@ astconflist(Sfio_t* sp, const char* path, int flags, const char* pattern)
 				for (s = f; *s && *s != '=' && *s != ':' && !isspace(*s); s++);
 				if (*s)
 					for (*s++ = 0; isspace(*s); s++);
-				if (!lookup(&look, f, flags))
+				if (!lookup(&look, f, (unsigned)flags))
 				{
 					if(pattern)
 					{

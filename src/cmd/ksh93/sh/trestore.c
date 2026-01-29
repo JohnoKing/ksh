@@ -237,7 +237,7 @@ static struct ionod *r_redirect(void)
 			iop->iovname = r_string();
 		else
 			iop->iovname = 0;
-		iop->iofile &= ~IOVNM;
+		iop->iofile &= (unsigned)~IOVNM;
 	}
 	if(iop)
 		iop->ionxt = 0;
@@ -302,7 +302,7 @@ static struct regnod *r_switch(void)
 			regtop = reg;
 		else
 			regold->regnxt = reg;
-		reg->regflag = l;
+		reg->regflag = (char)l;
 		reg->regptr = r_arg();
 		reg->regcom = r_tree();
 		regold = reg;

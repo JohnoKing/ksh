@@ -123,7 +123,7 @@ Sfdisc_t* sfdisc(Sfio_t* f, Sfdisc_t* disc)
 	if(!(f->flags&SFIO_STRING))
 	{	(void)SFSYNC(f); /* do a silent buffer synch */
 		if((f->mode&SFIO_READ) && (f->mode&SFIO_SYNCED) )
-		{	f->mode &= ~SFIO_SYNCED;
+		{	f->mode &= (uint32_t)~SFIO_SYNCED;
 			f->endb = f->next = f->endr = f->endw = f->data;
 		}
 

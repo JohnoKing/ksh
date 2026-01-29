@@ -71,7 +71,7 @@ hashfree(Hash_table_t* tab)
 				else if (freevalue && p->value) (*freevalue)(p->value);
 				if (p->hash & HASH_FREENAME)
 				{
-					p->hash &= ~HASH_FREENAME;
+					p->hash &= (unsigned long)~HASH_FREENAME;
 					if (region) (*region)(handle, p->name, 0, 0);
 					else free(p->name);
 				}
@@ -82,7 +82,7 @@ hashfree(Hash_table_t* tab)
 				}
 				else if (p->hash & HASH_HIDES)
 				{
-					p->hash &= ~HASH_HIDES;
+					p->hash &= (unsigned long)~HASH_HIDES;
 					p->name = ((Hash_bucket_t*)p->name)->name;
 				}
 			}

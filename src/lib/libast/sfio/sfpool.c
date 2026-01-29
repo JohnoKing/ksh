@@ -124,7 +124,7 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
 		f->next = f->data+v;
 	}
 
-	f->mode &= ~SFIO_POOL;
+	f->mode &= (uint32_t)~SFIO_POOL;
 	head->mode |= SFIO_POOL;
 	head->next = head->endr = head->endw = head->data; /* clear write buffer */
 
@@ -133,7 +133,7 @@ static int _sfphead(Sfpool_t*	p,	/* the pool			*/
 	rv = 0;
 
 done:
-	head->mode &= ~SFIO_LOCK; /* partially unlock because it's no longer head */
+	head->mode &= (uint32_t)~SFIO_LOCK; /* partially unlock because it's no longer head */
 
 	return rv;
 }
@@ -149,7 +149,7 @@ static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
 		p->sf[n] = p->sf[n+1];
 
 	f->pool = NULL;
-	f->mode &= ~SFIO_POOL;
+	f->mode &= (uint32_t)~SFIO_POOL;
 
 	if(p->n_sf == 0 || p == &_Sfpool)
 	{	if(p != &_Sfpool)
@@ -169,7 +169,7 @@ static int _sfpdelete(Sfpool_t*	p,	/* the pool		*/
 
 	/* head stream has SFIO_POOL off */
 	f = p->sf[0];
-	f->mode &= ~SFIO_POOL;
+	f->mode &= (uint32_t)~SFIO_POOL;
 	if(!SFFROZEN(f))
 		_SFOPEN(f);
 

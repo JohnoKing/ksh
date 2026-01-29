@@ -40,7 +40,7 @@ fmtrec(Recfmt_t f, int fs)
 	{
 	case REC_delimited:
 		*s++ = 'd';
-		if ((del[0] = REC_D_DELIMITER(f)) != '\n')
+		if ((del[0] = (char)(REC_D_DELIMITER(f))) != '\n')
 		{
 			del[1] = 0;
 			if (fs)

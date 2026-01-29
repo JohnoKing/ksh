@@ -87,10 +87,10 @@ fmtint(intmax_t ll, int unsign)
 	int		j=0;
 	ptrdiff_t	k=3*(ptrdiff_t)sizeof(ll);
 	if(unsign || ll>=0)
-		n = ll;
+		n = (uintmax_t)ll;
 	else
 	{
-		n = -ll;
+		n = (uintmax_t)-ll;
 		j = 1;
 	}
 	if(n<10)

@@ -1658,7 +1658,7 @@ int sh_exec(const Shnode_t *t, int flags)
 				for (i = t->fork.forkio; i; i = i->ionxt)
 				{
 					unsigned f = i->iofile;
-					if ((f & ~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
+					if ((f & (unsigned)~(IOUFD|IOPUT))==(IOMOV|IORAW) && !strcmp(i->ioname,"-") || (f & IOUFD)==1 && sh.comsub)
 					{
 						sh_subfork();
 						break;

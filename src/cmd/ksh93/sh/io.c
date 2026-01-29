@@ -2135,7 +2135,7 @@ int sh_iocheckfd(int fd)
 			S_ISSOCK(statb.st_mode) ||
 #endif /* S_ISSOCK */
 			/* The following is for sockets on the sgi */
-			(statb.st_ino==0 && (statb.st_mode & ~(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH|S_ISUID|S_ISGID))==0) ||
+			(statb.st_ino==0 && (statb.st_mode & (mode_t)~(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH|S_ISUID|S_ISGID))==0) ||
 			(S_ISCHR(statb.st_mode) && (statb.st_ino!=null_ino || statb.st_dev!=null_dev))
 		))
 			n |= IONOSEEK;

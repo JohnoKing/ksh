@@ -787,7 +787,7 @@ static void set(char *argv[], struct termios *sp)
 			cfsetispeed(sp, (speed_t)tp->mask);
 			break;
 		    case SIZE:
-			sp->c_cflag &= ~CSIZE;
+			sp->c_cflag &= (tcflag_t)~CSIZE;
 			sp->c_cflag |= tp->mask;
 			break;
 		    case SANE:
@@ -802,8 +802,8 @@ static void set(char *argv[], struct termios *sp)
 			}
 			else
 			{
-				sp->c_iflag &= ~IUCLC;
-				sp->c_oflag &= ~OLCUC;
+				sp->c_iflag &= (tcflag_t)~IUCLC;
+				sp->c_oflag &= (tcflag_t)~OLCUC;
 			}
 			break;
 #endif /* OLCUC && IUCLC */

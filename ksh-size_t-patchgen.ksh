@@ -24,7 +24,11 @@ fi
 upc() {
 	# Obtain the script from the from ksh wiki
 	test -f ../update-copyright.ksh && ksh ../update-copyright.ksh
-	git checkout HEAD -- COPYRIGHT
+	if [[ $1 != --all ]]; then
+		git checkout HEAD -- COPYRIGHT
+	else
+		git add COPYRIGHT
+	fi
 	git add bin src
 }
 
@@ -42,6 +46,7 @@ fetch src/lib/libast/include/stk.h
 fetch src/lib/libast/misc/stk.c
 fetch src/cmd/ksh93/shell.3
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
 
 This is the first of a thirteen(!!) part patch series that enables
@@ -142,6 +147,7 @@ fetch src/lib/libast/features/stdio
 fetch src/lib/libast/man/hash.3
 fetch src/lib/libast/man/path.3
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -194,6 +200,7 @@ fetch src/lib/libast/include/aso.h
 fetch src/lib/libast/man/aso.3
 fetch src/lib/libast/include/cdt.h
 sanity
+upc
 git commit -m 'size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -218,6 +225,7 @@ fetch src/lib/libast/include/swap.h
 fetch src/lib/libast/man/swap.3
 fetch src/lib/libast/man/regex.3
 sanity
+upc
 git commit -m 'size_t/ptrdiff_t transition part 4: libast regex and string sublibraries
 
 This is the fourth of the thickfold patch series, which enables ksh93
@@ -244,6 +252,7 @@ fetch src/lib/libast/features/api
 fetch src/lib/libast/std/assert.h
 fetch src/lib/libast/include/debug.h
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -276,6 +285,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 6: remainder of additaments to libast
 
 This is the sixth of the thickfold patch series, which enables ksh93
@@ -299,6 +309,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 fetch src/lib/libast/features/tty
 fetch src/lib/libcmd
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -331,6 +342,7 @@ fetch src/lib/libsum
 fetch src/cmd/builtin
 fetch src/cmd/INIT
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -356,6 +368,7 @@ fetch src/cmd/ksh93/edit
 fetch src/cmd/ksh93/include/edit.h
 fetch src/cmd/ksh93/include/history.h
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -378,6 +391,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 fetch src/cmd/ksh93/bltins
 fetch src/cmd/ksh93/include/builtins.h
 sanity
+upc
 git commit -m $'size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin commands
 
 This is the tenth of the thickfold patch series, which enables ksh93
@@ -402,6 +416,7 @@ fetch src/cmd/ksh93/sh/string.c
 fetch src/cmd/ksh93/sh/waitevent.c
 fetch src/cmd/ksh93/nval.3
 sanity
+upc
 git commit -m "size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -451,6 +466,7 @@ fetch src/cmd/ksh93/include/fcin.h
 fetch src/cmd/ksh93/include/shnodes.h
 fetch src/cmd/ksh93/include/shlex.h
 sanity
+upc
 git commit -m "size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93
@@ -474,7 +490,7 @@ fetch src
 sanity
 sed -i '5i '${ printf '%(%Y-%0m-%0d)T\n' now ;}':\n\n- Ksh is now capable of allocating memory within a 64-bit address space.\n' NEWS
 git add NEWS
-upc
+upc --all
 git commit -m "size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93

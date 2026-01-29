@@ -88,13 +88,13 @@ recstr(const char* s, char** e)
 			{
 				if (e)
 					*e = t;
-				return REC_M_TYPE(REC_M_data);
+				return (Recfmt_t)(REC_M_TYPE(REC_M_data));
 			}
 			else if (strneq(s, "path", 4))
 			{
 				if (e)
 					*e = t;
-				return REC_M_TYPE(REC_M_path);
+				return (Recfmt_t)(REC_M_TYPE(REC_M_path));
 			}
 		}
 
@@ -115,7 +115,7 @@ recstr(const char* s, char** e)
 			break;
 		if (e)
 			*e = t;
-		return REC_U_TYPE(n, v);
+		return (Recfmt_t)(REC_U_TYPE(n, v));
 	case 'v':
 	case 'V':
 		a[0] = 0;
@@ -186,16 +186,16 @@ recstr(const char* s, char** e)
 			*e = (char*)s;
 		if (a[3] > (a[1] - a[2]))
 			a[3] = a[1] - a[2];
-		return REC_V_RECORD(REC_V_TYPE(a[1], a[2], a[3], a[4], a[5]), a[0]);
+		return (Recfmt_t)(REC_V_RECORD(REC_V_TYPE(a[1], a[2], a[3], a[4], a[5]), a[0]));
 	case '%':
 		if (e)
 			*e = (char*)s + 1;
-		return REC_M_TYPE(REC_M_path);
+		return (Recfmt_t)(REC_M_TYPE(REC_M_path));
 	case '-':
 	case '?':
 		if (e)
 			*e = (char*)s + 1;
-		return REC_M_TYPE(REC_M_data);
+		return (Recfmt_t)(REC_M_TYPE(REC_M_data));
 	}
 	if (e)
 		*e = (char*)s;

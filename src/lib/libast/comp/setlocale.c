@@ -2430,7 +2430,7 @@ single(int category, Lc_t* lc, unsigned int flags)
 			return NULL;
 		}
 		if ((lc->flags & LC_default) || category == AST_LC_MESSAGES && lc->name[0] == 'e' && lc->name[1] == 'n' && (lc->name[2] == 0 || lc->name[2] == '_' && lc->name[3] == 'U'))
-			ast.locale.set &= ~(1<<category);
+			ast.locale.set &= (uint32_t)~(1<<category);
 		else
 			ast.locale.set |= (1<<category);
 	}

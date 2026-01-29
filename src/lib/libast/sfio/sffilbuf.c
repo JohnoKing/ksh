@@ -47,7 +47,7 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 
 	justseek = f->bits&SFIO_JUSTSEEK; f->bits &= ~SFIO_JUSTSEEK;
 
-	for(first = 1;; first = 0, (f->mode &= ~SFIO_LOCK) )
+	for(first = 1;; first = 0, (f->mode &= (uint32_t)~SFIO_LOCK) )
 	{	/* check mode */
 		if(SFMODE(f,local) != SFIO_READ && _sfmode(f,SFIO_READ,local) < 0)
 			return -1;
