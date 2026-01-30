@@ -1,6 +1,6 @@
-From 8a074c2f991f8b09443ce6bf6bff12d7c6f93498 Mon Sep 17 00:00:00 2001
+From 8159f8f060c46ea03d1214e401b664b51f1fa6df Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:25 -0800
+Date: Fri, 30 Jan 2026 10:17:52 -0800
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
  expansion, init and stk(3)
 
@@ -69,14 +69,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/defs.h  |  12 +-
  src/cmd/ksh93/include/shell.h |  24 +--
  src/cmd/ksh93/include/test.h  |   4 +-
- src/cmd/ksh93/sh/init.c       | 107 +++++-----
- src/cmd/ksh93/sh/macro.c      | 363 ++++++++++++++++++----------------
+ src/cmd/ksh93/sh/init.c       | 108 +++++-----
+ src/cmd/ksh93/sh/macro.c      | 365 ++++++++++++++++++----------------
  src/cmd/ksh93/shell.3         |   6 +-
  src/lib/libast/include/stk.h  |   7 +-
  src/lib/libast/man/stk.3      |  12 +-
  src/lib/libast/misc/stk.c     |  58 +++---
  src/lib/libast/tm/tmxdate.c   |   2 +-
- 11 files changed, 331 insertions(+), 302 deletions(-)
+ 11 files changed, 333 insertions(+), 303 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
 index 610b56d47..dbea27f21 100644
@@ -375,7 +375,7 @@ index a2daaf59b..fb260b198 100644
  extern const char	sh_opttest[];
  extern const char	test_opchars[];
 diff --git a/src/cmd/ksh93/sh/init.c b/src/cmd/ksh93/sh/init.c
-index 67f394ac0..71b9ecf64 100644
+index 67f394ac0..03995702d 100644
 --- a/src/cmd/ksh93/sh/init.c
 +++ b/src/cmd/ksh93/sh/init.c
 @@ -165,14 +165,14 @@ struct match
@@ -478,11 +478,19 @@ index 67f394ac0..71b9ecf64 100644
  	struct match	*mp = &ip->SH_MATCH_init;
 -	int		i,n,x, savesub=sh.subshell;
 +	unsigned int	savesub=sh.subshell;
-+	ptrdiff_t	i,n,x;
++	ptrdiff_t	i,n;
  	Namarr_t	*ap = nv_arrayptr(SH_MATCHNOD);
  	Namval_t	*np;
  	if(sh.intrace)
-@@ -877,8 +878,8 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
+@@ -830,6 +831,7 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
+ 				match2d(mp);
+ 			for(i=0; i < mp->nmatch; i++)
+ 			{
++				long x;
+ 				nv_disc(np,&mp->hdr,NV_LAST);
+ 				nv_putsub(np,NULL,mp->index);
+ 				for(x=mp->index; x >=0; x--)
+@@ -877,8 +879,8 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
  			sh.subshell = savesub;
  			return;
  		}
@@ -493,7 +501,7 @@ index 67f394ac0..71b9ecf64 100644
  		np = nv_namptr(mp->nodes,0);
  		nv_disc(SH_MATCHNOD,&mp->hdr,NV_LAST);
  		for(i=nmatch; --i>=0;)
-@@ -903,12 +904,15 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
+@@ -903,12 +905,15 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
  				vsize = match[i] -n;
  		}
  		index *= 2*mp->nmatch;
@@ -514,7 +522,7 @@ index 67f394ac0..71b9ecf64 100644
  		for(i=0; i < 2*nmatch; i++)
  		{
  			if(match[i]>=0)
-@@ -918,7 +922,7 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
+@@ -918,7 +923,7 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
  			mp->match[index+i++] = -1;
  		if(index==0)
  			v+= mp->first;
@@ -523,7 +531,7 @@ index 67f394ac0..71b9ecf64 100644
  		mp->val[mp->vlen=vsize] = 0;
  		mp->lastsub[0] = mp->lastsub[1] = -1;
  	}
-@@ -927,7 +931,8 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
+@@ -927,7 +932,8 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
  static char* get_match(Namval_t *np, Namfun_t *fp)
  {
  	struct match	*mp = (struct match*)fp;
@@ -533,7 +541,7 @@ index 67f394ac0..71b9ecf64 100644
  	char		*val;
  	sub = nv_aindex(SH_MATCHNOD);
  	if(sub<0)
-@@ -954,9 +959,9 @@ static char* get_match(Namval_t *np, Namfun_t *fp)
+@@ -954,9 +960,9 @@ static char* get_match(Namval_t *np, Namfun_t *fp)
  		free(mp->rval[i]);
  		mp->rval[i] = 0;
  	}
@@ -545,7 +553,7 @@ index 67f394ac0..71b9ecf64 100644
  	mp->rval[i][n] = 0;
  	return mp->rval[i];
  }
-@@ -1036,7 +1041,7 @@ static void math_init(void)
+@@ -1036,7 +1042,7 @@ static void math_init(void)
  {
  	Namval_t	*np;
  	char		*name;
@@ -554,7 +562,7 @@ index 67f394ac0..71b9ecf64 100644
  	sh.mathnodes = (char*)sh_calloc(1,MAX_MATH_ARGS*(NV_MINSZ+5));
  	name = sh.mathnodes+MAX_MATH_ARGS*NV_MINSZ;
  	for(i=0; i < MAX_MATH_ARGS; i++)
-@@ -1044,7 +1049,7 @@ static void math_init(void)
+@@ -1044,7 +1050,7 @@ static void math_init(void)
  		np = nv_namptr(sh.mathnodes,i);
  		np->nvfun = &math_child_fun;
  		memcpy(name,"arg",3);
@@ -563,7 +571,7 @@ index 67f394ac0..71b9ecf64 100644
  		np->nvname = name;
  		name+=5;
  		nv_onattr(np,NV_MINIMAL|NV_NOFREE|NV_LDOUBLE|NV_RDONLY);
-@@ -1060,7 +1065,7 @@ static Namval_t *create_math(Namval_t *np,const char *name,int flag,Namfun_t *fp
+@@ -1060,7 +1066,7 @@ static Namval_t *create_math(Namval_t *np,const char *name,int flag,Namfun_t *fp
  	if(name[0]!='a' || name[1]!='r' || name[2]!='g' || name[4] || !isdigit(name[3]) || (name[3]=='0' || (name[3]-'0')>MAX_MATH_ARGS))
  		return NULL;
  	fp->last = (char*)&name[4];
@@ -572,7 +580,7 @@ index 67f394ac0..71b9ecf64 100644
  }
  
  static char* get_math(Namval_t *np, Namfun_t *fp)
-@@ -1088,7 +1093,8 @@ static char *setdisc_any(Namval_t *np, const char *event, Namval_t *action, Namf
+@@ -1088,7 +1094,8 @@ static char *setdisc_any(Namval_t *np, const char *event, Namval_t *action, Namf
  {
  	Namval_t	*mp,fake;
  	char		*name;
@@ -582,7 +590,7 @@ index 67f394ac0..71b9ecf64 100644
  	NOT_USED(fp);
  	fake.nvname = nv_name(np);
  	if(!event)
-@@ -1222,11 +1228,11 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
+@@ -1222,11 +1229,11 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
  	sh.groupid = getgid();
  	sh.egroupid = getegid();
  	sh.lim.child_max = (int)astconf_long(CONF_CHILD_MAX);
@@ -596,7 +604,7 @@ index 67f394ac0..71b9ecf64 100644
  	sh.ed_context = ed_open();
  	error_info.id = path_basename(argv[0]);
  	umask(sh.mask = umask(0));
-@@ -1576,8 +1582,8 @@ struct Stats
+@@ -1576,8 +1583,8 @@ struct Stats
  {
  	Namfun_t	hdr;
  	char		*nodes;
@@ -607,7 +615,7 @@ index 67f394ac0..71b9ecf64 100644
  };
  
  static Namval_t *next_stat(Namval_t *np, Dt_t *root,Namfun_t *fp)
-@@ -1595,17 +1601,19 @@ static Namval_t *create_stat(Namval_t *np,const char *name,int flag,Namfun_t *fp
+@@ -1595,17 +1602,19 @@ static Namval_t *create_stat(Namval_t *np,const char *name,int flag,Namfun_t *fp
  {
  	struct Stats		*sp = (struct Stats*)fp;
  	const char		*cp=name;
@@ -631,7 +639,7 @@ index 67f394ac0..71b9ecf64 100644
  			goto found;
  	}
  	nq = 0;
-@@ -1651,7 +1659,7 @@ static Namfun_t	 stat_child_fun =
+@@ -1651,7 +1660,7 @@ static Namfun_t	 stat_child_fun =
  
  static void stat_init(void)
  {
@@ -640,7 +648,7 @@ index 67f394ac0..71b9ecf64 100644
  	size_t		extrasize = nstat*(sizeof(int)+NV_MINSZ);
  	struct Stats	*sp = sh_newof(0,struct Stats,1,extrasize);
  	Namval_t	*np;
-@@ -1812,7 +1820,7 @@ Dt_t *sh_inittree(const struct shtable2 *name_vals)
+@@ -1812,7 +1821,7 @@ Dt_t *sh_inittree(const struct shtable2 *name_vals)
  {
  	Namval_t *np;
  	const struct shtable2 *tp;
@@ -649,7 +657,7 @@ index 67f394ac0..71b9ecf64 100644
  	Dt_t *treep;
  	Dt_t *base_treep, *dict = 0;
  	for(tp=name_vals;*tp->sh_name;tp++)
-@@ -1869,9 +1877,9 @@ static inline int is_ctype_var(char *cp)
+@@ -1869,9 +1878,9 @@ static inline int is_ctype_var(char *cp)
  }
  
  /* for env_init: import one env var */
@@ -661,7 +669,7 @@ index 67f394ac0..71b9ecf64 100644
  	if(nv_open(cp,sh.var_tree,NV_EXPORT|NV_IDENT|NV_ASSIGN|NV_NOFAIL))
  		return;
  	/*
-@@ -1892,7 +1900,7 @@ static void env_init(void)
+@@ -1892,7 +1901,7 @@ static void env_init(void)
  {
  	char		*cp;
  	char		**ep=environ;
@@ -670,7 +678,7 @@ index 67f394ac0..71b9ecf64 100644
  	if(ep)
  	{
  		/* Import LC_ALL/LANG/LC_CTYPE first; the check for valid varname depends on the locale being set. */
-@@ -1924,17 +1932,17 @@ static void env_init(void)
+@@ -1924,17 +1933,17 @@ static void env_init(void)
   */
  #define BYPASS_MACRO
  
@@ -691,7 +699,7 @@ index 67f394ac0..71b9ecf64 100644
  {
  	return sh_offoption(opt);
  }
-@@ -1958,7 +1966,8 @@ struct Mapchar
+@@ -1958,7 +1967,8 @@ struct Mapchar
  static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
  {
  	struct Mapchar *mp = (struct Mapchar*)fp;
@@ -701,7 +709,7 @@ index 67f394ac0..71b9ecf64 100644
  	if(val)
  	{
  		if(mp->lctype!=lctype)
-@@ -1970,7 +1979,7 @@ static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
+@@ -1970,7 +1980,7 @@ static void put_trans(Namval_t *np,const char *val,int flags,Namfun_t *fp)
  			goto skip;
  		while(c = mbchar(val))
  		{
@@ -711,7 +719,7 @@ index 67f394ac0..71b9ecf64 100644
  			stkseek(sh.stk,off);
  			c  = mbconv(stkptr(sh.stk,off),c);
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index 4c77dea20..4d168b0b5 100644
+index 4c77dea20..ee39dd524 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
 @@ -2,7 +2,7 @@
@@ -741,6 +749,15 @@ index 4c77dea20..4d168b0b5 100644
  	void		*nvwalk;	/* for name space walking */
  } Mac_t;
  
+@@ -84,7 +84,7 @@ typedef struct  _mac_
+ #define isescchar(s)	((s)>S_QUOTE)
+ #define isqescchar(s)	((s)>=S_QUOTE)
+ #define isbracechar(c)	((c)==RBRACE || (_c_=sh_lexstates[ST_BRACE][c])==S_MOD1 ||_c_==S_MOD2)
+-#define ltos(x)		fmtint(x,0)
++#define ltos(x)		fmtint((intmax_t)(x),0)
+ 
+ /* type of macro expansions */
+ #define M_BRACE		1	/* ${var}	*/
 @@ -97,17 +97,17 @@ typedef struct  _mac_
  #define M_TYPE		8	/* ${@var}	*/
  

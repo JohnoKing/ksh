@@ -81,12 +81,11 @@ typedef int (*Compare_f)(const char*, const char*, size_t);
 
 static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, ptrdiff_t width, int mode, int* all, Compare_f compare)
 {
-	ptrdiff_t n, f;
-	ssize_t outsize=0;
+	ptrdiff_t n, f, outsize=0,cwidth=0,sep;
 	int mb = mbwide();
 	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
 	char *orecp=NULL, *sbufp=0, *outbuff;
-	ptrdiff_t reclen,oreclen= -1,count=0,cwidth=0,sep,next;
+	ptrdiff_t reclen,oreclen= -1,count=0,next;
 	if(mode&C_FLAG)
 		cwidth = CWIDTH+1;
 	while(1)
@@ -232,7 +231,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, 
 				return 1;
 		}
 		else
-			outsize = n+cwidth+sep;
+			outsize = n + cwidth + sep;
 		memcpy(outp+cwidth+sep,bufp,(size_t)n);
 		if(sep)
 			outp[cwidth] = '\n';

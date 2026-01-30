@@ -120,7 +120,7 @@ static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 {
 	Namval_t	*np;
 	struct Enum	*ep;
-	int		n=0;
+	ptrdiff_t	n=0;
 	const char	*v;
 	NOT_USED(op);
 	np = *(Namval_t**)(fp+1);
@@ -137,7 +137,7 @@ static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 		if(str[4]=='v')
 			sfprintf(out,"\b%s\b",ep->values[n]);
 		else
-			sfprintf(out,"\b%d\b",n);
+			sfprintf(out,"\b%td\b",n);
 	}
 	else if(strcmp(str,"case")==0)
 	{
@@ -200,10 +200,10 @@ static char* get_enum(Namval_t* np, Namfun_t *fp)
 {
 	static char buff[6];
 	struct Enum *ep = (struct Enum*)fp;
-	long n = nv_getn(np,fp);
+	ptrdiff_t n = nv_getn(np,fp);
 	if(n < ep->nelem)
 		return (char*)ep->values[n];
-	sfsprintf(buff,sizeof(buff),"%u%c",n,0);
+	sfsprintf(buff,sizeof(buff),"%td%c",n,0);
 	return buff;
 }
 

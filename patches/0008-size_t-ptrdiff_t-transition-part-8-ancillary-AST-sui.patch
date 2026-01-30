@@ -1,6 +1,6 @@
-From c6813c01de2681cb1b0d424facec950cc53cbb30 Mon Sep 17 00:00:00 2001
+From 24051742df58d6bff9bbb764d14b08661a2c98d7 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:35 -0800
+Date: Fri, 30 Jan 2026 10:18:03 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -22,20 +22,20 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/INIT/mamake.c        | 62 ++++++++++++++++++------------------
+ src/cmd/INIT/mamake.c        | 62 +++++++++++++++++-----------------
  src/cmd/builtin/features/pty |  2 ++
- src/cmd/builtin/pty.c        | 61 ++++++++++++++++++-----------------
+ src/cmd/builtin/pty.c        | 64 ++++++++++++++++++------------------
  src/lib/libdll/dll_lib.c     | 12 ++++---
- src/lib/libdll/dllopen.c     | 58 +--------------------------------
- src/lib/libdll/dllscan.c     | 40 +++++++++++------------
+ src/lib/libdll/dllopen.c     | 58 +-------------------------------
+ src/lib/libdll/dllscan.c     | 40 +++++++++++-----------
  src/lib/libsum/sum-ast4.c    |  4 +--
- src/lib/libsum/sum-crc.c     | 29 +++++++++--------
+ src/lib/libsum/sum-crc.c     | 29 ++++++++--------
  src/lib/libsum/sum-lmd.c     |  6 ++--
  src/lib/libsum/sum-md5.c     |  2 +-
  src/lib/libsum/sum-prng.c    | 17 +++++-----
  src/lib/libsum/sum-sha1.c    |  4 +--
  src/lib/libsum/sumlib.c      | 14 ++++----
- 13 files changed, 131 insertions(+), 180 deletions(-)
+ 13 files changed, 132 insertions(+), 182 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
 index ff3c2bd5a..c72458f60 100644
@@ -317,7 +317,7 @@ index 73a44e473..55a83e148 100644
  	#include	<fcntl.h>
  	#if _lib_ptsname
 diff --git a/src/cmd/builtin/pty.c b/src/cmd/builtin/pty.c
-index 1f464dced..71682f75d 100644
+index 1f464dced..f6f233bbc 100644
 --- a/src/cmd/builtin/pty.c
 +++ b/src/cmd/builtin/pty.c
 @@ -2,7 +2,7 @@
@@ -376,7 +376,11 @@ index 1f464dced..71682f75d 100644
  } Master_t;
  #define BUFUNDERFLOW	128		/* bytes of buffer underflow to allow	*/
  
-@@ -537,7 +537,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+@@ -533,11 +533,10 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+ 	char*		t;
+ 	ssize_t		n;
+ 	size_t		promptlen = 0;
+-	ptrdiff_t	d;
  	char		promptbuf[64];
  
  	if (prompt)
@@ -385,7 +389,7 @@ index 1f464dced..71682f75d 100644
   again:
  	if (prompt)
  	{
-@@ -561,7 +561,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+@@ -561,7 +560,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
  				error(-1, "p \"%s\"", fmtnesq(promptbuf, "\"", promptlen));
  				return r;
  			}
@@ -394,7 +398,7 @@ index 1f464dced..71682f75d 100644
  			{
  				if (strneq(r, promptbuf, promptlen))
  				{
-@@ -588,12 +588,12 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+@@ -588,12 +587,12 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
  		else
  		{
  			bp->cur = bp->nxt;
@@ -409,7 +413,7 @@ index 1f464dced..71682f75d 100644
  	{
  		if (n < 0)
  		{
-@@ -655,12 +655,12 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+@@ -655,27 +654,27 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
  		return NULL;
  	}
  	n = sfvalue(mp);
@@ -424,7 +428,11 @@ index 1f464dced..71682f75d 100644
  		bp->bufunderflow = vmresize(bp->vm, bp->bufunderflow, new_buf_size + BUFUNDERFLOW);
  		bp->buf = bp->bufunderflow + BUFUNDERFLOW;
  		bp->max = bp->buf + new_buf_size - 1;
-@@ -671,11 +671,11 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+ 		if (bp->buf != r)
+ 		{
+-			d = bp->buf - r;
++			ptrdiff_t d = bp->buf - r;
+ 			bp->cur += d;
  			bp->end += d;
  		}
  	}
@@ -438,7 +446,7 @@ index 1f464dced..71682f75d 100644
  	{
  		bp->restore = *++bp->cur;
  		*bp->cur = 0;
-@@ -684,7 +684,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+@@ -684,7 +683,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
  			bp->cur = bp->end = bp->buf;
  			bp->nxt = 0;
  		}
@@ -447,7 +455,7 @@ index 1f464dced..71682f75d 100644
  			bp->nxt++;
  		if (prompt)
  			goto again;
-@@ -704,7 +704,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
+@@ -704,7 +703,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
  	{
  		r -= bp->cursor; /* FIXME: r may now be before bp->buf */
  		if (r < bp->bufunderflow)
@@ -456,7 +464,7 @@ index 1f464dced..71682f75d 100644
  		bp->cursor = 0;
  	}
  	for (t = 0, n = 0; *s; s++)
-@@ -781,11 +781,12 @@ struct Cond_s
+@@ -781,11 +780,12 @@ struct Cond_s
  };
  
  static int
@@ -470,7 +478,7 @@ index 1f464dced..71682f75d 100644
  	char*		s;
  	char*		m;
  	char*		e;
-@@ -832,7 +833,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+@@ -832,7 +832,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
  			if (master->prompt && !masterline(mp, lp, master->prompt, 0, timeout, master))
  				goto done;
  			if (delay)
@@ -479,7 +487,7 @@ index 1f464dced..71682f75d 100644
  			if (op == 'w')
  				error(-1, "w \"%s\\r\"", s);
  			else
-@@ -845,10 +846,10 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+@@ -845,10 +845,10 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
  				goto done;
  			}
  			if (delay)
@@ -492,7 +500,7 @@ index 1f464dced..71682f75d 100644
  			if (*e)
  				error(2, "%s: invalid delay -- milliseconds expected", s);
  			break;
-@@ -922,11 +923,11 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+@@ -922,11 +922,11 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
  			match(s, m, 1);
  			break;
  		case 's':
@@ -507,7 +515,7 @@ index 1f464dced..71682f75d 100644
  			break;
  		case 't':
  			timeout = (int)strtol(s, &e, 0);
-@@ -1021,13 +1022,13 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1021,13 +1021,13 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  	Sfio_t*		lp;
  	char		buf[64];
  
@@ -523,7 +531,7 @@ index 1f464dced..71682f75d 100644
  
  	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
  	for (;;)
-@@ -1057,7 +1058,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1057,7 +1057,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  			stty = opt_info.arg;
  			continue;
  		case 'w':
@@ -532,7 +540,7 @@ index 1f464dced..71682f75d 100644
  			continue;
  		case ':':
  			break;
-@@ -1079,7 +1080,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1079,7 +1079,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  		error(ERROR_system(1), "unable to create pty");
  		UNREACHABLE();
  	}
@@ -541,7 +549,7 @@ index 1f464dced..71682f75d 100644
  	{
  		error(ERROR_system(1), "cannot open master stream");
  		UNREACHABLE();
-@@ -1091,7 +1092,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1091,7 +1091,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  		for (s = stty; *s; s++)
  			if (isspace(*s))
  				n++;

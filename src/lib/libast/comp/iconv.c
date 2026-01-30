@@ -1209,8 +1209,8 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
 	{
 		if (m != SFIO_UNBOUND)
 			m = -(m & (((~0))>>1));
-		if ((!(fb = (char*)sfreserve(ip, m, locked = SFIO_LOCKR)) || !(fo = (size_t)sfvalue(ip))) &&
-		    (!(fb = (char*)sfreserve(ip, m, locked = 0)) || !(fo = (size_t)sfvalue(ip))))
+		if ((!(fb = (char*)sfreserve(ip, (ssize_t)m, locked = SFIO_LOCKR)) || !(fo = (size_t)sfvalue(ip))) &&
+		    (!(fb = (char*)sfreserve(ip, (ssize_t)m, locked = 0)) || !(fo = (size_t)sfvalue(ip))))
 			break;
 		fs = fb;
 		fn = fo;

@@ -533,7 +533,6 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 	char*		t;
 	ssize_t		n;
 	size_t		promptlen = 0;
-	ptrdiff_t	d;
 	char		promptbuf[64];
 
 	if (prompt)
@@ -666,7 +665,7 @@ masterline(Sfio_t* mp, Sfio_t* lp, char* prompt, int must, int timeout, Master_t
 		bp->max = bp->buf + new_buf_size - 1;
 		if (bp->buf != r)
 		{
-			d = bp->buf - r;
+			ptrdiff_t d = bp->buf - r;
 			bp->cur += d;
 			bp->end += d;
 		}

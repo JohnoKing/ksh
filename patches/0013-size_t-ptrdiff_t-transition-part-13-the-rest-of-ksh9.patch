@@ -1,6 +1,6 @@
-From 8801c666dbabc80f811bc8f54975d9aa3e0a380e Mon Sep 17 00:00:00 2001
+From 50ac566a250694bc1475c0b2a23c87d7eb1e83b8 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:48 -0800
+Date: Fri, 30 Jan 2026 10:18:15 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -52,19 +52,19 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/jobs.h    |   8 +--
  src/cmd/ksh93/include/path.h    |  10 +--
  src/cmd/ksh93/include/streval.h |  16 ++---
- src/cmd/ksh93/sh/args.c         |  46 +++++++------
+ src/cmd/ksh93/sh/args.c         |  46 ++++++------
  src/cmd/ksh93/sh/arith.c        |  28 ++++----
  src/cmd/ksh93/sh/deparse.c      |  29 ++++----
- src/cmd/ksh93/sh/expand.c       |  27 ++++----
+ src/cmd/ksh93/sh/expand.c       |  27 +++----
  src/cmd/ksh93/sh/fault.c        |  44 ++++++------
- src/cmd/ksh93/sh/io.c           | 110 +++++++++++++++---------------
- src/cmd/ksh93/sh/jobs.c         |  45 ++++++-------
+ src/cmd/ksh93/sh/io.c           | 124 ++++++++++++++++----------------
+ src/cmd/ksh93/sh/jobs.c         |  45 ++++++------
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         |  98 ++++++++++++++-------------
- src/cmd/ksh93/sh/streval.c      |  51 +++++++-------
- src/cmd/ksh93/sh/xec.c          | 115 +++++++++++++++++---------------
+ src/cmd/ksh93/sh/path.c         |  98 +++++++++++++------------
+ src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
+ src/cmd/ksh93/sh/xec.c          | 115 +++++++++++++++--------------
  src/cmd/ksh93/tests/basic.sh    |  24 +++++++
- 18 files changed, 371 insertions(+), 313 deletions(-)
+ 18 files changed, 378 insertions(+), 320 deletions(-)
 
 diff --git a/NEWS b/NEWS
 index 581e68548..08eb2ca41 100644
@@ -97,7 +97,7 @@ index d9ef1dd96..64913fcc2 100644
          	savebase = stkfreeze(stkstd,0);
          \fR...\fP
 diff --git a/src/cmd/ksh93/include/argnod.h b/src/cmd/ksh93/include/argnod.h
-index 400fc91d9..d355318b3 100644
+index 400fc91d9..16edd1a2a 100644
 --- a/src/cmd/ksh93/include/argnod.h
 +++ b/src/cmd/ksh93/include/argnod.h
 @@ -2,7 +2,7 @@
@@ -114,7 +114,7 @@ index 400fc91d9..d355318b3 100644
  	char		*iodelim;
  	off_t		iooffset;
 -	long		iosize;
-+	ptrdiff_t	iosize;
++	Sfoff_t		iosize;
  	char		*iovname;
  };
  
@@ -893,9 +893,29 @@ index 950c6f08b..1ce98bc6b 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 78a2ad9ef..23b94852a 100644
+index 78a2ad9ef..10366198c 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
+@@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
+ static void	sftrack(Sfio_t*,int,void*);
+ static const Sfdisc_t eval_disc = { NULL, NULL, NULL, eval_exceptf, NULL};
+ static Sfdisc_t tee_disc = {NULL,tee_write,NULL,NULL,NULL};
+-static Sfio_t	*subopen(Sfio_t*, off_t, long);
++static Sfio_t	*subopen(Sfio_t*, off_t, Sfoff_t);
+ static const Sfdisc_t sub_disc = { subread, 0, 0, subexcept, 0 };
+ 
+ struct subfile
+@@ -351,8 +351,8 @@ struct subfile
+ 	Sfdisc_t	disc;
+ 	Sfio_t		*oldsp;
+ 	off_t		offset;
+-	long		size;
+-	long		left;
++	Sfoff_t		size;
++	Sfoff_t		left;
+ };
+ 
+ struct Eof
 @@ -384,7 +384,7 @@ struct Match
  };
  
@@ -1228,17 +1248,33 @@ index 78a2ad9ef..23b94852a 100644
  		/* move to next string */
  		ep->argv++;
  	}
-@@ -2415,8 +2418,8 @@ static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
+@@ -2389,7 +2392,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
+  * the stream <sp> starting at offset <offset>
+  * The stream can be read with the normal stream operations
+  */
+-static Sfio_t *subopen(Sfio_t* sp, off_t offset, long size)
++static Sfio_t *subopen(Sfio_t* sp, off_t offset, Sfoff_t size)
+ {
+ 	struct subfile *disp;
+ 	if(sfseek(sp,offset,SEEK_SET) <0)
+@@ -2415,12 +2418,12 @@ static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
  	sfseek(disp->oldsp,disp->offset,SEEK_SET);
  	if(disp->left == 0)
  		return 0;
 -	if(size > disp->left)
 -		size = disp->left;
+-	disp->left -= size;
+-	n = sfread(disp->oldsp,buff,size);
 +	if(size > (size_t)disp->left)
 +		size = (size_t)disp->left;
- 	disp->left -= size;
- 	n = sfread(disp->oldsp,buff,size);
++	disp->left -= (Sfoff_t)size;
++	n = sfread(disp->oldsp,buff,(size_t)size);
  	if(size>0)
+-		disp->offset += size;
++		disp->offset += (off_t)size;
+ 	return n;
+ }
+ 
 @@ -2461,7 +2464,8 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
  	int i,j;
  	char **arg;

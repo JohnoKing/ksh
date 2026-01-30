@@ -1,6 +1,6 @@
-From 9abb2e7177fb1e0e9a12cbeab319a41d05a3dfdb Mon Sep 17 00:00:00 2001
+From baf43d5090f46bfcee007e207c510e413141208e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:39 -0800
+Date: Fri, 30 Jan 2026 10:18:07 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -21,18 +21,18 @@ Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/bltins/alarm.c     |  4 +-
  src/cmd/ksh93/bltins/cd_pwd.c    |  4 +-
- src/cmd/ksh93/bltins/enum.c      | 18 ++++---
+ src/cmd/ksh93/bltins/enum.c      | 26 +++++-----
  src/cmd/ksh93/bltins/getopts.c   |  8 +--
  src/cmd/ksh93/bltins/hist.c      | 10 ++--
  src/cmd/ksh93/bltins/misc.c      | 20 ++++----
  src/cmd/ksh93/bltins/mkservice.c |  8 +--
- src/cmd/ksh93/bltins/read.c      | 83 +++++++++++++++++---------------
+ src/cmd/ksh93/bltins/read.c      | 85 +++++++++++++++++---------------
  src/cmd/ksh93/bltins/trap.c      | 16 +++---
  src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
  src/cmd/ksh93/bltins/ulimit.c    | 18 +++----
  src/cmd/ksh93/bltins/umask.c     |  8 +--
  src/cmd/ksh93/include/builtins.h |  4 +-
- 13 files changed, 122 insertions(+), 113 deletions(-)
+ 13 files changed, 127 insertions(+), 118 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -79,7 +79,7 @@ index 66a49780a..3755e0ee7 100644
  	}
  	sfputr(sfstdout,cp,'\n');
 diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
-index 37f2bdd38..10935a943 100644
+index 37f2bdd38..cdddea14a 100644
 --- a/src/cmd/ksh93/bltins/enum.c
 +++ b/src/cmd/ksh93/bltins/enum.c
 @@ -2,7 +2,7 @@
@@ -110,6 +110,24 @@ index 37f2bdd38..10935a943 100644
  {
  	return ((struct Enum *)fp)->nelem;
  }
+@@ -120,7 +120,7 @@ static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
+ {
+ 	Namval_t	*np;
+ 	struct Enum	*ep;
+-	int		n=0;
++	ptrdiff_t	n=0;
+ 	const char	*v;
+ 	NOT_USED(op);
+ 	np = *(Namval_t**)(fp+1);
+@@ -137,7 +137,7 @@ static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
+ 		if(str[4]=='v')
+ 			sfprintf(out,"\b%s\b",ep->values[n]);
+ 		else
+-			sfprintf(out,"\b%d\b",n);
++			sfprintf(out,"\b%td\b",n);
+ 	}
+ 	else if(strcmp(str,"case")==0)
+ 	{
 @@ -155,8 +155,8 @@ static Namfun_t *clone_enum(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
  	NOT_USED(np);
  	NOT_USED(mp);
@@ -119,6 +137,19 @@ index 37f2bdd38..10935a943 100644
 +	ep = sh_newof(0,struct Enum,1,(size_t)pp->nelem*sizeof(char*));
 +	memcpy(ep,pp,sizeof(struct Enum)+(size_t)pp->nelem*sizeof(char*));
  	return &ep->hdr;
+ }
+ 
+@@ -200,10 +200,10 @@ static char* get_enum(Namval_t* np, Namfun_t *fp)
+ {
+ 	static char buff[6];
+ 	struct Enum *ep = (struct Enum*)fp;
+-	long n = nv_getn(np,fp);
++	ptrdiff_t n = nv_getn(np,fp);
+ 	if(n < ep->nelem)
+ 		return (char*)ep->values[n];
+-	sfsprintf(buff,sizeof(buff),"%u%c",n,0);
++	sfsprintf(buff,sizeof(buff),"%td%c",n,0);
+ 	return buff;
  }
  
 @@ -211,7 +211,9 @@ const Namdisc_t ENUM_disc = { 0, put_enum, get_enum, nv_getn, 0, 0, clone_enum }
@@ -320,7 +351,7 @@ index b60980b2f..882b28e5d 100644
  
  	for (i = 0; cp = disctab[i]; i++)
 diff --git a/src/cmd/ksh93/bltins/read.c b/src/cmd/ksh93/bltins/read.c
-index 4c7c2c0fc..24123fc30 100644
+index 4c7c2c0fc..96ef0333d 100644
 --- a/src/cmd/ksh93/bltins/read.c
 +++ b/src/cmd/ksh93/bltins/read.c
 @@ -52,11 +52,11 @@ struct read_save
@@ -366,7 +397,7 @@ index 4c7c2c0fc..24123fc30 100644
  		flags &= ((1<<D_FLAG)-1);
  		flags |= (r=='n'?N_FLAG:NN_FLAG);
 -		len = opt_info.num;
-+		len = (ptrdiff_t)opt_info.num;
++		len = (ssize_t)opt_info.num;
  		break;
  	    case 'r':
  		flags |= R_FLAG;
@@ -478,7 +509,7 @@ index 4c7c2c0fc..24123fc30 100644
  						m++;
  					if(m>0)
  						cp = (unsigned char*)buf;
-@@ -425,7 +428,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -425,34 +428,34 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
  					}
  				}
@@ -487,7 +518,11 @@ index 4c7c2c0fc..24123fc30 100644
  				{
  					*v++ = 0;
  					m = v-(char*)cp;
-@@ -436,23 +439,23 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 				}
+-				if((c=m)>size)
++				if((c=(ssize_t)m)>size)
+ 					c = size;
+ 				if(c>0)
  				{
  					if(c > (end-cur))
  					{

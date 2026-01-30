@@ -1,6 +1,6 @@
-From c942c1e05de0c409b3178271742868c22230cd1a Mon Sep 17 00:00:00 2001
+From 8924cc98d18888484314e7471e6f0274c27a4fbd Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:34 -0800
+Date: Fri, 30 Jan 2026 10:18:01 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -62,9 +62,9 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/tail.c           |  40 ++++-----
  src/lib/libcmd/tee.c            |   8 +-
  src/lib/libcmd/uname.c          |   6 +-
- src/lib/libcmd/uniq.c           |  39 +++++----
+ src/lib/libcmd/uniq.c           |  40 ++++-----
  src/lib/libcmd/wclib.c          |  34 ++++----
- 36 files changed, 529 insertions(+), 512 deletions(-)
+ 36 files changed, 529 insertions(+), 513 deletions(-)
 
 diff --git a/src/lib/libast/include/recfmt.h b/src/lib/libast/include/recfmt.h
 index d26ad6648..3be06b27d 100644
@@ -3423,7 +3423,7 @@ index f16a10608..c7313810c 100644
  			sfprintf(sfstdout, "%s%c", *(t = astconf(buf, NULL, NULL)) ? t : *(t = astconf(buf+3, NULL, NULL)) ? t :  "unknown", *argv ? ' ' : '\n');
  		}
 diff --git a/src/lib/libcmd/uniq.c b/src/lib/libcmd/uniq.c
-index 17b1679df..11a0f78fd 100644
+index 17b1679df..70bbf8e0e 100644
 --- a/src/lib/libcmd/uniq.c
 +++ b/src/lib/libcmd/uniq.c
 @@ -2,7 +2,7 @@
@@ -3435,7 +3435,7 @@ index 17b1679df..11a0f78fd 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -79,12 +79,14 @@ static const char usage[] =
+@@ -79,12 +79,13 @@ static const char usage[] =
  
  typedef int (*Compare_f)(const char*, const char*, size_t);
  
@@ -3443,17 +3443,16 @@ index 17b1679df..11a0f78fd 100644
 +static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, ptrdiff_t width, int mode, int* all, Compare_f compare)
  {
 -	int n, f, outsize=0, mb = mbwide();
-+	ptrdiff_t n, f;
-+	ssize_t outsize=0;
++	ptrdiff_t n, f, outsize=0,cwidth=0,sep;
 +	int mb = mbwide();
  	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
  	char *orecp=NULL, *sbufp=0, *outbuff;
 -	int reclen,oreclen= -1,count=0,cwidth=0,sep,next;
-+	ptrdiff_t reclen,oreclen= -1,count=0,cwidth=0,sep,next;
++	ptrdiff_t reclen,oreclen= -1,count=0,next;
  	if(mode&C_FLAG)
  		cwidth = CWIDTH+1;
  	while(1)
-@@ -94,7 +96,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -94,7 +95,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
  		{
  			n = sfvalue(fdin);
@@ -3462,7 +3461,7 @@ index 17b1679df..11a0f78fd 100644
  			bufp[n++] = '\n';
  		}
  		else
-@@ -143,7 +145,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -143,7 +144,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  		}
  		else
  			reclen = -2;
@@ -3471,7 +3470,7 @@ index 17b1679df..11a0f78fd 100644
  		{
  			count++;
  			if (!all)
-@@ -169,7 +171,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -169,7 +170,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  							f = 0;
  							while(f < CWIDTH-1)
  								outp[f++] = ' ';
@@ -3480,7 +3479,7 @@ index 17b1679df..11a0f78fd 100644
  							outp[f] = ' ';
  						}
  						else if(count<MAXCNT)
-@@ -189,9 +191,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -189,9 +190,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  							outsize -= (CWIDTH+1);
  							if(outp!=sbufp)
  							{
@@ -3492,7 +3491,7 @@ index 17b1679df..11a0f78fd 100644
  								sfwrite(fdout,outp,0);
  								outp = sbufp;
  							}
-@@ -200,7 +202,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -200,7 +201,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  							sfprintf(fdout,"%4d ",count+1);
  						}
  					}
@@ -3501,7 +3500,7 @@ index 17b1679df..11a0f78fd 100644
  						return 1;
  				}
  			}
-@@ -209,7 +211,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -209,7 +210,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  			break;
  		if(count = next)
  		{
@@ -3510,7 +3509,7 @@ index 17b1679df..11a0f78fd 100644
  				return 1;
  			if(*all >= 0)
  				*all = 1;
-@@ -225,12 +227,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -225,12 +226,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  		{
  			/* no room in outp, clear lock and use side buffer */
  			sfwrite(fdout,outp,0);
@@ -3520,13 +3519,14 @@ index 17b1679df..11a0f78fd 100644
  				return 1;
  		}
  		else
- 			outsize = n+cwidth+sep;
+-			outsize = n+cwidth+sep;
 -		memcpy(outp+cwidth+sep,bufp,n);
++			outsize = n + cwidth + sep;
 +		memcpy(outp+cwidth+sep,bufp,(size_t)n);
  		if(sep)
  			outp[cwidth] = '\n';
  		oreclen = reclen;
-@@ -244,7 +247,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
+@@ -244,7 +246,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
  {
  	int mode=0;
  	char *cp;
@@ -3535,7 +3535,7 @@ index 17b1679df..11a0f78fd 100644
  	Sfio_t *fpin, *fpout;
  	int* all = 0;
  	int sep;
-@@ -285,15 +288,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
+@@ -285,15 +287,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
  			continue;
  		case 'f':
  			if(*opt_info.option=='-')

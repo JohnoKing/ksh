@@ -110,7 +110,7 @@ struct _dtmethod_s
 /* structure to hold methods that manipulate an object */
 struct _dtdisc_s
 {	ptrdiff_t	key;	/* where the key resides 	*/
-	ptrdiff_t	size;	/* key size and type		*/
+	ssize_t		size;	/* key size and type		*/
 	ptrdiff_t	link;	/* offset to Dtlink_t field	*/
 	Dtmake_f	makef;	/* object constructor		*/
 	Dtfree_f	freef;	/* object destructor		*/

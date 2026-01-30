@@ -219,7 +219,7 @@ int        sfwalk(Sfwalk_f walkf, void* data, int type);
 .nf
 .ft 5
 ssize_t    sfmaxr(ssize_t maxr, int s);
-ssize_t    sfslen();
+ptrdiff_t   sfslen();
 int        sfulen(Sfulong_t v);
 int        sfllen(Sflong_t v);
 int        sfdlen(Sfdouble_t v);
@@ -1950,7 +1950,7 @@ to use only about that much memory to construct a record, a non-positive bound
 allows \f3sfgetr()\fP to use as much memory as necessary.
 \f3sfmaxr()\fP sets the value only if \f3set\fP is non-zero.
 It returns the value before setting or the current value if not setting.
-.Ss "  ssize_t sfslen()"
+.Ss "  ptrdiff_t sfslen()"
 This function returns the length of a string just constructed
 by \f3sfsprintf()\fP or \f3sfprints()\fP.  See also \f3sfvalue()\fP.
 .Ss "  int sfulen(Sfulong_t v)"

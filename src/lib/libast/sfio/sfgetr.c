@@ -29,7 +29,7 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 	     int	rc,	/* record separator	*/
 	     int	type)
 {
-	ptrdiff_t	n, un;
+	ssize_t		n, un;
 	uchar		*s, *ends, *us;
 	int		found;
 	Sfrsrv_t*	rsrv;
@@ -48,7 +48,7 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 	type = type < 0 ? SFIO_LASTR : type == 1 ? SFIO_STRING : type;
 
 	if(type&SFIO_LASTR) /* return the broken record */
-	{	if((f->flags&SFIO_STRING) && (un = f->endb - f->next))
+	{	if((f->flags&SFIO_STRING) && (un = (ssize_t)(f->endb - f->next)))
 		{	us = f->next;
 			f->next = f->endb;
 			found = 1;
@@ -93,14 +93,14 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 			    ((f->flags&SFIO_STRING) && (f->bits&SFIO_BOTH) ) ) )
 			{	/* returning data in buffer */
 				us = f->next;
-				un = s - f->next;
+				un = (ssize_t)(s - f->next);
 				f->next = s;
 				goto done;
 			}
 		}
 
 		/* amount to be read */
-		n = s - f->next;
+		n = (ssize_t)(s - f->next);
 
 		if(!found && (_Sfmaxr > 0 && un+n+1 >= _Sfmaxr || (f->flags&SFIO_STRING))) /* already exceed limit */
 		{	us = NULL;

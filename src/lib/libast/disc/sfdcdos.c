@@ -95,7 +95,8 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 {
 	Dosdisc_t *dp = (Dosdisc_t*)disc;
 	char *cp = (char*)buff, *first, *cpmax;
-	ptrdiff_t m, n, count;
+	ptrdiff_t m, count;
+	ssize_t n;
 	if(dp->extra)
 	{
 		dp->extra=0;
@@ -187,7 +188,7 @@ done:
 		if(dp->maptable && dp->lmax > dp->maptable[dp->maptop-1].logical+CHUNK)
 			addmapping(dp);
 	}
-	return n-count;
+	return n-(ssize_t)count;
 }
 
 /*

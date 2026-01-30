@@ -1,6 +1,6 @@
-From 58895647347c09c715a4256c9373d607c204b699 Mon Sep 17 00:00:00 2001
+From c5d7545e6cca42a4cc7ebfe0b0774605403cbdcc Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:29 -0800
+Date: Fri, 30 Jan 2026 10:17:57 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -331,7 +331,7 @@ index 7e423478d..0c2b3164b 100644
 +	return ret;
  }
 diff --git a/src/lib/libast/comp/iconv.c b/src/lib/libast/comp/iconv.c
-index df21cef5b..2eacea230 100644
+index df21cef5b..519b6e4a5 100644
 --- a/src/lib/libast/comp/iconv.c
 +++ b/src/lib/libast/comp/iconv.c
 @@ -2,7 +2,7 @@
@@ -729,8 +729,8 @@ index df21cef5b..2eacea230 100644
 -		    (!(fb = (char*)sfreserve(ip, n, locked = 0)) || !(fo = sfvalue(ip))))
 +		if (m != SFIO_UNBOUND)
 +			m = -(m & (((~0))>>1));
-+		if ((!(fb = (char*)sfreserve(ip, m, locked = SFIO_LOCKR)) || !(fo = (size_t)sfvalue(ip))) &&
-+		    (!(fb = (char*)sfreserve(ip, m, locked = 0)) || !(fo = (size_t)sfvalue(ip))))
++		if ((!(fb = (char*)sfreserve(ip, (ssize_t)m, locked = SFIO_LOCKR)) || !(fo = (size_t)sfvalue(ip))) &&
++		    (!(fb = (char*)sfreserve(ip, (ssize_t)m, locked = 0)) || !(fo = (size_t)sfvalue(ip))))
  			break;
  		fs = fb;
  		fn = fo;

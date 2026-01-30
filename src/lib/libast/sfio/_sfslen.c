@@ -20,7 +20,7 @@
 
 #undef sfslen
 
-ssize_t sfslen(void)
+ptrdiff_t sfslen(void)
 {
 	return __sf_slen();
 }

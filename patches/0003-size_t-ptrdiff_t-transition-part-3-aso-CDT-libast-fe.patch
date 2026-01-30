@@ -1,6 +1,6 @@
-From 4cc45b25817728995c0992394530855f0986d8a5 Mon Sep 17 00:00:00 2001
+From 9d7171495029273faa4132ede3341f1b8d9fe746 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:26 -0800
+Date: Fri, 30 Jan 2026 10:17:54 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -17,7 +17,7 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libast/aso/aso-fcntl.c   | 33 +++++------
+ src/lib/libast/aso/aso-fcntl.c   | 35 ++++++------
  src/lib/libast/aso/aso-sem.c     | 20 +++----
  src/lib/libast/aso/aso.c         | 98 ++++++++++++++++----------------
  src/lib/libast/aso/asorelax.c    |  5 +-
@@ -44,12 +44,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/cdt.h     | 10 ++--
  src/lib/libast/man/aso.3         |  6 +-
  src/lib/libast/sfio/_sfopen.c    |  1 +
+ src/lib/libast/sfio/_sfslen.c    |  1 +
  src/lib/libast/sfio/sfclose.c    |  1 +
+ src/lib/libast/sfio/sfextern.c   |  1 +
  src/lib/libast/sfio/sfstack.c    |  1 +
- 29 files changed, 155 insertions(+), 143 deletions(-)
+ 31 files changed, 158 insertions(+), 144 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
-index abc8227f5..fda7817f3 100644
+index abc8227f5..462fb0fe2 100644
 --- a/src/lib/libast/aso/aso-fcntl.c
 +++ b/src/lib/libast/aso/aso-fcntl.c
 @@ -2,7 +2,7 @@
@@ -161,7 +163,7 @@ index abc8227f5..fda7817f3 100644
  {
  	APL_t*		apl = (APL_t*)data;
  	struct flock	lock;
-@@ -171,7 +172,7 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
+@@ -171,10 +172,10 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
  	else
  	{
  		lock.l_type = F_WRLCK;
@@ -169,7 +171,11 @@ index abc8227f5..fda7817f3 100644
 +		k = HASH(p, (ptrdiff_t)apl->size) + 1;
  	}
  	lock.l_whence = SEEK_SET;
- 	lock.l_start = k - 1;
+-	lock.l_start = k - 1;
++	lock.l_start = (off_t)k - 1;
+ 	lock.l_len = 1;
+ 	return fcntl(apl->fd, F_SETLKW, &lock) < 0 ? -1 : k;
+ }
 diff --git a/src/lib/libast/aso/aso-sem.c b/src/lib/libast/aso/aso-sem.c
 index ac6d5478b..74c2a78a0 100644
 --- a/src/lib/libast/aso/aso-sem.c
@@ -1102,7 +1108,7 @@ index 9aacfc44b..988d058cb 100644
  extern uint8_t			asoinc8(uint8_t volatile*);
  extern uint8_t			asodec8(uint8_t volatile*);
 diff --git a/src/lib/libast/include/cdt.h b/src/lib/libast/include/cdt.h
-index f1ae3a241..b2eb3628a 100644
+index f1ae3a241..3b1e628b4 100644
 --- a/src/lib/libast/include/cdt.h
 +++ b/src/lib/libast/include/cdt.h
 @@ -2,7 +2,7 @@
@@ -1122,7 +1128,7 @@ index f1ae3a241..b2eb3628a 100644
 -	int		size;	/* key size and type		*/
 -	int		link;	/* offset to Dtlink_t field	*/
 +{	ptrdiff_t	key;	/* where the key resides 	*/
-+	ptrdiff_t	size;	/* key size and type		*/
++	ssize_t		size;	/* key size and type		*/
 +	ptrdiff_t	link;	/* offset to Dtlink_t field	*/
  	Dtmake_f	makef;	/* object constructor		*/
  	Dtfree_f	freef;	/* object destructor		*/
@@ -1179,10 +1185,34 @@ index 222a9e051..c46186a60 100644
  *                                                                      *
  ***********************************************************************/
  #include	"sfhdr.h"
+diff --git a/src/lib/libast/sfio/_sfslen.c b/src/lib/libast/sfio/_sfslen.c
+index 6fdb1137f..9fdc31ac4 100644
+--- a/src/lib/libast/sfio/_sfslen.c
++++ b/src/lib/libast/sfio/_sfslen.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfhdr.h"
 diff --git a/src/lib/libast/sfio/sfclose.c b/src/lib/libast/sfio/sfclose.c
 index 11a68e320..81b37722a 100644
 --- a/src/lib/libast/sfio/sfclose.c
 +++ b/src/lib/libast/sfio/sfclose.c
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ #include	"sfhdr.h"
+diff --git a/src/lib/libast/sfio/sfextern.c b/src/lib/libast/sfio/sfextern.c
+index 33a59da71..105e9018b 100644
+--- a/src/lib/libast/sfio/sfextern.c
++++ b/src/lib/libast/sfio/sfextern.c
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *

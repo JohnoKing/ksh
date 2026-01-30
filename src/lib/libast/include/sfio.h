@@ -60,7 +60,7 @@ struct _sfdisc_s
 typedef struct _sffmt_s	Sffmt_t;
 typedef int		(*Sffmtext_f)(Sfio_t*, void*, Sffmt_t*);
 typedef int		(*Sffmtevent_f)(Sfio_t*, int, void*, Sffmt_t*);
-typedef ssize_t		(*Sffmtreload_f)(ssize_t, char, void*, Sffmt_t*);
+typedef ptrdiff_t	(*Sffmtreload_f)(ptrdiff_t, char, void*, Sffmt_t*);
 struct _sffmt_s
 {	long		version;/* version of this structure		*/
 	Sffmtext_f	extf;	/* function to process arguments	*/
@@ -71,7 +71,7 @@ struct _sffmt_s
 	va_list		args;	/* corresponding arg list		*/
 
 	int		fmt;	/* format character			*/
-	ssize_t		size;	/* object size				*/
+	ptrdiff_t	size;	/* object size				*/
 	int		flags;	/* formatting flags			*/
 	ptrdiff_t	width;	/* width of field			*/
 	ptrdiff_t	precis;	/* precision required			*/
@@ -172,8 +172,8 @@ struct _sffmt_s
 #define SFIO_BUFSIZE	8192	/* default buffer size			*/
 #define SFIO_UNBOUND	(-1)	/* unbounded buffer size		*/
 
-extern ssize_t		_Sfi;
-extern ssize_t		_Sfmaxr;
+extern ptrdiff_t	_Sfi;
+extern ptrdiff_t	_Sfmaxr;
 
 /* standard in/out/err streams */
 extern Sfio_t*		sfstdin;
@@ -255,8 +255,8 @@ extern ptrdiff_t	_sfputl(Sfio_t*, Sflong_t);
 extern ptrdiff_t	_sfputu(Sfio_t*, Sfulong_t);
 extern ptrdiff_t	_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
 
-extern ptrdiff_t	_sfflsbuf(Sfio_t*, ssize_t);
-extern ptrdiff_t	_sffilbuf(Sfio_t*, ssize_t);
+extern ptrdiff_t	_sfflsbuf(Sfio_t*, ptrdiff_t);
+extern ptrdiff_t	_sffilbuf(Sfio_t*, ptrdiff_t);
 
 extern int		_sfdlen(Sfdouble_t);
 extern int		_sfllen(Sflong_t);
@@ -270,7 +270,7 @@ extern int		sferror(Sfio_t*);
 extern int		sffileno(Sfio_t*);
 extern int		sfstacked(Sfio_t*);
 extern ssize_t		sfvalue(Sfio_t*);
-extern ssize_t		sfslen(void);
+extern ptrdiff_t	sfslen(void);
 extern ssize_t		sfmaxr(ssize_t, int);
 
 /* coding long integers in a portable and compact fashion */
@@ -333,7 +333,7 @@ __INLINE__ int sferror(Sfio_t* f)		{ return __sf_error(f); }
 __INLINE__ int sfclrerr(Sfio_t* f)		{ return __sf_clrerr(f); }
 __INLINE__ int sfstacked(Sfio_t* f)		{ return __sf_stacked(f); }
 __INLINE__ ssize_t sfvalue(Sfio_t* f)		{ return __sf_value(f); }
-__INLINE__ ssize_t sfslen()			{ return __sf_slen(); }
+__INLINE__ ptrdiff_t sfslen()			{ return __sf_slen(); }
 __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
 
 #else

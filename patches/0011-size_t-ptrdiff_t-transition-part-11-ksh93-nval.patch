@@ -1,6 +1,6 @@
-From 81a952a4ef307693ebf7240e17c6bfe36bb37191 Mon Sep 17 00:00:00 2001
+From 39e09a6ded948587b6731273091eff95d07f15c2 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:41 -0800
+Date: Fri, 30 Jan 2026 10:18:09 -0800
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -43,13 +43,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/national.h |   4 +-
  src/cmd/ksh93/include/nval.h     |  32 ++--
  src/cmd/ksh93/nval.3             |  12 +-
- src/cmd/ksh93/sh/array.c         | 164 ++++++++++----------
+ src/cmd/ksh93/sh/array.c         | 169 ++++++++++----------
  src/cmd/ksh93/sh/name.c          | 258 ++++++++++++++++---------------
  src/cmd/ksh93/sh/nvdisc.c        |  33 ++--
  src/cmd/ksh93/sh/nvtree.c        |  71 +++++----
  src/cmd/ksh93/sh/nvtype.c        | 183 +++++++++++-----------
  src/cmd/ksh93/sh/string.c        |  59 +++----
- 10 files changed, 419 insertions(+), 407 deletions(-)
+ 10 files changed, 422 insertions(+), 409 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/name.h b/src/cmd/ksh93/include/name.h
 index 659f570d8..387a02883 100644
@@ -252,7 +252,7 @@ index 2cbdbcd78..8b697995f 100644
  The \f3nv_getval()\fP function returns the value of the given
  name-value pair as a string.  A \f3NULL\fP return value indicates
 diff --git a/src/cmd/ksh93/sh/array.c b/src/cmd/ksh93/sh/array.c
-index 3d2af19dd..3771fb6b9 100644
+index 3d2af19dd..92f6e35e9 100644
 --- a/src/cmd/ksh93/sh/array.c
 +++ b/src/cmd/ksh93/sh/array.c
 @@ -2,7 +2,7 @@
@@ -405,7 +405,7 @@ index 3d2af19dd..3771fb6b9 100644
  	char			*name, *sub=0;
 -	int			nelem, skipped=0;
 +	int			skipped=0;
-+	ptrdiff_t		nelem;
++	long			nelem;
  	Dt_t			*otable=ap->table;
  	struct index_array	*aq = (struct index_array*)ap, *ar;
  	if(flags&NV_MOVE)
@@ -440,7 +440,8 @@ index 3d2af19dd..3771fb6b9 100644
 +	ptrdiff_t i, newsize = arsize(arp,maxi+1);
  	if (maxi >= ARRAY_MAX)
  	{
- 		errormsg(SH_DICT,ERROR_exit(1),e_subscript,fmtint(maxi,1));
+-		errormsg(SH_DICT,ERROR_exit(1),e_subscript,fmtint(maxi,1));
++		errormsg(SH_DICT,ERROR_exit(1),e_subscript,fmtint((intmax_t)maxi,1));
  		UNREACHABLE();
  	}
 -	i = (newsize - 1) * sizeof(void*) + newsize;
@@ -491,7 +492,7 @@ index 3d2af19dd..3771fb6b9 100644
  	char		*value=0;
  	Namfun_t	*fp;
 -	int		nelem = 0;
-+	ptrdiff_t	nelem = 0;
++	long		nelem = 0;
  	if(fun && (ap = nv_arrayptr(np)))
  	{
  		/*
@@ -609,12 +610,13 @@ index 3d2af19dd..3771fb6b9 100644
  	}
  	fp->dim = 0;
  	return fp->curi;
-@@ -1355,11 +1355,11 @@ int nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
+@@ -1355,15 +1355,16 @@ int nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
  
  static void array_fixed_setdata(Namval_t *np,Namarr_t* ap,struct fixed_array* fp)
  {
 -	int n = ap->nelem;
-+	ptrdiff_t n = ap->nelem;
++	ptrdiff_t i_n;
++	long n = ap->nelem;
  	ap->nelem = 1;
  	fp->size = fp->ptr?sizeof(void*):nv_datasize(np,0);
  	ap->nelem = n;
@@ -623,7 +625,12 @@ index 3d2af19dd..3771fb6b9 100644
  	if(fp->ptr)
  	{
  		char **cp = (char**)fp->data;
-@@ -1372,7 +1372,7 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
+-		for(n=fp->nelem; n-->0;)
++		for(i_n=fp->nelem; i_n-->0;)
+ 			*cp++ = Empty;
+ 	}
+ }
+@@ -1372,7 +1373,7 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
  {
  	Namarr_t		*ap;
  	struct fixed_array	*fp;
@@ -632,7 +639,7 @@ index 3d2af19dd..3771fb6b9 100644
  	char			*ep=cp;
  	while(*ep=='[')
  	{
-@@ -1381,23 +1381,23 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
+@@ -1381,23 +1382,23 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
  	}
  	if(*ep)
  		return 0;
@@ -663,7 +670,7 @@ index 3d2af19dd..3771fb6b9 100644
  		if(sz<0)
  		{
  			free(ap);
-@@ -1409,7 +1409,7 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
+@@ -1409,7 +1410,7 @@ static int array_fixed_init(Namval_t *np, char *sub, char *cp)
  	nv_disc(np,(Namfun_t*)ap, NV_FIRST);
  	fp->ptr = !np->nvsize;
  	nv_onattr(np,NV_ARRAY|(fp->ptr?0:NV_NOFREE));
@@ -672,7 +679,7 @@ index 3d2af19dd..3771fb6b9 100644
  	for(sz=1; --n>=0;)
  		sz = fp->incr[n] = sz*fp->max[n+1];
  	fp->nelem = sz*fp->max[0];
-@@ -1422,21 +1422,21 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
+@@ -1422,21 +1423,21 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
  	Namarr_t		*ap = nv_arrayptr(np);
  	struct fixed_array	*fp = (struct fixed_array*)ap->fixed;
  	char			*ep;
@@ -697,7 +704,7 @@ index 3d2af19dd..3771fb6b9 100644
  	fp->cur[n] = size;
  	if(size >= fp->max[n] || (size < 0))
  	{
-@@ -1447,14 +1447,14 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
+@@ -1447,14 +1448,14 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
  	sz = fp->curi + fp->cur[n]*fp->incr[n];
  	for(n++,ep=cp;*ep=='['; ep=cp,n++)
  	{
@@ -714,7 +721,7 @@ index 3d2af19dd..3771fb6b9 100644
  		if(size >= fp->max[n] || (size < 0))
  		{
  			errormsg(SH_DICT,ERROR_exit(1),e_subscript, nv_name(np));
-@@ -1465,10 +1465,10 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
+@@ -1465,10 +1466,10 @@ static char *array_fixed(Namval_t *np, char *sub, char *cp)
  		sz += fp->cur[n]*fp->incr[n];
  	}
  skip:
@@ -727,7 +734,7 @@ index 3d2af19dd..3771fb6b9 100644
  		fp->cur[n++] = 0;
  	fp->curi = sz;
  	return cp-1;
-@@ -1481,7 +1481,9 @@ skip:
+@@ -1481,7 +1482,9 @@ skip:
   */
  char *nv_endsubscript(Namval_t *np, char *cp, int mode)
  {
@@ -738,7 +745,7 @@ index 3d2af19dd..3771fb6b9 100644
  	char *sp = cp+1;
  	assert(*cp=='[');
  	/* first find matching ']' */
-@@ -1502,7 +1504,7 @@ char *nv_endsubscript(Namval_t *np, char *cp, int mode)
+@@ -1502,7 +1505,7 @@ char *nv_endsubscript(Namval_t *np, char *cp, int mode)
  	{
  		/* strip escape characters */
  		count = stktell(sh.stk);
@@ -747,7 +754,7 @@ index 3d2af19dd..3771fb6b9 100644
  		sh_trim(sp=stkptr(sh.stk,count));
  	}
  	if(mode && np)
-@@ -1565,7 +1567,7 @@ Namval_t *nv_opensub(Namval_t* np)
+@@ -1565,7 +1568,7 @@ Namval_t *nv_opensub(Namval_t* np)
  #if SHOPT_FIXEDARRAY
  		else if(fp)
  		{
@@ -756,7 +763,7 @@ index 3d2af19dd..3771fb6b9 100644
  			if((fp->dim+1) < fp->ndim)
  			{
  				fp->dim++;
-@@ -1587,7 +1589,7 @@ char	*nv_getsub(Namval_t* np)
+@@ -1587,7 +1590,7 @@ char	*nv_getsub(Namval_t* np)
  {
  	static char numbuff[NUMSIZE+1];
  	struct index_array *ap;
@@ -765,7 +772,7 @@ index 3d2af19dd..3771fb6b9 100644
  	char *cp = &numbuff[NUMSIZE];
  	if(!np || !(ap = (struct index_array*)nv_arrayptr(np)))
  		return NULL;
-@@ -1598,7 +1600,7 @@ char	*nv_getsub(Namval_t* np)
+@@ -1598,7 +1601,7 @@ char	*nv_getsub(Namval_t* np)
  		np = nv_namptr(ap->xp,0);
  		if(!np->nvalue)
  			np->nvalue = sh_malloc(sizeof(uint16_t));
@@ -774,7 +781,7 @@ index 3d2af19dd..3771fb6b9 100644
  		return nv_getval(np);
  	}
  	if((dot = ap->cur)==0)
-@@ -1606,7 +1608,7 @@ char	*nv_getsub(Namval_t* np)
+@@ -1606,7 +1609,7 @@ char	*nv_getsub(Namval_t* np)
  	else while(n=dot)
  	{
  		dot /= 10;
@@ -783,7 +790,7 @@ index 3d2af19dd..3771fb6b9 100644
  	}
  	return cp;
  }
-@@ -1629,10 +1631,10 @@ int nv_aindex(Namval_t* np)
+@@ -1629,10 +1632,10 @@ int nv_aindex(Namval_t* np)
  	return ((struct index_array*)(ap))->cur & ARRAY_MASK;
  }
  
@@ -796,7 +803,7 @@ index 3d2af19dd..3771fb6b9 100644
  #if SHOPT_FIXEDARRAY
  	if(!ap || is_associative(&ap->header) || ap->header.fixed)
  #else
-@@ -1799,7 +1801,7 @@ void *nv_associative(Namval_t *np,const char *sp,int mode)
+@@ -1799,7 +1802,7 @@ void *nv_associative(Namval_t *np,const char *sp,int mode)
   */
  void nv_setvec(Namval_t *np,int append,int argc,char *argv[])
  {

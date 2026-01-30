@@ -42,7 +42,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 		if((f->flags&SFIO_STRING) && f->next >= f->endb )
 		{	sn = sn < 0 ? (ptrdiff_t)strlen(s) : (sn - (s-ss));
 			ss = (char*)s; /* save current checkpoint */
-			f->val = sn + (rc >= 0 ? 1 : 0); /* space requirement */
+			f->val = (ssize_t)sn + (rc >= 0 ? 1 : 0); /* space requirement */
 			f->bits |= SFIO_PUTR; /* tell sfflsbuf to use f->val */
 		}
 
@@ -72,7 +72,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 				Sfrsrv_t*	rsrv;
 
 				p = n + (rc >= 0 ? 1 : 0);
-				if(!(rsrv = _sfrsrv(f, p)) )
+				if(!(rsrv = _sfrsrv(f, (ssize_t)p)) )
 					n = 0;
 				else
 				{	if(n > 0)

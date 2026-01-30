@@ -443,7 +443,7 @@ static Namfun_t *array_clone(Namval_t *np, Namval_t *mp, int flags, Namfun_t *fp
 	Namval_t		*nq, *mq;
 	char			*name, *sub=0;
 	int			skipped=0;
-	ptrdiff_t		nelem;
+	long			nelem;
 	Dt_t			*otable=ap->table;
 	struct index_array	*aq = (struct index_array*)ap, *ar;
 	if(flags&NV_MOVE)
@@ -808,7 +808,7 @@ static struct index_array *array_grow(Namval_t *np, struct index_array *arp,ptrd
 	ptrdiff_t i, newsize = arsize(arp,maxi+1);
 	if (maxi >= ARRAY_MAX)
 	{
-		errormsg(SH_DICT,ERROR_exit(1),e_subscript,fmtint(maxi,1));
+		errormsg(SH_DICT,ERROR_exit(1),e_subscript,fmtint((intmax_t)maxi,1));
 		UNREACHABLE();
 	}
 	i = (newsize - 1) * (ptrdiff_t)sizeof(void*) + newsize;
@@ -967,7 +967,7 @@ Namarr_t *nv_setarray(Namval_t *np, void *(*fun)(Namval_t*,const char*,int))
 	Namarr_t	*ap;
 	char		*value=0;
 	Namfun_t	*fp;
-	ptrdiff_t	nelem = 0;
+	long		nelem = 0;
 	if(fun && (ap = nv_arrayptr(np)))
 	{
 		/*
@@ -1355,7 +1355,8 @@ ptrdiff_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 
 static void array_fixed_setdata(Namval_t *np,Namarr_t* ap,struct fixed_array* fp)
 {
-	ptrdiff_t n = ap->nelem;
+	ptrdiff_t i_n;
+	long n = ap->nelem;
 	ap->nelem = 1;
 	fp->size = fp->ptr?sizeof(void*):nv_datasize(np,0);
 	ap->nelem = n;
@@ -1363,7 +1364,7 @@ static void array_fixed_setdata(Namval_t *np,Namarr_t* ap,struct fixed_array* fp
 	if(fp->ptr)
 	{
 		char **cp = (char**)fp->data;
-		for(n=fp->nelem; n-->0;)
+		for(i_n=fp->nelem; i_n-->0;)
 			*cp++ = Empty;
 	}
 }

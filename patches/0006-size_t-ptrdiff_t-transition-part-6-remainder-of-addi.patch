@@ -1,6 +1,6 @@
-From 9c4690cef541a77c5c6cfc24804547ba297ba569 Mon Sep 17 00:00:00 2001
+From c9a79f28f7bca418b62ed51bec9f752a96f4328f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:32 -0800
+Date: Fri, 30 Jan 2026 10:17:59 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -23,7 +23,7 @@ Change in the number of warnings on Linux when compiling with clang using
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/dir/dirlib.h        |   7 +-
- src/lib/libast/disc/sfdcdos.c      |  32 +++----
+ src/lib/libast/disc/sfdcdos.c      |  35 ++++----
  src/lib/libast/disc/sfdcfilter.c   |   5 +-
  src/lib/libast/disc/sfdcmore.c     |  24 +++---
  src/lib/libast/disc/sfdcprefix.c   |  11 +--
@@ -39,6 +39,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/sfdisc.h    |   6 +-
  src/lib/libast/include/tm.h        |   5 +-
  src/lib/libast/include/vmalloc.h   |   7 +-
+ src/lib/libast/man/cdt.3           |   4 +-
  src/lib/libast/path/pathcanon.c    |   4 +-
  src/lib/libast/path/pathcd.c       |  15 ++--
  src/lib/libast/path/pathpath.c     |   4 +-
@@ -67,7 +68,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
  src/lib/libast/tm/tvtouch.c        |   4 +-
- 45 files changed, 336 insertions(+), 338 deletions(-)
+ 46 files changed, 340 insertions(+), 341 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index a7e8f227c..4bce98d61 100644
@@ -102,7 +103,7 @@ index a7e8f227c..4bce98d61 100644
  
  #undef	_DIRENT_H
 diff --git a/src/lib/libast/disc/sfdcdos.c b/src/lib/libast/disc/sfdcdos.c
-index 41812895d..034c5576c 100644
+index 41812895d..7f026102e 100644
 --- a/src/lib/libast/disc/sfdcdos.c
 +++ b/src/lib/libast/disc/sfdcdos.c
 @@ -2,7 +2,7 @@
@@ -156,16 +157,17 @@ index 41812895d..034c5576c 100644
  	{
  		dp->mapsize *= 2;
  		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))
-@@ -94,7 +95,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+@@ -94,7 +95,8 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
  {
  	Dosdisc_t *dp = (Dosdisc_t*)disc;
  	char *cp = (char*)buff, *first, *cpmax;
 -	int n, count, m;
-+	ptrdiff_t m, n, count;
++	ptrdiff_t m, count;
++	ssize_t n;
  	if(dp->extra)
  	{
  		dp->extra=0;
-@@ -157,9 +158,9 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+@@ -157,9 +159,9 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
  		}
  	}
  	/* save original discipline inside buffer */
@@ -177,7 +179,7 @@ index 41812895d..034c5576c 100644
  	count=1;
  	while(1)
  	{
-@@ -171,7 +172,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+@@ -171,7 +173,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
  		if(cp<=cpmax && *cp!='\n')
  			continue;
  		if((m=(cp-first)-1) >0)
@@ -186,7 +188,16 @@ index 41812895d..034c5576c 100644
  		if(cp > cpmax)
  			break;
  		count++;
-@@ -238,7 +239,8 @@ static Sfoff_t dos_seek(Sfio_t *iop, Sfoff_t offset, int whence, Sfdisc_t* disc)
+@@ -186,7 +188,7 @@ done:
+ 		if(dp->maptable && dp->lmax > dp->maptable[dp->maptop-1].logical+CHUNK)
+ 			addmapping(dp);
+ 	}
+-	return n-count;
++	return n-(ssize_t)count;
+ }
+ 
+ /*
+@@ -238,7 +240,8 @@ static Sfoff_t dos_seek(Sfio_t *iop, Sfoff_t offset, int whence, Sfdisc_t* disc)
  	Dosdisc_t *dp = (Dosdisc_t*)disc;
  	struct map dummy, *mp=0;
  	Sfoff_t physical;
@@ -196,7 +207,7 @@ index 41812895d..034c5576c 100644
  retry:
  	switch(whence)
  	{
-@@ -268,9 +270,9 @@ retry:
+@@ -268,9 +271,9 @@ retry:
  		break;
  	}
  	if(sfsetbuf(iop,(char*)iop,0))
@@ -946,6 +957,28 @@ index 7d8ac6c82..19c317417 100644
  
  /* legacy */
  #define vmnewof(v,p,t,n,x)	( (t*)_Vm_newoldof_((v), (p), sizeof(t)*(n)+(x), 1) )
+diff --git a/src/lib/libast/man/cdt.3 b/src/lib/libast/man/cdt.3
+index cf8d9c8ac..36ce85043 100644
+--- a/src/lib/libast/man/cdt.3
++++ b/src/lib/libast/man/cdt.3
+@@ -109,7 +109,7 @@ ssize_t   dtstat(Dt_t* dt, Dtstat_t* st);
+ .Ce
+ .Ss "HASH FUNCTION"
+ .Cs
+-unsigned int dtstrhash(unsigned int h, char* str, int n);
++unsigned int dtstrhash(unsigned int h, void* str, ssize_t n);
+ .Ce
+ .SH DESCRIPTION
+ .PP
+@@ -719,7 +719,7 @@ The reported levels is limited to less than \f3DT_MAXSIZE\fP.
+ \f3char* mesg\fP:
+ A summary message of some of the statistics.
+ .Ss "HASH FUNCTIONS"
+-.Ss "  unsigned int dtstrhash(unsigned int h, char* str, int n)"
++.Ss "  unsigned int dtstrhash(unsigned int h, void* str, ssize_t n);"
+ This function computes a new hash value from string \f3str\fP and
+ seed value \f3h\fP.
+ If \f3n\fP is positive, \f3str\fP is a byte array of length \f3n\fP;
 diff --git a/src/lib/libast/path/pathcanon.c b/src/lib/libast/path/pathcanon.c
 index 15d20b28b..be0b5eceb 100644
 --- a/src/lib/libast/path/pathcanon.c

@@ -1884,7 +1884,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				if(n==S_ESC)
 					c--;
 				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,(size_t)c))>0)
-					iop->iosize += c;
+					iop->iosize += (Sfoff_t)c;
 			}
 			if(LEN==0)
 				SETLEN(1);
@@ -1928,7 +1928,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					/* write out line */
 					if((n=sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
-						iop->iosize += n;
+						iop->iosize += (Sfoff_t)n;
 				}
 				/* skip over tabs */
 				if(stripcol)
@@ -1963,7 +1963,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 					if(!lp->lexd.dolparen && (c=cp-bufp))
 					{
 						if((c=sfwrite(sp,cp=bufp,(size_t)c))>0)
-							iop->iosize+=c;
+							iop->iosize+=(Sfoff_t)c;
 					}
 					nsave = n;
 					if((c=lexfill(lp))<=0)
@@ -1987,7 +1987,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 					if(!lp->lexd.dolparen && (n=cp-bufp))
 					{
 						if((n=sfwrite(sp,bufp,(size_t)n))>0)
-							iop->iosize += n;
+							iop->iosize += (Sfoff_t)n;
 					}
 					sh.inlineno--;
 					if(c==RPAREN)
@@ -2005,7 +2005,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 					if(!lp->lexd.dolparen && nsave>0)
 					{
 						if((n=sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
-							iop->iosize += n;
+							iop->iosize += (Sfoff_t)n;
 						bufp = fcfirst();
 					}
 					if(c==NL)
@@ -2038,7 +2038,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
 				{
 					if(n && (n=sfwrite(sp,bufp,(size_t)n))>0)
-						iop->iosize += n;
+						iop->iosize += (Sfoff_t)n;
 					bufp = fcseek(0)+1;
 				}
 			}

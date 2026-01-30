@@ -298,7 +298,7 @@ typedef struct Vector_s
 	char*		vec;		/* the data			*/
 	ptrdiff_t	inc;		/* growth increment		*/
 	size_t		siz;		/* element size			*/
-	ssize_t		max;		/* max index			*/
+	ptrdiff_t	max;		/* max index			*/
 	ssize_t		cur;		/* current index -- user domain	*/
 } Vector_t;
 

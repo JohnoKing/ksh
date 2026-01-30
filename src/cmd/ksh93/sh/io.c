@@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
 static void	sftrack(Sfio_t*,int,void*);
 static const Sfdisc_t eval_disc = { NULL, NULL, NULL, eval_exceptf, NULL};
 static Sfdisc_t tee_disc = {NULL,tee_write,NULL,NULL,NULL};
-static Sfio_t	*subopen(Sfio_t*, off_t, long);
+static Sfio_t	*subopen(Sfio_t*, off_t, Sfoff_t);
 static const Sfdisc_t sub_disc = { subread, 0, 0, subexcept, 0 };
 
 struct subfile
@@ -351,8 +351,8 @@ struct subfile
 	Sfdisc_t	disc;
 	Sfio_t		*oldsp;
 	off_t		offset;
-	long		size;
-	long		left;
+	Sfoff_t		size;
+	Sfoff_t		left;
 };
 
 struct Eof
@@ -2392,7 +2392,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
  * the stream <sp> starting at offset <offset>
  * The stream can be read with the normal stream operations
  */
-static Sfio_t *subopen(Sfio_t* sp, off_t offset, long size)
+static Sfio_t *subopen(Sfio_t* sp, off_t offset, Sfoff_t size)
 {
 	struct subfile *disp;
 	if(sfseek(sp,offset,SEEK_SET) <0)
@@ -2420,10 +2420,10 @@ static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
 		return 0;
 	if(size > (size_t)disp->left)
 		size = (size_t)disp->left;
-	disp->left -= size;
-	n = sfread(disp->oldsp,buff,size);
+	disp->left -= (Sfoff_t)size;
+	n = sfread(disp->oldsp,buff,(size_t)size);
 	if(size>0)
-		disp->offset += size;
+		disp->offset += (off_t)size;
 	return n;
 }
 

@@ -795,8 +795,8 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
 	int		c;
 	int		d;
 	int		r;
-	ssize_t		i;
-	ssize_t		n;
+	ptrdiff_t	i;
+	ptrdiff_t	n;
 	ptrdiff_t	m;
 	unsigned char*	p;
 	unsigned char*	t;
@@ -1055,7 +1055,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 						     0) <= 0)
 					return GOOD;
 			}
-			env->best[0].rm_eo = n;
+			env->best[0].rm_eo = (regoff_t)n;
 			memcpy(&env->best[1], &env->match[1], (size_t)r * sizeof(regmatch_t));
 			n = env->pos->cur;
 			pos = vector(Pos_t, env->bestpos, n);
@@ -1064,7 +1064,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				env->error = REG_ESPACE;
 				return BAD;
 			}
-			env->bestpos->cur = n;
+			env->bestpos->cur = (ssize_t)n;
 			memcpy(env->bestpos->vec, env->pos->vec, (size_t)n * sizeof(Pos_t));
 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
 			return GOOD;

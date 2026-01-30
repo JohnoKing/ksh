@@ -184,7 +184,7 @@ static ptrdiff_t p_redirect(const struct ionod *iop)
 		if(iop->iodelim)
 		{
 			p_string(iop->iodelim);
-			sfputl(outfile,iop->iosize);
+			sfputl(outfile,(Sflong_t)iop->iosize);
 			sfseek(sh.heredocs,iop->iooffset,SEEK_SET);
 			sfmove(sh.heredocs,outfile, iop->iosize,-1);
 		}

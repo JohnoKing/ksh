@@ -1,6 +1,6 @@
-From 901291725c39427d695f2c692ac4b1ceaf4e7591 Mon Sep 17 00:00:00 2001
+From da6a5450983928ec085b71215ef904181e37d7a9 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 00:11:37 -0800
+Date: Fri, 30 Jan 2026 10:18:05 -0800
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -23,12 +23,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/edit/completion.c | 67 ++++++++++++-----------
  src/cmd/ksh93/edit/edit.c       | 77 +++++++++++++-------------
  src/cmd/ksh93/edit/emacs.c      | 48 ++++++++--------
- src/cmd/ksh93/edit/hexpand.c    | 53 +++++++++---------
+ src/cmd/ksh93/edit/hexpand.c    | 55 ++++++++++---------
  src/cmd/ksh93/edit/history.c    | 97 ++++++++++++++++++---------------
  src/cmd/ksh93/edit/vi.c         | 42 +++++++-------
  src/cmd/ksh93/include/edit.h    |  8 +--
  src/cmd/ksh93/include/history.h | 15 ++---
- 8 files changed, 211 insertions(+), 196 deletions(-)
+ 8 files changed, 212 insertions(+), 197 deletions(-)
 
 diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
 index 431de2984..2f8350ffe 100644
@@ -746,7 +746,7 @@ index 3c72f1859..2a781a4d8 100644
  		if(!isspace(out[x]))
  #endif /* SHOPT_MULTIBYTE */
 diff --git a/src/cmd/ksh93/edit/hexpand.c b/src/cmd/ksh93/edit/hexpand.c
-index 2b7a41e62..b7314af98 100644
+index 2b7a41e62..82e86e602 100644
 --- a/src/cmd/ksh93/edit/hexpand.c
 +++ b/src/cmd/ksh93/edit/hexpand.c
 @@ -2,7 +2,7 @@
@@ -821,6 +821,15 @@ index 2b7a41e62..b7314af98 100644
  		}
  
  		/* colon introduces either word designators or modifiers */
+@@ -375,7 +376,7 @@ getline:
+ 					else
+ 					{
+ 						w[0] = -2;
+-						w[1] = sftell(ref) + hl.hist_char;
++						w[1] = (Sfoff_t)(sftell(ref) + hl.hist_char);
+ 					}
+ 					sfseek(wm, 0, SEEK_SET);
+ 					goto skip;
 @@ -431,7 +432,7 @@ getline:
  			c = *cp;
  			*cp = '\0';

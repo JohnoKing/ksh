@@ -1040,7 +1040,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				return -1;
 			}
 			value->s = stkptr(sh.stk,stktell(sh.stk));
-			fe->size = m;
+			fe->size = (ssize_t)m;
 		}
 		break;
 	case 'B':

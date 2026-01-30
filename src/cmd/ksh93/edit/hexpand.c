@@ -376,7 +376,7 @@ getline:
 					else
 					{
 						w[0] = -2;
-						w[1] = sftell(ref) + hl.hist_char;
+						w[1] = (Sfoff_t)(sftell(ref) + hl.hist_char);
 					}
 					sfseek(wm, 0, SEEK_SET);
 					goto skip;

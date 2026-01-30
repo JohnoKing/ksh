@@ -94,7 +94,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 	Sfdisc_t*	disc;
 	struct stat	st;
 	uchar*		obuf = NULL;
-	ptrdiff_t	osize = 0;
+	ssize_t		osize = 0;
 #ifdef MAP_TYPE
 	int		okmmap;
 #endif
@@ -242,7 +242,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 		if(_Sfpage <= 0)
 		{
 #if _lib_getpagesize
-			if((_Sfpage = (ptrdiff_t)getpagesize()) <= 0)
+			if((_Sfpage = (ssize_t)getpagesize()) <= 0)
 #endif
 				_Sfpage = SFIO_PAGE;
 		}
@@ -372,7 +372,7 @@ setbuf:
 	}
 
 	/* set up new buffer */
-	f->size = (ptrdiff_t)size;
+	f->size = (ssize_t)size;
 	f->next = f->data = f->endr = f->endw = (uchar*)buf;
 	f->endb = buf ? ((f->mode&SFIO_READ) ? f->data : f->data+size) : NULL;
 	if(f->flags&SFIO_STRING)

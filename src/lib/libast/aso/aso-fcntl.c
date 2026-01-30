@@ -175,7 +175,7 @@ aso_lock_fcntl(void* data, ptrdiff_t k, void volatile* p)
 		k = HASH(p, (ptrdiff_t)apl->size) + 1;
 	}
 	lock.l_whence = SEEK_SET;
-	lock.l_start = k - 1;
+	lock.l_start = (off_t)k - 1;
 	lock.l_len = 1;
 	return fcntl(apl->fd, F_SETLKW, &lock) < 0 ? -1 : k;
 }

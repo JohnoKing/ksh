@@ -645,7 +645,7 @@ loop_fmt:
 			else	flags |= SFFMT_SKIP;
 		}
 		else if(ft && ft->extf)
-		{	FMTSET(ft, form,args, fmt, size,flags, width,0,base, t_str,n_str);
+		{	FMTSET(ft, form,args, fmt, size, flags, width,0,base, t_str,n_str);
 			SFend(f); SFOPEN(f,0);
 			v = (*ft->extf)(f, &argv, ft);
 			SFLOCK(f,0); SFbuf(f);
