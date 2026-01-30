@@ -273,7 +273,7 @@ addre(State_t* state, char* s)
 	if (x)
 	{
 		b = (state->options & (REG_AUGMENTED|REG_EXTENDED)) ? "" : "\\";
-		sfprintf(state->tmp, "%s(?{%I*o})", b, sizeof(ptrdiff_t), (intptr_t)x);
+		sfprintf(state->tmp, "%s(?{%I*o})", b, sizeof(intptr_t), (intptr_t)x);
 		if (state->labels.tail)
 			state->labels.tail = state->labels.tail->next = x;
 		else

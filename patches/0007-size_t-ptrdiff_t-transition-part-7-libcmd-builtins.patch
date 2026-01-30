@@ -1,6 +1,6 @@
-From e9fb9e276ebb1288cbd4cbcf6e1c9769a2aec33d Mon Sep 17 00:00:00 2001
+From c942c1e05de0c409b3178271742868c22230cd1a Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 28 Jan 2026 21:34:01 -0800
+Date: Fri, 30 Jan 2026 00:11:34 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -46,7 +46,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/fmt.c            |  30 +++----
  src/lib/libcmd/fold.c           |  22 ++---
  src/lib/libcmd/getconf.c        |   6 +-
- src/lib/libcmd/grep.c           |  74 +++++++++--------
+ src/lib/libcmd/grep.c           |  76 +++++++++--------
  src/lib/libcmd/id.c             |  20 ++---
  src/lib/libcmd/join.c           | 142 ++++++++++++++++----------------
  src/lib/libcmd/logname.c        |   4 +-
@@ -64,7 +64,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/uname.c          |   6 +-
  src/lib/libcmd/uniq.c           |  39 +++++----
  src/lib/libcmd/wclib.c          |  34 ++++----
- 36 files changed, 528 insertions(+), 511 deletions(-)
+ 36 files changed, 529 insertions(+), 512 deletions(-)
 
 diff --git a/src/lib/libast/include/recfmt.h b/src/lib/libast/include/recfmt.h
 index d26ad6648..3be06b27d 100644
@@ -1820,7 +1820,7 @@ index f762ae7da..d58b8af5d 100644
  		error(ERROR_SYSTEM|2, "%s: exec error [%d]", native, n);
  	return n;
 diff --git a/src/lib/libcmd/grep.c b/src/lib/libcmd/grep.c
-index ff19c6b10..a2685a02f 100644
+index ff19c6b10..3fd248183 100644
 --- a/src/lib/libcmd/grep.c
 +++ b/src/lib/libcmd/grep.c
 @@ -2,7 +2,7 @@
@@ -1900,6 +1900,15 @@ index ff19c6b10..a2685a02f 100644
  		s++;
  		if (!(x = vmnewof(state->vm, 0, Item_t, 1, c)))
  		{
+@@ -265,7 +273,7 @@ addre(State_t* state, char* s)
+ 	if (x)
+ 	{
+ 		b = (state->options & (REG_AUGMENTED|REG_EXTENDED)) ? "" : "\\";
+-		sfprintf(state->tmp, "%s(?{%I*o})", b, sizeof(ptrdiff_t), (intptr_t)x);
++		sfprintf(state->tmp, "%s(?{%I*o})", b, sizeof(intptr_t), (intptr_t)x);
+ 		if (state->labels.tail)
+ 			state->labels.tail = state->labels.tail->next = x;
+ 		else
 @@ -336,7 +344,7 @@ compile(State_t* state)
  		error_info.line = 0;
  		while (s = (char*)sfreserve(f, SFIO_UNBOUND, SFIO_LOCKR))

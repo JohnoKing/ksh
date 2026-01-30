@@ -481,7 +481,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream 
 
 		/* reset buffer and seek pointer */
 		if(!(f->mode&SFIO_SYNCED) )
-		{	intptr_t nn = f->endb - f->next;
+		{	ptrdiff_t nn = f->endb - f->next;
 			if(f->extent >= 0 && (nn > 0 || (f->data && (f->bits&SFIO_MMAP))) )
 			{	/* reset file pointer */
 				addr = f->here - nn;

@@ -1,6 +1,6 @@
-From c8f79c7f055e428d4211bec70c5d80ad4ddc387c Mon Sep 17 00:00:00 2001
+From 8801c666dbabc80f811bc8f54975d9aa3e0a380e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 28 Jan 2026 21:34:16 -0800
+Date: Fri, 30 Jan 2026 00:11:48 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -67,20 +67,20 @@ Fixes https://github.com/ksh93/ksh/issues/592
  18 files changed, 371 insertions(+), 313 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 581e68548..5785d9d3c 100644
+index 581e68548..08eb2ca41 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
+ For full details, see the git log at: https://github.com/ksh93/ksh
+ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
- 2026-01-28:
- 
++2026-01-30:
++
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
-+2026-01-28:
-+
+ 2026-01-28:
+ 
  - [v1.1] Backported 'builtin -p' and 'umask -p' from ksh93v-, which
-   can be used to print reinputtable commands for recreating the builtin
-   table state and umask.
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm

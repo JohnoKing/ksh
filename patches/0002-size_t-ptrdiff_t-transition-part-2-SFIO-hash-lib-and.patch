@@ -1,6 +1,6 @@
-From 6f1a8b78ff0ed98c61ac61a4ad35683e978d6ee7 Mon Sep 17 00:00:00 2001
+From cf59ba803377503369b111bc6b95c1812fa8f0ac Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 28 Jan 2026 21:33:53 -0800
+Date: Fri, 30 Jan 2026 00:11:26 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -94,7 +94,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfgetr.c       |   9 +-
  src/lib/libast/sfio/sfgetu.c       |   5 +-
  src/lib/libast/sfio/sfhdr.h        |  44 ++++-----
- src/lib/libast/sfio/sfmode.c       |  39 ++++----
+ src/lib/libast/sfio/sfmode.c       |  41 ++++-----
  src/lib/libast/sfio/sfmove.c       |  14 +--
  src/lib/libast/sfio/sfnew.c        |   7 +-
  src/lib/libast/sfio/sfnputc.c      |  17 ++--
@@ -165,7 +165,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++--------
  src/lib/libast/string/strmode.c    |  11 +--
  src/lib/libast/string/strperm.c    |  16 ++--
- 122 files changed, 978 insertions(+), 906 deletions(-)
+ 122 files changed, 979 insertions(+), 907 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
 index 346f55960..91ec8a65d 100644
@@ -2949,7 +2949,7 @@ index e3ce56470..71f78a505 100644
  
  extern Sfextern_t	_Sfextern;
 diff --git a/src/lib/libast/sfio/sfmode.c b/src/lib/libast/sfio/sfmode.c
-index 677df4614..41a06ab39 100644
+index 677df4614..9f9e9657b 100644
 --- a/src/lib/libast/sfio/sfmode.c
 +++ b/src/lib/libast/sfio/sfmode.c
 @@ -2,7 +2,7 @@
@@ -3103,6 +3103,15 @@ index 677df4614..41a06ab39 100644
  			f->flags |= (n&SFIO_MALLOC);
  		}
  	}
+@@ -480,7 +481,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
+ 
+ 		/* reset buffer and seek pointer */
+ 		if(!(f->mode&SFIO_SYNCED) )
+-		{	intptr_t nn = f->endb - f->next;
++		{	ptrdiff_t nn = f->endb - f->next;
+ 			if(f->extent >= 0 && (nn > 0 || (f->data && (f->bits&SFIO_MMAP))) )
+ 			{	/* reset file pointer */
+ 				addr = f->here - nn;
 @@ -512,7 +513,7 @@ int _sfmode(Sfio_t*	f,	/* change r/w mode and sync file pointer for this stream
  			wanted = SFIO_READ;
  

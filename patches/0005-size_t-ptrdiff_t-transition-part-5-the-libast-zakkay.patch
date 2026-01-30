@@ -1,6 +1,6 @@
-From ba0058114d37b98aab01ad6f1e5680e676c8d16c Mon Sep 17 00:00:00 2001
+From 58895647347c09c715a4256c9373d607c204b699 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 28 Jan 2026 21:33:57 -0800
+Date: Fri, 30 Jan 2026 00:11:29 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
