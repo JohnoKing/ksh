@@ -44,7 +44,7 @@
 #if _lib_iswblank < 0	/* set in lexstates.h to enable this code */
 
 int
-local_iswblank(wchar_t wc)
+local_iswblank(wint_t wc)
 {
 	static int      initialized;
 	static wctype_t wt;

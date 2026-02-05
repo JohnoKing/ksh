@@ -26,3 +26,14 @@ tst	- note{ canonical UTF-8 name }end run{
 	*)	echo "#define _locale_utf8_str	\"$str\"" ;;
 	esac
 }end
+
+tst	have_native_c_utf8 note{ does the OS provide a C.UTF-8 locale }end execute{
+	#include <locale.h>
+	int
+	main(void)
+	{
+		if(setlocale(LC_ALL, "C.UTF-8"))
+			return 0;  /* have native C.UTF-8 locale */
+		return 1;  /* no native C.UTF-8 locale */
+	}
+}end

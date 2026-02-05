@@ -28,9 +28,9 @@ lib	bcopy,bzero,confstr,dirread
 lib	fchmod,fcntl,fmtmsg,fnmatch,fork,fsync
 lib	getconf,getdents,getdirentries,getdtablesize
 lib	gethostname,getpagesize,getrlimit,getuniverse
-lib	glob,iswblank,iswctype,killpg,link,localeconv,madvise
+lib	glob,iswblank,killpg,link,localeconv,madvise
 lib	mbtowc,mbrtowc,memalign,memdup
-lib	mktemp,mktime
+lib	mktemp
 lib	opendir,openat,pathconf,pipe2
 lib	rand_r
 lib	rewinddir,setlocale

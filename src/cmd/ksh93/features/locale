@@ -1,5 +1,4 @@
-hdr	locale,wchar,wctype
-lib	locale,localeconv,wctype,iswctype,iswblank
+hdr	wchar,wctype
 
 tst	note{ do wctrans/towctrans work }end output{
 	/*

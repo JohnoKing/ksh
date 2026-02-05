@@ -9,6 +9,13 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
   incorrectly treated as unsigned int when rendering their values as strings
   (e.g. 'typeset -i foo=-1; echo $foo' output 4294967295 instead of -1).
 
+- Fixed a bug that caused ksh to set the underlying locale to
+  C rather than C.UTF-8 on systems with a native C.UTF-8 locale.
+
+- Improved the handling of multibyte characters in the ksh implementation
+  of the C.UTF-8 locale on older operating systems that don't provide a
+  native version.
+
 2026-02-01:
 
 - Replaced the 2021-03-09 fix for ${!foo@} and ${!foo*}, which was not quite

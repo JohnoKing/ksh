@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -28,6 +28,7 @@
 #include <ast_standards.h>
 
 #include "lclib.h"
+#include "FEATURE/locale"
 
 #include <ast_wchar.h>
 #include <ctype.h>
@@ -36,21 +37,12 @@
 #include <namval.h>
 #include <error.h>
 
-#if ( _lib_wcwidth || _lib_wctomb ) && _hdr_wctype
+#if _hdr_wctype
 #include <wctype.h>
 #endif
 
-#if _lib_wcwidth
 #undef	wcwidth
-#else
-#define wcwidth			0
-#endif
-
-#if _lib_wctomb
 #undef	wctomb
-#else
-#define wctomb			0
-#endif
 
 #ifdef mblen
 #undef	mblen
@@ -84,7 +76,7 @@ header(void)
  * LC_COLLATE and LC_CTYPE native support
  */
 
-#if !_lib_mbtowc || MB_LEN_MAX <= 1
+#if MB_LEN_MAX <= 1
 #define mblen		0
 #define mbtowc		0
 #endif
@@ -450,7 +442,7 @@ set_collate(Lc_category_t* cp)
  * workaround the interesting SJIS that translates unshifted 7 bit ASCII!
  */
 
-#if _hdr_wchar && _typ_mbstate_t && _lib_mbrtowc && !AST_NOMULTIBYTE
+#if _hdr_wchar && !AST_NOMULTIBYTE
 
 #define sjis_workaround	1
 static mbstate_t	sjis_state_zero;
@@ -2130,7 +2122,7 @@ utf8_alpha(wchar_t c)
 
 #endif /* !AST_NOMULTIBYTE */
 
-#if !_hdr_wchar || !_lib_wctype || !_lib_iswctype
+#if !_hdr_wchar
 #undef	iswalpha
 #define iswalpha	default_iswalpha
 static int
@@ -2410,7 +2402,22 @@ single(int category, Lc_t* lc, unsigned int flags)
 				}
 		}
 		else if (lc->flags & (LC_debug|LC_local))
-			sys = setlocale(lc_categories[category].external, lcmake(NULL)->name);
+		{
+			/*
+			 * Set either C or C.UTF-8 for the actual native locale
+			 * underlying the AST locale on top of it (e.g., tell the
+			 * native setlocale(3) to make the underlying locale C.UTF-8
+			 * if we want to use the nonstandard C_EU.UTF-8).
+			 */
+#if _have_native_c_utf8
+			/* Try C.UTF-8 first if we need UTF-8 support for the locale */
+			if(lc->flags & LC_utf8)
+				sys = setlocale(lc_categories[category].external, "C.UTF-8");
+#endif
+			/* Fallback if the above didn't work (or if we aren't using a UTF-8 locale) */
+			if(!sys)
+				sys = setlocale(lc_categories[category].external, lcmake(NULL)->name);
+		}
 		else if (!(sys = setlocale(lc_categories[category].external, lc->name)) &&
 			 (streq(lc->name, lc->code) || !(sys = setlocale(lc_categories[category].external, lc->code))) &&
 			 !streq(lc->code, lc->language->code))
