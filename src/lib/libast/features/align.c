@@ -73,9 +73,9 @@ main(void)
 
 	u.u2 = u.u4;
 	v.u2 = u.u2 + 1;
-	bit1 = u.u1 ^ v.u1;
+	bit1 = (unsigned long)(u.u1 ^ v.u1);
 	v.u2 = u.u2 + 2;
-	bit2 = u.u1 ^ v.u1;
+	bit2 = (unsigned long)(u.u1 ^ v.u1);
 	align0 = sizeof(struct _s_) - sizeof(union _u_);
 	bits0 = 0;
 	k = 0;
@@ -86,7 +86,7 @@ main(void)
 		for (i = 0; i < align0; i++)
 		{
 			v.u2 = u.u2 + i;
-			bits1 |= u.u1 ^ v.u1;
+			bits1 |= (unsigned long)(u.u1 ^ v.u1);
 		}
 		if (!bits0 || bits1 < bits0)
 		{
@@ -99,13 +99,13 @@ main(void)
 	for (bits1 = bits0; i < align1; i++)
 	{
 		v.u2 = u.u2 + i;
-		bits1 |= u.u1 ^ v.u1;
+		bits1 |= (unsigned long)(u.u1 ^ v.u1);
 	}
 	align2 = roundof(align0, 4);
 	for (bits2 = bits1; i < align2; i++)
 	{
 		v.u2 = u.u2 + i;
-		bits2 |= u.u1 ^ v.u1;
+		bits2 |= (unsigned long)(u.u1 ^ v.u1);
 	}
 	printf("\n");
 	printf("#define ALIGN_CHUNK		%d\n", sizeof(char*) >= 4 ? 8192 : 1024);

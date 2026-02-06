@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -1133,7 +1133,7 @@ int sh_macfun(const char *name, ptrdiff_t offset)
 static int namecount(Mac_t *mp,const char *prefix)
 {
 	int count = 0;
-	mp->nvwalk = nv_diropen(NULL,prefix);
+	mp->nvwalk = nv_diropen(NULL,prefix,0);
 	while(nv_dirnext(mp->nvwalk))
 		count++;
 	nv_dirclose(mp->nvwalk);
@@ -1145,7 +1145,7 @@ static char *nextname(Mac_t *mp,const char *prefix, ptrdiff_t len)
 	char *cp;
 	if(len==0)
 	{
-		mp->nvwalk = nv_diropen(NULL,prefix);
+		mp->nvwalk = nv_diropen(NULL,prefix,0);
 		return (char*)mp->nvwalk;
 	}
 	if(!(cp=nv_dirnext(mp->nvwalk)))
@@ -1617,11 +1617,7 @@ retry1:
 				dolmax = (ptrdiff_t)strlen(id);
 				dolg = -1;
 				nextname(mp,id,0);
-				/* Check if the prefix (id) itself exists. If so, start with that. */
-				if(nv_open(id,sh.var_tree,NV_NOREF|NV_NOADD|NV_VARNAME|NV_NOFAIL))
-					v = id;
-				else
-					v = nextname(mp,id,dolmax);
+				v = nextname(mp,id,dolmax);
 			}
 		}
 		else if(type==M_SUBNAME)

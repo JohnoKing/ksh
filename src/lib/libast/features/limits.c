@@ -95,7 +95,7 @@ int main(void)
 	printf("\n");
 #ifndef CHAR_BIT
 	uc = 0;
-	uc = ~uc;
+	uc = (unsigned char)~uc;
 	val = 1;
 	while (uc >>= 1) val++;
 	printf("#define CHAR_BIT	%lu\n", val);
@@ -108,9 +108,9 @@ int main(void)
 	c = 0;
 	c = ~c;
 	uc = 0;
-	uc = ~uc;
+	uc = (unsigned char)~uc;
 	us = 0;
-	us = ~us;
+	us = (unsigned short)~us;
 	ui = 0;
 	ui = ~ui;
 	ul = 0;
