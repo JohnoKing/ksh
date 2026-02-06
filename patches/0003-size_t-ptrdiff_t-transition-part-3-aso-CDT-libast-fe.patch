@@ -1,6 +1,6 @@
-From 9d7171495029273faa4132ede3341f1b8d9fe746 Mon Sep 17 00:00:00 2001
+From 304cb672bad02e824e50966e845bc22441e1495d Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:17:54 -0800
+Date: Fri, 6 Feb 2026 07:33:10 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -17,7 +17,7 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libast/aso/aso-fcntl.c   | 35 ++++++------
+ src/lib/libast/aso/aso-fcntl.c   | 32 +++++------
  src/lib/libast/aso/aso-sem.c     | 20 +++----
  src/lib/libast/aso/aso.c         | 98 ++++++++++++++++----------------
  src/lib/libast/aso/asorelax.c    |  5 +-
@@ -29,49 +29,25 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/cdt/dtstat.c      |  7 ++-
  src/lib/libast/cdt/dtstrhash.c   |  5 +-
  src/lib/libast/cdt/dttree.c      |  5 +-
- src/lib/libast/features/align.c  |  6 +-
+ src/lib/libast/features/align.c  | 16 +++---
  src/lib/libast/features/api      |  4 --
+ src/lib/libast/features/limits.c |  8 +--
  src/lib/libast/features/mode.c   |  4 +-
  src/lib/libast/features/omitted  |  2 +-
  src/lib/libast/features/sfio     |  2 +-
  src/lib/libast/features/signal.c | 10 ++--
  src/lib/libast/features/sizeof   | 10 ++--
  src/lib/libast/features/tv       | 24 ++++----
- src/lib/libast/hash/hashfree.c   |  1 +
- src/lib/libast/hash/hashscan.c   |  1 +
- src/lib/libast/hash/hashview.c   |  1 +
  src/lib/libast/include/aso.h     |  8 +--
  src/lib/libast/include/cdt.h     | 10 ++--
  src/lib/libast/man/aso.3         |  6 +-
- src/lib/libast/sfio/_sfopen.c    |  1 +
- src/lib/libast/sfio/_sfslen.c    |  1 +
- src/lib/libast/sfio/sfclose.c    |  1 +
- src/lib/libast/sfio/sfextern.c   |  1 +
- src/lib/libast/sfio/sfstack.c    |  1 +
- 31 files changed, 158 insertions(+), 144 deletions(-)
+ 24 files changed, 157 insertions(+), 152 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
-index abc8227f5..462fb0fe2 100644
+index b4d34019e..0984e7a67 100644
 --- a/src/lib/libast/aso/aso-fcntl.c
 +++ b/src/lib/libast/aso/aso-fcntl.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- 
-@@ -44,10 +45,9 @@ aso_init_fcntl(void* data, const char* details)
+@@ -45,10 +45,9 @@ aso_init_fcntl(void* data, const char* details)
  	char*		opt;
  	size_t		size;
  	size_t		references;
@@ -83,7 +59,7 @@ index abc8227f5..462fb0fe2 100644
  	struct flock	lock;
  	char		buf[PATH_MAX];
  	char		tmp[64];
-@@ -56,18 +56,18 @@ aso_init_fcntl(void* data, const char* details)
+@@ -57,18 +56,18 @@ aso_init_fcntl(void* data, const char* details)
  	{
  		lock.l_type = F_WRLCK;
  		lock.l_whence = SEEK_SET;
@@ -105,7 +81,7 @@ index abc8227f5..462fb0fe2 100644
  					references = 0;
  				else if (write(apl->fd, &references, sizeof(references)) != sizeof(references))
  					references = 0;
-@@ -90,9 +90,10 @@ aso_init_fcntl(void* data, const char* details)
+@@ -91,9 +90,10 @@ aso_init_fcntl(void* data, const char* details)
  		{
  			if (strneq(path, "perm=", 5))
  			{
@@ -119,7 +95,7 @@ index abc8227f5..462fb0fe2 100644
  				tmp[n] = 0;
  				perm = strperm(tmp, NULL, perm);
  			}
-@@ -115,7 +116,7 @@ aso_init_fcntl(void* data, const char* details)
+@@ -116,7 +116,7 @@ aso_init_fcntl(void* data, const char* details)
  		goto bad;
  	if (fd >= 0 || (fd = open(path, O_RDWR|O_cloexec)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_cloexec, perm)) >= 0)
  	{
@@ -128,7 +104,7 @@ index abc8227f5..462fb0fe2 100644
  			goto bad;
  		references = 1;
  		if (write(fd, &references, sizeof(references)) != sizeof(references))
-@@ -123,7 +124,7 @@ aso_init_fcntl(void* data, const char* details)
+@@ -124,7 +124,7 @@ aso_init_fcntl(void* data, const char* details)
  	}
  	else
  	{
@@ -137,7 +113,7 @@ index abc8227f5..462fb0fe2 100644
  			goto bad;
  		size -= sizeof(references);
  		lock.l_type = F_WRLCK;
-@@ -132,12 +133,12 @@ aso_init_fcntl(void* data, const char* details)
+@@ -133,12 +133,12 @@ aso_init_fcntl(void* data, const char* details)
  		lock.l_len = sizeof(references);
  		if (fcntl(fd, F_SETLKW, &lock) < 0)
  			goto bad;
@@ -152,7 +128,7 @@ index abc8227f5..462fb0fe2 100644
  			goto bad;
  		if (write(fd, &references, sizeof(references)) != sizeof(references))
  			goto bad;
-@@ -158,8 +159,8 @@ aso_init_fcntl(void* data, const char* details)
+@@ -159,8 +159,8 @@ aso_init_fcntl(void* data, const char* details)
  	return NULL;
  }
  
@@ -163,7 +139,7 @@ index abc8227f5..462fb0fe2 100644
  {
  	APL_t*		apl = (APL_t*)data;
  	struct flock	lock;
-@@ -171,10 +172,10 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
+@@ -172,10 +172,10 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
  	else
  	{
  		lock.l_type = F_WRLCK;
@@ -847,7 +823,7 @@ index 790d1f28c..97209adf8 100644
  	}
  }
 diff --git a/src/lib/libast/features/align.c b/src/lib/libast/features/align.c
-index 3ebf1b21e..df37dfd52 100644
+index 3ebf1b21e..3055f35fd 100644
 --- a/src/lib/libast/features/align.c
 +++ b/src/lib/libast/features/align.c
 @@ -2,7 +2,7 @@
@@ -868,7 +844,43 @@ index 3ebf1b21e..df37dfd52 100644
  	jmp_buf			u10;
  };
  
-@@ -112,7 +112,7 @@ main(void)
+@@ -73,9 +73,9 @@ main(void)
+ 
+ 	u.u2 = u.u4;
+ 	v.u2 = u.u2 + 1;
+-	bit1 = u.u1 ^ v.u1;
++	bit1 = (unsigned long)(u.u1 ^ v.u1);
+ 	v.u2 = u.u2 + 2;
+-	bit2 = u.u1 ^ v.u1;
++	bit2 = (unsigned long)(u.u1 ^ v.u1);
+ 	align0 = sizeof(struct _s_) - sizeof(union _u_);
+ 	bits0 = 0;
+ 	k = 0;
+@@ -86,7 +86,7 @@ main(void)
+ 		for (i = 0; i < align0; i++)
+ 		{
+ 			v.u2 = u.u2 + i;
+-			bits1 |= u.u1 ^ v.u1;
++			bits1 |= (unsigned long)(u.u1 ^ v.u1);
+ 		}
+ 		if (!bits0 || bits1 < bits0)
+ 		{
+@@ -99,20 +99,20 @@ main(void)
+ 	for (bits1 = bits0; i < align1; i++)
+ 	{
+ 		v.u2 = u.u2 + i;
+-		bits1 |= u.u1 ^ v.u1;
++		bits1 |= (unsigned long)(u.u1 ^ v.u1);
+ 	}
+ 	align2 = roundof(align0, 4);
+ 	for (bits2 = bits1; i < align2; i++)
+ 	{
+ 		v.u2 = u.u2 + i;
+-		bits2 |= u.u1 ^ v.u1;
++		bits2 |= (unsigned long)(u.u1 ^ v.u1);
+ 	}
+ 	printf("\n");
+ 	printf("#define ALIGN_CHUNK		%d\n", sizeof(char*) >= 4 ? 8192 : 1024);
  	printf("#define ALIGN_INTEGRAL		uintptr_t\n");
  	printf("#define ALIGN_INTEGER(x)	((intptr_t)(x))\n");
  	printf("#define ALIGN_POINTER(x)	((char*)(x))\n");
@@ -892,6 +904,40 @@ index 830f0f281..5d92a9ae6 100644
 -api ast 20000308 sfkeyprintf
 -
  print	#define _AST_VERSION	AST_VERSION	/* pre-20100601 compatibility */
+diff --git a/src/lib/libast/features/limits.c b/src/lib/libast/features/limits.c
+index 30f66dff5..73abb8aad 100644
+--- a/src/lib/libast/features/limits.c
++++ b/src/lib/libast/features/limits.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -95,7 +95,7 @@ int main(void)
+ 	printf("\n");
+ #ifndef CHAR_BIT
+ 	uc = 0;
+-	uc = ~uc;
++	uc = (unsigned char)~uc;
+ 	val = 1;
+ 	while (uc >>= 1) val++;
+ 	printf("#define CHAR_BIT	%lu\n", val);
+@@ -108,9 +108,9 @@ int main(void)
+ 	c = 0;
+ 	c = ~c;
+ 	uc = 0;
+-	uc = ~uc;
++	uc = (unsigned char)~uc;
+ 	us = 0;
+-	us = ~us;
++	us = (unsigned short)~us;
+ 	ui = 0;
+ 	ui = ~ui;
+ 	ul = 0;
 diff --git a/src/lib/libast/features/mode.c b/src/lib/libast/features/mode.c
 index a31b734a0..8db6a3ae5 100644
 --- a/src/lib/libast/features/mode.c
@@ -1037,42 +1083,6 @@ index 47dd64a67..157240356 100644
  }
  else pass{ no_stat_nsec=1 }end {
  	#define ST_ATIME_NSEC_GET(st)	0
-diff --git a/src/lib/libast/hash/hashfree.c b/src/lib/libast/hash/hashfree.c
-index e5f921f60..af25e6b3a 100644
---- a/src/lib/libast/hash/hashfree.c
-+++ b/src/lib/libast/hash/hashfree.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-diff --git a/src/lib/libast/hash/hashscan.c b/src/lib/libast/hash/hashscan.c
-index 41bd58611..67207f752 100644
---- a/src/lib/libast/hash/hashscan.c
-+++ b/src/lib/libast/hash/hashscan.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-diff --git a/src/lib/libast/hash/hashview.c b/src/lib/libast/hash/hashview.c
-index 40f0c4893..7b92d5cfe 100644
---- a/src/lib/libast/hash/hashview.c
-+++ b/src/lib/libast/hash/hashview.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
 diff --git a/src/lib/libast/include/aso.h b/src/lib/libast/include/aso.h
 index 9aacfc44b..988d058cb 100644
 --- a/src/lib/libast/include/aso.h
@@ -1173,66 +1183,6 @@ index c256d6896..1733d2013 100644
  This function causes the calling process or thread to briefly pause
  for \f3nsec\fP nanoseconds.
  It is useful to implement tight loops that occasionally yield control.
-diff --git a/src/lib/libast/sfio/_sfopen.c b/src/lib/libast/sfio/_sfopen.c
-index 222a9e051..c46186a60 100644
---- a/src/lib/libast/sfio/_sfopen.c
-+++ b/src/lib/libast/sfio/_sfopen.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfhdr.h"
-diff --git a/src/lib/libast/sfio/_sfslen.c b/src/lib/libast/sfio/_sfslen.c
-index 6fdb1137f..9fdc31ac4 100644
---- a/src/lib/libast/sfio/_sfslen.c
-+++ b/src/lib/libast/sfio/_sfslen.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfhdr.h"
-diff --git a/src/lib/libast/sfio/sfclose.c b/src/lib/libast/sfio/sfclose.c
-index 11a68e320..81b37722a 100644
---- a/src/lib/libast/sfio/sfclose.c
-+++ b/src/lib/libast/sfio/sfclose.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfhdr.h"
-diff --git a/src/lib/libast/sfio/sfextern.c b/src/lib/libast/sfio/sfextern.c
-index 33a59da71..105e9018b 100644
---- a/src/lib/libast/sfio/sfextern.c
-+++ b/src/lib/libast/sfio/sfextern.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfhdr.h"
-diff --git a/src/lib/libast/sfio/sfstack.c b/src/lib/libast/sfio/sfstack.c
-index db32ef7dc..682200271 100644
---- a/src/lib/libast/sfio/sfstack.c
-+++ b/src/lib/libast/sfio/sfstack.c
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfhdr.h"
 -- 
-2.52.0
+2.53.0
 

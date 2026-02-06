@@ -1,6 +1,6 @@
-From 8924cc98d18888484314e7471e6f0274c27a4fbd Mon Sep 17 00:00:00 2001
+From 426be7566b09819f0a9f94a746b345969814cfef Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:18:01 -0800
+Date: Fri, 6 Feb 2026 07:33:17 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -28,56 +28,43 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libast/include/recfmt.h |   1 +
- src/lib/libcmd/basename.c       |   8 +-
- src/lib/libcmd/cat.c            |  39 ++++-----
- src/lib/libcmd/chgrp.c          |  59 +++++++------
- src/lib/libcmd/chmod.c          |  27 +++---
- src/lib/libcmd/cksum.c          |  30 +++----
- src/lib/libcmd/cmp.c            |  16 ++--
- src/lib/libcmd/comm.c           |  14 ++--
- src/lib/libcmd/context.c        |  33 ++++----
- src/lib/libcmd/cp.c             |  60 +++++++-------
- src/lib/libcmd/cut.c            | 105 +++++++++++------------
- src/lib/libcmd/date.c           |  16 ++--
- src/lib/libcmd/dirname.c        |   4 +-
- src/lib/libcmd/expr.c           |  23 +++---
- src/lib/libcmd/fds.c            |  17 ++--
- src/lib/libcmd/fmt.c            |  30 +++----
- src/lib/libcmd/fold.c           |  22 ++---
- src/lib/libcmd/getconf.c        |   6 +-
- src/lib/libcmd/grep.c           |  76 +++++++++--------
- src/lib/libcmd/id.c             |  20 ++---
- src/lib/libcmd/join.c           | 142 ++++++++++++++++----------------
- src/lib/libcmd/logname.c        |   4 +-
- src/lib/libcmd/mkdir.c          |  10 +--
- src/lib/libcmd/mktemp.c         |   6 +-
- src/lib/libcmd/paste.c          |  30 +++----
- src/lib/libcmd/pathchk.c        |   6 +-
- src/lib/libcmd/rev.c            |  12 +--
- src/lib/libcmd/rev.h            |   5 +-
- src/lib/libcmd/revlib.c         |  15 ++--
- src/lib/libcmd/rm.c             |  12 +--
- src/lib/libcmd/stty.c           |  66 ++++++++-------
- src/lib/libcmd/tail.c           |  40 ++++-----
- src/lib/libcmd/tee.c            |   8 +-
- src/lib/libcmd/uname.c          |   6 +-
- src/lib/libcmd/uniq.c           |  40 ++++-----
- src/lib/libcmd/wclib.c          |  34 ++++----
- 36 files changed, 529 insertions(+), 513 deletions(-)
+ src/lib/libcmd/basename.c |   8 +--
+ src/lib/libcmd/cat.c      |  39 ++++++-----
+ src/lib/libcmd/chgrp.c    |  59 ++++++++--------
+ src/lib/libcmd/chmod.c    |  27 ++++----
+ src/lib/libcmd/cksum.c    |  30 ++++----
+ src/lib/libcmd/cmp.c      |  16 ++---
+ src/lib/libcmd/comm.c     |  14 ++--
+ src/lib/libcmd/context.c  |  33 ++++-----
+ src/lib/libcmd/cp.c       |  58 ++++++++--------
+ src/lib/libcmd/cut.c      | 105 ++++++++++++++--------------
+ src/lib/libcmd/date.c     |  16 ++---
+ src/lib/libcmd/dirname.c  |   4 +-
+ src/lib/libcmd/expr.c     |  23 +++---
+ src/lib/libcmd/fds.c      |  17 ++---
+ src/lib/libcmd/fmt.c      |  30 ++++----
+ src/lib/libcmd/fold.c     |  22 +++---
+ src/lib/libcmd/getconf.c  |   6 +-
+ src/lib/libcmd/grep.c     |  76 +++++++++++---------
+ src/lib/libcmd/id.c       |  20 +++---
+ src/lib/libcmd/join.c     | 142 +++++++++++++++++++-------------------
+ src/lib/libcmd/logname.c  |   4 +-
+ src/lib/libcmd/mkdir.c    |  10 +--
+ src/lib/libcmd/mktemp.c   |   4 +-
+ src/lib/libcmd/paste.c    |  30 ++++----
+ src/lib/libcmd/pathchk.c  |   6 +-
+ src/lib/libcmd/rev.c      |  12 ++--
+ src/lib/libcmd/rev.h      |   5 +-
+ src/lib/libcmd/revlib.c   |  15 ++--
+ src/lib/libcmd/rm.c       |  10 +--
+ src/lib/libcmd/stty.c     |  66 +++++++++---------
+ src/lib/libcmd/tail.c     |  40 +++++------
+ src/lib/libcmd/tee.c      |   6 +-
+ src/lib/libcmd/uname.c    |   6 +-
+ src/lib/libcmd/uniq.c     |  40 ++++++-----
+ src/lib/libcmd/wclib.c    |  34 ++++-----
+ 35 files changed, 524 insertions(+), 509 deletions(-)
 
-diff --git a/src/lib/libast/include/recfmt.h b/src/lib/libast/include/recfmt.h
-index d26ad6648..3be06b27d 100644
---- a/src/lib/libast/include/recfmt.h
-+++ b/src/lib/libast/include/recfmt.h
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
 --- a/src/lib/libcmd/basename.c
@@ -855,18 +842,9 @@ index 10b4b2c39..f42f20827 100644
  	for (j = 0; j < cp->total; j++)
  	{
 diff --git a/src/lib/libcmd/cp.c b/src/lib/libcmd/cp.c
-index 37f6f842c..d5d6070e2 100644
+index 0c072ee16..b51dcfd0d 100644
 --- a/src/lib/libcmd/cp.c
 +++ b/src/lib/libcmd/cp.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -135,7 +135,7 @@ static const char usage_tail[] =
  #include <stk.h>
  #include <tmx.h>
@@ -1044,15 +1022,15 @@ index 37f6f842c..d5d6070e2 100644
 +				if (!(ip = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, rfd, SFIO_READ)))
  				{
  					error(ERROR_SYSTEM|2, "%s: %s read stream error", ent->fts_path, state->path);
- 					close(rfd);
- 					close(wfd);
+ 					ast_close(rfd);
+ 					ast_close(wfd);
  					return 0;
  				}
 -				if (!(op = sfnew(NULL, NULL, SFIO_UNBOUND, wfd, SFIO_WRITE)))
 +				if (!(op = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, wfd, SFIO_WRITE)))
  				{
  					error(ERROR_SYSTEM|2, "%s: %s write stream error", ent->fts_path, state->path);
- 					close(wfd);
+ 					ast_close(wfd);
 @@ -874,12 +876,12 @@ b_cp(int argc, char** argv, Shbltin_t* context)
  		argc--;
  		argv++;
@@ -2637,18 +2615,9 @@ index f76b3df66..43c478161 100644
  					made = 1;
  					break;
 diff --git a/src/lib/libcmd/mktemp.c b/src/lib/libcmd/mktemp.c
-index 95654e7be..836465746 100644
+index 5bd83cd73..023d08279 100644
 --- a/src/lib/libcmd/mktemp.c
 +++ b/src/lib/libcmd/mktemp.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -66,7 +66,7 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
  	mode_t		mode = 0;
  	mode_t		mask;
@@ -2958,18 +2927,9 @@ index e79a5c4e2..208d7aa0d 100644
  			if(nleft)
  			{
 diff --git a/src/lib/libcmd/rm.c b/src/lib/libcmd/rm.c
-index 57aaadc5d..a89d9a1e0 100644
+index e4101adbe..a62dec723 100644
 --- a/src/lib/libcmd/rm.c
 +++ b/src/lib/libcmd/rm.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -68,11 +68,11 @@ static const char usage[] =
  
  #define RM_ENTRY	1
@@ -3004,7 +2964,7 @@ index 57aaadc5d..a89d9a1e0 100644
 +					c -= (ptrdiff_t)sizeof(state->buf);
  				}
  				fsync(n);
- 				close(n);
+ 				ast_close(n);
 diff --git a/src/lib/libcmd/stty.c b/src/lib/libcmd/stty.c
 index 83699631e..9e0da31cb 100644
 --- a/src/lib/libcmd/stty.c
@@ -3355,18 +3315,9 @@ index 9df44c599..89e682a83 100644
  					}
  					goto next;
 diff --git a/src/lib/libcmd/tee.c b/src/lib/libcmd/tee.c
-index 3333a4301..215a2a60e 100644
+index 37b75b66d..c0683a4d1 100644
 --- a/src/lib/libcmd/tee.c
 +++ b/src/lib/libcmd/tee.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -79,12 +79,12 @@ tee_write(Sfio_t* fp, const void* buf, size_t n, Sfdisc_t* handle)
  		ep = bp + n;
  		while (bp < ep)
@@ -3688,5 +3639,5 @@ index ea5996b79..12031483f 100644
  							c=type[*cp++];
  						if(eol(c) && (cp > endbuff))
 -- 
-2.52.0
+2.53.0
 

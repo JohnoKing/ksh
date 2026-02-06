@@ -1,6 +1,6 @@
-From 8159f8f060c46ea03d1214e401b664b51f1fa6df Mon Sep 17 00:00:00 2001
+From 180b0bcf73fd3292bbb9ca731d45641245e90864 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:17:52 -0800
+Date: Fri, 6 Feb 2026 07:33:07 -0800
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
  expansion, init and stk(3)
 
@@ -65,9 +65,9 @@ changes to make code review less laborious (I hope).
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/test.c   |  38 ++--
- src/cmd/ksh93/include/defs.h  |  12 +-
- src/cmd/ksh93/include/shell.h |  24 +--
+ src/cmd/ksh93/bltins/test.c   |  36 ++--
+ src/cmd/ksh93/include/defs.h  |  10 +-
+ src/cmd/ksh93/include/shell.h |  22 +-
  src/cmd/ksh93/include/test.h  |   4 +-
  src/cmd/ksh93/sh/init.c       | 108 +++++-----
  src/cmd/ksh93/sh/macro.c      | 365 ++++++++++++++++++----------------
@@ -75,22 +75,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/stk.h  |   7 +-
  src/lib/libast/man/stk.3      |  12 +-
  src/lib/libast/misc/stk.c     |  58 +++---
- src/lib/libast/tm/tmxdate.c   |   2 +-
- 11 files changed, 333 insertions(+), 303 deletions(-)
+ 10 files changed, 329 insertions(+), 299 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
-index 610b56d47..dbea27f21 100644
+index e5f01c058..6e874c69f 100644
 --- a/src/cmd/ksh93/bltins/test.c
 +++ b/src/cmd/ksh93/bltins/test.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -86,8 +86,9 @@ static inline int posix_andor(char *arg)
  
  static int test_strmatch(const char *str, const char *pat)
@@ -222,18 +212,9 @@ index 610b56d47..dbea27f21 100644
  
  /*
 diff --git a/src/cmd/ksh93/include/defs.h b/src/cmd/ksh93/include/defs.h
-index ca20ab43f..f08ec1e79 100644
+index f185f3345..e84854503 100644
 --- a/src/cmd/ksh93/include/defs.h
 +++ b/src/cmd/ksh93/include/defs.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -113,9 +113,9 @@ extern void		*sh_arithcomp(char*);
  extern pid_t 		sh_fork(int,int*);
  extern pid_t		_sh_fork(pid_t, int ,int*);
@@ -255,7 +236,7 @@ index ca20ab43f..f08ec1e79 100644
  extern void             sh_scope(struct argnod*, int);
  extern Namval_t		*sh_scoped(Namval_t*);
  extern Dt_t		*sh_subtracktree(int);
-@@ -157,7 +157,7 @@ extern void		*sh_calloc(size_t nmemb, size_t size);
+@@ -158,7 +158,7 @@ extern void		*sh_calloc(size_t nmemb, size_t size);
  extern char		*sh_strdup(const char *s);
  extern void		*sh_memdup(const void *s, size_t n);
  extern char		*sh_getcwd(void);
@@ -264,7 +245,7 @@ index ca20ab43f..f08ec1e79 100644
  #define sh_newof(p,t,n,x)	((p)?(t*)sh_realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)sh_calloc(1,sizeof(t)*(n)+(x)))
  
  #define URI_RFC3986_UNRESERVED "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
-@@ -172,7 +172,7 @@ extern char		*sh_getcwd(void);
+@@ -173,7 +173,7 @@ extern char		*sh_getcwd(void);
  
  #if SHOPT_SCRIPTONLY
  #define is_option(s,x)	((x)==SH_INTERACTIVE || (x)==SH_HISTORY ? 0 : ((s)->v[((x)&WMASK)/WBITS] & ((uint64_t)1 << ((x) % WBITS))) )
@@ -274,18 +255,9 @@ index ca20ab43f..f08ec1e79 100644
  #else
  #define is_option(s,x)	((s)->v[((x)&WMASK)/WBITS] & ((uint64_t)1 << ((x) % WBITS)))
 diff --git a/src/cmd/ksh93/include/shell.h b/src/cmd/ksh93/include/shell.h
-index 0745d11ee..6f7e27c8a 100644
+index e58ad73bf..93cb6d7d5 100644
 --- a/src/cmd/ksh93/include/shell.h
 +++ b/src/cmd/ksh93/include/shell.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -229,8 +229,8 @@ struct sh_scoped
  
  struct limits
@@ -305,7 +277,7 @@ index 0745d11ee..6f7e27c8a 100644
  	int		realsubshell;	/* ${.sh.subshell}, actual subshell level (including virtual and forked) */
  	char		nv_restore;	/* set while restoring variables upon terminating a virtual subshell */
  	int32_t		shlvl;		/* $SHLVL, non-subshell child shell level */
-@@ -322,8 +322,8 @@ struct Shell_s
+@@ -321,8 +321,8 @@ struct Shell_s
  	char		used_pos;	/* used positional parameter */
  	char		universe;
  	char		winch;		/* set upon window size change or 'set -b' notification */
@@ -316,7 +288,7 @@ index 0745d11ee..6f7e27c8a 100644
  	short		arithrecursion;	/* current arithmetic recursion level */
  	char		indebug; 	/* set when in debug trap */
  	unsigned char	ignsig;		/* ignored signal in subshell */
-@@ -348,10 +348,10 @@ struct Shell_s
+@@ -347,10 +347,10 @@ struct Shell_s
  	int16_t		fn_depth;	/* scoped ksh-style function call depth */
  	int16_t		dot_depth;	/* dot-script and POSIX function call depth */
  	char		invoc_local;	/* set when inside of an invocation-local scope */
@@ -330,7 +302,7 @@ index 0745d11ee..6f7e27c8a 100644
  	char		**save_env;	/* saved pointers to environment variables with invalid names */
  	mode_t		mask;
  	void		*init_context;
-@@ -366,7 +366,7 @@ struct Shell_s
+@@ -365,7 +365,7 @@ struct Shell_s
  	Shinit_f	userinit;
  	Shbltin_f	bltinfun;
  	Shbltin_t	bltindata;
@@ -339,7 +311,7 @@ index 0745d11ee..6f7e27c8a 100644
  	Sfio_t		**sftable;
  	unsigned char	*fdstatus;
  	char		*pwd;
-@@ -477,9 +477,9 @@ extern Shwait_f		sh_waitnotify(Shwait_f);
+@@ -476,9 +476,9 @@ extern Shwait_f		sh_waitnotify(Shwait_f);
  extern Shscope_t	*sh_getscope(int,int);
  extern Shscope_t	*sh_setscope(Shscope_t*);
  extern void		sh_sigcheck(void);
@@ -719,18 +691,9 @@ index 67f394ac0..03995702d 100644
  			stkseek(sh.stk,off);
  			c  = mbconv(stkptr(sh.stk,off),c);
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index 4c77dea20..ee39dd524 100644
+index a90fcc548..ace2fbb39 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -49,7 +49,7 @@
  #include	"streval.h"
  
@@ -800,6 +763,15 @@ index 4c77dea20..ee39dd524 100644
  {
  	Mac_t	*mp = (Mac_t*)sh.mac_context;
  	Stk_t	*stkp = sh.stk;
+@@ -176,7 +176,7 @@ char *sh_mactrim(char *str, int mode)
+ 	mp->patfound = 0;
+ 	mp->assign = 0;
+ 	if(mode<0)
+-		mp->assign = -mode;
++		mp->assign = mode * -1;
+ 	mp->quoted = mp->lit = mp->split = mp->quote = 0;
+ 	mp->sp = 0;
+ 	setup_ifs(mp);
 @@ -188,9 +188,10 @@ char *sh_mactrim(char *str, int mode)
  	{
  		/* expand only if unique */
@@ -1372,8 +1344,8 @@ index 4c77dea20..ee39dd524 100644
 +				dolmax = (ptrdiff_t)strlen(id);
  				dolg = -1;
  				nextname(mp,id,0);
- 				/* Check if the prefix (id) itself exists. If so, start with that. */
-@@ -1663,7 +1672,7 @@ retry1:
+ 				v = nextname(mp,id,dolmax);
+@@ -1659,7 +1668,7 @@ retry1:
  	if(type && c==':')
  	{
  		c = fcmbget(&LEN);
@@ -1382,7 +1354,7 @@ index 4c77dea20..ee39dd524 100644
  			nulflg=1;
  		else if(c!='%' && c!='#')
  		{
-@@ -1691,17 +1700,17 @@ retry1:
+@@ -1687,17 +1696,17 @@ retry1:
  			}
  			if(c=='/' || c==':' || ((!v || (nulflg && *v==0)) ^ (c=='+' || newops)))
  			{
@@ -1406,7 +1378,7 @@ index 4c77dea20..ee39dd524 100644
  						fcseek(-LEN);
  						if(d=='(')
  							type = 0;
-@@ -1751,9 +1760,9 @@ retry1:
+@@ -1747,9 +1756,9 @@ retry1:
  	if(c==':')
  	{
  		char *lastchar;
@@ -1418,7 +1390,7 @@ index 4c77dea20..ee39dd524 100644
  		if(isastchar(mode))
  		{
  			if(id==idbuff)  /* ${@} or ${*} */
-@@ -1820,11 +1829,11 @@ retry1:
+@@ -1816,11 +1825,11 @@ retry1:
  			}
  			else
  				v += sliceoffset;
@@ -1432,7 +1404,7 @@ index 4c77dea20..ee39dd524 100644
  			if(slicelength <= 0)
  			{
  				v = 0;
-@@ -1857,7 +1866,7 @@ retry1:
+@@ -1853,7 +1862,7 @@ retry1:
  				vsize = slicelength;
  			}
  			else
@@ -1441,7 +1413,7 @@ index 4c77dea20..ee39dd524 100644
  		}
  		if(*lastchar)
  			mac_error();
-@@ -1897,10 +1906,13 @@ retry1:
+@@ -1893,10 +1902,13 @@ retry1:
  retry2:
  	if(v && (!nulflg || *v ) && c!='+')
  	{
@@ -1458,7 +1430,7 @@ index 4c77dea20..ee39dd524 100644
  		while(1)
  		{
  			if(!v)
-@@ -1911,10 +1923,10 @@ retry2:
+@@ -1907,10 +1919,10 @@ retry2:
  				if(c!='/')
  					flag |= STR_LEFT;
  				index = nmatch = 0;
@@ -1471,7 +1443,7 @@ index 4c77dea20..ee39dd524 100644
  					oldv = v;
  					nmatch_prev = nmatch;
  					if(c=='%')
-@@ -1923,11 +1935,11 @@ retry2:
+@@ -1919,11 +1931,11 @@ retry2:
  							match,
  							flag & STR_MAXIMAL);
  					else
@@ -1486,7 +1458,7 @@ index 4c77dea20..ee39dd524 100644
  					if(nmatch && repstr && !mp->macsub)
  						sh_setmatch(v,vsize,nmatch,match,index++);
  					if(nmatch)
-@@ -1951,7 +1963,7 @@ retry2:
+@@ -1947,7 +1959,7 @@ retry2:
  						/* avoid infinite loop */
  						if(nmatch && match[1]==0)
  						{
@@ -1495,7 +1467,7 @@ index 4c77dea20..ee39dd524 100644
  							nmatch = 0;
  							/* copy, and advance v by, one character */
  							if ((sz = mbsize(v)) < 1)
-@@ -1959,7 +1971,7 @@ retry2:
+@@ -1955,7 +1967,7 @@ retry2:
  							mac_copy(mp, v, sz);
  							v += sz;
  						}
@@ -1504,7 +1476,7 @@ index 4c77dea20..ee39dd524 100644
  						continue;
  					}
  					vsize = -1;
-@@ -1973,14 +1985,14 @@ retry2:
+@@ -1969,14 +1981,14 @@ retry2:
  			if (c == '^' || c == ',')
  			{
  				/* case modification: ${var^pat} ${var^^pat} ${var,pat} ${var,,pat} */
@@ -1523,7 +1495,7 @@ index 4c77dea20..ee39dd524 100644
  					if (nmatch == 0)
  						break;
  					if (match[1] == 0 && type)  /* avoid infinite loop */
-@@ -1998,7 +2010,8 @@ retry2:
+@@ -1994,7 +2006,8 @@ retry2:
  						mac_copy(mp, v, match[0]);
  					if (mbwide())  /* locale uses multibyte characters? */
  					{
@@ -1533,7 +1505,7 @@ index 4c77dea20..ee39dd524 100644
  						char	*mbuf = 0;
  						char	*cp = v + match[0], *ocp;
  						while (cp < v + match[1])
-@@ -2008,25 +2021,25 @@ retry2:
+@@ -2004,25 +2017,25 @@ retry2:
  							if (wc < 0)
  								nwc = '?';
  							else if (c == '^')
@@ -1565,7 +1537,7 @@ index 4c77dea20..ee39dd524 100644
  						mac_copy(mp, buf, match[1] - match[0]);
  						free(buf);
  					}
-@@ -2037,14 +2050,14 @@ retry2:
+@@ -2033,14 +2046,14 @@ retry2:
  				}
  			}
  			if(vsize)
@@ -1582,7 +1554,7 @@ index 4c77dea20..ee39dd524 100644
  			}
  			if(dolg==0 && dolmax==0)
  				 break;
-@@ -2140,7 +2153,7 @@ retry2:
+@@ -2136,7 +2149,7 @@ retry2:
  							if(ofs_size<0)	/* invalid mb char: fall back to using first byte */
  								ofs_size = 1;
  						}
@@ -1591,7 +1563,7 @@ index 4c77dea20..ee39dd524 100644
  					}
  				}
  			}
-@@ -2225,23 +2238,24 @@ nosub:
+@@ -2221,23 +2234,24 @@ nosub:
   * <type> is 0 for older `...` version
   * 1 for $(...) or 2 for ${ subshare; }
   */
@@ -1620,7 +1592,7 @@ index 4c77dea20..ee39dd524 100644
  	Sfoff_t			foff;
  	Namval_t		*np;
  	savemac.wasexpan = 1;
-@@ -2272,7 +2286,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
+@@ -2268,7 +2282,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
  			else
  				sfprintf(sh.strbuf,"%Lg",num);
  			str = sfstruse(sh.strbuf);
@@ -1629,7 +1601,7 @@ index 4c77dea20..ee39dd524 100644
  			sh.st.staklist = saveslp;
  			fcrestore(&save);
  			return;
-@@ -2299,11 +2313,11 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
+@@ -2295,11 +2309,11 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
  		sh_offstate(SH_VERBOSE);
  		if(mp->sp)
  			sfsync(mp->sp);	/* flush before executing command */
@@ -1643,7 +1615,7 @@ index 4c77dea20..ee39dd524 100644
  		type = 1;
  	}
  	if(t)
-@@ -2368,9 +2382,9 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
+@@ -2364,9 +2378,9 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
  	sh_offstate(SH_INTERACTIVE);
  	if((foff = sfseek(sp,0,SEEK_END)) > 0)
  	{
@@ -1655,7 +1627,7 @@ index 4c77dea20..ee39dd524 100644
  		stkseek(stkp,soff);
  	}
  	while((str=(char*)sfreserve(sp,SFIO_UNBOUND,0)) && (c=bufsize=sfvalue(sp))>0)
-@@ -2410,11 +2424,11 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
+@@ -2406,11 +2420,11 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
  		if(newlines >0)
  		{
  			if(mp->sp)
@@ -1669,7 +1641,7 @@ index 4c77dea20..ee39dd524 100644
  		}
  		else if(lastc)
  		{
-@@ -2438,12 +2452,12 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
+@@ -2434,12 +2448,12 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
  	if(--newlines>0 && sh.ifstable['\n']==S_DELIM)
  	{
  		if(mp->sp)
@@ -1684,7 +1656,7 @@ index 4c77dea20..ee39dd524 100644
  	}
  	if(lastc)
  	{
-@@ -2457,15 +2471,16 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
+@@ -2453,15 +2467,16 @@ static void comsubst(Mac_t *mp,Shnode_t* t, int type)
  /*
   * copy <str> onto the stack
   */
@@ -1705,7 +1677,7 @@ index 4c77dea20..ee39dd524 100644
  	else if(mp->pattern>=2 || (mp->pattern && nopat) || mp->assign==3)
  	{
  		const char *macro_state = sh_lexstates[ST_MACRO];
-@@ -2517,13 +2532,13 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
+@@ -2513,13 +2528,13 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
  			if(c)
  			{
  				if(c = (cp-1) - str)
@@ -1721,7 +1693,7 @@ index 4c77dea20..ee39dd524 100644
  	}
  	else if(!mp->quote && mp->split && (mp->ifs||mp->pattern))
  	{
-@@ -2551,7 +2566,7 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
+@@ -2547,7 +2562,7 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
  			n = ifs_state[c = *(unsigned char*)cp++];
  			if(mbwide() && n!=S_MBYTE && (len=mbsize(cp-1))>1)
  			{
@@ -1730,7 +1702,7 @@ index 4c77dea20..ee39dd524 100644
  				cp += --len;
  				size -= len;
  				continue;
-@@ -2638,7 +2653,7 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
+@@ -2634,7 +2649,7 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
  		}
  	}
  	else
@@ -1739,7 +1711,7 @@ index 4c77dea20..ee39dd524 100644
  }
  
  /*
-@@ -2649,9 +2664,9 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
+@@ -2645,9 +2660,9 @@ static void mac_copy(Mac_t *mp,const char *str, int size)
  static void endfield(Mac_t *mp,int split)
  {
  	struct argnod	*argp;
@@ -1751,7 +1723,7 @@ index 4c77dea20..ee39dd524 100644
  	{
  		argp = stkfreeze(stkp,1);
  		argp->argnxt.cp = 0;
-@@ -2667,7 +2682,7 @@ static void endfield(Mac_t *mp,int split)
+@@ -2663,7 +2678,7 @@ static void endfield(Mac_t *mp,int split)
  				count = path_generate(argp,mp->arghead,musttrim);
  			else
  #endif /* SHOPT_BRACEPAT */
@@ -1760,7 +1732,7 @@ index 4c77dea20..ee39dd524 100644
  			if(count)
  				mp->fields += count;
  			else if(split)	/* pattern is null string */
-@@ -2696,31 +2711,32 @@ static void endfield(Mac_t *mp,int split)
+@@ -2692,31 +2707,32 @@ static void endfield(Mac_t *mp,int split)
   * Finds the right substring of STRING using the expression PAT
   * the longest substring is found when FLAG is set.
   */
@@ -1802,7 +1774,7 @@ index 4c77dea20..ee39dd524 100644
  			break;
  		}
  		sp--;
-@@ -2740,7 +2756,7 @@ static int substring(const char *string,size_t len,const char *pat,int match[],
+@@ -2736,7 +2752,7 @@ static int substring(const char *string,size_t len,const char *pat,int match[],
  	static char	*_lastchar(const char *string, const char *endstring)
  	{
  		char *str = (char*)string;
@@ -1811,7 +1783,7 @@ index 4c77dea20..ee39dd524 100644
  		while(*str)
  		{
  			if((c=mbsize(str))<0)
-@@ -2752,14 +2768,14 @@ static int substring(const char *string,size_t len,const char *pat,int match[],
+@@ -2748,14 +2764,14 @@ static int substring(const char *string,size_t len,const char *pat,int match[],
  		return str;
  	}
  #endif /* SHOPT_MULTIBYTE */
@@ -1828,7 +1800,7 @@ index 4c77dea20..ee39dd524 100644
  		if(len>0)
  		{
  			while(str<strmax && mbchar(str))
-@@ -2772,7 +2788,7 @@ static int	charlen(const char *string,int len)
+@@ -2768,7 +2784,7 @@ static int	charlen(const char *string,int len)
  	else
  	{
  		if(len<0)
@@ -1837,7 +1809,7 @@ index 4c77dea20..ee39dd524 100644
  		return len;
  	}
  }
-@@ -2780,11 +2796,11 @@ static int	charlen(const char *string,int len)
+@@ -2776,11 +2792,11 @@ static int	charlen(const char *string,int len)
  /*
   * <offset> is byte offset for beginning of tilde string
   */
@@ -1851,7 +1823,7 @@ index 4c77dea20..ee39dd524 100644
  	sfputc(sh.stk,0);				/* terminate current stack object to avoid data corruption */
  	/*
  	 * Allow overriding tilde expansion with a .sh.tilde.set or .get discipline function.
-@@ -2854,7 +2870,8 @@ static char *sh_tilde(const char *string)
+@@ -2850,7 +2866,8 @@ static char *sh_tilde(const char *string)
  	if((c = fcgetc())=='/')
  	{
  		char	*str;
@@ -1861,7 +1833,7 @@ index 4c77dea20..ee39dd524 100644
  		sfputr(sh.stk,string,-1);
  		do
  		{
-@@ -2966,7 +2983,7 @@ static noreturn void mac_error(void)
+@@ -2962,7 +2979,7 @@ static noreturn void mac_error(void)
  static char *mac_getstring(char *pattern)
  {
  	char	*cp = pattern, *rep = NULL, *dp = NULL;
@@ -2155,19 +2127,6 @@ index 7eacec2ed..6e43e7d7b 100644
 +	sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
  	return (char*)(stream->_next = stream->_data+m);
  }
-diff --git a/src/lib/libast/tm/tmxdate.c b/src/lib/libast/tm/tmxdate.c
-index c63be9396..2972b6778 100644
---- a/src/lib/libast/tm/tmxdate.c
-+++ b/src/lib/libast/tm/tmxdate.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 -- 
-2.52.0
+2.53.0
 

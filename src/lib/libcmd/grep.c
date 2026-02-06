@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1992-2014 AT&T Intellectual Property          *
-*             Copyright (c) 2025 Contributors to ksh 93u+m             *
+*          Copyright (c) 2025-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -23,7 +23,7 @@ static const char usage[] =
 "[-author?Glenn Fowler <gsf@research.att.com>]"
 "[-author?Doug McIlroy <doug@research.bell-labs.com>]"
 "[-copyright?(c) 1992-2014 AT&T Intellectual Property]"
-"[-copyright?(c) 2025 Contributors to ksh 93u+m]"
+"[-copyright?(c) 2025-2026 Contributors to ksh 93u+m]"
 "[-license?https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html]"
 #ifndef ERROR_CATALOG
 #define ERROR_CATALOG "libcmd"

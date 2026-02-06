@@ -176,7 +176,7 @@ char *sh_mactrim(char *str, char mode)
 	mp->patfound = 0;
 	mp->assign = 0;
 	if(mode<0)
-		mp->assign = -mode;
+		mp->assign = mode * -1;
 	mp->quoted = mp->lit = mp->split = mp->quote = 0;
 	mp->sp = 0;
 	setup_ifs(mp);

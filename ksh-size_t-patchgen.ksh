@@ -10,6 +10,7 @@ fi
 
 git reset --hard; git clean -fdx
 git checkout dev
+git pull upstream dev
 git branch -D 64bit-fixes-series || true
 git branch 64bit-fixes-series
 git checkout 64bit-fixes-series

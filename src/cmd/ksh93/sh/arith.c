@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -337,7 +337,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				if(np=nv_search(stkptr(sh.stk,off),sh.fun_tree,0))
 				{
 					struct Ufunction *rp = np->nvalue;
-					lvalue->nargs = -rp->argc;
+					lvalue->nargs = rp->argc * -1;
 					lvalue->fun = (Math_f)np;
 					break;
 				}

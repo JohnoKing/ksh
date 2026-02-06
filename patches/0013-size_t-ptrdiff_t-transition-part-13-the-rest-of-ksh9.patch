@@ -1,6 +1,6 @@
-From 50ac566a250694bc1475c0b2a23c87d7eb1e83b8 Mon Sep 17 00:00:00 2001
+From 2813df470015b8f005c63651a5c0ef836cbcaabd Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:18:15 -0800
+Date: Fri, 6 Feb 2026 07:33:30 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -53,34 +53,34 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/path.h    |  10 +--
  src/cmd/ksh93/include/streval.h |  16 ++---
  src/cmd/ksh93/sh/args.c         |  46 ++++++------
- src/cmd/ksh93/sh/arith.c        |  28 ++++----
+ src/cmd/ksh93/sh/arith.c        |  30 ++++----
  src/cmd/ksh93/sh/deparse.c      |  29 ++++----
- src/cmd/ksh93/sh/expand.c       |  27 +++----
- src/cmd/ksh93/sh/fault.c        |  44 ++++++------
+ src/cmd/ksh93/sh/expand.c       |  25 +++----
+ src/cmd/ksh93/sh/fault.c        |  42 +++++------
  src/cmd/ksh93/sh/io.c           | 124 ++++++++++++++++----------------
- src/cmd/ksh93/sh/jobs.c         |  45 ++++++------
+ src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
  src/cmd/ksh93/sh/main.c         |  21 +++---
  src/cmd/ksh93/sh/path.c         |  98 +++++++++++++------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
- src/cmd/ksh93/sh/xec.c          | 115 +++++++++++++++--------------
+ src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++--------------
  src/cmd/ksh93/tests/basic.sh    |  24 +++++++
- 18 files changed, 378 insertions(+), 320 deletions(-)
+ 18 files changed, 375 insertions(+), 317 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 581e68548..08eb2ca41 100644
+index 404633eeb..5d1073d99 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
- For full details, see the git log at: https://github.com/ksh93/ksh
- Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2026-01-30:
-+
+ 2026-02-06:
+ 
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2026-01-28:
++2026-02-06:
++
+ - Fixed a file descriptor leak introduced in 93u+ 2012-07-27 that occurred
+   when forking nested subshells.
  
- - [v1.1] Backported 'builtin -p' and 'umask -p' from ksh93v-, which
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -406,7 +406,7 @@ index 99d22f686..c992ea6ce 100644
  	sh.subshell = savesubshell;
  	job.jobcontrol = savejobcontrol;
 diff --git a/src/cmd/ksh93/sh/arith.c b/src/cmd/ksh93/sh/arith.c
-index ebfcd7c41..094316c40 100644
+index ebfcd7c41..bdc0cfced 100644
 --- a/src/cmd/ksh93/sh/arith.c
 +++ b/src/cmd/ksh93/sh/arith.c
 @@ -2,7 +2,7 @@
@@ -469,6 +469,15 @@ index ebfcd7c41..094316c40 100644
  				const struct mathtab *tp;
  				c = **ptr;
  				lvalue->fun = 0;
+@@ -336,7 +337,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+ 				if(np=nv_search(stkptr(sh.stk,off),sh.fun_tree,0))
+ 				{
+ 					struct Ufunction *rp = np->nvalue;
+-					lvalue->nargs = -rp->argc;
++					lvalue->nargs = rp->argc * -1;
+ 					lvalue->fun = (Math_f)np;
+ 					break;
+ 				}
 @@ -361,10 +362,10 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  				np = L_ARGNOD;
  			else
@@ -633,18 +642,9 @@ index a43aa01b2..b06911a28 100644
  		sfseek(infile=sh.heredocs,iop->iooffset,SEEK_SET);
  	sfmove(infile,outfile,iop->iosize,-1);
 diff --git a/src/cmd/ksh93/sh/expand.c b/src/cmd/ksh93/sh/expand.c
-index e5fd8fd49..140eed4bf 100644
+index 1a909528c..b0e0418d4 100644
 --- a/src/cmd/ksh93/sh/expand.c
 +++ b/src/cmd/ksh93/sh/expand.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -36,8 +36,8 @@
  
  #define argbegin	argnxt.cp
@@ -687,7 +687,7 @@ index e5fd8fd49..140eed4bf 100644
  	for(np=(Namval_t*)dtfirst(tree); np; np=(Namval_t*)dtnext(tree,np))
  	{
 @@ -167,7 +168,7 @@ static int scantree(Dt_t *tree, const char *pattern, struct argnod **arghead)
-  * generate the list of files found by adding an suffix to end of name
+  * Generate the list of files found by adding a suffix to end of name
   * The number of matches is returned
   */
 -int path_complete(const char *name,const char *suffix, struct argnod **arghead)
@@ -740,18 +740,9 @@ index e5fd8fd49..140eed4bf 100644
  			}
  			else
 diff --git a/src/cmd/ksh93/sh/fault.c b/src/cmd/ksh93/sh/fault.c
-index 950c6f08b..1ce98bc6b 100644
+index e6c4f14de..eeb269e87 100644
 --- a/src/cmd/ksh93/sh/fault.c
 +++ b/src/cmd/ksh93/sh/fault.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -95,7 +95,7 @@ void	sh_fault(int sig)
  		if(flag&SH_SIGIGNORE)
  		{
@@ -893,7 +884,7 @@ index 950c6f08b..1ce98bc6b 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 78a2ad9ef..10366198c 100644
+index 65b1f64c8..d52b4f026 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
@@ -948,7 +939,7 @@ index 78a2ad9ef..10366198c 100644
  	if(sftable)
  		free(sftable);
  	sh.lim.open_max = n;
-@@ -760,7 +760,7 @@ int sh_open(const char *path, int flags, ...)
+@@ -761,7 +761,7 @@ int sh_open(const char *path, int flags, ...)
  	char		*e;
  	va_list		ap;
  	va_start(ap, flags);
@@ -957,7 +948,7 @@ index 78a2ad9ef..10366198c 100644
  	va_end(ap);
  	errno = 0;
  	if(path==0)
-@@ -835,7 +835,7 @@ int sh_open(const char *path, int flags, ...)
+@@ -836,7 +836,7 @@ int sh_open(const char *path, int flags, ...)
  			fd = nfd;
  			goto ok;
  		}
@@ -966,7 +957,7 @@ index 78a2ad9ef..10366198c 100644
  			return -1;
  		flags &= O_ACCMODE;
  		if(!(mode&IOWRITE) && ((flags==O_WRONLY) || (flags==O_RDWR)))
-@@ -991,13 +991,13 @@ static size_t pat_line(const regex_t* rp, const char *buff, size_t n)
+@@ -992,13 +992,13 @@ static size_t pat_line(const regex_t* rp, const char *buff, size_t n)
  	while(n>0)
  	{
  		for(sp=cp; n-->0 && *cp++ != '\n';);
@@ -984,7 +975,7 @@ index 78a2ad9ef..10366198c 100644
  {
  	char	*cp;
  	int	fd = sffileno(sp), close_exec = sh.fdstatus[fd]&IOCLEX;
-@@ -1008,7 +1008,7 @@ static int io_patseek(regex_t *rp, Sfio_t* sp, int flags)
+@@ -1009,7 +1009,7 @@ static int io_patseek(regex_t *rp, Sfio_t* sp, int flags)
  		was_share = sfset(sp,SFIO_SHARE,1);
  	while((cp=sfreserve(sp, -s, SFIO_LOCKR)) || (cp=sfreserve(sp,SFIO_UNBOUND, SFIO_LOCKR)))
  	{
@@ -993,7 +984,7 @@ index 78a2ad9ef..10366198c 100644
  		while(n>0 && cp[n-1]!='\n')
  			n--;
  		if(n)
-@@ -1070,6 +1070,7 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
+@@ -1071,6 +1071,7 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
  	struct stat	statb;
  	char		*tname, *sp, *ep, path[PATH_MAX+1];
  	int		fd,r;
@@ -1001,7 +992,7 @@ index 78a2ad9ef..10366198c 100644
  	if(mode==0)
  	{
  		if((fd = sh_open(name,O_RDONLY,0)) >= 0)
-@@ -1085,10 +1086,10 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
+@@ -1086,10 +1087,10 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
  		else if(fd < 0  && errno!=ENOENT)
  			return 0;
  	}
@@ -1014,7 +1005,7 @@ index 78a2ad9ef..10366198c 100644
  	}
  	stkseek(sh.stk,1);
  	sfputr(sh.stk,name,0);
-@@ -1096,7 +1097,7 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
+@@ -1097,7 +1098,7 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
  	sp = ep = stkptr(sh.stk,1);
  	if(ep = strrchr(sp,'/'))
  	{
@@ -1023,7 +1014,7 @@ index 78a2ad9ef..10366198c 100644
  		stkseek(sh.stk,ep-sp);
  	}
  	else
-@@ -1130,7 +1131,8 @@ int	sh_redirect(struct ionod *iop, int flag)
+@@ -1131,7 +1132,8 @@ int	sh_redirect(struct ionod *iop, int flag)
  {
  	Sfoff_t off;
  	char *fname;
@@ -1033,7 +1024,7 @@ index 78a2ad9ef..10366198c 100644
  	const char *message = e_open;
  	int o_mode;		/* mode flag for open */
  	static char io_op[7];	/* used for -x trace info */
-@@ -1273,7 +1275,7 @@ int	sh_redirect(struct ionod *iop, int flag)
+@@ -1274,7 +1276,7 @@ int	sh_redirect(struct ionod *iop, int flag)
  				if((fd=fname[0])>='0' && fd<='9')
  				{
  					char *number = fname;
@@ -1042,7 +1033,7 @@ index 78a2ad9ef..10366198c 100644
  					if(*number=='-')
  					{
  						toclose = dupfd;
-@@ -1400,9 +1402,9 @@ int	sh_redirect(struct ionod *iop, int flag)
+@@ -1401,9 +1403,9 @@ int	sh_redirect(struct ionod *iop, int flag)
  					}
  					if(perm>0)
  #if _lib_fchmod
@@ -1054,7 +1045,7 @@ index 78a2ad9ef..10366198c 100644
  #endif
  				}
  			}
-@@ -1626,7 +1628,7 @@ static int io_heredoc(struct ionod *iop, const char *name, int traceon)
+@@ -1627,7 +1629,7 @@ static int io_heredoc(struct ionod *iop, const char *name, int traceon)
  		}
  		tmp = outfile;
  		if(fno>=0 && !(iop->iofile&IOQUOTE))
@@ -1063,7 +1054,7 @@ index 78a2ad9ef..10366198c 100644
  		if(fno>=0 || (iop->iofile&IOQUOTE))
  		{
  			/* This is a quoted here-document, not expansion */
-@@ -1690,7 +1692,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
+@@ -1691,7 +1693,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
  			return;
  	}
  	/* make sure table is large enough */
@@ -1072,7 +1063,7 @@ index 78a2ad9ef..10366198c 100644
  	{
  		char 	*cp, *oldptr = (char*)filemap;
  		char 	*oldend = (char*)&filemap[filemapsize];
-@@ -1875,7 +1877,8 @@ int sh_ioaccess(int fd,int mode)
+@@ -1876,7 +1878,8 @@ int sh_ioaccess(int fd,int mode)
   */
  static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
  {
@@ -1082,7 +1073,7 @@ index 78a2ad9ef..10366198c 100644
  	NOT_USED(data);
  	if(type==SFIO_DPOP || type==SFIO_FINAL)
  		free(handle);
-@@ -1893,10 +1896,10 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
+@@ -1894,10 +1897,10 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
  	{
  #ifndef FNDELAY
  #   ifdef O_NDELAY
@@ -1096,7 +1087,7 @@ index 78a2ad9ef..10366198c 100644
  			return 1;
  		}
  #   endif /* O_NDELAY */
-@@ -1904,9 +1907,9 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
+@@ -1905,9 +1908,9 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
  #ifdef O_NONBLOCK
  		if(errno==EAGAIN)
  		{
@@ -1109,7 +1100,7 @@ index 78a2ad9ef..10366198c 100644
  			return 1;
  		}
  #endif /* O_NONBLOCK */
-@@ -1914,11 +1917,11 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
+@@ -1915,11 +1918,11 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
  			return 0;
  		else if(sh.bltinfun && (sh.trapnote&SH_SIGTRAP) && sh.lastsig)
  			return -1;
@@ -1123,7 +1114,7 @@ index 78a2ad9ef..10366198c 100644
  	if(sh.bltinfun && sh.bltindata.sigset)
  		return -1;
  	errno = 0;
-@@ -1930,7 +1933,7 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
+@@ -1931,7 +1934,7 @@ static int slowexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
  	}
  	if(sh.trapnote&SH_SIGTRAP)
  		sh_chktrap();
@@ -1132,7 +1123,7 @@ index 78a2ad9ef..10366198c 100644
  }
  
  /*
-@@ -1959,6 +1962,7 @@ static void time_grace(void *handle)
+@@ -1960,6 +1963,7 @@ static void time_grace(void *handle)
  static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
  {
  	int fd = sffileno(iop);
@@ -1140,7 +1131,7 @@ index 78a2ad9ef..10366198c 100644
  	if(job.waitsafe && job.savesig)
  	{
  		job_lock();
-@@ -1973,11 +1977,11 @@ static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
+@@ -1974,11 +1978,11 @@ static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
  		return 0;
  	sh_onstate(SH_TTYWAIT);
  	if(!(sh.fdstatus[fd]&IOCLEX) && (sfset(iop,0,0)&SFIO_SHARE))
@@ -1155,7 +1146,7 @@ index 78a2ad9ef..10366198c 100644
  }
  /*
   * This is the read discipline that is applied to slow devices
-@@ -1986,7 +1990,8 @@ static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
+@@ -1987,7 +1991,8 @@ static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
  static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
  {
  	int	(*readf)(void*, int, char*, int, int);
@@ -1165,7 +1156,7 @@ index 78a2ad9ef..10366198c 100644
  	NOT_USED(handle);
  #if SHOPT_ESH
  	if(sh_isoption(SH_EMACS) || sh_isoption(SH_GMACS))
-@@ -2018,8 +2023,8 @@ static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
+@@ -2019,8 +2024,8 @@ static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
  		if(io_prompt(iop,sh.nextprompt)<0 && errno==EIO)
  			return 0;
  		if(sh.timeout)
@@ -1176,7 +1167,7 @@ index 78a2ad9ef..10366198c 100644
  		if(timeout)
  			sh_timerdel(timeout);
  		timeout=0;
-@@ -2039,7 +2044,7 @@ static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
+@@ -2040,7 +2045,7 @@ static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
  			if((r & (HIST_EVENT|HIST_PRINT)) && !(r & HIST_ERROR) && xp)
  			{
  				strlcpy(buff, xp, size);
@@ -1185,7 +1176,7 @@ index 78a2ad9ef..10366198c 100644
  #if SHOPT_ESH || SHOPT_VSH
  				if(!sh_isoption(SH_HISTVERIFY) || readf==ed_read)
  #endif /* SHOPT_ESH || SHOPT_VSH */
-@@ -2130,7 +2135,7 @@ int sh_iocheckfd(int fd)
+@@ -2131,7 +2136,7 @@ int sh_iocheckfd(int fd)
  			S_ISSOCK(statb.st_mode) ||
  #endif /* S_ISSOCK */
  			/* The following is for sockets on the sgi */
@@ -1194,7 +1185,7 @@ index 78a2ad9ef..10366198c 100644
  			(S_ISCHR(statb.st_mode) && (statb.st_ino!=null_ino || statb.st_dev!=null_dev))
  		))
  			n |= IONOSEEK;
-@@ -2192,8 +2197,8 @@ static int	io_prompt(Sfio_t *iop,int flag)
+@@ -2193,8 +2198,8 @@ static int	io_prompt(Sfio_t *iop,int flag)
  		{
  			/* PS2 prompt. Save stack state to avoid corrupting command substitutions
  			 * in case we're executing a PS2.get discipline function at parse time. */
@@ -1205,7 +1196,7 @@ index 78a2ad9ef..10366198c 100644
  			if (cp = nv_getval(sh_scoped(PS2NOD)))
  				sfputr(sfstderr,cp,-1);
  			/* Restore the stack. (If nv_getval ran a PS2.get discipline, this may free the space cp points to.) */
-@@ -2236,7 +2241,7 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
+@@ -2237,7 +2242,7 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
  	int fd = sffileno(sp);
  	struct checkpt *pp;
  	int mode;
@@ -1214,7 +1205,7 @@ index 78a2ad9ef..10366198c 100644
  	if(flag==SFIO_SETFD || flag==SFIO_CLOSING)
  	{
  		if(newfd<0)
-@@ -2318,7 +2323,6 @@ struct eval
+@@ -2319,7 +2324,6 @@ struct eval
  {
  	Sfdisc_t	disc;
  	char		**argv;
@@ -1222,7 +1213,7 @@ index 78a2ad9ef..10366198c 100644
  	char		addspace;
  };
  
-@@ -2340,7 +2344,6 @@ Sfio_t *sh_sfeval(char *argv[])
+@@ -2341,7 +2345,6 @@ Sfio_t *sh_sfeval(char *argv[])
  		ep = new_of(struct eval,0);
  		ep->disc = eval_disc;
  		ep->argv = argv;
@@ -1230,7 +1221,7 @@ index 78a2ad9ef..10366198c 100644
  		ep->addspace  = 0;
  		sfdisc(iop,&ep->disc);
  	}
-@@ -2354,7 +2357,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
+@@ -2355,7 +2358,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
  {
  	struct eval *ep = (struct eval*)handle;
  	char	*cp;
@@ -1239,7 +1230,7 @@ index 78a2ad9ef..10366198c 100644
  	NOT_USED(data);
  	/* no more to do */
  	if(type!=SFIO_READ || !(cp = ep->argv[0]))
-@@ -2369,7 +2372,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
+@@ -2370,7 +2373,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
  	if(!ep->addspace)
  	{
  		/* get the length of this string */
@@ -1248,7 +1239,7 @@ index 78a2ad9ef..10366198c 100644
  		/* move to next string */
  		ep->argv++;
  	}
-@@ -2389,7 +2392,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
+@@ -2390,7 +2393,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
   * the stream <sp> starting at offset <offset>
   * The stream can be read with the normal stream operations
   */
@@ -1257,7 +1248,7 @@ index 78a2ad9ef..10366198c 100644
  {
  	struct subfile *disp;
  	if(sfseek(sp,offset,SEEK_SET) <0)
-@@ -2415,12 +2418,12 @@ static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
+@@ -2416,12 +2419,12 @@ static ssize_t subread(Sfio_t* sp,void* buff,size_t size,Sfdisc_t* handle)
  	sfseek(disp->oldsp,disp->offset,SEEK_SET);
  	if(disp->left == 0)
  		return 0;
@@ -1275,7 +1266,7 @@ index 78a2ad9ef..10366198c 100644
  	return n;
  }
  
-@@ -2461,7 +2464,8 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
+@@ -2462,7 +2465,8 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
  	int i,j;
  	char **arg;
  	int nrow, ncol=1, ndigits=1;
@@ -1285,7 +1276,7 @@ index 78a2ad9ef..10366198c 100644
  	nrow = 2 * (sh.lines / 3) + 1;	/* number of rows before going to multi-columns */
  	for(i=argn;i >= 10;i /= 10)
  		ndigits++;
-@@ -2473,7 +2477,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
+@@ -2474,7 +2478,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
  	i = 0;
  	for(arg=argv; *arg;arg++)
  	{
@@ -1294,7 +1285,7 @@ index 78a2ad9ef..10366198c 100644
  			i = j;
  	}
  	i += (ndigits+LBLSIZ);
-@@ -2489,7 +2493,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
+@@ -2490,7 +2494,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
  		nrow = 1 + (argn-1)/ncol;
  	}
  skip:
@@ -1303,7 +1294,7 @@ index 78a2ad9ef..10366198c 100644
  	for(i=0;i<nrow;i++)
  	{
  		if(sh.trapnote&SH_SIGSET)
-@@ -2679,7 +2683,7 @@ Sfio_t	*sh_fd2sfio(int fd)
+@@ -2680,7 +2684,7 @@ Sfio_t	*sh_fd2sfio(int fd)
  			flags |= SFIO_READ;
  		if(status&IOWRITE)
  			flags |= SFIO_WRITE;
@@ -1313,18 +1304,9 @@ index 78a2ad9ef..10366198c 100644
  	}
  	return sp;
 diff --git a/src/cmd/ksh93/sh/jobs.c b/src/cmd/ksh93/sh/jobs.c
-index f98d273b3..39acdc9e8 100644
+index 19e8a5e0d..5d5408c46 100644
 --- a/src/cmd/ksh93/sh/jobs.c
 +++ b/src/cmd/ksh93/sh/jobs.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -91,10 +91,7 @@ pid_t	pid_fromstring(char *str)
  	pid_t	pid;
  	char	*last;
@@ -1365,7 +1347,7 @@ index f98d273b3..39acdc9e8 100644
  			}
  #if SHOPT_BGX
  			if(pw->p_flag&P_BG)
-@@ -567,8 +565,8 @@ void job_init(void)
+@@ -566,8 +564,8 @@ void job_init(void)
  #ifdef CNSUSP
  	/* set the switch character */
  	tty_get(JOBTTY,&my_stty);
@@ -1376,7 +1358,7 @@ index f98d273b3..39acdc9e8 100644
  	{
  		my_stty.c_cc[VSUSP] = CSWTCH;
  		tty_set(JOBTTY,TCSAFLUSH,&my_stty);
-@@ -783,7 +781,8 @@ int job_list(struct process *pw,int flag)
+@@ -782,7 +780,8 @@ int job_list(struct process *pw,int flag)
  	struct process *px = pw;
  	int  n;
  	const char *msg;
@@ -1386,7 +1368,7 @@ index f98d273b3..39acdc9e8 100644
  	if(!pw || pw->p_job<=0)
  		return 1;
  	if(pw->p_env != sh.jobenv)
-@@ -800,14 +799,14 @@ int job_list(struct process *pw,int flag)
+@@ -799,14 +798,14 @@ int job_list(struct process *pw,int flag)
  	job_lock();
  	n = px->p_job;
  	if(px==job.pwlist)
@@ -1405,7 +1387,7 @@ index f98d273b3..39acdc9e8 100644
  	do
  	{
  		n = 0;
-@@ -824,19 +823,19 @@ int job_list(struct process *pw,int flag)
+@@ -823,19 +822,19 @@ int job_list(struct process *pw,int flag)
  			msg = sh_translate(e_running);
  		px->p_flag &= ~P_NOTIFY;
  		sfputr(outfile,msg,-1);
@@ -1429,7 +1411,7 @@ index f98d273b3..39acdc9e8 100644
  		if(flag&JOB_LFLAG)
  			px = px->p_nxtproc;
  		else
-@@ -1017,9 +1016,9 @@ static struct process *job_byname(char *name)
+@@ -1016,9 +1015,9 @@ static struct process *job_byname(char *name)
  {
  	struct process *pw = job.pwlist;
  	struct process *pz = 0;
@@ -1441,7 +1423,7 @@ index f98d273b3..39acdc9e8 100644
  	if(!sh.hist_ptr)
  		return NULL;
  	if(*cp=='?')
-@@ -1151,7 +1150,7 @@ int job_post(pid_t pid, pid_t join)
+@@ -1150,7 +1149,7 @@ int job_post(pid_t pid, pid_t join)
  	pw->p_pid = pid;
  	if(!sh.outpipe || sh.cpid==pid)
  		pw->p_flag = P_EXITSAVE;
@@ -1450,7 +1432,7 @@ index f98d273b3..39acdc9e8 100644
  	pw->p_exit = 0;
  	if(sh_isstate(SH_MONITOR))
  	{
-@@ -1173,7 +1172,7 @@ int job_post(pid_t pid, pid_t join)
+@@ -1172,7 +1171,7 @@ int job_post(pid_t pid, pid_t join)
  		pw->p_name = -1;
  	if ((val = job_chksave(pid))>=0 && !jobfork)
  	{
@@ -1460,7 +1442,7 @@ index f98d273b3..39acdc9e8 100644
  		{
  			pw->p_flag |= (P_SIGNALLED|P_STOPPED);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
-index c7b94cacf..fc61c1f03 100644
+index 0cd68887e..8d38e06f6 100644
 --- a/src/cmd/ksh93/sh/main.c
 +++ b/src/cmd/ksh93/sh/main.c
 @@ -102,6 +102,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
@@ -1537,7 +1519,7 @@ index c7b94cacf..fc61c1f03 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index eb568c3bc..b3e6c7727 100644
+index 164cbeafe..5798607a4 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1754,7 +1736,7 @@ index eb568c3bc..b3e6c7727 100644
  		stkseek(sh.stk,offset);
  	sfputr(sh.stk,"/.paths",0);
 @@ -1520,11 +1528,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
- 			close(fd);
+ 			ast_close(fd);
  			return 0;
  		}
 -		n = statb.st_size;
@@ -1767,7 +1749,7 @@ index eb568c3bc..b3e6c7727 100644
 -		n=read(fd,cp=sp,n);
 +		n=read(fd,cp=sp,l);
  		sp[n] = 0;
- 		close(fd);
+ 		ast_close(fd);
  		for(ep=0; n--; cp++)
 @@ -1543,17 +1551,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
@@ -2029,18 +2011,9 @@ index 1e77d44f8..77e67ea84 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index 1f78e3a73..c3fd21a7f 100644
+index 482326d15..cc16b6863 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -152,10 +152,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
   */
  static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
@@ -2169,10 +2142,10 @@ index 1f78e3a73..c3fd21a7f 100644
  		fd = savein;
 -	sp = sfnew(NULL,NULL,SFIO_UNBOUND,fd,SFIO_READ);
 +	sp = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND,fd,SFIO_READ);
- 	while(close(0)<0 && errno==EINTR)
- 		errno = err;
+ 	ast_close(0);
  	open(e_devnull,O_RDONLY);
-@@ -1120,10 +1125,11 @@ int sh_exec(const Shnode_t *t, int flags)
+ 	sh.offsets[0] = -1;
+@@ -1119,10 +1124,11 @@ int sh_exec(const Shnode_t *t, int flags)
  				/* check for builtins */
  				if(np && is_abuiltin(np))
  				{
@@ -2186,7 +2159,7 @@ index 1f78e3a73..c3fd21a7f 100644
  					struct checkpt	*buffp;
  					Shbltin_t	*bp = &sh.bltindata;
  					/* Fallback optimization for ':'/'true' and 'false' */
-@@ -1638,7 +1644,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1637,7 +1643,8 @@ int sh_exec(const Shnode_t *t, int flags)
  		    case TSETIO:
  		    {
  			pid_t	pid = 0;
@@ -2196,7 +2169,7 @@ index 1f78e3a73..c3fd21a7f 100644
  			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
  			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  			if(sh.subshell && !sh.subshare)
-@@ -1651,7 +1658,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1650,7 +1657,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				for (i = t->fork.forkio; i; i = i->ionxt)
  				{
  					unsigned f = i->iofile;
@@ -2205,7 +2178,7 @@ index 1f78e3a73..c3fd21a7f 100644
  					{
  						sh_subfork();
  						break;
-@@ -1698,7 +1705,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1697,7 +1704,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				free_list(buffp->olist);
  			if(type&FPIN)
  			{
@@ -2215,7 +2188,7 @@ index 1f78e3a73..c3fd21a7f 100644
  				job.waitall = waitall;
  				if(!(e & SH_EXITSIG))
  				{
-@@ -1737,8 +1745,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1736,8 +1744,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				if((nsig=sh.st.trapmax*sizeof(char*))>0 || sh.st.trapcom[0])
  				{
  					nsig += sizeof(char*);
@@ -2226,7 +2199,7 @@ index 1f78e3a73..c3fd21a7f 100644
  					sh.st.otrapcom = (char**)savsig;
  				}
  				/* Still act like a subshell: reseed $RANDOM and increment ${.sh.subshell} */
-@@ -1767,11 +1775,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1766,11 +1774,11 @@ int sh_exec(const Shnode_t *t, int flags)
  		    {
  			int	pvo[3];	/* old pipe for multi-stage */
  			int	pvn[3];	/* current set up pipe */
@@ -2241,7 +2214,7 @@ index 1f78e3a73..c3fd21a7f 100644
  			int	savejobid = job.curjobid;
  			int	*exitval=0,*saveexitval = job.exitval;
  			pid_t	savepgid = job.curpgid;
-@@ -1794,8 +1802,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1793,8 +1801,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				job.curpgid = 0;
  				while((tn=tn->lst.lstrit) && tn->tre.tretyp==TFIL)
  					job.waitall++;
@@ -2252,7 +2225,7 @@ index 1f78e3a73..c3fd21a7f 100644
  			}
  			else
  				job.waitall = !pipejob && (sh_isstate(SH_MONITOR) || sh_isstate(SH_TIMING));
-@@ -1954,7 +1962,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1953,7 +1961,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				if(t->tre.tretyp&COMSCAN)
  				{
  					char *val;
@@ -2261,7 +2234,7 @@ index 1f78e3a73..c3fd21a7f 100644
  					if(refresh)
  					{
  						sh_menu(sfstderr,nargs,args);
-@@ -2301,7 +2309,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2298,7 +2306,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			{
  				Dt_t *root;
  				Namval_t *oldnspace = sh.namespace;
@@ -2270,7 +2243,7 @@ index 1f78e3a73..c3fd21a7f 100644
  				int	flags=NV_NOARRAY|NV_VARNAME;
  				struct checkpt *chkp = stkalloc(sh.stk,sizeof(struct checkpt));
  				int jmpval;
-@@ -2345,7 +2353,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2342,7 +2350,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			error_info.line = t->funct.functline-sh.st.firstline;
  			if(cp || sh.prefix)
  			{
@@ -2279,7 +2252,7 @@ index 1f78e3a73..c3fd21a7f 100644
  				if(sh.prefix)
  				{
  					cp = sh.prefix;
-@@ -2356,7 +2364,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2353,7 +2361,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				}
  				else
  				{
@@ -2288,7 +2261,7 @@ index 1f78e3a73..c3fd21a7f 100644
  					sfputc(sh.stk,0);
  					npv = nv_open(stkptr(sh.stk,offset),sh.var_tree,NV_NOARRAY|NV_VARNAME);
  				}
-@@ -2452,7 +2460,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2449,7 +2457,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				rp->nspace = sh.namespace;
  				rp->fname = 0;
  				rp->argv = ac ? ac->comarg.dp->dolval + 1 : NULL;
@@ -2297,7 +2270,7 @@ index 1f78e3a73..c3fd21a7f 100644
  				rp->fdict = sh.fun_tree;
  				fp = (struct functnod*)(slp+1);
  				if(fp->functtyp==(TFUN|FAMP))
-@@ -2520,7 +2528,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2517,7 +2525,7 @@ int sh_exec(const Shnode_t *t, int flags)
  					{
  						char unop[3];
  						unop[0] = '-';
@@ -2306,7 +2279,7 @@ index 1f78e3a73..c3fd21a7f 100644
  						unop[2] = 0;
  						argv[1] = unop;
  						argv[2] = left;
-@@ -2548,7 +2556,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2545,7 +2553,7 @@ int sh_exec(const Shnode_t *t, int flags)
  						argv[5] = 0;
  						sh_debug(trap,NULL,NULL,argv,pattern);
  					}
@@ -2315,7 +2288,7 @@ index 1f78e3a73..c3fd21a7f 100644
  					if(traceon)
  					{
  						sfprintf(sfstderr,"%s %s ",sh_fmtq(left),op);
-@@ -2619,17 +2627,17 @@ int sh_run(int argn, char *argv[])
+@@ -2616,17 +2624,17 @@ int sh_run(int argn, char *argv[])
  {
  	struct dolnod	*dp;
  	struct comnod	*t = stkalloc(sh.stk,sizeof(struct comnod));
@@ -2336,7 +2309,7 @@ index 1f78e3a73..c3fd21a7f 100644
  	t->comarg.dp = dp;
  	if(!strchr(argv[0],'/'))
  		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);
-@@ -2709,16 +2717,16 @@ static void timed_out(void *handle)
+@@ -2706,16 +2714,16 @@ static void timed_out(void *handle)
   */
  pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  {
@@ -2356,7 +2329,7 @@ index 1f78e3a73..c3fd21a7f 100644
  			errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_nofork);
  			UNREACHABLE();
  		}
-@@ -2728,17 +2736,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
+@@ -2725,17 +2733,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  		{
  			if(nochild)
  				pause();
@@ -2378,7 +2351,7 @@ index 1f78e3a73..c3fd21a7f 100644
  		if(job.toclear)
  			job_clear();
  		job.waitall = waitall;
-@@ -2875,7 +2884,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2873,7 +2882,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	Namval_t	node,*mp,*np, *nref[9], **nr=nref;
  	char		*argv[2];
  	struct funenv	funenv;
@@ -2387,7 +2360,7 @@ index 1f78e3a73..c3fd21a7f 100644
  	np = (Namval_t*)fp;
  	funenv.node = np;
  	funenv.nref = nref;
-@@ -2885,7 +2894,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2883,7 +2892,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	SH_VALNOD->nvmeta = NULL;
  	SH_VALNOD->nvflag = NV_LDOUBLE|NV_NOFREE;
  	SH_VALNOD->nvalue = NULL;
@@ -2396,16 +2369,16 @@ index 1f78e3a73..c3fd21a7f 100644
  	{
  		*nr++ = mp = nv_namptr(sh.mathnodes,i);
  		mp->nvalue = arg++;
-@@ -2967,7 +2976,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
- 	/* save trap table */
- 	if((nsig=sh.st.trapmax)>0 || sh.st.trapcom[0])
+@@ -2987,7 +2996,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
+ 	}
+ 	if(!posix_fun)
  	{
--		savsig = sh_malloc(nsig * sizeof(char*));
-+		savsig = sh_malloc((size_t)nsig * sizeof(char*));
- 		/*
- 		 * the data is, usually, modified in code like:
- 		 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
-@@ -3062,7 +3071,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
+-		char	*save_debugtrap = 0;
++		char	*save_debugtrap = NULL;
+ 		if(!fun)
+ 		{
+ 			if(nv_isattr(fp->node,NV_TAGGED))
+@@ -3133,7 +3142,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
  		for (isig = 0; isig < nsig; ++isig)
  			if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
  				free(sh.st.trapcom[isig]);
@@ -2414,7 +2387,7 @@ index 1f78e3a73..c3fd21a7f 100644
  		free(savsig);
  	}
  	sh.trapnote=0;
-@@ -3156,7 +3165,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
+@@ -3207,7 +3216,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
  	struct checkpt	*checkpoint;
  	int		jmpval = 0;
  	int		jmpthresh;
@@ -2459,5 +2432,5 @@ index 97dfebbc2..e747ddc18 100755
  # Is an invalid flag handled correctly?
  # ksh2020 regression: https://github.com/att/ast/issues/1284
 -- 
-2.52.0
+2.53.0
 

@@ -1,6 +1,6 @@
-From cc0a5689af4868c4b6c7fdbbaad74db6486ef230 Mon Sep 17 00:00:00 2001
+From 5fea2fe63a975bb50e8d7522b381774b72c47fe1 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:17:55 -0800
+Date: Fri, 6 Feb 2026 07:33:11 -0800
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -26,7 +26,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/regex/regcomp.c      | 207 ++++++++++++++--------------
  src/lib/libast/regex/regerror.c     |   4 +-
  src/lib/libast/regex/regexec.c      |  10 +-
- src/lib/libast/regex/reglib.h       |  32 ++---
+ src/lib/libast/regex/reglib.h       |  30 ++--
  src/lib/libast/regex/regnexec.c     | 129 ++++++++---------
  src/lib/libast/regex/regsubcomp.c   |  37 ++---
  src/lib/libast/regex/regsubexec.c   |  38 ++---
@@ -77,7 +77,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |   8 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 60 files changed, 669 insertions(+), 543 deletions(-)
+ 60 files changed, 668 insertions(+), 542 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -1189,18 +1189,9 @@ index 2a9280c13..3ad83b895 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/regex/reglib.h b/src/lib/libast/regex/reglib.h
-index 280a6a107..d6d32daad 100644
+index 16fd8e9ac..6a60c9cdb 100644
 --- a/src/lib/libast/regex/reglib.h
 +++ b/src/lib/libast/regex/reglib.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -38,11 +38,15 @@
  #define fatal		_reg_fatal
  #define state		_reg_state
@@ -1230,7 +1221,7 @@ index 280a6a107..d6d32daad 100644
  #include "regex.h"
  
  #include <ctype.h>
-@@ -296,9 +296,9 @@ typedef struct Vector_s
+@@ -299,9 +299,9 @@ typedef struct Vector_s
  {
  	Stk_t*		stk;		/* stack pointer		*/
  	char*		vec;		/* the data			*/
@@ -1243,7 +1234,7 @@ index 280a6a107..d6d32daad 100644
  	ssize_t		cur;		/* current index -- user domain	*/
  } Vector_t;
  
-@@ -356,7 +356,7 @@ typedef struct Group_s
+@@ -359,7 +359,7 @@ typedef struct Group_s
  {
  	int		number;		/* group number			*/
  	int		last;		/* last contained group number	*/
@@ -1252,7 +1243,7 @@ index 280a6a107..d6d32daad 100644
  	int		back;		/* backreferenced		*/
  	regflags_t	flags;		/* group flags			*/
  	union
-@@ -462,8 +462,8 @@ typedef struct Trie_node_s
+@@ -465,8 +465,8 @@ typedef struct Trie_node_s
  typedef struct Trie_s
  {
  	Trie_node_t**	root;
@@ -1263,7 +1254,7 @@ index 280a6a107..d6d32daad 100644
  } Trie_t;
  
  /*
-@@ -474,12 +474,12 @@ typedef struct Rex_s
+@@ -477,12 +477,12 @@ typedef struct Rex_s
  {
  	unsigned char	type;			/* node type		*/
  	unsigned char	marked;			/* already marked	*/
@@ -4218,5 +4209,5 @@ index ed5402b74..32e5c332d 100644
  	}
  	return 0;
 -- 
-2.52.0
+2.53.0
 

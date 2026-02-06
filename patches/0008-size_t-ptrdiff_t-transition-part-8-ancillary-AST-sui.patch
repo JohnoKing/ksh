@@ -1,6 +1,6 @@
-From 24051742df58d6bff9bbb764d14b08661a2c98d7 Mon Sep 17 00:00:00 2001
+From 7aa7600e56ba6ea895c63ce997a4307622b30eaa Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:18:03 -0800
+Date: Fri, 6 Feb 2026 07:33:19 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -22,23 +22,24 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/INIT/mamake.c        | 62 +++++++++++++++++-----------------
+ src/cmd/INIT/mamake.c        | 62 ++++++++++++++++++------------------
  src/cmd/builtin/features/pty |  2 ++
- src/cmd/builtin/pty.c        | 64 ++++++++++++++++++------------------
+ src/cmd/builtin/pty.c        | 62 ++++++++++++++++++------------------
  src/lib/libdll/dll_lib.c     | 12 ++++---
- src/lib/libdll/dllopen.c     | 58 +-------------------------------
- src/lib/libdll/dllscan.c     | 40 +++++++++++-----------
+ src/lib/libdll/dllopen.c     | 58 +--------------------------------
+ src/lib/libdll/dllscan.c     | 40 +++++++++++------------
  src/lib/libsum/sum-ast4.c    |  4 +--
- src/lib/libsum/sum-crc.c     | 29 ++++++++--------
+ src/lib/libsum/sum-crc.c     | 29 +++++++++--------
  src/lib/libsum/sum-lmd.c     |  6 ++--
  src/lib/libsum/sum-md5.c     |  2 +-
  src/lib/libsum/sum-prng.c    | 17 +++++-----
  src/lib/libsum/sum-sha1.c    |  4 +--
+ src/lib/libsum/sum-sha2.c    |  2 +-
  src/lib/libsum/sumlib.c      | 14 ++++----
- 13 files changed, 132 insertions(+), 182 deletions(-)
+ 14 files changed, 132 insertions(+), 182 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
-index ff3c2bd5a..c72458f60 100644
+index b6423b98e..2210c9f38 100644
 --- a/src/cmd/INIT/mamake.c
 +++ b/src/cmd/INIT/mamake.c
 @@ -295,13 +295,13 @@ static struct				/* program state		*/
@@ -68,7 +69,7 @@ index ff3c2bd5a..c72458f60 100644
  		if (!(buf->buf = realloc(buf->buf, m)))
  			out_of_memory();
  		buf->end = buf->buf + m;
-@@ -837,7 +837,7 @@ static void view(void)
+@@ -836,7 +836,7 @@ static void view(void)
  				zp = zp->next = vp;
  			if (!c)
  				break;
@@ -77,7 +78,7 @@ index ff3c2bd5a..c72458f60 100644
  			s = t;
  		}
  	}
-@@ -928,7 +928,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -927,7 +927,7 @@ static void substitute(Buf_t *buf, char *s)
  			if (c == '[')
  			{
  				append(buf, b);
@@ -86,7 +87,7 @@ index ff3c2bd5a..c72458f60 100644
  				continue;
  			}
  
-@@ -948,7 +948,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -947,7 +947,7 @@ static void substitute(Buf_t *buf, char *s)
  			if ((c == ':' || c == '=') && (state.strict >= 2 || !v || c == ':' && !*v))
  			{
  				append(buf, b);
@@ -95,7 +96,7 @@ index ff3c2bd5a..c72458f60 100644
  				continue;
  			}
  
-@@ -959,7 +959,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -958,7 +958,7 @@ static void substitute(Buf_t *buf, char *s)
  
  			/* Un-terminate the variable name */
  
@@ -104,7 +105,7 @@ index ff3c2bd5a..c72458f60 100644
  
  			/* Find the ending '}', dealing with nesting */
  
-@@ -983,7 +983,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -982,7 +982,7 @@ static void substitute(Buf_t *buf, char *s)
  				q = cond(t - 1);
  				if (v)
  				{
@@ -113,7 +114,7 @@ index ff3c2bd5a..c72458f60 100644
  						v = 0;
  				}
  				else if (q == t)
-@@ -996,7 +996,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -995,7 +995,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *t;
  						*t = 0;
  						substitute(buf, q + 1);
@@ -122,7 +123,7 @@ index ff3c2bd5a..c72458f60 100644
  					}
  				}
  				else
-@@ -1007,7 +1007,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1006,7 +1006,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *q;
  						*q = 0;
  						substitute(buf, t + 1);
@@ -131,7 +132,7 @@ index ff3c2bd5a..c72458f60 100644
  					}
  				}
  				break;
-@@ -1028,9 +1028,9 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1027,9 +1027,9 @@ static void substitute(Buf_t *buf, char *s)
  							q++;
  						n++;
  						c = *q, *q = 0;  /* terminate for duplicate() */
@@ -143,7 +144,7 @@ index ff3c2bd5a..c72458f60 100644
  					}
  					if (!argv)
  						break;
-@@ -1076,13 +1076,13 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1075,13 +1075,13 @@ static void substitute(Buf_t *buf, char *s)
  					q = use(scr);
  					if ((argv ? (argv[2] = q, execute_v(NULL, argv)) : execute(NULL, q)) != 0)
  						error_out("expansion script error", t);
@@ -159,7 +160,7 @@ index ff3c2bd5a..c72458f60 100644
  					if (final_newline)
  						unadd(buf);
  					if (ferror(f) || fclose(f) == EOF)
-@@ -1106,7 +1106,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1105,7 +1105,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					substitute(buf, t);
@@ -168,7 +169,7 @@ index ff3c2bd5a..c72458f60 100644
  					break;
  				}
  				if (c != '-')
-@@ -1167,7 +1167,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1166,7 +1166,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					append(buf, b);
@@ -177,7 +178,7 @@ index ff3c2bd5a..c72458f60 100644
  					continue;
  				}
  				break;
-@@ -1176,7 +1176,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1175,7 +1175,7 @@ static void substitute(Buf_t *buf, char *s)
  				s++;
  		}
  		else
@@ -186,7 +187,7 @@ index ff3c2bd5a..c72458f60 100644
  	}
  }
  
-@@ -1270,7 +1270,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1269,7 +1269,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					c = vp->dir[vp->node];
  					vp->dir[vp->node] = 0;
  					append(buf, vp->dir);
@@ -195,7 +196,7 @@ index ff3c2bd5a..c72458f60 100644
  				}
  				else
  				{
-@@ -1278,7 +1278,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1277,7 +1277,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					append(buf, "/");
  				}
  				append(buf, file);
@@ -204,7 +205,7 @@ index ff3c2bd5a..c72458f60 100644
  				s = use(buf);
  				if (s = status(buf, o, s, st))
  				{
-@@ -1710,7 +1710,7 @@ static void run(Rule_t *r, char *s)
+@@ -1709,7 +1709,7 @@ static void run(Rule_t *r, char *s)
  					else
  					{
  						for (i = 3; isspace(*(t + i)); i++);
@@ -213,7 +214,7 @@ index ff3c2bd5a..c72458f60 100644
  						for (s = t + i; *s && !isspace(*s); s++);
  						c = *s;
  						*s = 0;
-@@ -1734,7 +1734,7 @@ static void run(Rule_t *r, char *s)
+@@ -1733,7 +1733,7 @@ static void run(Rule_t *r, char *s)
  					}
  				}
  			}
@@ -222,7 +223,7 @@ index ff3c2bd5a..c72458f60 100644
  		s = use(buf);
  		if (tofree)
  			free(tofree);
-@@ -1813,7 +1813,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
+@@ -1812,7 +1812,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
  		pop();
  	}
  	for (h = 0, s = cc; *s; s++)
@@ -231,7 +232,7 @@ index ff3c2bd5a..c72458f60 100644
  	/* use the hash as the file name */
  	append(buf, state.installroot);
  	append(buf, "/lib/probe/C/mam/");
-@@ -1853,7 +1853,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1852,7 +1852,7 @@ static void attributes(Rule_t *r, char *s)
  		int	flag = 0;
  		for (; isspace(*s); s++);
  		for (t = s; *s && !isspace(*s); s++);
@@ -240,7 +241,7 @@ index ff3c2bd5a..c72458f60 100644
  			break;
  		switch (*t)
  		{
-@@ -1905,7 +1905,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1904,7 +1904,7 @@ static void attributes(Rule_t *r, char *s)
   * append libNAME.a to the given buffer
   */
  
@@ -249,7 +250,7 @@ index ff3c2bd5a..c72458f60 100644
  {
  	append(buf, "lib");
  	append(buf, name);
-@@ -1971,7 +1971,7 @@ static char *require(char *lib, int dontcare)
+@@ -1970,7 +1970,7 @@ static char *require(char *lib, int dontcare)
  					break;
  				do
  				{
@@ -258,7 +259,7 @@ index ff3c2bd5a..c72458f60 100644
  				} while ((c = fgetc(f)) != EOF && !isspace(c));
  				s = use(tmp);
  				if (s[0] && (s[0] != '-' || s[1]))
-@@ -2812,7 +2812,7 @@ int main(int argc, char **argv)
+@@ -2811,7 +2811,7 @@ int main(int argc, char **argv)
  		case 'j':
  			append(state.opt, " -j");
  			append(state.opt, opt_info.arg);
@@ -267,7 +268,7 @@ index ff3c2bd5a..c72458f60 100644
  			continue;
  		case 'k':
  			append(state.opt, " -k");
-@@ -2845,7 +2845,7 @@ int main(int argc, char **argv)
+@@ -2844,7 +2844,7 @@ int main(int argc, char **argv)
  		case 'D':
  			append(state.opt, " -D");
  			append(state.opt, opt_info.arg);
@@ -276,7 +277,7 @@ index ff3c2bd5a..c72458f60 100644
  			if (state.debug > 0)
  				state.debug = 0;
  			continue;
-@@ -2885,7 +2885,7 @@ int main(int argc, char **argv)
+@@ -2884,7 +2884,7 @@ int main(int argc, char **argv)
  				break;
  			}
  			for (t = s += 2; *t && *t != '='; t++);
@@ -285,7 +286,7 @@ index ff3c2bd5a..c72458f60 100644
  			{
  				if (*t)
  				{
-@@ -2902,7 +2902,7 @@ int main(int argc, char **argv)
+@@ -2901,7 +2901,7 @@ int main(int argc, char **argv)
  				}
  				setval(state.vars, s - 1, v);
  				if (c)
@@ -294,7 +295,7 @@ index ff3c2bd5a..c72458f60 100644
  				continue;
  			}
  			usage();
-@@ -3066,7 +3066,7 @@ int main(int argc, char **argv)
+@@ -3065,7 +3065,7 @@ int main(int argc, char **argv)
  				append(tmp, ".FORCE");
  				setval(state.vars, use(tmp), v);
  				drop(tmp);
@@ -317,18 +318,9 @@ index 73a44e473..55a83e148 100644
  	#include	<fcntl.h>
  	#if _lib_ptsname
 diff --git a/src/cmd/builtin/pty.c b/src/cmd/builtin/pty.c
-index 1f464dced..f6f233bbc 100644
+index 5944a3071..7824af3c7 100644
 --- a/src/cmd/builtin/pty.c
 +++ b/src/cmd/builtin/pty.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -257,13 +257,13 @@ mkpty(int* master, int* minion)
  #endif
  	tty.c_oflag |= (ONLCR | OPOST);
@@ -1022,6 +1014,19 @@ index f9f52b57d..3b91fd323 100644
  
  	NOT_USED(scale);
  	d = (flags & SUM_TOTAL) ? sha->digest_sum : sha->digest;
+diff --git a/src/lib/libsum/sum-sha2.c b/src/lib/libsum/sum-sha2.c
+index f3e39a327..32095f126 100644
+--- a/src/lib/libsum/sum-sha2.c
++++ b/src/lib/libsum/sum-sha2.c
+@@ -96,7 +96,7 @@ typedef uint64_t sha2_word64;	/* Exactly 8 bytes */
+ #define REVERSE32(w,x)	{ \
+ 	sha2_word32 tmp = (w); \
+ 	tmp = (tmp >> 16) | (tmp << 16); \
+-	(x) = ((tmp & 0xff00ff00UL) >> 8) | ((tmp & 0x00ff00ffUL) << 8); \
++	(x) = ((sha2_word32)(((tmp & 0xff00ff00UL) >> 8) | ((tmp & 0x00ff00ffUL) << 8))); \
+ }
+ #if _ast_LL
+ #define REVERSE64(w,x)	{ \
 diff --git a/src/lib/libsum/sumlib.c b/src/lib/libsum/sumlib.c
 index 0771f5932..3d31da80e 100644
 --- a/src/lib/libsum/sumlib.c
@@ -1077,5 +1082,5 @@ index 0771f5932..3d31da80e 100644
  		n += sfprintf(sp, "[+%s?%s]", methods[i].match, methods[i].description);
  		if (methods[i].options)
 -- 
-2.52.0
+2.53.0
 

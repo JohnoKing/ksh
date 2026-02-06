@@ -1,6 +1,6 @@
-From c9a79f28f7bca418b62ed51bec9f752a96f4328f Mon Sep 17 00:00:00 2001
+From cf28ea26180a0df34480ca42abbe3578a442b6cd Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:17:59 -0800
+Date: Fri, 6 Feb 2026 07:33:15 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -22,9 +22,9 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libast/dir/dirlib.h        |   7 +-
+ src/lib/libast/dir/dirlib.h        |   4 +-
  src/lib/libast/disc/sfdcdos.c      |  35 ++++----
- src/lib/libast/disc/sfdcfilter.c   |   5 +-
+ src/lib/libast/disc/sfdcfilter.c   |   2 +-
  src/lib/libast/disc/sfdcmore.c     |  24 +++---
  src/lib/libast/disc/sfdcprefix.c   |  11 +--
  src/lib/libast/disc/sfdcseekable.c |  19 ++--
@@ -32,10 +32,10 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/disc/sfdcunion.c    |  17 ++--
  src/lib/libast/disc/sfkeyprintf.c  |  65 ++++----------
  src/lib/libast/features/tty        |   2 +-
- src/lib/libast/include/ast_std.h   |  22 ++---
+ src/lib/libast/include/ast_std.h   |  20 ++---
  src/lib/libast/include/find.h      |   4 +-
  src/lib/libast/include/hashpart.h  |   5 +-
- src/lib/libast/include/recfmt.h    |   4 +-
+ src/lib/libast/include/recfmt.h    |   5 +-
  src/lib/libast/include/sfdisc.h    |   6 +-
  src/lib/libast/include/tm.h        |   5 +-
  src/lib/libast/include/vmalloc.h   |   7 +-
@@ -64,34 +64,17 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tmxsleep.c       |   5 +-
  src/lib/libast/tm/tmxtime.c        |  31 +++----
  src/lib/libast/tm/tmxtouch.c       |   9 +-
- src/lib/libast/tm/tmzone.c         |  10 +--
+ src/lib/libast/tm/tmzone.c         |  12 +--
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
- src/lib/libast/tm/tvtouch.c        |   4 +-
- 46 files changed, 340 insertions(+), 341 deletions(-)
+ src/lib/libast/tm/tvtouch.c        |   2 +-
+ 46 files changed, 336 insertions(+), 338 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
-index a7e8f227c..4bce98d61 100644
+index f54439cdc..e3af0c63e 100644
 --- a/src/lib/libast/dir/dirlib.h
 +++ b/src/lib/libast/dir/dirlib.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-@@ -100,8 +101,8 @@
+@@ -100,8 +100,8 @@
  #undef	telldir
  
  #define _DIR_PRIVATE_ \
@@ -220,27 +203,10 @@ index 41812895d..7f026102e 100644
  	{
  		sfsk(iop,mp->physical,SEEK_SET,disc);
 diff --git a/src/lib/libast/disc/sfdcfilter.c b/src/lib/libast/disc/sfdcfilter.c
-index e83067b8e..5aaf4fa43 100644
+index c5127cabf..df9930cbb 100644
 --- a/src/lib/libast/disc/sfdcfilter.c
 +++ b/src/lib/libast/disc/sfdcfilter.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- #include	"sfdchdr.h"
-@@ -67,7 +68,7 @@ static ssize_t filterread(Sfio_t*	f,	/* stream reading from */
+@@ -68,7 +68,7 @@ static ssize_t filterread(Sfio_t*	f,	/* stream reading from */
  
  			if(r == 1) /* non-blocking write */
  			{	errno = 0;
@@ -745,34 +711,29 @@ index 7096a1284..d4c8680b4 100644
  cat{
  
 diff --git a/src/lib/libast/include/ast_std.h b/src/lib/libast/include/ast_std.h
-index 1a522fbd8..4559daec2 100644
+index 4afc02519..5f702e732 100644
 --- a/src/lib/libast/include/ast_std.h
 +++ b/src/lib/libast/include/ast_std.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -166,15 +166,15 @@ extern char*		setlocale(int, const char*);
+@@ -166,19 +166,19 @@ extern char*		setlocale(int, const char*);
  #define AST_LC_COUNT		13	/* number of preceding AST_LC_* defines */
  #define AST_LC_LANG		255
  
 -#define AST_LC_internal		1
 -#define AST_LC_7bit		(1 << 23)
++#define AST_LC_internal		1U
++#define AST_LC_7bit		(1U << 23)
+ #if AST_NOMULTIBYTE
+ #define AST_LC_utf8		0
+ #else
 -#define AST_LC_utf8		(1 << 24)
++#define AST_LC_utf8		(1U << 24)
+ #endif /* AST_NOMULTIBYTE */
 -#define AST_LC_test		(1 << 25)
 -#define AST_LC_setenv		(1 << 26)
 -#define AST_LC_find		(1 << 27)
 -#define AST_LC_debug		(1 << 28)
 -#define AST_LC_setlocale	(1 << 29)
 -#define AST_LC_translate	(1 << 30)
-+#define AST_LC_internal		1U
-+#define AST_LC_7bit		(1U << 23)
-+#define AST_LC_utf8		(1U << 24)
 +#define AST_LC_test		(1U << 25)
 +#define AST_LC_setenv		(1U << 26)
 +#define AST_LC_find		(1U << 27)
@@ -782,8 +743,8 @@ index 1a522fbd8..4559daec2 100644
  
  #ifndef LC_ALL
  #define LC_ALL			(-AST_LC_ALL)
-@@ -247,7 +247,7 @@ typedef struct
- 
+@@ -252,7 +252,7 @@ typedef struct
+ #if !AST_NOMULTIBYTE
  	struct				/* ast.mb.* -- multibyte encoding/decoding state */
  	{
 -	int		cur_max;	/* current maximum length in bytes of a character: > 1 == multibyte locale */
@@ -843,7 +804,7 @@ index 15e802448..0a94117aa 100644
  
  #endif
 diff --git a/src/lib/libast/include/recfmt.h b/src/lib/libast/include/recfmt.h
-index 9e7b55a5c..d26ad6648 100644
+index 9e7b55a5c..3be06b27d 100644
 --- a/src/lib/libast/include/recfmt.h
 +++ b/src/lib/libast/include/recfmt.h
 @@ -2,7 +2,7 @@
@@ -855,7 +816,15 @@ index 9e7b55a5c..d26ad6648 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -48,7 +48,7 @@ typedef uint32_t Recfmt_t;
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -48,7 +49,7 @@ typedef uint32_t Recfmt_t;
  #define REC_F_SIZE(f)		((f)&((1<<28)-1))
  
  #define REC_U_TYPE(t,a)		(((t)<<28)|((a)&((1<<28)-1)))
@@ -2493,7 +2462,7 @@ index 7922071fd..7ddf06b12 100644
  		cp = &cv;
  	}
 diff --git a/src/lib/libast/tm/tmzone.c b/src/lib/libast/tm/tmzone.c
-index efb06e1ab..625491df3 100644
+index efb06e1ab..7a4e19719 100644
 --- a/src/lib/libast/tm/tmzone.c
 +++ b/src/lib/libast/tm/tmzone.c
 @@ -2,7 +2,7 @@
@@ -2523,12 +2492,14 @@ index efb06e1ab..625491df3 100644
  		*p = 0;
  		fixed.dst = 0;
  		if (end)
-@@ -102,8 +102,8 @@ tmzone(const char* name, char** end, const char* type, int* dst)
+@@ -101,9 +101,9 @@ tmzone(const char* name, char** end, const char* type, int* dst)
+ 		}
  		fixed.west += d;
  		if (name[1] == 'E')
- 			fixed.west = -fixed.west;
+-			fixed.west = -fixed.west;
 -		fixed.dst = name[0] == 'Z' ? 0 : d ? -d : TM_DST;
 -		memcpy(fixed.standard = fixed.daylight = off, name, d);
++			fixed.west = fixed.west * -1;
 +		fixed.dst = name[0] == 'Z' ? 0 : d ? (short)-d : TM_DST;
 +		memcpy(fixed.standard = fixed.daylight = off, name, (size_t)d);
  		off[d] = 0;
@@ -2587,18 +2558,9 @@ index 1c68f7bae..3ab50b86a 100644
  	return r;
  
 diff --git a/src/lib/libast/tm/tvtouch.c b/src/lib/libast/tm/tvtouch.c
-index aca8c4d97..445297f3f 100644
+index d67fc4da8..34f24d678 100644
 --- a/src/lib/libast/tm/tvtouch.c
 +++ b/src/lib/libast/tm/tvtouch.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -73,7 +73,7 @@ int
  tvtouch(const char* path, const Tv_t* av, const Tv_t* mv, const Tv_t* cv, int flags)
  {
@@ -2609,5 +2571,5 @@ index aca8c4d97..445297f3f 100644
  	struct stat	st;
  	Tv_t		now;
 -- 
-2.52.0
+2.53.0
 

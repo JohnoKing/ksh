@@ -1,6 +1,6 @@
-From baf43d5090f46bfcee007e207c510e413141208e Mon Sep 17 00:00:00 2001
+From b226b91319b0a282df37e5f70352092724bfda06 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:18:07 -0800
+Date: Fri, 6 Feb 2026 07:33:23 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -20,19 +20,19 @@ Change in the number of warnings on Linux when compiling with clang using
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/bltins/alarm.c     |  4 +-
- src/cmd/ksh93/bltins/cd_pwd.c    |  4 +-
+ src/cmd/ksh93/bltins/cd_pwd.c    |  2 +-
  src/cmd/ksh93/bltins/enum.c      | 26 +++++-----
  src/cmd/ksh93/bltins/getopts.c   |  8 +--
  src/cmd/ksh93/bltins/hist.c      | 10 ++--
- src/cmd/ksh93/bltins/misc.c      | 20 ++++----
- src/cmd/ksh93/bltins/mkservice.c |  8 +--
+ src/cmd/ksh93/bltins/misc.c      | 18 +++----
+ src/cmd/ksh93/bltins/mkservice.c |  6 +--
  src/cmd/ksh93/bltins/read.c      | 85 +++++++++++++++++---------------
  src/cmd/ksh93/bltins/trap.c      | 16 +++---
  src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
  src/cmd/ksh93/bltins/ulimit.c    | 18 +++----
  src/cmd/ksh93/bltins/umask.c     |  8 +--
  src/cmd/ksh93/include/builtins.h |  4 +-
- 13 files changed, 127 insertions(+), 118 deletions(-)
+ 13 files changed, 124 insertions(+), 115 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -57,19 +57,10 @@ index 399b3c24d..eb8226144 100644
  }
  
 diff --git a/src/cmd/ksh93/bltins/cd_pwd.c b/src/cmd/ksh93/bltins/cd_pwd.c
-index 66a49780a..3755e0ee7 100644
+index 940262d6c..65fb79c47 100644
 --- a/src/cmd/ksh93/bltins/cd_pwd.c
 +++ b/src/cmd/ksh93/bltins/cd_pwd.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -371,7 +371,7 @@ int	b_pwd(int argc, char *argv[],Shbltin_t *context)
+@@ -376,7 +376,7 @@ int	b_pwd(int argc, char *argv[],Shbltin_t *context)
  	}
  	if(flag)
  	{
@@ -255,19 +246,10 @@ index fde5e36a7..501e60b77 100644
  	string[c] = 0;
  	*newp++ =  0;
 diff --git a/src/cmd/ksh93/bltins/misc.c b/src/cmd/ksh93/bltins/misc.c
-index 168633f61..541eb166d 100644
+index 5b01fa617..0e421b6f2 100644
 --- a/src/cmd/ksh93/bltins/misc.c
 +++ b/src/cmd/ksh93/bltins/misc.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -155,12 +155,12 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
+@@ -153,12 +153,12 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
  		sh_onstate(SH_EXEC);
  		if(sh.subshell && !sh.subshare)
  		{
@@ -282,7 +264,7 @@ index 168633f61..541eb166d 100644
  			t->comarg.dp = dp;
  			sh_exec((Shnode_t*)t,sh_isstate(SH_ERREXIT));
  			sh_offstate(SH_EXEC);
-@@ -528,12 +528,12 @@ int    b_jobs(int n,char *argv[],Shbltin_t *context)
+@@ -524,12 +524,12 @@ int    b_jobs(int n,char *argv[],Shbltin_t *context)
   */
  static void	print_times(struct timeval utime, struct timeval stime)
  {
@@ -301,7 +283,7 @@ index 168633f61..541eb166d 100644
  	sfprintf(sfstdout, sh_isoption(SH_POSIX) ? "%jum%ju%c%03jus %jum%ju%c%03jus\n" : "%jum%02ju%c%03jus %jum%02ju%c%03jus\n",
  		ut_min, ut_sec, sh.radixpoint, ut_ms, st_min, st_sec, sh.radixpoint, st_ms);
  }
-@@ -554,7 +554,7 @@ static void	print_cpu_times(void)
+@@ -550,7 +550,7 @@ static void	print_cpu_times(void)
  {
  	struct timeval utime, stime;
  	Sfdouble_t dtime;
@@ -311,18 +293,9 @@ index 168633f61..541eb166d 100644
  	times(&cpu_times);
  	/* Print the time (user & system) consumed by the shell. */
 diff --git a/src/cmd/ksh93/bltins/mkservice.c b/src/cmd/ksh93/bltins/mkservice.c
-index b60980b2f..882b28e5d 100644
+index 5643e7e3d..9ed3c3930 100644
 --- a/src/cmd/ksh93/bltins/mkservice.c
 +++ b/src/cmd/ksh93/bltins/mkservice.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -237,7 +237,7 @@ static int waitnotify(int fd, long timeout, int rw)
  			sfprintf(sfstderr," %d",sffileno(poll_list[i]));
  		sfputc(sfstderr,'\n');
@@ -960,5 +933,5 @@ index 61991df24..268544ac2 100644
  extern const char	e_alrm1[];
  extern const char	e_alrm2[];
 -- 
-2.52.0
+2.53.0
 

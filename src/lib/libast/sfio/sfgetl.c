@@ -2,7 +2,7 @@
 *                                                                      *
 *               This software is part of the ast package               *
 *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 2.0                  *
 *                                                                      *
@@ -43,10 +43,10 @@ Sflong_t sfgetl(Sfio_t* f)
 		for(ends = s+p; s < ends;)
 		{	c = *s++;
 			if(c&SFIO_MORE)
-				v = ((Sfulong_t)v << SFIO_UBITS) | SFUVALUE(c);
+				v = (Sflong_t)(((Sfulong_t)v << SFIO_UBITS) | SFUVALUE(c));
 			else
 			{	/* special translation for this byte */
-				v = ((Sfulong_t)v << SFIO_SBITS) | SFSVALUE(c);
+				v = (Sflong_t)(((Sfulong_t)v << SFIO_SBITS) | SFSVALUE(c));
 				f->next = s;
 				v = (c&SFIO_SIGN) ? -v-1 : v;
 				goto done;

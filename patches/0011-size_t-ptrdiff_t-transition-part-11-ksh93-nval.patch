@@ -1,6 +1,6 @@
-From 39e09a6ded948587b6731273091eff95d07f15c2 Mon Sep 17 00:00:00 2001
+From 1bcf1dfba94e82b9df9f0facc0755b70faac0fa4 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 30 Jan 2026 10:18:09 -0800
+Date: Fri, 6 Feb 2026 07:33:26 -0800
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -46,13 +46,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/array.c         | 169 ++++++++++----------
  src/cmd/ksh93/sh/name.c          | 258 ++++++++++++++++---------------
  src/cmd/ksh93/sh/nvdisc.c        |  33 ++--
- src/cmd/ksh93/sh/nvtree.c        |  71 +++++----
+ src/cmd/ksh93/sh/nvtree.c        |  69 +++++----
  src/cmd/ksh93/sh/nvtype.c        | 183 +++++++++++-----------
  src/cmd/ksh93/sh/string.c        |  59 +++----
- 10 files changed, 422 insertions(+), 409 deletions(-)
+ 10 files changed, 421 insertions(+), 408 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/name.h b/src/cmd/ksh93/include/name.h
-index 659f570d8..387a02883 100644
+index ff5ce6c49..21e095567 100644
 --- a/src/cmd/ksh93/include/name.h
 +++ b/src/cmd/ksh93/include/name.h
 @@ -58,7 +58,7 @@ struct Namref
@@ -813,7 +813,7 @@ index 3d2af19dd..92f6e35e9 100644
  	if(nv_isarray(np))
  	{
 diff --git a/src/cmd/ksh93/sh/name.c b/src/cmd/ksh93/sh/name.c
-index d1c625e75..d2c506d95 100644
+index 759dce62d..b2feb0067 100644
 --- a/src/cmd/ksh93/sh/name.c
 +++ b/src/cmd/ksh93/sh/name.c
 @@ -43,7 +43,7 @@ static Dtdisc_t	_Refdisc =
@@ -1755,18 +1755,9 @@ index ef7f25942..d2ba0b758 100644
  		sfputr(sh.stk,fname,0);
  		fname = stkptr(sh.stk,offset);
 diff --git a/src/cmd/ksh93/sh/nvtree.c b/src/cmd/ksh93/sh/nvtree.c
-index beda555f7..7ddd1ee2d 100644
+index d6888ad3a..751f19425 100644
 --- a/src/cmd/ksh93/sh/nvtree.c
 +++ b/src/cmd/ksh93/sh/nvtree.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -39,7 +39,7 @@ struct nvdir
  	Namval_t	*(*nextnode)(Namval_t*,Dt_t*,Namfun_t*);
  	Namfun_t	*fun;
@@ -1786,7 +1777,7 @@ index beda555f7..7ddd1ee2d 100644
  	sfputr(sh.strbuf,nv_name(np),'=');
  	sp = sfopen(NULL,sfstruse(sh.strbuf),"s");
 @@ -142,7 +142,8 @@ static  Namfun_t *nextdisc(Namval_t *np)
- void *nv_diropen(Namval_t *np,const char *name)
+ void *nv_diropen(Namval_t *np, const char *name, int in_walk_tree)
  {
  	char *next,*last;
 -	int c,len=strlen(name);
@@ -1795,7 +1786,7 @@ index beda555f7..7ddd1ee2d 100644
  	struct nvdir *save, *dp = new_of(struct nvdir,len+1);
  	Namval_t *nq=0,fake;
  	Namfun_t *nfp=0;
-@@ -176,8 +177,8 @@ void *nv_diropen(Namval_t *np,const char *name)
+@@ -176,8 +177,8 @@ void *nv_diropen(Namval_t *np, const char *name, int in_walk_tree)
  		if(dp->hp = (Namval_t*)dtprev(dp->root,&fake))
  		{
  			char *cp = nv_name(dp->hp);
@@ -1806,13 +1797,13 @@ index beda555f7..7ddd1ee2d 100644
  				dp->hp = (Namval_t*)dtnext(dp->root,dp->hp);
  			else
  			{
-@@ -215,7 +216,7 @@ void *nv_diropen(Namval_t *np,const char *name)
+@@ -215,7 +216,7 @@ void *nv_diropen(Namval_t *np, const char *name, int in_walk_tree)
  				np = nv_search(last,dp->root,0);
  		}
  		if(next)
 -			*next = c;
 +			*next = (char)c;
- 		if(np==dp->hp && !next)
+ 		if(in_walk_tree && np==dp->hp && !next)
  			dp->hp = (Namval_t*)dtnext(dp->root,dp->hp);
  		if(np && ((nfp=nextdisc(np)) || nv_istable(np)))
 @@ -292,7 +293,7 @@ char *nv_dirnext(void *dir)
@@ -2844,5 +2835,5 @@ index 88716dba7..f2c0a312c 100644
  	const char *cp;
  	if(mbwide())
 -- 
-2.52.0
+2.53.0
 
