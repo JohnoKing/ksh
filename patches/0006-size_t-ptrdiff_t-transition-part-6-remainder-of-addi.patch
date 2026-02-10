@@ -1,6 +1,6 @@
-From 7ca7dd5e29942d368cf3c57ff5e5d1582f0a6b42 Mon Sep 17 00:00:00 2001
+From c452769f2dce6248d8af6db242a7c0a542ff0011 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 13:31:59 -0800
+Date: Tue, 10 Feb 2026 14:01:58 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 

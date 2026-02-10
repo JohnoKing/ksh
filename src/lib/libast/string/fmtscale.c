@@ -80,7 +80,7 @@ fmtscale(Sfulong_t n, unsigned int k)
 	}
 	*s = 0;
 	if (n > 0 && n < 10)
-		sfsprintf(buf, z, "%I*u%c%d%s", sizeof(n), n, p->decimal >= 0 ? p->decimal : '.', r, suf);
+		sfsprintf(buf, z, "%I*u%c%jd%s", sizeof(n), n, p->decimal >= 0 ? p->decimal : '.', r, suf);
 	else
 	{
 		if (r >= 5)

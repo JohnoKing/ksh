@@ -1,6 +1,6 @@
-From 321bef71a09701c6f92004dfe9c31f48f11cc5b6 Mon Sep 17 00:00:00 2001
+From 7e37c37a4575019e05f0730a03c33332233c8298 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 13:31:55 -0800
+Date: Tue, 10 Feb 2026 14:01:54 -0800
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -48,7 +48,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/fmtmatch.c    |  35 +++--
  src/lib/libast/string/fmtnum.c      |   7 +-
  src/lib/libast/string/fmtre.c       |  20 +--
- src/lib/libast/string/fmtscale.c    |  11 +-
+ src/lib/libast/string/fmtscale.c    |  13 +-
  src/lib/libast/string/fmtsignal.c   |   5 +-
  src/lib/libast/string/fmttime.c     |   5 +-
  src/lib/libast/string/fmttmx.c      |   5 +-
@@ -77,7 +77,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |   8 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 60 files changed, 673 insertions(+), 544 deletions(-)
+ 60 files changed, 674 insertions(+), 545 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -2940,7 +2940,7 @@ index eb2e5e1f0..7765ec526 100644
  				*t++ = '?';
  			continue;
 diff --git a/src/lib/libast/string/fmtscale.c b/src/lib/libast/string/fmtscale.c
-index 6d0a0bc11..9e4ef52e6 100644
+index 6d0a0bc11..0761adbb1 100644
 --- a/src/lib/libast/string/fmtscale.c
 +++ b/src/lib/libast/string/fmtscale.c
 @@ -2,7 +2,7 @@
@@ -2984,6 +2984,15 @@ index 6d0a0bc11..9e4ef52e6 100644
  		{
  			r = 0;
  			n++;
+@@ -79,7 +80,7 @@ fmtscale(Sfulong_t n, int k)
+ 	}
+ 	*s = 0;
+ 	if (n > 0 && n < 10)
+-		sfsprintf(buf, z, "%I*u%c%d%s", sizeof(n), n, p->decimal >= 0 ? p->decimal : '.', r, suf);
++		sfsprintf(buf, z, "%I*u%c%jd%s", sizeof(n), n, p->decimal >= 0 ? p->decimal : '.', r, suf);
+ 	else
+ 	{
+ 		if (r >= 5)
 diff --git a/src/lib/libast/string/fmtsignal.c b/src/lib/libast/string/fmtsignal.c
 index aa6defbb7..909fe8136 100644
 --- a/src/lib/libast/string/fmtsignal.c

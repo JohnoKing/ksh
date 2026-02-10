@@ -1,6 +1,6 @@
-From ba9914e8680bd09f7053c5dd87c4c32c045ecf18 Mon Sep 17 00:00:00 2001
+From 681f0aa42cedcde6c78b071f735c4d13e14abe50 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 13:32:07 -0800
+Date: Tue, 10 Feb 2026 14:02:06 -0800
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93

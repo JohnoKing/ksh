@@ -1,6 +1,6 @@
-From e9bfa8e498380ed82697d18414ad9074e362cede Mon Sep 17 00:00:00 2001
+From f0224fe12fb6b20ddceb1746f814f908386147dc Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 13:31:52 -0800
+Date: Tue, 10 Feb 2026 14:01:51 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
