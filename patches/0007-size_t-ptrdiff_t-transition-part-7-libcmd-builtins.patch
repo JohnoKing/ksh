@@ -1,6 +1,6 @@
-From 426be7566b09819f0a9f94a746b345969814cfef Mon Sep 17 00:00:00 2001
+From 36954d5ddde523def4545b02f3e4873c757a090f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 6 Feb 2026 07:33:17 -0800
+Date: Tue, 10 Feb 2026 13:32:02 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93

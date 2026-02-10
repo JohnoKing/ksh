@@ -1,6 +1,6 @@
-From 90f3e1efc65397133e5d5ee2aa8adc12832f2b20 Mon Sep 17 00:00:00 2001
+From e9bfa8e498380ed82697d18414ad9074e362cede Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 6 Feb 2026 07:33:08 -0800
+Date: Tue, 10 Feb 2026 13:31:52 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -56,10 +56,10 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/hash/memhash.c      |   7 +-
  src/lib/libast/hash/strhash.c      |   8 +-
  src/lib/libast/hash/strsum.c       |   5 +-
- src/lib/libast/include/ast.h       |  35 ++++----
+ src/lib/libast/include/ast.h       |  37 ++++----
  src/lib/libast/include/hash.h      |   9 +-
  src/lib/libast/include/modex.h     |   7 +-
- src/lib/libast/include/regex.h     |  99 ++++++++++-----------
+ src/lib/libast/include/regex.h     |  99 ++++++++++----------
  src/lib/libast/include/sfio.h      |  62 ++++++-------
  src/lib/libast/include/sfio_s.h    |   5 +-
  src/lib/libast/include/sfio_t.h    |   4 +-
@@ -128,7 +128,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sftable.c      |  42 ++++-----
  src/lib/libast/sfio/sftmp.c        |   2 +-
  src/lib/libast/sfio/sfungetc.c     |   6 +-
- src/lib/libast/sfio/sfvprintf.c    | 138 ++++++++++++++---------------
+ src/lib/libast/sfio/sfvprintf.c    | 140 ++++++++++++++---------------
  src/lib/libast/sfio/sfvscanf.c     |  96 ++++++++++----------
  src/lib/libast/sfio/sfwr.c         |  28 +++---
  src/lib/libast/sfio/sfwrite.c      |  38 ++++----
@@ -167,7 +167,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++--------
  src/lib/libast/string/strmode.c    |  11 +--
  src/lib/libast/string/strperm.c    |  16 ++--
- 124 files changed, 1000 insertions(+), 922 deletions(-)
+ 124 files changed, 1002 insertions(+), 924 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
 index 346f55960..301c291f8 100644
@@ -1068,7 +1068,7 @@ index b0d0336ca..c489e8847 100644
  	return c & 0xffffffff;
  #else
 diff --git a/src/lib/libast/include/ast.h b/src/lib/libast/include/ast.h
-index 65bad068e..4012ce0fc 100644
+index 8c41f716d..163296d24 100644
 --- a/src/lib/libast/include/ast.h
 +++ b/src/lib/libast/include/ast.h
 @@ -156,6 +156,11 @@
@@ -1126,7 +1126,7 @@ index 65bad068e..4012ce0fc 100644
  extern char*		fmtesc(const char*);
  extern char*		fmtesq(const char*, const char*);
  extern char*		fmtident(const char*);
-@@ -331,10 +334,10 @@ extern char*		fmtfmt(const char*);
+@@ -331,18 +334,18 @@ extern char*		fmtfmt(const char*);
  extern char*		fmtgid(int);
  extern char*		fmtint(intmax_t, int);
  extern char*		fmtmatch(const char*);
@@ -1138,8 +1138,9 @@ index 65bad068e..4012ce0fc 100644
 +extern char*		fmtperm(mode_t);
  extern char*		fmtquote(const char*, const char*, const char*, size_t, int);
  extern char*		fmtre(const char*);
- extern char*		fmtscale(Sfulong_t, int);
-@@ -342,7 +345,7 @@ extern char*		fmtsignal(int);
+-extern char*		fmtscale(Sfulong_t, int);
++extern char*		fmtscale(Sfulong_t, unsigned int);
+ extern char*		fmtsignal(int);
  extern char*		fmttime(const char*, time_t);
  extern char*		fmtuid(int);
  extern void*		memdup(const void*, size_t);
@@ -4983,7 +4984,7 @@ index e1bf2912a..9b3d285c0 100644
  		f->data  = data;
  		f->next  = data+16;
 diff --git a/src/lib/libast/sfio/sfvprintf.c b/src/lib/libast/sfio/sfvprintf.c
-index bd6505de1..9484b1114 100644
+index bd6505de1..9a579f0e9 100644
 --- a/src/lib/libast/sfio/sfvprintf.c
 +++ b/src/lib/libast/sfio/sfvprintf.c
 @@ -2,7 +2,7 @@
@@ -5020,9 +5021,10 @@ index bd6505de1..9484b1114 100644
  	Sflong_t	lv;
  	char		*sp, *ssp, *endsp, *ep, *endep;
 -	int		dot, width, precis, sign, decpt;
-+	int		dot, sign, decpt;
- 	int		scale;
+-	int		scale;
 -	ssize_t		size;
++	int		dot, sign, decpt;
++	unsigned int	scale;
 +	ptrdiff_t	k, v, w, n, n_s, n_w, base, precis, width, q, size;
  	Sfdouble_t	dval;
  	void*		valp;

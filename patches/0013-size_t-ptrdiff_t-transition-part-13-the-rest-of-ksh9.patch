@@ -1,6 +1,6 @@
-From 2813df470015b8f005c63651a5c0ef836cbcaabd Mon Sep 17 00:00:00 2001
+From bc3fac817337e145607aea6cd67d681220fe5e82 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 6 Feb 2026 07:33:30 -0800
+Date: Tue, 10 Feb 2026 13:32:18 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -54,7 +54,7 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/streval.h |  16 ++---
  src/cmd/ksh93/sh/args.c         |  46 ++++++------
  src/cmd/ksh93/sh/arith.c        |  30 ++++----
- src/cmd/ksh93/sh/deparse.c      |  29 ++++----
+ src/cmd/ksh93/sh/deparse.c      |  25 +++----
  src/cmd/ksh93/sh/expand.c       |  25 +++----
  src/cmd/ksh93/sh/fault.c        |  42 +++++------
  src/cmd/ksh93/sh/io.c           | 124 ++++++++++++++++----------------
@@ -64,23 +64,23 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
  src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++--------------
  src/cmd/ksh93/tests/basic.sh    |  24 +++++++
- 18 files changed, 375 insertions(+), 317 deletions(-)
+ 18 files changed, 373 insertions(+), 315 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 404633eeb..5d1073d99 100644
+index 404633eeb..de8b434ad 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
+ For full details, see the git log at: https://github.com/ksh93/ksh
+ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
- 2026-02-06:
- 
++2026-02-10:
++
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
-+2026-02-06:
-+
- - Fixed a file descriptor leak introduced in 93u+ 2012-07-27 that occurred
-   when forking nested subshells.
+ 2026-02-06:
  
+ - Fixed a file descriptor leak introduced in 93u+ 2012-07-27 that occurred
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -520,18 +520,9 @@ index ebfcd7c41..bdc0cfced 100644
  					Sfdouble_t rr;
  					rr = strtold(val,&str);
 diff --git a/src/cmd/ksh93/sh/deparse.c b/src/cmd/ksh93/sh/deparse.c
-index a43aa01b2..b06911a28 100644
+index 073081a9d..653eee16a 100644
 --- a/src/cmd/ksh93/sh/deparse.c
 +++ b/src/cmd/ksh93/sh/deparse.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -111,7 +111,7 @@ static void p_tree(const Shnode_t *t,int tflags)
  
  		case TCOM:
@@ -609,15 +600,6 @@ index a43aa01b2..b06911a28 100644
  	for(;iop;iop=iop->ionxt)
  	{
  		iof=iop->iofile;
-@@ -530,7 +531,7 @@ static void p_redirect(const struct ionod *iop)
- 		else if(iof&IORAW)
- 			sfputr(outfile,sh_fmtq(iop->ioname),endc);
- 		else
--			sfputr(outfile,iop->ioname,iof);
-+			sfputr(outfile,iop->ioname,(int)iof);
- 		if((iof&IOLSEEK) && (iof&IOARITH))
- 			sfputr(outfile, "))", endc2);
- 	}
 @@ -589,11 +590,11 @@ static void p_comlist(const struct dolnod *dol,int endchar)
  static void p_switch(const struct regnod *reg)
  {

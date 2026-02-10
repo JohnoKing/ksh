@@ -1,6 +1,6 @@
-From cf28ea26180a0df34480ca42abbe3578a442b6cd Mon Sep 17 00:00:00 2001
+From 7ca7dd5e29942d368cf3c57ff5e5d1582f0a6b42 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 6 Feb 2026 07:33:15 -0800
+Date: Tue, 10 Feb 2026 13:31:59 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -46,7 +46,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/path/pathtemp.c     |  23 ++---
  src/lib/libast/tm/tmdate.c         |   5 +-
  src/lib/libast/tm/tmfix.c          |   7 +-
- src/lib/libast/tm/tminit.c         |  16 ++--
+ src/lib/libast/tm/tminit.c         |  14 +--
  src/lib/libast/tm/tmleap.c         |   5 +-
  src/lib/libast/tm/tmlex.c          |   7 +-
  src/lib/libast/tm/tmlocale.c       |  30 +++----
@@ -68,7 +68,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
  src/lib/libast/tm/tvtouch.c        |   2 +-
- 46 files changed, 336 insertions(+), 338 deletions(-)
+ 46 files changed, 335 insertions(+), 337 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index f54439cdc..e3af0c63e 100644
@@ -1183,19 +1183,10 @@ index 94c14e8da..147c3ffee 100644
  	else if (n >= TMX_RESOLUTION)
  	{
 diff --git a/src/lib/libast/tm/tminit.c b/src/lib/libast/tm/tminit.c
-index 6676c8eac..06b2db7f3 100644
+index 3b0792f4a..01d154e99 100644
 --- a/src/lib/libast/tm/tminit.c
 +++ b/src/lib/libast/tm/tminit.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -173,7 +173,7 @@ tmopt(void* a, const void* p, int n, const char* v)
+@@ -168,7 +168,7 @@ tmopt(void* a, const void* p, int n, const char* v)
  		switch (((Namval_t*)p)->value)
  		{
  		case TM_DEFAULT:
@@ -1204,7 +1195,7 @@ index 6676c8eac..06b2db7f3 100644
  			break;
  		case TM_type:
  			tm_info.local->type = (n && *v) ? ((zp = tmtype(v, NULL)) ? zp->type : strdup(v)) : 0;
-@@ -269,8 +269,8 @@ tmlocal(time_t now)
+@@ -264,8 +264,8 @@ tmlocal(time_t now)
  			break;
  		}
  	}
@@ -1215,7 +1206,7 @@ index 6676c8eac..06b2db7f3 100644
  
  	/*
  	 * now get the time zone names
-@@ -333,11 +333,11 @@ tmlocal(time_t now)
+@@ -328,11 +328,11 @@ tmlocal(time_t now)
  				if (!(s = zp->daylight))
  				{
  					e = (s = buf) + sizeof(buf);
@@ -1229,7 +1220,7 @@ index 6676c8eac..06b2db7f3 100644
  					}
  					s = strdup(buf);
  				}
-@@ -353,13 +353,13 @@ tmlocal(time_t now)
+@@ -348,13 +348,13 @@ tmlocal(time_t now)
  			 */
  
  			e = (s = buf) + sizeof(buf);

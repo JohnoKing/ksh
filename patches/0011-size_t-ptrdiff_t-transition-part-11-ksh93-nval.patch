@@ -1,6 +1,6 @@
-From 1bcf1dfba94e82b9df9f0facc0755b70faac0fa4 Mon Sep 17 00:00:00 2001
+From 57e9acdb7599d06e92ba0f47453c00533c350923 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 6 Feb 2026 07:33:26 -0800
+Date: Tue, 10 Feb 2026 13:32:12 -0800
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93

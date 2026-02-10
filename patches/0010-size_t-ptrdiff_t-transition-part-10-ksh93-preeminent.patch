@@ -1,6 +1,6 @@
-From b226b91319b0a282df37e5f70352092724bfda06 Mon Sep 17 00:00:00 2001
+From 51b1206339bf7ffeeb542cb92f376100b1b16d2b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 6 Feb 2026 07:33:23 -0800
+Date: Tue, 10 Feb 2026 13:32:09 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
