@@ -32,16 +32,11 @@
 #include "FEATURE/tmlib"
 
 #ifndef tzname
-#	if defined(__DYNAMIC__)
-#		undef	_dat_tzname
-#		define	tzname		__DYNAMIC__(tzname)
-#	else
-#		if !_dat_tzname
-#			if _dat__tzname
-#				undef	_dat_tzname
-#				define _dat_tzname	1
-#				define tzname		_tzname
-#			endif
+#	if !_dat_tzname
+#		if _dat__tzname
+#			undef	_dat_tzname
+#			define _dat_tzname	1
+#			define tzname		_tzname
 #		endif
 #	endif
 #	if _dat_tzname && !defined(tzname)

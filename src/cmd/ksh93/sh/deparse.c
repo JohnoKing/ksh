@@ -531,7 +531,7 @@ static void p_redirect(const struct ionod *iop)
 		else if(iof&IORAW)
 			sfputr(outfile,sh_fmtq(iop->ioname),endc);
 		else
-			sfputr(outfile,iop->ioname,(int)iof);
+			sfputr(outfile,iop->ioname,endc);
 		if((iof&IOLSEEK) && (iof&IOARITH))
 			sfputr(outfile, "))", endc2);
 	}
