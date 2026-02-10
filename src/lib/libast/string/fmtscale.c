@@ -29,10 +29,10 @@
 #include <lclib.h>
 
 char*
-fmtscale(Sfulong_t n, int k)
+fmtscale(Sfulong_t n, unsigned int k)
 {
 	Sfulong_t		m;
-	int			r;
+	Sflong_t		r;
 	size_t			z;
 	const char*		u;
 	char			suf[3];
@@ -48,13 +48,13 @@ fmtscale(Sfulong_t n, int k)
 	else
 	{
 		m = 0;
-		while ((k < 0 || n >= (unsigned)k) && *(u + 1))
+		while (n >= k && *(u + 1))
 		{
 			m = n;
 			n /= k;
 			u++;
 		}
-		if ((r = (10 * (m % k) + (k / 2)) / k) > 9)
+		if ((r = (Sflong_t)(10 * (m % k) + (k / 2)) / (signed)k) > 9)
 		{
 			r = 0;
 			n++;

@@ -340,7 +340,7 @@ extern char*		fmtnum(unsigned long, int);
 extern char*		fmtperm(mode_t);
 extern char*		fmtquote(const char*, const char*, const char*, size_t, int);
 extern char*		fmtre(const char*);
-extern char*		fmtscale(Sfulong_t, int);
+extern char*		fmtscale(Sfulong_t, unsigned int);
 extern char*		fmtsignal(int);
 extern char*		fmttime(const char*, time_t);
 extern char*		fmtuid(int);
