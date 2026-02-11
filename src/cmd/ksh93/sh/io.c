@@ -540,7 +540,7 @@ Sfio_t *sh_iostream(int fd)
 {
 	Sfio_t *iop;
 	int status = sh_iocheckfd(fd);
-	int flags = SFIO_WRITE;
+	unsigned short flags = SFIO_WRITE;
 	char *bp;
 	Sfdisc_t *dp;
 	if(status==IOCLOSE)
@@ -2679,7 +2679,7 @@ Sfio_t	*sh_fd2sfio(int fd)
 	Sfio_t *sp = sh.sftable[fd];
 	if(!sp  && (status = sh_iocheckfd(fd))!=IOCLOSE)
 	{
-		int flags=0;
+		unsigned short flags=0;
 		if(status&IOREAD)
 			flags |= SFIO_READ;
 		if(status&IOWRITE)

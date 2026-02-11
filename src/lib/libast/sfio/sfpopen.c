@@ -30,7 +30,7 @@ Sfio_t*	sfpopen(Sfio_t*		f,
 		const char*	mode)		/* mode of the stream */
 {
 	Proc_t*		proc;
-	int		sflags;
+	unsigned short	sflags;
 	int		flags;
 	int		pflags;
 	char*		av[4];

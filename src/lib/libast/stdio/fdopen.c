@@ -22,7 +22,7 @@
 Sfio_t*
 fdopen(int fd, const char* mode)
 {
-	int	flags;
+	unsigned short	flags;
 
 	if (fd < 0 || !(flags = _sftype(mode, NULL, NULL)))
 		return NULL;

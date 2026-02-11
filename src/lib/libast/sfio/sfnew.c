@@ -26,14 +26,14 @@
 **	Written by Kiem-Phong Vo.
 */
 
-Sfio_t* sfnew(Sfio_t*	oldf,	/* old stream to be reused */
-	      void*	buf,	/* a buffer to read/write, if NULL, will be allocated */
-	      size_t	size,	/* buffer size if buf is given or desired buffer size */
-	      int	file,	/* file descriptor to read/write from */
-	      int	flags)	/* type of file stream */
+Sfio_t* sfnew(Sfio_t*		oldf,	/* old stream to be reused */
+	      void*		buf,	/* a buffer to read/write, if NULL, will be allocated */
+	      size_t		size,	/* buffer size if buf is given or desired buffer size */
+	      int		file,	/* file descriptor to read/write from */
+	      unsigned short	flags)	/* type of file stream */
 {
 	Sfio_t*		f;
-	int		sflags;
+	unsigned short	sflags;
 
 
 	if(!(flags&SFIO_RDWR))

@@ -358,9 +358,9 @@ skip2:
 	}
 	if(!(outfile=sh.sftable[fd]))
 	{
+		unsigned short sfflags = SFIO_WRITE|((n&IOREAD)?SFIO_READ:0);
 		sh_onstate(SH_NOTRACK);
-		n = SFIO_WRITE|((n&IOREAD)?SFIO_READ:0);
-		sh.sftable[fd] = outfile = sfnew(NULL,sh.outbuff,IOBSIZE,fd,n);
+		sh.sftable[fd] = outfile = sfnew(NULL,sh.outbuff,IOBSIZE,fd,sfflags);
 		sh_offstate(SH_NOTRACK);
 		sfpool(outfile,sh.outpool,SFIO_WRITE);
 	}

@@ -138,10 +138,6 @@ struct _sffmt_s
 #define SFIO_FLAGS	0177177	/* PUBLIC FLAGS PASSABLE TO SFNEW()	*/
 #define SFIO_SETS	0177163	/* flags passable to sfset()		*/
 
-#ifndef _SFIO_NO_OBSOLETE
-#define SFIO_BUFCONST	0400000 /* unused flag - for compatibility only	*/
-#endif
-
 /* for sfgetr/sfreserve to hold a record */
 #define SFIO_LOCKR	0000010	/* lock record, stop access to stream	*/
 #define SFIO_LASTR	0000020	/* get the last incomplete record	*/
@@ -184,7 +180,7 @@ extern Sfio_t		_Sfstdin;
 extern Sfio_t		_Sfstdout;
 extern Sfio_t		_Sfstderr;
 
-extern Sfio_t*		sfnew(Sfio_t*, void*, size_t, int, int);
+extern Sfio_t*		sfnew(Sfio_t*, void*, size_t, int, unsigned short);
 extern Sfio_t*		sfopen(Sfio_t*, const char*, const char*);
 extern Sfio_t*		sfpopen(Sfio_t*, const char*, const char*);
 extern Sfio_t*		sfstack(Sfio_t*, Sfio_t*);

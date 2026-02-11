@@ -31,7 +31,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 		const char*	file,		/* file/string to be opened */
 		const char*	mode)		/* mode of the stream */
 {
-	int	fd, oldfd, oflags, fflags, sflags;
+	int		fd, oldfd, oflags, fflags;
+	unsigned short	sflags;
 
 	/* get the control flags */
 	if((sflags = _sftype(mode,&oflags,&fflags)) == 0)
@@ -127,9 +128,10 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 	return f;
 }
 
-int _sftype(const char* mode, int* oflagsp, int* fflagsp)
+unsigned short _sftype(const char* mode, int* oflagsp, int* fflagsp)
 {
-	int	sflags, oflags, fflags;
+	unsigned short	sflags;
+	int		oflags, fflags;
 
 	if(!mode)
 		return 0;

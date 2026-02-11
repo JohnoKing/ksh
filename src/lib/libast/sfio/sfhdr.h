@@ -745,7 +745,7 @@ extern char**		_sfgetpath(char*);
 extern Sfextern_t	_Sfextern;
 
 extern int		_sfmode(Sfio_t*, int, int);
-extern int		_sftype(const char*, int*, int*);
+extern unsigned short	_sftype(const char*, int*, int*);
 
 #ifndef errno
 extern int		errno;
