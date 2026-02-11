@@ -1,6 +1,6 @@
-From 2c5e6ebbfe079ec265e9dc5eaafbf76367cd2b3d Mon Sep 17 00:00:00 2001
+From 9548e5f38d2cbc5cef49a6c1ccbd3394b297851b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:52 -0800
+Date: Wed, 11 Feb 2026 01:15:16 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -15,7 +15,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-947 => 840 => 86 (progression from part 9 => part 10 => part 13)
+930 => 822 => 65 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

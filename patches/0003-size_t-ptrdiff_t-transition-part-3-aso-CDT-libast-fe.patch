@@ -1,6 +1,6 @@
-From 7767ad3836a480d0c20891e9d41a1961411a1f41 Mon Sep 17 00:00:00 2001
+From ad7b4923b142399854015922a05510c288d2abdf Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:35 -0800
+Date: Wed, 11 Feb 2026 01:09:59 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -13,7 +13,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,154 => 3,075 => 86 (progression from part 2 => part 3 => part 13)
+3,182 => 3,092 => 65 (progression from part 2 => part 3 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

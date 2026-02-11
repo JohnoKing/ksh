@@ -1,6 +1,6 @@
-From bffecad6146e022a756fb76ad9a4e1c9c074442a Mon Sep 17 00:00:00 2001
+From 65b5a78844a7f57f0bbbddba2feda2becff44600 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:41 -0800
+Date: Wed, 11 Feb 2026 01:12:12 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,977 => 1,612 => 86 (progression from part 5 => part 6 => part 13)
+1,984 => 1,600 => 65 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

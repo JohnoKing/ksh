@@ -1,6 +1,6 @@
-From 3b349ec3676d8a738ffc07b64ee6dd2ef90fa59b Mon Sep 17 00:00:00 2001
+From 53fe75c80bdf18e77fd6fac20902ebbc5fd37795 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:39 -0800
+Date: Wed, 11 Feb 2026 01:11:28 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -27,15 +27,17 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,483 => 1,977 => 86 (progression from part 4 => part 5 => part 13)
+2,493 => 1,984 => 65 (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/comp/arc4random.c  |   2 +-
  src/lib/libast/comp/assert.c      |   5 +-
- src/lib/libast/comp/eaccess.c     |   2 +-
+ src/lib/libast/comp/eaccess.c     |   4 +-
  src/lib/libast/comp/fmtmsglib.c   |  29 ++---
  src/lib/libast/comp/fnmatch.c     |  22 ++--
+ src/lib/libast/comp/frexp.c       |   5 +-
+ src/lib/libast/comp/frexpl.c      |   5 +-
  src/lib/libast/comp/iconv.c       | 132 ++++++++++----------
  src/lib/libast/comp/mktemp.c      |   5 +-
  src/lib/libast/comp/nftw.c        |   9 +-
@@ -76,7 +78,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 45 files changed, 657 insertions(+), 641 deletions(-)
+ 47 files changed, 664 insertions(+), 646 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -120,7 +122,7 @@ index d5e924998..48f1f293e 100644
  #if _has___func__ || _has___FUNCTION__
  	sfprintf(sfstderr,"\n*** assertion %s failed in %s(), %s:%d\n", a, fun, file, line);
 diff --git a/src/lib/libast/comp/eaccess.c b/src/lib/libast/comp/eaccess.c
-index 3690ed580..490733e69 100644
+index 3690ed580..edd60112c 100644
 --- a/src/lib/libast/comp/eaccess.c
 +++ b/src/lib/libast/comp/eaccess.c
 @@ -41,7 +41,7 @@ eaccess(const char* path, int flags)
@@ -132,6 +134,15 @@ index 3690ed580..490733e69 100644
  	struct stat	st;
  
  	static int	init;
+@@ -102,7 +102,7 @@ eaccess(const char* path, int flags)
+ 		{
+ 			if ((ngroups = getgroups(0, NULL)) <= 0)
+ 				ngroups = (int)astconf_long(CONF_NGROUPS_MAX);
+-			if (!(groups = newof(0, gid_t, ngroups + 1, 0)))
++			if (!(groups = newof(0, gid_t, (size_t)ngroups + 1, 0)))
+ 				ngroups = -1;
+ 			else
+ 				ngroups = getgroups(ngroups, groups);
 diff --git a/src/lib/libast/comp/fmtmsglib.c b/src/lib/libast/comp/fmtmsglib.c
 index aab7247d2..39a149b9a 100644
 --- a/src/lib/libast/comp/fmtmsglib.c
@@ -307,6 +318,66 @@ index 7e423478d..0c2b3164b 100644
 -	return reflags;
 +	return ret;
  }
+diff --git a/src/lib/libast/comp/frexp.c b/src/lib/libast/comp/frexp.c
+index d38a99230..8567e185b 100644
+--- a/src/lib/libast/comp/frexp.c
++++ b/src/lib/libast/comp/frexp.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -43,7 +44,7 @@ static double		pow2tab[DBL_MAX_EXP + 1];
+ static int
+ init(void)
+ {
+-	int		x;
++	size_t		x;
+ 	double		g;
+ 
+ 	g = 1;
+diff --git a/src/lib/libast/comp/frexpl.c b/src/lib/libast/comp/frexpl.c
+index 850c39dce..3c190a35f 100644
+--- a/src/lib/libast/comp/frexpl.c
++++ b/src/lib/libast/comp/frexpl.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -47,7 +48,7 @@ static long double	pow2tab[LDBL_MAX_EXP + 1];
+ static int
+ init(void)
+ {
+-	int		x;
++	size_t		x;
+ 	long double	g;
+ 
+ 	g = 1;
 diff --git a/src/lib/libast/comp/iconv.c b/src/lib/libast/comp/iconv.c
 index 28de9734e..e25539959 100644
 --- a/src/lib/libast/comp/iconv.c

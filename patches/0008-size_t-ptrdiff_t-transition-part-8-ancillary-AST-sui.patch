@@ -1,6 +1,6 @@
-From 163e582910f3c6f97fc92b849cde41b1826f0ce5 Mon Sep 17 00:00:00 2001
+From 925b3a560659032f6994cf6671dc5410d2085872 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:46 -0800
+Date: Wed, 11 Feb 2026 01:13:44 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,216 => 1,062 => 86 (progression from part 7 => part 8 => part 13)
+1,201 => 1,045 => 65 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

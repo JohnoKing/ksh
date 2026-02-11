@@ -1,6 +1,6 @@
-From 6f4ffb64232fa32e1974171e4618b3d3f02d5fb9 Mon Sep 17 00:00:00 2001
+From 2b5544eea7d83db37159655795ca4efb8882cb06 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:33 -0800
+Date: Wed, 11 Feb 2026 01:09:14 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -39,7 +39,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,797 => 3,154 => 86 (progression from part 1 => part 2 => part 13)
+3,854 => 3,182 => 65 (progression from part 1 => part 2 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -161,6 +161,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/fmtelapsed.c |  11 +--
  src/lib/libast/string/fmtmode.c    |   7 +-
  src/lib/libast/string/fmtperm.c    |   5 +-
+ src/lib/libast/string/fmtscale.c   |  13 +--
  src/lib/libast/string/modedata.c   |   5 +-
  src/lib/libast/string/modei.c      |  11 +--
  src/lib/libast/string/modelib.h    |  13 +--
@@ -168,7 +169,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++--------
  src/lib/libast/string/strmode.c    |  11 +--
  src/lib/libast/string/strperm.c    |  16 ++--
- 125 files changed, 1029 insertions(+), 951 deletions(-)
+ 126 files changed, 1036 insertions(+), 957 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
 index 346f55960..7f6892b6c 100644
@@ -7004,6 +7005,60 @@ index 63057fd1e..0bd9cce56 100644
  {
  	char*	s;
  	char*		buf;
+diff --git a/src/lib/libast/string/fmtscale.c b/src/lib/libast/string/fmtscale.c
+index 6d0a0bc11..0761adbb1 100644
+--- a/src/lib/libast/string/fmtscale.c
++++ b/src/lib/libast/string/fmtscale.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+@@ -28,11 +29,11 @@
+ #include <lclib.h>
+ 
+ char*
+-fmtscale(Sfulong_t n, int k)
++fmtscale(Sfulong_t n, unsigned int k)
+ {
+ 	Sfulong_t		m;
+-	int			r;
+-	int			z;
++	Sflong_t		r;
++	size_t			z;
+ 	const char*		u;
+ 	char			suf[3];
+ 	char*			s;
+@@ -53,7 +54,7 @@ fmtscale(Sfulong_t n, int k)
+ 			n /= k;
+ 			u++;
+ 		}
+-		if ((r = (10 * (m % k) + (k / 2)) / k) > 9)
++		if ((r = (Sflong_t)(10 * (m % k) + (k / 2)) / (signed)k) > 9)
+ 		{
+ 			r = 0;
+ 			n++;
+@@ -79,7 +80,7 @@ fmtscale(Sfulong_t n, int k)
+ 	}
+ 	*s = 0;
+ 	if (n > 0 && n < 10)
+-		sfsprintf(buf, z, "%I*u%c%d%s", sizeof(n), n, p->decimal >= 0 ? p->decimal : '.', r, suf);
++		sfsprintf(buf, z, "%I*u%c%jd%s", sizeof(n), n, p->decimal >= 0 ? p->decimal : '.', r, suf);
+ 	else
+ 	{
+ 		if (r >= 5)
 diff --git a/src/lib/libast/string/modedata.c b/src/lib/libast/string/modedata.c
 index dbb35998e..f38836642 100644
 --- a/src/lib/libast/string/modedata.c

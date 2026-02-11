@@ -1,6 +1,6 @@
-From 0abd073e5d95dd116eccbe3cd62b87dc01117885 Mon Sep 17 00:00:00 2001
+From ef94ea3325b39a3418dd3dfac7601c8a4e05db8d Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 19:37:32 -0800
+Date: Wed, 11 Feb 2026 01:08:29 -0800
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
  expansion, init and stk(3)
 
@@ -55,7 +55,7 @@ so I've decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,042 => 3,797 => 86 (progression from d462de66 => part 1 => part 13)
+4,086 => 3,854 => 65 (progression from fde22882e => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on its own). The full suite of
