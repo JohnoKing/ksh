@@ -1,6 +1,6 @@
-From 3315e3f24f50a0c536fd198aa9aecaaec37bad31 Mon Sep 17 00:00:00 2001
+From de18049ab04d5dd611bc01ac504a40913b7b3bca Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 14:02:17 -0800
+Date: Tue, 10 Feb 2026 19:38:01 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -46,25 +46,25 @@ and is intended for submission sometime after this (hopefully) gets merged.
 
 Fixes https://github.com/ksh93/ksh/issues/592
 ---
- NEWS                            |   4 ++
+ NEWS                            |   4 +
  src/cmd/ksh93/builtins.mm       |   4 +-
  src/cmd/ksh93/include/argnod.h  |   4 +-
- src/cmd/ksh93/include/jobs.h    |   8 +--
+ src/cmd/ksh93/include/jobs.h    |   8 +-
  src/cmd/ksh93/include/path.h    |  10 +--
- src/cmd/ksh93/include/streval.h |  16 ++---
+ src/cmd/ksh93/include/streval.h |  16 ++--
  src/cmd/ksh93/sh/args.c         |  46 ++++++------
  src/cmd/ksh93/sh/arith.c        |  30 ++++----
- src/cmd/ksh93/sh/deparse.c      |  25 +++----
- src/cmd/ksh93/sh/expand.c       |  25 +++----
+ src/cmd/ksh93/sh/deparse.c      |  25 ++++---
+ src/cmd/ksh93/sh/expand.c       |  25 ++++---
  src/cmd/ksh93/sh/fault.c        |  42 +++++------
- src/cmd/ksh93/sh/io.c           | 124 ++++++++++++++++----------------
+ src/cmd/ksh93/sh/io.c           | 128 ++++++++++++++++----------------
  src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         |  98 +++++++++++++------------
+ src/cmd/ksh93/sh/path.c         |  98 +++++++++++++-----------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
- src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++--------------
- src/cmd/ksh93/tests/basic.sh    |  24 +++++++
- 18 files changed, 373 insertions(+), 315 deletions(-)
+ src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++-------------
+ src/cmd/ksh93/tests/basic.sh    |  24 ++++++
+ 18 files changed, 375 insertions(+), 317 deletions(-)
 
 diff --git a/NEWS b/NEWS
 index 404633eeb..de8b434ad 100644
@@ -866,7 +866,7 @@ index e6c4f14de..eeb269e87 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 65b1f64c8..d52b4f026 100644
+index 65b1f64c8..30391c7d3 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
@@ -921,6 +921,15 @@ index 65b1f64c8..d52b4f026 100644
  	if(sftable)
  		free(sftable);
  	sh.lim.open_max = n;
+@@ -540,7 +540,7 @@ Sfio_t *sh_iostream(int fd)
+ {
+ 	Sfio_t *iop;
+ 	int status = sh_iocheckfd(fd);
+-	int flags = SFIO_WRITE;
++	unsigned short flags = SFIO_WRITE;
+ 	char *bp;
+ 	Sfdisc_t *dp;
+ 	if(status==IOCLOSE)
 @@ -761,7 +761,7 @@ int sh_open(const char *path, int flags, ...)
  	char		*e;
  	va_list		ap;
@@ -1276,7 +1285,13 @@ index 65b1f64c8..d52b4f026 100644
  	for(i=0;i<nrow;i++)
  	{
  		if(sh.trapnote&SH_SIGSET)
-@@ -2680,7 +2684,7 @@ Sfio_t	*sh_fd2sfio(int fd)
+@@ -2675,12 +2679,12 @@ Sfio_t	*sh_fd2sfio(int fd)
+ 	Sfio_t *sp = sh.sftable[fd];
+ 	if(!sp  && (status = sh_iocheckfd(fd))!=IOCLOSE)
+ 	{
+-		int flags=0;
++		unsigned short flags=0;
+ 		if(status&IOREAD)
  			flags |= SFIO_READ;
  		if(status&IOWRITE)
  			flags |= SFIO_WRITE;

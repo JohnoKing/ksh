@@ -1,6 +1,6 @@
-From f0224fe12fb6b20ddceb1746f814f908386147dc Mon Sep 17 00:00:00 2001
+From 6f4ffb64232fa32e1974171e4618b3d3f02d5fb9 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 14:01:51 -0800
+Date: Tue, 10 Feb 2026 19:37:33 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -43,7 +43,7 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/print.c       |  95 ++++++++++----------
+ src/cmd/ksh93/bltins/print.c       |  99 ++++++++++----------
  src/lib/libast/features/stdio      |  18 ++--
  src/lib/libast/hash/hashalloc.c    |  17 ++--
  src/lib/libast/hash/hashdump.c     |  15 ++--
@@ -60,7 +60,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/hash.h      |   9 +-
  src/lib/libast/include/modex.h     |   7 +-
  src/lib/libast/include/regex.h     |  99 ++++++++++----------
- src/lib/libast/include/sfio.h      |  62 ++++++-------
+ src/lib/libast/include/sfio.h      |  68 +++++++-------
  src/lib/libast/include/sfio_s.h    |   5 +-
  src/lib/libast/include/sfio_t.h    |   4 +-
  src/lib/libast/man/fmt.3           |   6 +-
@@ -73,7 +73,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/path/pathgetlink.c  |  11 +--
  src/lib/libast/sfio/_sfgetl.c      |   5 +-
  src/lib/libast/sfio/_sfgetu.c      |   5 +-
- src/lib/libast/sfio/_sfopen.c      |   4 +-
+ src/lib/libast/sfio/_sfopen.c      |  12 +--
  src/lib/libast/sfio/_sfputc.c      |   5 +-
  src/lib/libast/sfio/_sfputd.c      |  11 +--
  src/lib/libast/sfio/_sfputl.c      |  10 +--
@@ -95,16 +95,16 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfgetm.c       |   5 +-
  src/lib/libast/sfio/sfgetr.c       |  13 +--
  src/lib/libast/sfio/sfgetu.c       |   5 +-
- src/lib/libast/sfio/sfhdr.h        |  44 ++++-----
+ src/lib/libast/sfio/sfhdr.h        |  46 +++++-----
  src/lib/libast/sfio/sfmode.c       |  39 ++++----
  src/lib/libast/sfio/sfmove.c       |  16 ++--
- src/lib/libast/sfio/sfnew.c        |   7 +-
+ src/lib/libast/sfio/sfnew.c        |  19 ++--
  src/lib/libast/sfio/sfnputc.c      |  17 ++--
  src/lib/libast/sfio/sfpeek.c       |   5 +-
  src/lib/libast/sfio/sfpkrd.c       |  20 ++---
  src/lib/libast/sfio/sfpoll.c       |   4 +-
  src/lib/libast/sfio/sfpool.c       |  24 ++---
- src/lib/libast/sfio/sfpopen.c      |   4 +-
+ src/lib/libast/sfio/sfpopen.c      |   6 +-
  src/lib/libast/sfio/sfprintf.c     |  19 ++--
  src/lib/libast/sfio/sfprints.c     |  15 ++--
  src/lib/libast/sfio/sfpurge.c      |   4 +-
@@ -118,8 +118,8 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfreserve.c    |   9 +-
  src/lib/libast/sfio/sfresize.c     |  13 +--
  src/lib/libast/sfio/sfscanf.c      |   5 +-
- src/lib/libast/sfio/sfseek.c       |  15 ++--
- src/lib/libast/sfio/sfsetbuf.c     |  49 +++++-----
+ src/lib/libast/sfio/sfseek.c       |  17 ++--
+ src/lib/libast/sfio/sfsetbuf.c     |  52 ++++++-----
  src/lib/libast/sfio/sfstack.c      |   7 +-
  src/lib/libast/sfio/sfstrtod.c     |  11 +--
  src/lib/libast/sfio/sfstrtof.h     |  19 ++--
@@ -134,13 +134,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfwrite.c      |  38 ++++----
  src/lib/libast/stdio/_doprnt.c     |   5 +-
  src/lib/libast/stdio/_filbuf.c     |   5 +-
+ src/lib/libast/stdio/fdopen.c      |   5 +-
  src/lib/libast/stdio/fgets.c       |   9 +-
  src/lib/libast/stdio/fgetwc.c      |   5 +-
- src/lib/libast/stdio/fgetws.c      |   7 +-
+ src/lib/libast/stdio/fgetws.c      |  11 +--
  src/lib/libast/stdio/fprintf.c     |   5 +-
  src/lib/libast/stdio/fputs.c       |   5 +-
  src/lib/libast/stdio/fputwc.c      |   5 +-
- src/lib/libast/stdio/fputws.c      |   5 +-
+ src/lib/libast/stdio/fputws.c      |   7 +-
  src/lib/libast/stdio/fread.c       |   5 +-
  src/lib/libast/stdio/fwrite.c      |   5 +-
  src/lib/libast/stdio/getdelim.c    |  11 +--
@@ -151,8 +152,8 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/stdio/sprintf.c     |   5 +-
  src/lib/libast/stdio/vasprintf.c   |   5 +-
  src/lib/libast/stdio/vfprintf.c    |   5 +-
- src/lib/libast/stdio/vfwprintf.c   |   7 +-
- src/lib/libast/stdio/vfwscanf.c    |   4 +-
+ src/lib/libast/stdio/vfwprintf.c   |   9 +-
+ src/lib/libast/stdio/vfwscanf.c    |   6 +-
  src/lib/libast/stdio/vprintf.c     |   5 +-
  src/lib/libast/stdio/vsnprintf.c   |  13 +--
  src/lib/libast/stdio/vswprintf.c   |   5 +-
@@ -167,10 +168,10 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++--------
  src/lib/libast/string/strmode.c    |  11 +--
  src/lib/libast/string/strperm.c    |  16 ++--
- 124 files changed, 1002 insertions(+), 924 deletions(-)
+ 125 files changed, 1029 insertions(+), 951 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
-index 346f55960..301c291f8 100644
+index 346f55960..7f6892b6c 100644
 --- a/src/cmd/ksh93/bltins/print.c
 +++ b/src/cmd/ksh93/bltins/print.c
 @@ -2,7 +2,7 @@
@@ -208,6 +209,18 @@ index 346f55960..301c291f8 100644
  static ssize_t		fmtbase64(Sfio_t*, char*, int);
  struct print
  {
+@@ -358,9 +358,9 @@ skip2:
+ 	}
+ 	if(!(outfile=sh.sftable[fd]))
+ 	{
++		unsigned short sfflags = SFIO_WRITE|((n&IOREAD)?SFIO_READ:0);
+ 		sh_onstate(SH_NOTRACK);
+-		n = SFIO_WRITE|((n&IOREAD)?SFIO_READ:0);
+-		sh.sftable[fd] = outfile = sfnew(NULL,sh.outbuff,IOBSIZE,fd,n);
++		sh.sftable[fd] = outfile = sfnew(NULL,sh.outbuff,IOBSIZE,fd,sfflags);
+ 		sh_offstate(SH_NOTRACK);
+ 		sfpool(outfile,sh.outpool,SFIO_WRITE);
+ 	}
 @@ -388,7 +388,7 @@ printf_v:
  			sfprintf(outfile,"%!",&pdata);
  		} while(*pdata.nextarg && pdata.nextarg!=argv);
@@ -1424,7 +1437,7 @@ index 0bff25463..e3d163ff2 100644
  } regstat_t;
  
 diff --git a/src/lib/libast/include/sfio.h b/src/lib/libast/include/sfio.h
-index 4ab3b6de2..d28867bd8 100644
+index 4ab3b6de2..950002c81 100644
 --- a/src/lib/libast/include/sfio.h
 +++ b/src/lib/libast/include/sfio.h
 @@ -2,7 +2,7 @@
@@ -1465,7 +1478,18 @@ index 4ab3b6de2..d28867bd8 100644
  
  	void*		mbs;	/* multibyte state for format string	*/
  };
-@@ -172,8 +172,8 @@ struct _sffmt_s
+@@ -138,10 +138,6 @@ struct _sffmt_s
+ #define SFIO_FLAGS	0177177	/* PUBLIC FLAGS PASSABLE TO SFNEW()	*/
+ #define SFIO_SETS	0177163	/* flags passable to sfset()		*/
+ 
+-#ifndef _SFIO_NO_OBSOLETE
+-#define SFIO_BUFCONST	0400000 /* unused flag - for compatibility only	*/
+-#endif
+-
+ /* for sfgetr/sfreserve to hold a record */
+ #define SFIO_LOCKR	0000010	/* lock record, stop access to stream	*/
+ #define SFIO_LASTR	0000020	/* get the last incomplete record	*/
+@@ -172,8 +168,8 @@ struct _sffmt_s
  #define SFIO_BUFSIZE	8192	/* default buffer size			*/
  #define SFIO_UNBOUND	(-1)	/* unbounded buffer size		*/
  
@@ -1476,7 +1500,16 @@ index 4ab3b6de2..d28867bd8 100644
  
  /* standard in/out/err streams */
  extern Sfio_t*		sfstdin;
-@@ -211,17 +211,17 @@ extern Sfoff_t		sfmove(Sfio_t*, Sfio_t*, Sfoff_t, int);
+@@ -184,7 +180,7 @@ extern Sfio_t		_Sfstdin;
+ extern Sfio_t		_Sfstdout;
+ extern Sfio_t		_Sfstderr;
+ 
+-extern Sfio_t*		sfnew(Sfio_t*, void*, size_t, int, int);
++extern Sfio_t*		sfnew(Sfio_t*, void*, size_t, int, unsigned short);
+ extern Sfio_t*		sfopen(Sfio_t*, const char*, const char*);
+ extern Sfio_t*		sfpopen(Sfio_t*, const char*, const char*);
+ extern Sfio_t*		sfstack(Sfio_t*, Sfio_t*);
+@@ -211,17 +207,17 @@ extern Sfoff_t		sfmove(Sfio_t*, Sfio_t*, Sfoff_t, int);
  extern int		sfclose(Sfio_t*);
  extern Sfoff_t		sftell(Sfio_t*);
  extern Sfoff_t		sfseek(Sfio_t*, Sfoff_t, int);
@@ -1501,7 +1534,7 @@ index 4ab3b6de2..d28867bd8 100644
  extern int		sfscanf(Sfio_t*, const char*, ...);
  extern int		sfsscanf(const char*, const char*, ...);
  extern int		sfvsscanf(const char*, const char*, va_list);
-@@ -238,11 +238,11 @@ extern int		sfdlen(Sfdouble_t);
+@@ -238,11 +234,11 @@ extern int		sfdlen(Sfdouble_t);
  extern int		sfllen(Sflong_t);
  extern int		sfulen(Sfulong_t);
  
@@ -1518,7 +1551,7 @@ index 4ab3b6de2..d28867bd8 100644
  
  extern Sfdouble_t	sfgetd(Sfio_t*);
  extern Sflong_t		sfgetl(Sfio_t*);
-@@ -250,13 +250,13 @@ extern Sfulong_t	sfgetu(Sfio_t*);
+@@ -250,13 +246,13 @@ extern Sfulong_t	sfgetu(Sfio_t*);
  extern Sfulong_t	sfgetm(Sfio_t*, Sfulong_t);
  extern int		sfgetc(Sfio_t*);
  
@@ -1538,7 +1571,7 @@ index 4ab3b6de2..d28867bd8 100644
  
  extern int		_sfdlen(Sfdouble_t);
  extern int		_sfllen(Sflong_t);
-@@ -270,7 +270,7 @@ extern int		sferror(Sfio_t*);
+@@ -270,7 +266,7 @@ extern int		sferror(Sfio_t*);
  extern int		sffileno(Sfio_t*);
  extern int		sfstacked(Sfio_t*);
  extern ssize_t		sfvalue(Sfio_t*);
@@ -1547,7 +1580,7 @@ index 4ab3b6de2..d28867bd8 100644
  extern ssize_t		sfmaxr(ssize_t, int);
  
  /* coding long integers in a portable and compact fashion */
-@@ -295,7 +295,7 @@ extern ssize_t		sfmaxr(ssize_t, int);
+@@ -295,7 +291,7 @@ extern ssize_t		sfmaxr(ssize_t, int);
  #define __sf_putc(f,c)	(_SFIO_(f)->_next >= _SFIO_(f)->_endw ? \
  			 _sfflsbuf(_SFIO_(f),(int)((unsigned char)(c))) : \
  			 (int)(*_SFIO_(f)->_next++ = (unsigned char)(c)) )
@@ -1556,7 +1589,7 @@ index 4ab3b6de2..d28867bd8 100644
  			 (int)(*_SFIO_(f)->_next++) )
  
  #define __sf_dlen(v)	(_sfdlen((Sfdouble_t)(v)) )
-@@ -333,7 +333,7 @@ __INLINE__ int sferror(Sfio_t* f)		{ return __sf_error(f); }
+@@ -333,7 +329,7 @@ __INLINE__ int sferror(Sfio_t* f)		{ return __sf_error(f); }
  __INLINE__ int sfclrerr(Sfio_t* f)		{ return __sf_clrerr(f); }
  __INLINE__ int sfstacked(Sfio_t* f)		{ return __sf_stacked(f); }
  __INLINE__ ssize_t sfvalue(Sfio_t* f)		{ return __sf_value(f); }
@@ -1565,7 +1598,7 @@ index 4ab3b6de2..d28867bd8 100644
  __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
  
  #else
-@@ -364,7 +364,7 @@ __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
+@@ -364,7 +360,7 @@ __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
  #ifndef _SFSTR_H /* GSF's string manipulation stuff */
  #define _SFSTR_H		1
  
@@ -2017,10 +2050,20 @@ index 1ae8ced0d..5c2387409 100644
  	return sfgetu(f);
  }
 diff --git a/src/lib/libast/sfio/_sfopen.c b/src/lib/libast/sfio/_sfopen.c
-index 7fc07ca3e..10bf6e817 100644
+index 7fc07ca3e..9b9847973 100644
 --- a/src/lib/libast/sfio/_sfopen.c
 +++ b/src/lib/libast/sfio/_sfopen.c
-@@ -50,8 +50,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
+@@ -31,7 +31,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
+ 		const char*	file,		/* file/string to be opened */
+ 		const char*	mode)		/* mode of the stream */
+ {
+-	int	fd, oldfd, oflags, fflags, sflags;
++	int		fd, oldfd, oflags, fflags;
++	unsigned short	sflags;
+ 
+ 	/* get the control flags */
+ 	if((sflags = _sftype(mode,&oflags,&fflags)) == 0)
+@@ -50,8 +51,8 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
  				else	f->bits &= ~SFIO_BOTH;
  
  				if(f->flags&SFIO_READ)
@@ -2031,6 +2074,19 @@ index 7fc07ca3e..10bf6e817 100644
  			}
  		}
  		else /* make sure there is no buffered data */
+@@ -127,9 +128,10 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
+ 	return f;
+ }
+ 
+-int _sftype(const char* mode, int* oflagsp, int* fflagsp)
++unsigned short _sftype(const char* mode, int* oflagsp, int* fflagsp)
+ {
+-	int	sflags, oflags, fflags;
++	unsigned short	sflags;
++	int		oflags, fflags;
+ 
+ 	if(!mode)
+ 		return 0;
 diff --git a/src/lib/libast/sfio/_sfputc.c b/src/lib/libast/sfio/_sfputc.c
 index 53cab1886..5546b8e9a 100644
 --- a/src/lib/libast/sfio/_sfputc.c
@@ -2954,7 +3010,7 @@ index d80bc0241..b520f3d86 100644
  	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
  		return (Sfulong_t)(-1);
 diff --git a/src/lib/libast/sfio/sfhdr.h b/src/lib/libast/sfio/sfhdr.h
-index 96ef2620f..d8c546a48 100644
+index 96ef2620f..42206a819 100644
 --- a/src/lib/libast/sfio/sfhdr.h
 +++ b/src/lib/libast/sfio/sfhdr.h
 @@ -268,9 +268,9 @@
@@ -3080,7 +3136,7 @@ index 96ef2620f..d8c546a48 100644
  	}
  
  extern Sftab_t		_Sftable;
-@@ -739,7 +739,7 @@ extern int		_sfpclose(Sfio_t*);
+@@ -739,13 +739,13 @@ extern int		_sfpclose(Sfio_t*);
  extern int		_sfexcept(Sfio_t*, int, ssize_t, Sfdisc_t*);
  extern Sfrsrv_t*	_sfrsrv(Sfio_t*, ssize_t);
  extern int		_sfsetpool(Sfio_t*);
@@ -3089,6 +3145,13 @@ index 96ef2620f..d8c546a48 100644
  extern char**		_sfgetpath(char*);
  
  extern Sfextern_t	_Sfextern;
+ 
+ extern int		_sfmode(Sfio_t*, int, int);
+-extern int		_sftype(const char*, int*, int*);
++extern unsigned short	_sftype(const char*, int*, int*);
+ 
+ #ifndef errno
+ extern int		errno;
 diff --git a/src/lib/libast/sfio/sfmode.c b/src/lib/libast/sfio/sfmode.c
 index 81ef8da61..e84fe7c18 100644
 --- a/src/lib/libast/sfio/sfmode.c
@@ -3325,7 +3388,7 @@ index ba770a5c0..d3fc168ab 100644
  				if(w > 0)
  				{	r -= w;
 diff --git a/src/lib/libast/sfio/sfnew.c b/src/lib/libast/sfio/sfnew.c
-index 76b9db52e..f74e0f93f 100644
+index 76b9db52e..a75d5f224 100644
 --- a/src/lib/libast/sfio/sfnew.c
 +++ b/src/lib/libast/sfio/sfnew.c
 @@ -2,7 +2,7 @@
@@ -3345,6 +3408,27 @@ index 76b9db52e..f74e0f93f 100644
  *                                                                      *
  ***********************************************************************/
  #include	"sfhdr.h"
+@@ -25,14 +26,14 @@
+ **	Written by Kiem-Phong Vo.
+ */
+ 
+-Sfio_t* sfnew(Sfio_t*	oldf,	/* old stream to be reused */
+-	      void*	buf,	/* a buffer to read/write, if NULL, will be allocated */
+-	      size_t	size,	/* buffer size if buf is given or desired buffer size */
+-	      int	file,	/* file descriptor to read/write from */
+-	      int	flags)	/* type of file stream */
++Sfio_t* sfnew(Sfio_t*		oldf,	/* old stream to be reused */
++	      void*		buf,	/* a buffer to read/write, if NULL, will be allocated */
++	      size_t		size,	/* buffer size if buf is given or desired buffer size */
++	      int		file,	/* file descriptor to read/write from */
++	      unsigned short	flags)	/* type of file stream */
+ {
+ 	Sfio_t*		f;
+-	int		sflags;
++	unsigned short	sflags;
+ 
+ 
+ 	if(!(flags&SFIO_RDWR))
 @@ -99,8 +100,8 @@ Sfio_t* sfnew(Sfio_t*	oldf,	/* old stream to be reused */
  
  	f->mode |= SFIO_INIT;
@@ -3631,7 +3715,7 @@ index b08f463cf..1ab99294b 100644
  	if(mode&SFIO_SHARE) /* can only have write streams */
  	{	if(SFMODE(f,1) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,1) < 0)
 diff --git a/src/lib/libast/sfio/sfpopen.c b/src/lib/libast/sfio/sfpopen.c
-index 5e877dbeb..d6b5cfcd9 100644
+index 5e877dbeb..4bbdcbb30 100644
 --- a/src/lib/libast/sfio/sfpopen.c
 +++ b/src/lib/libast/sfio/sfpopen.c
 @@ -2,7 +2,7 @@
@@ -3643,11 +3727,13 @@ index 5e877dbeb..d6b5cfcd9 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -31,7 +31,7 @@ Sfio_t*	sfpopen(Sfio_t*		f,
+@@ -30,8 +30,8 @@ Sfio_t*	sfpopen(Sfio_t*		f,
+ 		const char*	mode)		/* mode of the stream */
  {
  	Proc_t*		proc;
- 	int		sflags;
+-	int		sflags;
 -	long		flags;
++	unsigned short	sflags;
 +	int		flags;
  	int		pflags;
  	char*		av[4];
@@ -4401,7 +4487,7 @@ index 633a8ef43..3ff2253f7 100644
  	f.endb = f.endr = f.data+f.size;
  
 diff --git a/src/lib/libast/sfio/sfseek.c b/src/lib/libast/sfio/sfseek.c
-index 6e7285d9b..b4b52981c 100644
+index 6e7285d9b..8c2a530f0 100644
 --- a/src/lib/libast/sfio/sfseek.c
 +++ b/src/lib/libast/sfio/sfseek.c
 @@ -2,7 +2,7 @@
@@ -4413,6 +4499,15 @@ index 6e7285d9b..b4b52981c 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
+@@ -61,7 +61,7 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
+ 
+ 	/* set and initialize the stream to a definite mode */
+ 	if((int)SFMODE(f,local) != (mode = f->mode&SFIO_RDWR))
+-	{	int	flags = f->flags;
++	{	unsigned short	flags = f->flags;
+ 
+ 		if(hardseek&SFIO_PUBLIC) /* seek ptr must follow file descriptor */
+ 			f->flags |= SFIO_SHARE|SFIO_PUBLIC;
 @@ -112,7 +112,7 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
  			f->next = f->data ? f->data + p : NULL;
  			f->here = p;
@@ -4460,7 +4555,7 @@ index 6e7285d9b..b4b52981c 100644
  			f->next = f->endb - (size_t)(f->here-p);
  		else /* recover from read failure by just seeking to p */
 diff --git a/src/lib/libast/sfio/sfsetbuf.c b/src/lib/libast/sfio/sfsetbuf.c
-index 13c334ab3..11621415e 100644
+index 13c334ab3..21f123815 100644
 --- a/src/lib/libast/sfio/sfsetbuf.c
 +++ b/src/lib/libast/sfio/sfsetbuf.c
 @@ -2,7 +2,7 @@
@@ -4490,16 +4585,19 @@ index 13c334ab3..11621415e 100644
  				   strncmp(astsfio,sf_wcwidth,sizeof(sf_wcwidth)-1) == 0)
  					modes |= SFIO_WCWIDTH;
  			}
-@@ -90,7 +90,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+@@ -89,8 +89,9 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+ 	       void*	buf,	/* new buffer */
  	       size_t	size)	/* buffer size, -1 for default size */
  {
- 	int		sf_malloc, oflags, init, local;
+-	int		sf_malloc, oflags, init, local;
 -	ssize_t		bufsize, blksz;
++	int		oflags, init, local;
++	unsigned short	sf_malloc;
 +	ptrdiff_t	bufsize, blksz;
  	Sfdisc_t*	disc;
  	struct stat	st;
  	uchar*		obuf = NULL;
-@@ -139,7 +139,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+@@ -139,7 +140,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
  			return NULL;
  
  		/* turn off the SFIO_SYNCED bit because buffer is changing */
@@ -4508,7 +4606,7 @@ index 13c334ab3..11621415e 100644
  	}
  
  	SFLOCK(f,local);
-@@ -147,7 +147,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+@@ -147,7 +148,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
  	if((Sfio_t*)buf != f)
  		blksz = -1;
  	else /* setting alignment size only */
@@ -4517,7 +4615,7 @@ index 13c334ab3..11621415e 100644
  
  		if(!init) /* stream already initialized */
  		{	obuf = f->data;
-@@ -242,7 +242,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+@@ -242,7 +243,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
  		if(_Sfpage <= 0)
  		{
  #if _lib_getpagesize
@@ -4526,7 +4624,7 @@ index 13c334ab3..11621415e 100644
  #endif
  				_Sfpage = SFIO_PAGE;
  		}
-@@ -276,17 +276,20 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+@@ -276,17 +277,20 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
  						f->flags |= SFIO_LINE|SFIO_WCWIDTH;
  #if _sys_stat
  					else	/* special case /dev/null */
@@ -4553,7 +4651,7 @@ index 13c334ab3..11621415e 100644
  							}
  						}
  						if(null_checked >= 0 && dev == null_dev && ino == null_ino)
-@@ -314,8 +317,8 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
+@@ -314,8 +318,8 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
  		{	f->bits |= SFIO_MMAP;
  			if(size == (size_t)SFIO_UNBOUND)
  			{	if(bufsize > _Sfpage)
@@ -4564,7 +4662,7 @@ index 13c334ab3..11621415e 100644
  				if(size > 256*1024)
  					size = 256*1024;
  			}
-@@ -328,7 +331,7 @@ setbuf:
+@@ -328,7 +332,7 @@ setbuf:
  	if(size == (size_t)SFIO_UNBOUND)
  	{	/* define a default size suitable for block transfer */
  		if(init && osize > 0)
@@ -4573,7 +4671,7 @@ index 13c334ab3..11621415e 100644
  		else if(f == sfstderr && (f->mode&SFIO_WRITE))
  			size = 0;
  		else if(f->flags&SFIO_STRING )
-@@ -336,8 +339,8 @@ setbuf:
+@@ -336,8 +340,8 @@ setbuf:
  		else if((f->flags&SFIO_READ) && !(f->bits&SFIO_BOTH) &&
  			f->extent > 0 && f->extent < (Sfoff_t)_Sfpage )
  			size = (((size_t)f->extent + SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
@@ -4584,7 +4682,7 @@ index 13c334ab3..11621415e 100644
  
  		buf = NULL;
  	}
-@@ -369,13 +372,13 @@ setbuf:
+@@ -369,13 +373,13 @@ setbuf:
  	}
  
  	/* set up new buffer */
@@ -4600,7 +4698,7 @@ index 13c334ab3..11621415e 100644
  		f->here = 0;
  
  		/* read+string stream should have all data available */
-@@ -402,7 +405,7 @@ done:
+@@ -402,7 +406,7 @@ done:
  		blksz = SFIO_GRAIN;
  	while(blksz > f->size/2)
  		blksz /= 2;
@@ -6012,6 +6110,36 @@ index ed6e7f903..195f0c87a 100644
 -	return _sffilbuf(f, 0);
 +	return (int)_sffilbuf(f, 0);
  }
+diff --git a/src/lib/libast/stdio/fdopen.c b/src/lib/libast/stdio/fdopen.c
+index 085996a00..5805af078 100644
+--- a/src/lib/libast/stdio/fdopen.c
++++ b/src/lib/libast/stdio/fdopen.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ 
+@@ -22,7 +23,7 @@
+ Sfio_t*
+ fdopen(int fd, const char* mode)
+ {
+-	int	flags;
++	unsigned short	flags;
+ 
+ 	if (fd < 0 || !(flags = _sftype(mode, NULL, NULL)))
+ 		return NULL;
 diff --git a/src/lib/libast/stdio/fgets.c b/src/lib/libast/stdio/fgets.c
 index 958dba6bf..157f7f937 100644
 --- a/src/lib/libast/stdio/fgets.c
@@ -6084,7 +6212,7 @@ index 4069d688c..5309b89b9 100644
  
  #endif /* !_has_multibyte */
 diff --git a/src/lib/libast/stdio/fgetws.c b/src/lib/libast/stdio/fgetws.c
-index 5c0d8e283..10729ad9c 100644
+index 5c0d8e283..603d20cdc 100644
 --- a/src/lib/libast/stdio/fgetws.c
 +++ b/src/lib/libast/stdio/fgetws.c
 @@ -2,7 +2,7 @@
@@ -6104,20 +6232,24 @@ index 5c0d8e283..10729ad9c 100644
  *                                                                      *
  ***********************************************************************/
  
-@@ -33,7 +34,7 @@ fgetws(wchar_t* s, int n, Sfio_t* f)
+@@ -32,8 +33,8 @@ fgetws(wchar_t* s, int n, Sfio_t* f)
+ 	wchar_t*	e = s + n - 1;
  	wint_t		c;
  
- 	FWIDE(f, 0);
+-	FWIDE(f, 0);
 -	while (p < e && (c = fgetwc(f)) != WEOF && (*p++ = c) != '\n');
++	FWIDE(f, NULL);
 +	while (p < e && (c = fgetwc(f)) != WEOF && (*p++ = (wchar_t)c) != '\n');
  	*p = 0;
  	return s;
  }
-@@ -46,7 +47,7 @@ getws(wchar_t* s)
+@@ -45,8 +46,8 @@ getws(wchar_t* s)
+ 	wchar_t*	e = s + BUFSIZ - 1;
  	wint_t		c;
  
- 	FWIDE(sfstdin, 0);
+-	FWIDE(sfstdin, 0);
 -	while (p < e && (c = fgetwc(sfstdin)) != WEOF && (*p++ = c) != '\n');
++	FWIDE(sfstdin, NULL);
 +	while (p < e && (c = fgetwc(sfstdin)) != WEOF && (*p++ = (wchar_t)c) != '\n');
  	*p = 0;
  	return s;
@@ -6211,7 +6343,7 @@ index 00eff9a78..13a6bbd7f 100644
  
  #endif /* !_has_multibyte */
 diff --git a/src/lib/libast/stdio/fputws.c b/src/lib/libast/stdio/fputws.c
-index 82e439649..c74cdc874 100644
+index 82e439649..5399f9564 100644
 --- a/src/lib/libast/stdio/fputws.c
 +++ b/src/lib/libast/stdio/fputws.c
 @@ -2,7 +2,7 @@
@@ -6231,9 +6363,12 @@ index 82e439649..c74cdc874 100644
  *                                                                      *
  ***********************************************************************/
  
-@@ -32,7 +33,7 @@ fputws(const wchar_t* s, Sfio_t* f)
+@@ -30,9 +31,9 @@ fputws(const wchar_t* s, Sfio_t* f)
+ {
+ 	size_t	n;
  
- 	FWIDE(f, WEOF);
+-	FWIDE(f, WEOF);
++	FWIDE(f, -1);
  	n = wcslen(s) * sizeof(wchar_t);
 -	return (sfwrite(f, s, n) == n) ? 0 : -1;
 +	return (sfwrite(f, s, n) == (ssize_t)n) ? 0 : -1;
@@ -6556,7 +6691,7 @@ index 69aa23de7..a555828f2 100644
 +	return (int)sfvprintf(f, fmt, args);
  }
 diff --git a/src/lib/libast/stdio/vfwprintf.c b/src/lib/libast/stdio/vfwprintf.c
-index f4aa40e0f..a04450097 100644
+index f4aa40e0f..9eee7e074 100644
 --- a/src/lib/libast/stdio/vfwprintf.c
 +++ b/src/lib/libast/stdio/vfwprintf.c
 @@ -2,7 +2,7 @@
@@ -6576,6 +6711,15 @@ index f4aa40e0f..a04450097 100644
  *                                                                      *
  ***********************************************************************/
  
+@@ -35,7 +36,7 @@ vfwprintf(Sfio_t* f, const wchar_t* fmt, va_list args)
+ 	int	v;
+ 	Sfio_t*	t;
+ 
+-	FWIDE(f, WEOF);
++	FWIDE(f, -1);
+ 	n = wcstombs(NULL, fmt, 0);
+ 	if (m = malloc(n + 1))
+ 	{
 @@ -49,8 +50,8 @@ vfwprintf(Sfio_t* f, const wchar_t* fmt, va_list args)
  			else
  			{
@@ -6588,7 +6732,7 @@ index f4aa40e0f..a04450097 100644
  					v = -1;
  			}
 diff --git a/src/lib/libast/stdio/vfwscanf.c b/src/lib/libast/stdio/vfwscanf.c
-index 837e814cc..ee7c019ee 100644
+index 837e814cc..ea43311e2 100644
 --- a/src/lib/libast/stdio/vfwscanf.c
 +++ b/src/lib/libast/stdio/vfwscanf.c
 @@ -2,7 +2,7 @@
@@ -6609,6 +6753,15 @@ index 837e814cc..ee7c019ee 100644
  	return r;
  }
  
+@@ -90,7 +90,7 @@ vfwscanf(Sfio_t* f, const wchar_t* fmt, va_list args)
+ 	Wide_t*	w;
+ 	char	buf[1024];
+ 
+-	FWIDE(f, WEOF);
++	FWIDE(f, EOF);
+ 	n = wcstombs(NULL, fmt, 0);
+ 	if (w = newof(0, Wide_t, 1, n))
+ 	{
 diff --git a/src/lib/libast/stdio/vprintf.c b/src/lib/libast/stdio/vprintf.c
 index 6f0727953..fc527dd68 100644
 --- a/src/lib/libast/stdio/vprintf.c

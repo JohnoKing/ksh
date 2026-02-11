@@ -1,6 +1,6 @@
-From 2152f49a2c1bfdfb18a904e9db4739041329adbe Mon Sep 17 00:00:00 2001
+From 3b349ec3676d8a738ffc07b64ee6dd2ef90fa59b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 14:01:56 -0800
+Date: Tue, 10 Feb 2026 19:37:39 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -58,7 +58,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/misc/fts.c         |  24 ++--
  src/lib/libast/misc/ftwalk.c      |  13 +-
  src/lib/libast/misc/getcwd.c      |  21 ++--
- src/lib/libast/misc/glob.c        |  40 +++---
+ src/lib/libast/misc/glob.c        |  48 ++++----
  src/lib/libast/misc/optesc.c      |  13 +-
  src/lib/libast/misc/optget.c      | 194 +++++++++++++++---------------
  src/lib/libast/misc/procopen.c    |  26 ++--
@@ -76,7 +76,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 45 files changed, 653 insertions(+), 637 deletions(-)
+ 45 files changed, 657 insertions(+), 641 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -2450,7 +2450,7 @@ index aa3af5cb5..0dc3c9680 100644
  			while (p > buf + len - 1 - x) *--p = *--s;
  		}
 diff --git a/src/lib/libast/misc/glob.c b/src/lib/libast/misc/glob.c
-index 88a8523f9..dc73322c3 100644
+index 88a8523f9..3e97fc445 100644
 --- a/src/lib/libast/misc/glob.c
 +++ b/src/lib/libast/misc/glob.c
 @@ -2,7 +2,7 @@
@@ -2484,8 +2484,12 @@ index 88a8523f9..dc73322c3 100644
  
  	if (p1)
  		*n1 = 0;
-@@ -236,10 +236,10 @@ static void
- addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, int meta)
+@@ -233,13 +233,13 @@ trim(char* sp, char* p1, int* n1, char* p2, int* n2)
+ }
+ 
+ static void
+-addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, int meta)
++addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, unsigned char meta)
  {
  	globlist_t*	ap;
 -	int		offset;
@@ -2506,17 +2510,26 @@ index 88a8523f9..dc73322c3 100644
  {
  	char*		rescan;
  	char*		prefix;
-@@ -310,8 +310,8 @@ glob_dir(glob_t* gp, globlist_t* ap, int re_flags)
+@@ -310,14 +310,14 @@ glob_dir(glob_t* gp, globlist_t* ap, int re_flags)
  	regex_t		rec;
  	regex_t		rei;
  	int		notdir;
 -	int		t1;
 -	int		t2;
+-	int		bracket;
 +	ptrdiff_t	t1;
 +	ptrdiff_t	t2;
- 	int		bracket;
++	unsigned char	bracket;
  
- 	int		anymeta = ap->gl_flags & MATCH_META;
+-	int		anymeta = ap->gl_flags & MATCH_META;
++	unsigned char	anymeta = ap->gl_flags & MATCH_META;
+ 	int		complete = 0;
+ 	int		err = 0;
+-	int		meta = ((gp->re_flags & REG_ICASE) && *ap->gl_begin != '/') ? MATCH_META : 0;
++	unsigned char	meta = ((gp->re_flags & REG_ICASE) && *ap->gl_begin != '/') ? MATCH_META : 0;
+ 	int		quote = 0;
+ 	int		savequote = 0;
+ 	char*		restore1 = 0;
 @@ -604,15 +604,15 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
  	char**		argv;
  	char**		av;

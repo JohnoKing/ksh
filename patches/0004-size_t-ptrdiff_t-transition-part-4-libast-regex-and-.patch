@@ -1,6 +1,6 @@
-From 7e37c37a4575019e05f0730a03c33332233c8298 Mon Sep 17 00:00:00 2001
+From 2e73d8003e1cdc37dccbaff9de539cba98358a00 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 10 Feb 2026 14:01:54 -0800
+Date: Tue, 10 Feb 2026 19:37:37 -0800
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -20,14 +20,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/swap.h       |   9 +-
  src/lib/libast/man/regex.3          |   2 +-
  src/lib/libast/man/swap.3           |   6 +-
- src/lib/libast/regex/regcache.c     |  41 +++---
- src/lib/libast/regex/regclass.c     |  66 ++++-----
+ src/lib/libast/regex/regcache.c     |  41 ++---
+ src/lib/libast/regex/regclass.c     |  66 ++++----
  src/lib/libast/regex/regcoll.c      |  22 +--
- src/lib/libast/regex/regcomp.c      | 210 ++++++++++++++--------------
+ src/lib/libast/regex/regcomp.c      | 226 ++++++++++++++--------------
  src/lib/libast/regex/regerror.c     |   4 +-
  src/lib/libast/regex/regexec.c      |  10 +-
  src/lib/libast/regex/reglib.h       |  30 ++--
- src/lib/libast/regex/regnexec.c     | 129 ++++++++---------
+ src/lib/libast/regex/regnexec.c     | 129 ++++++++--------
  src/lib/libast/regex/regsubcomp.c   |  37 ++---
  src/lib/libast/regex/regsubexec.c   |  38 ++---
  src/lib/libast/string/base64.c      |  45 +++---
@@ -36,9 +36,9 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/chresc.c      |  13 +-
  src/lib/libast/string/fmtbuf.c      |   4 +-
  src/lib/libast/string/fmtclock.c    |  14 +-
- src/lib/libast/string/fmtdev.c      |  16 +--
+ src/lib/libast/string/fmtdev.c      |  16 +-
  src/lib/libast/string/fmtesc.c      |  12 +-
- src/lib/libast/string/fmtfmt.c      |  17 +--
+ src/lib/libast/string/fmtfmt.c      |  17 ++-
  src/lib/libast/string/fmtgid.c      |   6 +-
  src/lib/libast/string/fmtident.c    |   7 +-
  src/lib/libast/string/fmtint.c      |  17 ++-
@@ -52,12 +52,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/fmtsignal.c   |   5 +-
  src/lib/libast/string/fmttime.c     |   5 +-
  src/lib/libast/string/fmttmx.c      |   5 +-
- src/lib/libast/string/fmttv.c       |  41 ++++++
+ src/lib/libast/string/fmttv.c       |  41 +++++
  src/lib/libast/string/fmtuid.c      |   6 +-
- src/lib/libast/string/fmtversion.c  |  50 +++++++
+ src/lib/libast/string/fmtversion.c  |  50 ++++++
  src/lib/libast/string/strelapsed.c  |  14 +-
  src/lib/libast/string/stresc.c      |   7 +-
- src/lib/libast/string/strgid.c      |  16 +--
+ src/lib/libast/string/strgid.c      |  16 +-
  src/lib/libast/string/strlcat.c     |   4 +-
  src/lib/libast/string/strlcpy.c     |   4 +-
  src/lib/libast/string/strnvcmp.c    |   7 +-
@@ -77,7 +77,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |   8 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 60 files changed, 674 insertions(+), 545 deletions(-)
+ 60 files changed, 683 insertions(+), 552 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -449,7 +449,7 @@ index 078255be8..ce302a84f 100644
   	s--;
   nope:
 diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
-index 09997ecda..2cfd70ade 100644
+index 09997ecda..250cb64ff 100644
 --- a/src/lib/libast/regex/regcomp.c
 +++ b/src/lib/libast/regex/regcomp.c
 @@ -2,7 +2,7 @@
@@ -505,12 +505,12 @@ index 09997ecda..2cfd70ade 100644
  
  static Rex_t*
 -node(Cenv_t* env, int type, int lo, int hi, size_t extra)
-+node(Cenv_t* env, int type, ptrdiff_t lo, ptrdiff_t hi, size_t extra)
++node(Cenv_t* env, unsigned char type, ptrdiff_t lo, ptrdiff_t hi, size_t extra)
  {
  	Rex_t*	e;
  
 -	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%d,%d,%u)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
-+	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%td,%td,%zu)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
++	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%u,%td,%td,%zu)\n", (unsigned int)type, lo, hi, sizeof(Rex_t) + extra)),(0));
  	if (e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra))
  	{
  		memset(e, 0, sizeof(Rex_t) + extra);
@@ -733,13 +733,12 @@ index 09997ecda..2cfd70ade 100644
  		}
  		else
  			ce->typ = COLL_char;
-@@ -1161,14 +1165,15 @@ bra(Cenv_t* env)
+@@ -1161,14 +1165,14 @@ bra(Cenv_t* env)
  {
  	Rex_t*		e;
  	int		c;
 -	int		i;
 +	size_t		i;
-+	int		j;
  	int		w;
  	int		neg;
  	int		last;
@@ -751,50 +750,52 @@ index 09997ecda..2cfd70ade 100644
  	unsigned char*	first;
  	unsigned char*	start;
  	unsigned char*	begin;
-@@ -1307,25 +1312,25 @@ bra(Cenv_t* env)
+@@ -1307,25 +1311,26 @@ bra(Cenv_t* env)
  						while (*++s && *s != ':');
  						if (*s == ':' && *(s + 1) == ']' && *(s + 2) == ']')
  						{
 -							if ((i = (s - start)) == 1)
-+							if ((j = (int)(s - start)) == 1)
++							if (s - start == 1)
  							{
++								unsigned char rex;
  								switch (c)
  								{
  								case '<':
 -									i = REX_WBEG;
-+									j = REX_WBEG;
++									rex = REX_WBEG;
  									break;
  								case '>':
 -									i = REX_WEND;
-+									j = REX_WEND;
++									rex = REX_WEND;
  									break;
  								default:
 -									i = 0;
-+									j = 0;
++									rex = 0;
  									break;
  								}
 -								if (i)
-+								if (j)
++								if (rex)
  								{
  									env->cursor = s + 3;
  									drop(env->disc, e);
 -									return node(env, i, 0, 0, 0);
-+									return node(env, j, 0, 0, 0);
++									return node(env, rex, 0, 0, 0);
  								}
  							}
  						}
-@@ -1384,8 +1389,8 @@ bra(Cenv_t* env)
+@@ -1384,8 +1389,9 @@ bra(Cenv_t* env)
  		{
  			if (last <= c)
  			{
 -				for (i = last; i <= c; i++)
 -					setadd(e->re.charclass, i);
++				int j;
 +				for (j = last; j <= c; j++)
 +					setadd(e->re.charclass, j);
  				inrange = env->type >= SRE || (env->flags & (REG_LENIENT|REG_REGEXP));
  				elements += 2;
  			}
-@@ -1436,12 +1441,12 @@ bra(Cenv_t* env)
+@@ -1436,12 +1442,12 @@ bra(Cenv_t* env)
  			{
  				for (i = 0; i < elementsof(primary) - 1; i++, cc++)
  				{
@@ -809,16 +810,37 @@ index 09997ecda..2cfd70ade 100644
  				dtinsert(dt, cc);
  				LCINFO(AST_LC_COLLATE)->data = dt;
  			}
-@@ -1573,7 +1578,7 @@ bra(Cenv_t* env)
+@@ -1557,23 +1563,24 @@ bra(Cenv_t* env)
+ 						{
+ 							if (env->cursor == start && (c = *(env->cursor + 1)) && *(env->cursor + 2) == ':' && *(env->cursor + 3) == ']' && *(env->cursor + 4) == ']')
+ 							{
++								unsigned char rex;
+ 								switch (c)
+ 								{
+ 								case '<':
+-									i = REX_WBEG;
++									rex = REX_WBEG;
+ 									break;
+ 								case '>':
+-									i = REX_WEND;
++									rex = REX_WEND;
+ 									break;
+ 								default:
+-									i = 0;
++									rex = 0;
+ 									break;
+ 								}
+-								if (i)
++								if (rex)
  								{
  									env->cursor += 5;
  									drop(env->disc, e);
 -									return node(env, i, 0, 0, 0);
-+									return node(env, (int)i, 0, 0, 0);
++									return node(env, rex, 0, 0, 0);
  								}
  							}
  							env->error = REG_ECTYPE;
-@@ -1598,13 +1603,13 @@ bra(Cenv_t* env)
+@@ -1598,13 +1605,13 @@ bra(Cenv_t* env)
  						c = 0;
  						if (ic)
  						{
@@ -835,7 +857,7 @@ index 09997ecda..2cfd70ade 100644
  								c = 'l';
  						}
  						i = 1;
-@@ -1646,12 +1651,12 @@ bra(Cenv_t* env)
+@@ -1646,12 +1653,12 @@ bra(Cenv_t* env)
  								break;
  							if (c == 'u')
  							{
@@ -850,7 +872,7 @@ index 09997ecda..2cfd70ade 100644
  								c = 'U';
  							}
  							rw = mbconv((char*)pp, wc);
-@@ -1708,10 +1713,10 @@ bra(Cenv_t* env)
+@@ -1708,10 +1715,10 @@ bra(Cenv_t* env)
  		for (i = 0; i <= UCHAR_MAX; i++)
  			if (settst(e->re.charclass, i))
  			{
@@ -865,7 +887,7 @@ index 09997ecda..2cfd70ade 100644
  				else
  					continue;
  				setadd(e->re.charclass, c);
-@@ -1788,7 +1793,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+@@ -1788,7 +1795,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
  	{
  	case T_BANG:
  		eat(env);
@@ -874,7 +896,7 @@ index 09997ecda..2cfd70ade 100644
  		{
  			drop(env->disc, e);
  			return NULL;
-@@ -1834,8 +1839,8 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+@@ -1834,8 +1841,8 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
  	case REX_CLASS:
  	case REX_COLL_CLASS:
  	case REX_ONECHAR:
@@ -885,7 +907,7 @@ index 09997ecda..2cfd70ade 100644
  		if (minimal >= 0)
  			mark(e, minimal);
  		return e;
-@@ -1856,7 +1861,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+@@ -1856,7 +1863,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
  			mark(e, minimal);
  		return e;
  	}
@@ -894,7 +916,7 @@ index 09997ecda..2cfd70ade 100644
  	{
  		drop(env->disc, e);
  		return NULL;
-@@ -1889,7 +1894,7 @@ isstring(Rex_t* e)
+@@ -1889,7 +1896,7 @@ isstring(Rex_t* e)
  }
  
  static Trie_node_t*
@@ -903,7 +925,7 @@ index 09997ecda..2cfd70ade 100644
  {
  	Trie_node_t*	t;
  
-@@ -1907,7 +1912,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
+@@ -1907,7 +1914,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
  	unsigned char*	s;
  	unsigned char*	e;
  	Trie_node_t*	t;
@@ -912,7 +934,7 @@ index 09997ecda..2cfd70ade 100644
  	unsigned char	tmp[2];
  
  	switch (f->type)
-@@ -1989,7 +1994,7 @@ trie(Cenv_t* env, Rex_t* e, Rex_t* f)
+@@ -1989,7 +1996,7 @@ trie(Cenv_t* env, Rex_t* e, Rex_t* f)
  static Rex_t*		alt(Cenv_t*, int, int);
  
  static int
@@ -921,7 +943,7 @@ index 09997ecda..2cfd70ade 100644
  {
  	unsigned char*	p;
  	int		c;
-@@ -2026,13 +2031,13 @@ grp(Cenv_t* env, int parno)
+@@ -2026,13 +2033,13 @@ grp(Cenv_t* env, int parno)
  	Rex_t*		e;
  	Rex_t*		f;
  	int		c;
@@ -937,7 +959,25 @@ index 09997ecda..2cfd70ade 100644
  	unsigned char*	p;
  
  	g = env->flags;
-@@ -2357,7 +2362,7 @@ grp(Cenv_t* env, int parno)
+@@ -2280,7 +2287,7 @@ grp(Cenv_t* env, int parno)
+ 					goto invalid;
+ 				if (e->re.nest.type[i] & ~x)
+ 					goto invalid;
+-				e->re.nest.type[i] = x;
++				e->re.nest.type[i] = (unsigned short)x;
+ 				continue;
+ 			case 'E':
+ 				x = REX_NEST_escape;
+@@ -2306,7 +2313,7 @@ grp(Cenv_t* env, int parno)
+ 					goto invalid;
+ 				if (e->re.nest.type[i] & ~x)
+ 					goto invalid;
+-				e->re.nest.type[i] = x|REX_NEST_open|REX_NEST_close|(i<<REX_NEST_SHIFT);
++				e->re.nest.type[i] = (unsigned short)(x|REX_NEST_open|REX_NEST_close|(i<<REX_NEST_SHIFT));
+ 				continue;
+ 			case 'S':
+ 				x = REX_NEST_separator;
+@@ -2357,7 +2364,7 @@ grp(Cenv_t* env, int parno)
  					drop(env->disc, e);
  					return NULL;
  				}
@@ -946,7 +986,7 @@ index 09997ecda..2cfd70ade 100644
  					env->paren[parno] = f;
  				f->re.group.back = 0;
  				f->re.group.number = parno;
-@@ -2464,7 +2469,7 @@ grp(Cenv_t* env, int parno)
+@@ -2464,7 +2471,7 @@ grp(Cenv_t* env, int parno)
  		if (!(e = node(env, REX_EXEC, 0, 0, 0)))
  			return NULL;
  		e->re.exec.text = (const char*)p;
@@ -955,7 +995,16 @@ index 09997ecda..2cfd70ade 100644
  		if (!env->disc->re_compf)
  			e->re.exec.data = 0;
  		else
-@@ -2543,7 +2548,7 @@ grp(Cenv_t* env, int parno)
+@@ -2528,7 +2535,7 @@ grp(Cenv_t* env, int parno)
+ 			env->type = typ;
+ 		return NULL;
+ 	}
+-	if (!(f = node(env, x, 0, 0, 0)))
++	if (!(f = node(env, (unsigned char)x, 0, 0, 0)))
+ 	{
+ 		drop(env->disc, e);
+ 		goto nope;
+@@ -2543,7 +2550,7 @@ grp(Cenv_t* env, int parno)
  				env->error = REG_ECOUNT;
  			goto nope;
  		}
@@ -964,7 +1013,7 @@ index 09997ecda..2cfd70ade 100644
  		memset(&env->stats, 0, sizeof(env->stats));
  	}
  	switch (x)
-@@ -2568,10 +2573,10 @@ seq(Cenv_t* env)
+@@ -2568,10 +2575,10 @@ seq(Cenv_t* env)
  	Rex_t*		e;
  	Rex_t*		f;
  	Token_t		tok;
@@ -979,7 +1028,7 @@ index 09997ecda..2cfd70ade 100644
  	int		parno;
  	int		type;
  	regflags_t	flags;
-@@ -2584,24 +2589,24 @@ seq(Cenv_t* env)
+@@ -2584,24 +2591,24 @@ seq(Cenv_t* env)
  	for (;;)
  	{
  		s = buf;
@@ -1010,7 +1059,7 @@ index 09997ecda..2cfd70ade 100644
  				else if (n)
  					s += n;
  				else
-@@ -2632,10 +2637,10 @@ seq(Cenv_t* env)
+@@ -2632,10 +2639,10 @@ seq(Cenv_t* env)
  				else
  				{
  					i = s - buf;
@@ -1024,7 +1073,7 @@ index 09997ecda..2cfd70ade 100644
  				}
  				if (x >= 0)
  				{
-@@ -2644,14 +2649,14 @@ seq(Cenv_t* env)
+@@ -2644,14 +2651,14 @@ seq(Cenv_t* env)
  						drop(env->disc, e);
  						return NULL;
  					}
@@ -1043,7 +1092,7 @@ index 09997ecda..2cfd70ade 100644
  				}
  				if (!(f = rep(env, f, 0, 0)) || !(f = cat(env, f, seq(env))))
  				{
-@@ -2663,10 +2668,10 @@ seq(Cenv_t* env)
+@@ -2663,10 +2670,10 @@ seq(Cenv_t* env)
  				return f;
  			default:
  				c = s - buf;
@@ -1057,7 +1106,7 @@ index 09997ecda..2cfd70ade 100644
  				return cat(env, e, seq(env));
  			}
  		else if (c > T_BACK)
-@@ -2730,7 +2735,7 @@ seq(Cenv_t* env)
+@@ -2730,7 +2737,7 @@ seq(Cenv_t* env)
  					drop(env->disc, e);
  					return NULL;
  				}
@@ -1066,7 +1115,7 @@ index 09997ecda..2cfd70ade 100644
  					env->paren[parno] = f;
  				f->re.group.back = 0;
  				f->re.group.number = parno;
-@@ -2749,7 +2754,7 @@ seq(Cenv_t* env)
+@@ -2749,7 +2756,7 @@ seq(Cenv_t* env)
  						drop(env->disc, e);
  						return NULL;
  					}
@@ -1075,7 +1124,7 @@ index 09997ecda..2cfd70ade 100644
  						env->paren[parno] = f;
  					f->re.group.back = 0;
  					f->re.group.number = parno;
-@@ -2787,7 +2792,7 @@ seq(Cenv_t* env)
+@@ -2787,7 +2794,7 @@ seq(Cenv_t* env)
  			case T_SPACE:
  			case T_SPACE_NOT:
  				eat(env);
@@ -1084,7 +1133,7 @@ index 09997ecda..2cfd70ade 100644
  					e = rep(env, e, 0, 0);
  				break;
  			case T_LT:
-@@ -2930,6 +2935,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -2930,6 +2937,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  	regdisc_t*		disc;
  	unsigned char*		fold;
  	int			i;
@@ -1092,7 +1141,7 @@ index 09997ecda..2cfd70ade 100644
  	Cenv_t			env;
  
  	if (!p)
-@@ -2949,15 +2955,15 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -2949,15 +2957,15 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  	if (!state.initialized)
  	{
  		state.initialized = 1;
@@ -1111,7 +1160,7 @@ index 09997ecda..2cfd70ade 100644
  		LCINFO(AST_LC_CTYPE)->data = fold;
  	}
   again:
-@@ -3075,9 +3081,9 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -3075,9 +3083,9 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  		p->env->stats.re_min = p->env->stats.re_max = -1;
  	else
  	{
@@ -1123,7 +1172,7 @@ index 09997ecda..2cfd70ade 100644
  			p->env->stats.re_max = -1;
  	}
  	serialize(&env, p->env->rex, 1);
-@@ -3086,7 +3092,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -3086,7 +3094,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  		p->re_nsub /= 2;
  	if (env.flags & REG_DELIMITED)
  	{
