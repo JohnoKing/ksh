@@ -36,7 +36,7 @@ vfwprintf(Sfio_t* f, const wchar_t* fmt, va_list args)
 	int	v;
 	Sfio_t*	t;
 
-	FWIDE(f, WEOF);
+	FWIDE(f, -1);
 	n = wcstombs(NULL, fmt, 0);
 	if (m = malloc(n + 1))
 	{

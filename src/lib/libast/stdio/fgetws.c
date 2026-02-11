@@ -33,7 +33,7 @@ fgetws(wchar_t* s, int n, Sfio_t* f)
 	wchar_t*	e = s + n - 1;
 	wint_t		c;
 
-	FWIDE(f, 0);
+	FWIDE(f, NULL);
 	while (p < e && (c = fgetwc(f)) != WEOF && (*p++ = (wchar_t)c) != '\n');
 	*p = 0;
 	return s;
@@ -46,7 +46,7 @@ getws(wchar_t* s)
 	wchar_t*	e = s + BUFSIZ - 1;
 	wint_t		c;
 
-	FWIDE(sfstdin, 0);
+	FWIDE(sfstdin, NULL);
 	while (p < e && (c = fgetwc(sfstdin)) != WEOF && (*p++ = (wchar_t)c) != '\n');
 	*p = 0;
 	return s;

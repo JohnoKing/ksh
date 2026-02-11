@@ -90,7 +90,7 @@ vfwscanf(Sfio_t* f, const wchar_t* fmt, va_list args)
 	Wide_t*	w;
 	char	buf[1024];
 
-	FWIDE(f, WEOF);
+	FWIDE(f, EOF);
 	n = wcstombs(NULL, fmt, 0);
 	if (w = newof(0, Wide_t, 1, n))
 	{

@@ -31,7 +31,7 @@ fputws(const wchar_t* s, Sfio_t* f)
 {
 	size_t	n;
 
-	FWIDE(f, WEOF);
+	FWIDE(f, -1);
 	n = wcslen(s) * sizeof(wchar_t);
 	return (sfwrite(f, s, n) == (ssize_t)n) ? 0 : -1;
 }
