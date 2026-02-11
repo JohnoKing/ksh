@@ -8,12 +8,28 @@ if ((.sh.version < 20250520)); then
 	exit 1
 fi
 
+integer -a w=(-0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12 -13)
+integer cores=${ bin/package host cpu ;}
+bld() {
+	rm -rf ./arch
+	bin/package make CC=clang CCFLAGS='-O0 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion' -j${cores} >/tmp/buildlog
+	w[++iter]=${ grep 'warning:' /tmp/buildlog | wc -l ;}
+	if (( iter < 8 )); then
+		w[iter]+=32  # Add the initial mamake.c warnings not present in /tmp/buildlog
+	fi
+}
+
 git reset --hard; git clean -fdx
+git checkout thickfold-size_t
+integer iter=12
+bld
+iter=-1
 git checkout dev
 git pull upstream dev
-git branch -D 64bit-fixes-series || true
-git branch 64bit-fixes-series
-git checkout 64bit-fixes-series
+typeset dev_commit=${ git log --pretty=format:'%h' -n 1 --abbrev-commit ;}
+bld
+git branch -D 64bit-fixes-series 2>/dev/null || true
+git checkout -b 64bit-fixes-series
 rm -f ksh-size_t-patchgen.ksh
 alias fetch='git checkout thickfold-size_t --'
 alias unfetch='git checkout HEAD --'
@@ -22,6 +38,7 @@ if [[ $1 == --sanity ]]; then
 else
 	alias sanity=true
 fi
+
 upc() {
 	# Obtain the script from the from ksh wiki
 	test -f ../update-copyright.ksh && ksh ../update-copyright.ksh
@@ -31,6 +48,7 @@ upc() {
 		git add COPYRIGHT
 	fi
 	git add bin src
+	bld
 }
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
@@ -101,7 +119,7 @@ so I\'ve decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,042 => 3,797 => 86 (progression from d462de66 => part 1 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[0]} ${w[1]} ${w[13]} ;}"' (progression from '"${dev_commit}"' => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on its own). The full suite of
@@ -128,6 +146,7 @@ fetch src/lib/libast/string/fmtmode.c
 fetch src/lib/libast/string/modelib.h
 fetch src/lib/libast/string/modei.c
 fetch src/lib/libast/string/modex.c
+fetch src/lib/libast/string/fmtscale.c
 fetch src/lib/libast/string/fmtmode.c
 fetch src/lib/libast/string/strmode.c
 fetch src/lib/libast/string/fmtperm.c
@@ -185,7 +204,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,797 => 3,154 => 86 (progression from part 1 => part 2 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[1]} ${w[2]} ${w[13]} ;}"' (progression from part 1 => part 2 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -212,7 +231,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,154 => 3,075 => 86 (progression from part 2 => part 3 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[2]} ${w[3]} ${w[13]} ;}"' (progression from part 2 => part 3 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -236,7 +255,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,075 => 2,483 => 86 (progression from part 3 => part 4 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[3]} ${w[4]} ${w[13]} ;}"' (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -278,7 +297,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,483 => 1,977 => 86 (progression from part 4 => part 5 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[4]} ${w[5]} ${w[13]} ;}"' (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -301,7 +320,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,977 => 1,612 => 86 (progression from part 5 => part 6 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[5]} ${w[6]} ${w[13]} ;}"' (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -332,7 +351,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,612 => 1,216 => 86 (progression from part 6 => part 7 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[6]} ${w[7]} ${w[13]} ;}"' (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -359,7 +378,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,216 => 1,062 => 86 (progression from part 7 => part 8 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[7]} ${w[8]} ${w[13]} ;}"' (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -383,7 +402,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,062 => 947 => 86 (progression from part 8 => part 9 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[8]} ${w[9]} ${w[13]} ;}"' (progression from part 8 => part 9 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -404,7 +423,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-947 => 840 => 86 (progression from part 9 => part 10 => part 13)
+'"${ printf "%'d => %'d => %'d" ${w[9]} ${w[10]} ${w[13]} ;}"' (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
 
@@ -450,7 +469,7 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-840 => 519 => 86 (progression from part 10 => part 11 => part 13)
+${ printf "%'d => %'d => %'d" ${w[10]} ${w[11]} ${w[13]} ;} (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -480,7 +499,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-519 => 396 => 86 (progression from part 11 => part 12 => part 13)
+${ printf "%'d => %'d => %'d" ${w[11]} ${w[12]} ${w[13]} ;} (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592"
 
@@ -524,7 +543,7 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-396 => 86 (progression from part 12 => part 13)
+${ printf "%'d => %'d" ${w[12]} ${w[13]} ;} (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 Some, like those pertaining to getrlimit(2), are bugs in the underlying operating
