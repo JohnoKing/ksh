@@ -233,7 +233,7 @@ trim(char* sp, char* p1, ptrdiff_t* n1, char* p2, ptrdiff_t* n2)
 }
 
 static void
-addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, int meta)
+addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char* endslash, unsigned char meta)
 {
 	globlist_t*	ap;
 	ptrdiff_t	offset;
@@ -312,12 +312,12 @@ glob_dir(glob_t* gp, globlist_t* ap, regflags_t re_flags)
 	int		notdir;
 	ptrdiff_t	t1;
 	ptrdiff_t	t2;
-	int		bracket;
+	unsigned char	bracket;
 
-	int		anymeta = ap->gl_flags & MATCH_META;
+	unsigned char	anymeta = ap->gl_flags & MATCH_META;
 	int		complete = 0;
 	int		err = 0;
-	int		meta = ((gp->re_flags & REG_ICASE) && *ap->gl_begin != '/') ? MATCH_META : 0;
+	unsigned char	meta = ((gp->re_flags & REG_ICASE) && *ap->gl_begin != '/') ? MATCH_META : 0;
 	int		quote = 0;
 	int		savequote = 0;
 	char*		restore1 = 0;
