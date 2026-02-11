@@ -1,6 +1,6 @@
-From 8cdca70d5111f8ff04d52380051bcb01d98aa742 Mon Sep 17 00:00:00 2001
+From 3858849ce231e50c291a3ab740cbd9f27f659eec Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 01:16:02 -0800
+Date: Wed, 11 Feb 2026 02:48:20 -0800
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-822 => 500 => 65 (progression from part 10 => part 11 => part 13)
+819 => 497 => 62 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

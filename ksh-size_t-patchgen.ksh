@@ -534,8 +534,6 @@ Change in the number of warnings on Linux when compiling with clang using
 ${ printf "%'d => %'d" ${w[12]} ${w[13]} ;} (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
-Some, like those pertaining to getrlimit(2), are bugs in the underlying operating
-system and cannot be fixed.
 I'll note that I have a patch that expands nvflags to uint64_t which helps
 quash some more warnings. But that patch isn't a part of the thickfold series
 and is intended for submission sometime after this (hopefully) gets merged.

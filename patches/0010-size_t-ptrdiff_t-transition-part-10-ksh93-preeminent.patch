@@ -1,6 +1,6 @@
-From 9548e5f38d2cbc5cef49a6c1ccbd3394b297851b Mon Sep 17 00:00:00 2001
+From 60d8e5f766c4b525c3747c2ab281639b4ee25173 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 01:15:16 -0800
+Date: Wed, 11 Feb 2026 02:47:36 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -15,7 +15,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-930 => 822 => 65 (progression from part 9 => part 10 => part 13)
+930 => 819 => 62 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -29,10 +29,10 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/bltins/read.c      | 85 +++++++++++++++++---------------
  src/cmd/ksh93/bltins/trap.c      | 16 +++---
  src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
- src/cmd/ksh93/bltins/ulimit.c    | 18 +++----
+ src/cmd/ksh93/bltins/ulimit.c    | 24 ++++-----
  src/cmd/ksh93/bltins/umask.c     |  8 +--
  src/cmd/ksh93/include/builtins.h |  4 +-
- 13 files changed, 124 insertions(+), 115 deletions(-)
+ 13 files changed, 127 insertions(+), 118 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -809,7 +809,7 @@ index fc515ae92..d3b491989 100644
  	if(mbcoll())
  		strsort(argv,namec,strcoll);
 diff --git a/src/cmd/ksh93/bltins/ulimit.c b/src/cmd/ksh93/bltins/ulimit.c
-index 930b32a68..5de1b0220 100644
+index 930b32a68..cc70eba06 100644
 --- a/src/cmd/ksh93/bltins/ulimit.c
 +++ b/src/cmd/ksh93/bltins/ulimit.c
 @@ -2,7 +2,7 @@
@@ -872,6 +872,33 @@ index 930b32a68..5de1b0220 100644
  					{
  						errormsg(SH_DICT,ERROR_system(1),e_number,limit);
  						UNREACHABLE();
+@@ -165,7 +165,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ 			else
+ 			{
+ #if _lib_getrlimit
+-				if(getrlimit(n,&rlp) <0)
++				if(getrlimit((__rlimit_resource_t)n,&rlp) <0)
+ 				{
+ 					errormsg(SH_DICT,ERROR_system(1),e_number,limit);
+ 					UNREACHABLE();
+@@ -174,7 +174,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ 					rlp.rlim_max = i;
+ 				if(mode&SOFT)
+ 					rlp.rlim_cur = i;
+-				if(setrlimit(n,&rlp) <0)
++				if(setrlimit((__rlimit_resource_t)n,&rlp) <0)
+ 				{
+ 					errormsg(SH_DICT,ERROR_system(1),e_overlimit,limit);
+ 					UNREACHABLE();
+@@ -193,7 +193,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
+ 			if(!nosupport)
+ 			{
+ #if _lib_getrlimit
+-				if(getrlimit(n,&rlp)<0)
++				if(getrlimit((__rlimit_resource_t)n,&rlp)<0)
+ 				{
+ 					errormsg(SH_DICT,ERROR_system(0),e_limit,tp->description);
+ 					ret++;
 diff --git a/src/cmd/ksh93/bltins/umask.c b/src/cmd/ksh93/bltins/umask.c
 index c6a79d12f..46300d00e 100644
 --- a/src/cmd/ksh93/bltins/umask.c

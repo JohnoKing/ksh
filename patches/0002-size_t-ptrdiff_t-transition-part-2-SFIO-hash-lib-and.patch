@@ -1,6 +1,6 @@
-From 2b5544eea7d83db37159655795ca4efb8882cb06 Mon Sep 17 00:00:00 2001
+From 30acadfcac257bad80433572757479d18ac8bb05 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 01:09:14 -0800
+Date: Wed, 11 Feb 2026 02:41:43 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -39,7 +39,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,854 => 3,182 => 65 (progression from part 1 => part 2 => part 13)
+3,854 => 3,182 => 62 (progression from part 1 => part 2 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

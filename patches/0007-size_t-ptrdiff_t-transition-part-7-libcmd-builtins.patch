@@ -1,6 +1,6 @@
-From c7ab8570af69312ef2e3573a1daac79bb8918d29 Mon Sep 17 00:00:00 2001
+From 0be3aaf9af7f6afe4f3fc260cecc1a6af7578e05 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 01:12:58 -0800
+Date: Wed, 11 Feb 2026 02:45:23 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -24,7 +24,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,600 => 1,201 => 65 (progression from part 6 => part 7 => part 13)
+1,600 => 1,201 => 62 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

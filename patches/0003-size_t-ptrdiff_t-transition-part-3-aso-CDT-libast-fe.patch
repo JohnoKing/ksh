@@ -1,6 +1,6 @@
-From ad7b4923b142399854015922a05510c288d2abdf Mon Sep 17 00:00:00 2001
+From 007bca538e51a75abf0b065f6c7c7e7159a4ace4 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 01:09:59 -0800
+Date: Wed, 11 Feb 2026 02:42:28 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -13,7 +13,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,182 => 3,092 => 65 (progression from part 2 => part 3 => part 13)
+3,182 => 3,092 => 62 (progression from part 2 => part 3 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -31,6 +31,9 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/cdt/dttree.c      |  5 +-
  src/lib/libast/features/align.c  | 16 +++---
  src/lib/libast/features/api      |  4 --
+ src/lib/libast/features/aso      |  2 +-
+ src/lib/libast/features/common   | 30 +++++-----
+ src/lib/libast/features/float    | 16 +++---
  src/lib/libast/features/limits.c |  8 +--
  src/lib/libast/features/mode.c   |  4 +-
  src/lib/libast/features/omitted  |  2 +-
@@ -38,10 +41,11 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/features/signal.c | 10 ++--
  src/lib/libast/features/sizeof   | 10 ++--
  src/lib/libast/features/tv       | 24 ++++----
+ src/lib/libast/features/wchar    |  2 +-
  src/lib/libast/include/aso.h     |  8 +--
  src/lib/libast/include/cdt.h     | 10 ++--
  src/lib/libast/man/aso.3         |  6 +-
- 24 files changed, 157 insertions(+), 152 deletions(-)
+ 28 files changed, 182 insertions(+), 177 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
 index b4d34019e..0984e7a67 100644
@@ -904,6 +908,178 @@ index 830f0f281..5d92a9ae6 100644
 -api ast 20000308 sfkeyprintf
 -
  print	#define _AST_VERSION	AST_VERSION	/* pre-20100601 compatibility */
+diff --git a/src/lib/libast/features/aso b/src/lib/libast/features/aso
+index 7fe2d30aa..ece6dcdee 100644
+--- a/src/lib/libast/features/aso
++++ b/src/lib/libast/features/aso
+@@ -8,7 +8,7 @@ if	aso note{ gcc 4.1+ 64 bit memory atomic operations model }end link{
+ 			uint32_t j = 0;
+ 			uint16_t l = 0;
+ 			uint8_t  m = 0;
+-			return __sync_fetch_and_add(&i,7)+__sync_fetch_and_add(&j,7)+__sync_fetch_and_add(&l,7)+__sync_fetch_and_add(&m,7);
++			return (int)(__sync_fetch_and_add(&i,7)+__sync_fetch_and_add(&j,7)+__sync_fetch_and_add(&l,7)+__sync_fetch_and_add(&m,7));
+ 		}
+ 	}end && {
+ 		#define _aso_cas8(p,o,n)	__sync_val_compare_and_swap(p,o,n)
+diff --git a/src/lib/libast/features/common b/src/lib/libast/features/common
+index b74a74133..f0c302ec8 100644
+--- a/src/lib/libast/features/common
++++ b/src/lib/libast/features/common
+@@ -146,7 +146,7 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
+ 	static struct
+ 	{
+ 		char*	name;
+-		int	size;
++		size_t	size;
+ 		char*	swap;
+ 	} int_type[] =
+ 	{
+@@ -159,14 +159,14 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
+ 	#endif
+ 	};
+ 
+-	static int	int_size[] = { 1, 2, 4, 8 };
++	static size_t	int_size[] = { 1, 2, 4, 8 };
+ 
+ 	int
+ 	main(void)
+ 	{
+-		int	t;
+-		int	s;
+-		int	m = 1;
++		size_t	t;
++		size_t	s;
++		size_t	m = 1;
+ 		int	b = 1;
+ 		int	w = 0;
+ 
+@@ -200,7 +200,7 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
+ 				}
+ 				else
+ 	#endif
+-				printf("#define _ast_int%d_t		%s\n", m, int_type[t].name);
++				printf("#define _ast_int%zu_t		%s\n", m, int_type[t].name);
+ 				if (m > 1)
+ 				{
+ 					if (*int_type[t].swap)
+@@ -209,7 +209,7 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
+ 				}
+ 			}
+ 		}
+-		printf("#define _ast_intmax_t		_ast_int%d_t\n", m);
++		printf("#define _ast_intmax_t		_ast_int%zu_t\n", m);
+ 		if (m == sizeof(long))
+ 			printf("#define _ast_intmax_long		1\n");
+ 		printf("#define _ast_intswap		%d\n", w);
+@@ -234,7 +234,7 @@ tst	- output{
+ 	static struct
+ 	{
+ 		char*	name;
+-		int	size;
++		size_t	size;
+ 		int	cond;
+ 	} types[] =
+ 	{
+@@ -251,7 +251,7 @@ tst	- output{
+ 	int
+ 	main(void)
+ 	{
+-		int	t;
++		size_t	t;
+ 
+ 		for (t = 0; t < elementsof(types); t++)
+ 	#if COND
+@@ -265,7 +265,7 @@ tst	- output{
+ 			}
+ 			else
+ 	#endif
+-				printf("#define _ast_sizeof_%s%s	%d	/* sizeof(%s) */\n", types[t].name, strlen(types[t].name) < 4 ? "\t" : "", types[t].size, types[t].name);
++				printf("#define _ast_sizeof_%s%s	%zu	/* sizeof(%s) */\n", types[t].name, strlen(types[t].name) < 4 ? "\t" : "", types[t].size, types[t].name);
+ 		printf("\n");
+ 		return 0;
+ 	}
+@@ -285,7 +285,7 @@ tst note{ generating _ast_flt\*_t types }end output{
+ 	static struct
+ 	{
+ 		char*	name;
+-		int	size;
++		size_t	size;
+ 	} flt_type[] =
+ 	{
+ 		"float",	sizeof(float),
+@@ -297,8 +297,8 @@ tst note{ generating _ast_flt\*_t types }end output{
+ 	main(void)
+ 	{
+ 		int	t;
+-		int	m = 1;
+-		int	e = elementsof(flt_type);
++		size_t	m = 1;
++		int	e = (int)elementsof(flt_type);
+ 		if (flt_type[e - 1].size <= sizeof(double))
+ 			e--; /* exclude "long double" */
+ 		else
+@@ -315,9 +315,9 @@ tst note{ generating _ast_flt\*_t types }end output{
+ 			while (t < (e - 1) && flt_type[t].size == flt_type[t + 1].size)
+ 				t++;
+ 			m = flt_type[t].size;
+-			printf("#define _ast_flt%d_t		%s\n", flt_type[t].size, flt_type[t].name);
++			printf("#define _ast_flt%zu_t		%s\n", flt_type[t].size, flt_type[t].name);
+ 		}
+-		printf("#define _ast_fltmax_t		_ast_flt%d_t\n", m);
++		printf("#define _ast_fltmax_t		_ast_flt%zu_t\n", m);
+ 		if (m == sizeof(double))
+ 			printf("#define _ast_fltmax_double		1\n");
+ 		return 0;
+diff --git a/src/lib/libast/features/float b/src/lib/libast/features/float
+index ee7db886d..fd9525109 100644
+--- a/src/lib/libast/features/float
++++ b/src/lib/libast/features/float
+@@ -957,8 +957,8 @@ tst	- note{ double exponent bitfoolery }end output{
+ 	int
+ 	main(void)
+ 	{
+-		int			i;
+-		int			j;
++		size_t			i;
++		size_t			j;
+ 		unsigned _ast_int4_t	e;
+ 		_ast_dbl_exp_t		a;
+ 		_ast_dbl_exp_t		b;
+@@ -971,9 +971,9 @@ tst	- note{ double exponent bitfoolery }end output{
+ 					if (a.e[j] ^ b.e[j])
+ 						return 0;
+ 				printf("typedef union _ast_dbl_exp_u\n{\n\tuint32_t\t\te[sizeof(double)/4];\n\tdouble\t\t\tf;\n} _ast_dbl_exp_t;\n\n");
+-				printf("#define _ast_dbl_exp_index	%d\n", i);
++				printf("#define _ast_dbl_exp_index	%zu\n", i);
+ 				for (i = 0; !(e & 1); e >>= 1, i++);
+-				printf("#define _ast_dbl_exp_shift	%d\n\n", i);
++				printf("#define _ast_dbl_exp_shift	%zu\n\n", i);
+ 				return 0;
+ 			}
+ 		return 0;
+@@ -994,8 +994,8 @@ tst	- note{ long double exponent bitfoolery }end output{
+ 	int
+ 	main(void)
+ 	{
+-		int			i;
+-		int			j;
++		size_t			i;
++		size_t			j;
+ 		unsigned _ast_int4_t	e;
+ 		_ast_fltmax_exp_t	a;
+ 		_ast_fltmax_exp_t	b;
+@@ -1008,9 +1008,9 @@ tst	- note{ long double exponent bitfoolery }end output{
+ 					if (a.e[j] ^ b.e[j])
+ 						return 0;
+ 				printf("typedef union _fltmax_exp_u\n{\n\tuint32_t\t\te[sizeof(_ast_fltmax_t)/4];\n\t_ast_fltmax_t\t\tf;\n} _ast_fltmax_exp_t;\n\n");
+-				printf("#define _ast_fltmax_exp_index\t%d\n", i);
++				printf("#define _ast_fltmax_exp_index\t%zu\n", i);
+ 				for (i = 0; !(e & 1); e >>= 1, i++);
+-				printf("#define _ast_fltmax_exp_shift\t%d\n\n", i);
++				printf("#define _ast_fltmax_exp_shift\t%zu\n\n", i);
+ 				return 0;
+ 			}
+ 		return 0;
 diff --git a/src/lib/libast/features/limits.c b/src/lib/libast/features/limits.c
 index 30f66dff5..73abb8aad 100644
 --- a/src/lib/libast/features/limits.c
@@ -1083,6 +1259,19 @@ index 47dd64a67..157240356 100644
  }
  else pass{ no_stat_nsec=1 }end {
  	#define ST_ATIME_NSEC_GET(st)	0
+diff --git a/src/lib/libast/features/wchar b/src/lib/libast/features/wchar
+index 64d2fcf0f..c078fa8ab 100644
+--- a/src/lib/libast/features/wchar
++++ b/src/lib/libast/features/wchar
+@@ -69,7 +69,7 @@ tst	iswpunct_broken note{ is iswpunct(3) broken }end execute{
+ 				'<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~', '\0' };
+ 		int i;
+ 		for (i = 0; c[i]; i++)
+-			if (ispunct(c[i]) && !iswpunct(c[i]))
++			if (ispunct(c[i]) && !iswpunct((wint_t)c[i]))
+ 				return 0;
+ 		return 1;
+ 	}
 diff --git a/src/lib/libast/include/aso.h b/src/lib/libast/include/aso.h
 index 9aacfc44b..988d058cb 100644
 --- a/src/lib/libast/include/aso.h

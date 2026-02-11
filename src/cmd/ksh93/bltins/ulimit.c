@@ -165,7 +165,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 			else
 			{
 #if _lib_getrlimit
-				if(getrlimit(n,&rlp) <0)
+				if(getrlimit((__rlimit_resource_t)n,&rlp) <0)
 				{
 					errormsg(SH_DICT,ERROR_system(1),e_number,limit);
 					UNREACHABLE();
@@ -174,7 +174,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 					rlp.rlim_max = i;
 				if(mode&SOFT)
 					rlp.rlim_cur = i;
-				if(setrlimit(n,&rlp) <0)
+				if(setrlimit((__rlimit_resource_t)n,&rlp) <0)
 				{
 					errormsg(SH_DICT,ERROR_system(1),e_overlimit,limit);
 					UNREACHABLE();
@@ -193,7 +193,7 @@ int	b_ulimit(int argc,char *argv[],Shbltin_t *context)
 			if(!nosupport)
 			{
 #if _lib_getrlimit
-				if(getrlimit(n,&rlp)<0)
+				if(getrlimit((__rlimit_resource_t)n,&rlp)<0)
 				{
 					errormsg(SH_DICT,ERROR_system(0),e_limit,tp->description);
 					ret++;
