@@ -137,11 +137,11 @@ typedef struct Cenv_s
 #endif
 
 static Rex_t*
-node(Cenv_t* env, int type, ptrdiff_t lo, ptrdiff_t hi, size_t extra)
+node(Cenv_t* env, unsigned char type, ptrdiff_t lo, ptrdiff_t hi, size_t extra)
 {
 	Rex_t*	e;
 
-	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%d,%td,%td,%zu)\n", type, lo, hi, sizeof(Rex_t) + extra)),(0));
+	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%u,%td,%td,%zu)\n", (unsigned int)type, lo, hi, sizeof(Rex_t) + extra)),(0));
 	if (e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra))
 	{
 		memset(e, 0, sizeof(Rex_t) + extra);
@@ -1166,7 +1166,6 @@ bra(Cenv_t* env)
 	Rex_t*		e;
 	int		c;
 	size_t		i;
-	int		j;
 	int		w;
 	int		neg;
 	int		last;
@@ -1312,25 +1311,26 @@ bra(Cenv_t* env)
 						while (*++s && *s != ':');
 						if (*s == ':' && *(s + 1) == ']' && *(s + 2) == ']')
 						{
-							if ((j = (int)(s - start)) == 1)
+							if (s - start == 1)
 							{
+								unsigned char rex;
 								switch (c)
 								{
 								case '<':
-									j = REX_WBEG;
+									rex = REX_WBEG;
 									break;
 								case '>':
-									j = REX_WEND;
+									rex = REX_WEND;
 									break;
 								default:
-									j = 0;
+									rex = 0;
 									break;
 								}
-								if (j)
+								if (rex)
 								{
 									env->cursor = s + 3;
 									drop(env->disc, e);
-									return node(env, j, 0, 0, 0);
+									return node(env, rex, 0, 0, 0);
 								}
 							}
 						}
@@ -1389,6 +1389,7 @@ bra(Cenv_t* env)
 		{
 			if (last <= c)
 			{
+				int j;
 				for (j = last; j <= c; j++)
 					setadd(e->re.charclass, j);
 				inrange = env->type >= SRE || (env->flags & (REG_LENIENT|REG_REGEXP));
@@ -1562,23 +1563,24 @@ bra(Cenv_t* env)
 						{
 							if (env->cursor == start && (c = *(env->cursor + 1)) && *(env->cursor + 2) == ':' && *(env->cursor + 3) == ']' && *(env->cursor + 4) == ']')
 							{
+								unsigned char rex;
 								switch (c)
 								{
 								case '<':
-									i = REX_WBEG;
+									rex = REX_WBEG;
 									break;
 								case '>':
-									i = REX_WEND;
+									rex = REX_WEND;
 									break;
 								default:
-									i = 0;
+									rex = 0;
 									break;
 								}
-								if (i)
+								if (rex)
 								{
 									env->cursor += 5;
 									drop(env->disc, e);
-									return node(env, (int)i, 0, 0, 0);
+									return node(env, rex, 0, 0, 0);
 								}
 							}
 							env->error = REG_ECTYPE;
@@ -2285,7 +2287,7 @@ grp(Cenv_t* env, int parno)
 					goto invalid;
 				if (e->re.nest.type[i] & ~x)
 					goto invalid;
-				e->re.nest.type[i] = x;
+				e->re.nest.type[i] = (unsigned short)x;
 				continue;
 			case 'E':
 				x = REX_NEST_escape;
@@ -2311,7 +2313,7 @@ grp(Cenv_t* env, int parno)
 					goto invalid;
 				if (e->re.nest.type[i] & ~x)
 					goto invalid;
-				e->re.nest.type[i] = x|REX_NEST_open|REX_NEST_close|(i<<REX_NEST_SHIFT);
+				e->re.nest.type[i] = (unsigned short)(x|REX_NEST_open|REX_NEST_close|(i<<REX_NEST_SHIFT));
 				continue;
 			case 'S':
 				x = REX_NEST_separator;
@@ -2533,7 +2535,7 @@ grp(Cenv_t* env, int parno)
 			env->type = typ;
 		return NULL;
 	}
-	if (!(f = node(env, x, 0, 0, 0)))
+	if (!(f = node(env, (unsigned char)x, 0, 0, 0)))
 	{
 		drop(env->disc, e);
 		goto nope;

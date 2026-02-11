@@ -61,7 +61,7 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
 
 	/* set and initialize the stream to a definite mode */
 	if((int)SFMODE(f,local) != (mode = f->mode&SFIO_RDWR))
-	{	int	flags = f->flags;
+	{	unsigned short	flags = f->flags;
 
 		if(hardseek&SFIO_PUBLIC) /* seek ptr must follow file descriptor */
 			f->flags |= SFIO_SHARE|SFIO_PUBLIC;

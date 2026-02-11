@@ -89,7 +89,8 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 	       void*	buf,	/* new buffer */
 	       size_t	size)	/* buffer size, -1 for default size */
 {
-	int		sf_malloc, oflags, init, local;
+	int		oflags, init, local;
+	unsigned short	sf_malloc;
 	ptrdiff_t	bufsize, blksz;
 	Sfdisc_t*	disc;
 	struct stat	st;
