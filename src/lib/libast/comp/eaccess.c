@@ -102,7 +102,7 @@ eaccess(const char* path, int flags)
 		{
 			if ((ngroups = getgroups(0, NULL)) <= 0)
 				ngroups = (int)astconf_long(CONF_NGROUPS_MAX);
-			if (!(groups = newof(0, gid_t, ngroups + 1, 0)))
+			if (!(groups = newof(0, gid_t, (size_t)ngroups + 1, 0)))
 				ngroups = -1;
 			else
 				ngroups = getgroups(ngroups, groups);
