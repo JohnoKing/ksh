@@ -1062,9 +1062,9 @@ loop_fmt :
 				if(v < 0 && fmt == 'd' )
 				{	flags |= SFFMT_MINUS;
 					if((uint)v == HIGHBITI) /* avoid overflow */
-					{	v = (int)(HIGHBITI/base);
+					{	v = (int)(HIGHBITI/(uint)base);
 						*--sp = _Sfdigits[HIGHBITI -
-								  (uint)v*base];
+								  (uint)v*(uint)base];
 					}
 					else	v = -v;
 				}
@@ -1073,13 +1073,13 @@ loop_fmt :
 				}
 				else if(n_s > 0) /* base power-of-2 */
 				{	do
-					{	*--sp = ssp[(uint)v&n_s];
-					} while((v = (((uint)v) >> n)) );
+					{	*--sp = ssp[(uint)v&(uint)n_s];
+					} while((v = (ptrdiff_t)(((uint)v) >> n)) );
 				}
 				else /* n_s == 0, general base */
 				{	do
-					{	*--sp = ssp[((uint)v)%base];
-					} while((v = (ptrdiff_t)(((uint)v)/base)) );
+					{	*--sp = ssp[((uint)v)%(uint)base];
+					} while((v = (ptrdiff_t)(((uint)v)/(uint)base)) );
 				}
 			}
 

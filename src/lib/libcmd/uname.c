@@ -401,7 +401,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
 #endif
 			if (!s && !*(s = astconf("PLATFORM", NULL, NULL)) && !*(s = astconf("HW_NAME", NULL, NULL)))
 			{
-				if (t = strchr(hosttype, '.'))
+				if (t = (char*)strchr(hosttype, '.'))
 					t++;
 				else
 					t = (char*)hosttype;

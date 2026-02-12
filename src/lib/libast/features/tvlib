@@ -119,8 +119,8 @@ tst	lib_poll_notimer note{ poll with no fds ignores timeout }end execute{
 	int
 	main(void)
 	{
-		unsigned long	start;
-		unsigned long	finish;
+		time_t		start;
+		time_t		finish;
 		struct pollfd	fd;
 		start = time(NULL);
 		if (poll(&fd, 0, TIMEOUT * 1000) < 0)

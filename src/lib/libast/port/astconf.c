@@ -615,8 +615,10 @@ static char*
 format(Feature_t* fp, const char* path, const char* value, unsigned int flags, Error_f conferror)
 {
 	Feature_t*		sp;
-	int			n;
 	static struct utsname	uts;
+#ifdef UNIV_MAX
+	int			n;
+#endif
 
 #if DEBUG_astconf
 	error(-6, "astconf format name=%s path=%s value=%s flags=%04x fp=%p%s", fp->name, path, value, flags, fp, state.synthesizing ? " SYNTHESIZING" : "");

@@ -81,7 +81,7 @@ static int htable(Dt_t* dt)
 		for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
 		{	for(l = *t; l; l = next)
 			{	next = l->_rght;
-				l->_rght = htbl[k = l->_hash&(n-1)];
+				l->_rght = htbl[k = (ptrdiff_t)(l->_hash&((size_t)(n-1)))];
 				htbl[k] = l;
 			}
 		}
@@ -138,7 +138,7 @@ static void* hnext(Dt_t* dt, Dtlink_t* l)
 		return _DTOBJ(dt->disc, next);
 	}
 	else
-	{	t = hash->htbl + (l->_hash & (hash->tblz-1)) + 1;
+	{	t = hash->htbl + (l->_hash & ((uint)(hash->tblz-1))) + 1;
 		endt = hash->htbl + hash->tblz;
 		for(; t < endt; ++t)
 		{	if(!(l = *t) )
@@ -305,7 +305,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	}
 	hsh = _DTHSH(dt,key,disc);
 
-	tbl = hash->htbl + (hsh & (hash->tblz-1));
+	tbl = hash->htbl + (hsh & ((uint)(hash->tblz-1)));
 	pp = ll = NULL; /* pp is the before, ll is the here */
 	for(p = NULL, l = *tbl; l; p = l, l = l->_rght)
 	{	if(hsh == l->_hash)
@@ -378,7 +378,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	do_insert: /* inserting a new object */
 		if(hash->tblz < HLOAD(hash->data.size) )
 		{	htable(dt); /* resize table */
-			tbl = hash->htbl + (hsh & (hash->tblz-1));
+			tbl = hash->htbl + (hsh & ((uint)(hash->tblz-1)));
 		}
 
 		if(!lnk) /* inserting a new object */

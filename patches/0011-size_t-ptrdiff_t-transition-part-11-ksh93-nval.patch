@@ -1,6 +1,6 @@
-From 3858849ce231e50c291a3ab740cbd9f27f659eec Mon Sep 17 00:00:00 2001
+From 4a30968cf5b6a097f1e776e94980ae665ebe1c65 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:48:20 -0800
+Date: Wed, 11 Feb 2026 21:14:20 -0800
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-819 => 497 => 62 (progression from part 10 => part 11 => part 13)
+823 => 500 => 62 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -44,12 +44,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/nval.h     |  32 ++--
  src/cmd/ksh93/nval.3             |  12 +-
  src/cmd/ksh93/sh/array.c         | 169 ++++++++++----------
- src/cmd/ksh93/sh/name.c          | 258 ++++++++++++++++---------------
+ src/cmd/ksh93/sh/name.c          | 260 ++++++++++++++++---------------
  src/cmd/ksh93/sh/nvdisc.c        |  33 ++--
- src/cmd/ksh93/sh/nvtree.c        |  69 +++++----
+ src/cmd/ksh93/sh/nvtree.c        |  69 ++++----
  src/cmd/ksh93/sh/nvtype.c        | 183 +++++++++++-----------
  src/cmd/ksh93/sh/string.c        |  59 +++----
- 10 files changed, 421 insertions(+), 408 deletions(-)
+ 10 files changed, 422 insertions(+), 409 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/name.h b/src/cmd/ksh93/include/name.h
 index ff5ce6c49..21e095567 100644
@@ -813,7 +813,7 @@ index 3d2af19dd..92f6e35e9 100644
  	if(nv_isarray(np))
  	{
 diff --git a/src/cmd/ksh93/sh/name.c b/src/cmd/ksh93/sh/name.c
-index 759dce62d..b2feb0067 100644
+index 759dce62d..0730995ac 100644
 --- a/src/cmd/ksh93/sh/name.c
 +++ b/src/cmd/ksh93/sh/name.c
 @@ -43,7 +43,7 @@ static Dtdisc_t	_Refdisc =
@@ -1223,8 +1223,12 @@ index 759dce62d..b2feb0067 100644
  		goto skip;
  #if NVCACHE
  	for(c=0,xp=nvcache.entries ; c < NVCACHE; xp= &nvcache.entries[++c])
-@@ -1467,13 +1470,13 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
- 			char *sp = strchr(name,*cp);
+@@ -1464,16 +1467,16 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
+ 		xp = &nvcache.entries[nvcache.index];
+ 		if(*cp)
+ 		{
+-			char *sp = strchr(name,*cp);
++			const char *sp = strchr(name,*cp);
  			if(!sp)
  				goto nocache;
 -			xp->len = sp-name;

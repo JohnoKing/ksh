@@ -377,7 +377,7 @@ errorv(const char* id, int level, va_list ap)
 			catalog = 0;
 			library = 0;
 		}
-		else if ((library = strchr(catalog, ':')) && !*++library)
+		else if ((library = (char*)strchr(catalog, ':')) && !*++library)
 			library = 0;
 	}
 	else

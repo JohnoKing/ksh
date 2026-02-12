@@ -1,6 +1,6 @@
-From 007bca538e51a75abf0b065f6c7c7e7159a4ace4 Mon Sep 17 00:00:00 2001
+From 085bff5c8603a6dd308a1f5a3c7af9143339e810 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:42:28 -0800
+Date: Wed, 11 Feb 2026 21:08:14 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -22,7 +22,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/aso/aso.c         | 98 ++++++++++++++++----------------
  src/lib/libast/aso/asorelax.c    |  5 +-
  src/lib/libast/cdt/dtclose.c     |  6 +-
- src/lib/libast/cdt/dthash.c      | 11 ++--
+ src/lib/libast/cdt/dthash.c      | 19 ++++---
  src/lib/libast/cdt/dtlist.c      |  4 +-
  src/lib/libast/cdt/dtmethod.c    |  6 +-
  src/lib/libast/cdt/dtopen.c      |  6 +-
@@ -34,18 +34,21 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/features/aso      |  2 +-
  src/lib/libast/features/common   | 30 +++++-----
  src/lib/libast/features/float    | 16 +++---
+ src/lib/libast/features/lib      | 28 ++++-----
  src/lib/libast/features/limits.c |  8 +--
+ src/lib/libast/features/mmap     |  4 +-
  src/lib/libast/features/mode.c   |  4 +-
  src/lib/libast/features/omitted  |  2 +-
  src/lib/libast/features/sfio     |  2 +-
  src/lib/libast/features/signal.c | 10 ++--
  src/lib/libast/features/sizeof   | 10 ++--
  src/lib/libast/features/tv       | 24 ++++----
+ src/lib/libast/features/tvlib    |  4 +-
  src/lib/libast/features/wchar    |  2 +-
  src/lib/libast/include/aso.h     |  8 +--
  src/lib/libast/include/cdt.h     | 10 ++--
  src/lib/libast/man/aso.3         |  6 +-
- 28 files changed, 182 insertions(+), 177 deletions(-)
+ 31 files changed, 204 insertions(+), 199 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
 index b4d34019e..0984e7a67 100644
@@ -598,7 +601,7 @@ index 8bd9640ab..17784f6af 100644
  	Dtdisc_t	*disc = dt->disc;
  
 diff --git a/src/lib/libast/cdt/dthash.c b/src/lib/libast/cdt/dthash.c
-index ce96ad65f..bc6d292cd 100644
+index ce96ad65f..a65843442 100644
 --- a/src/lib/libast/cdt/dthash.c
 +++ b/src/lib/libast/cdt/dthash.c
 @@ -2,7 +2,7 @@
@@ -632,6 +635,24 @@ index ce96ad65f..bc6d292cd 100644
  
  	if(hash->htbl)
  	{
+@@ -80,7 +81,7 @@ static int htable(Dt_t* dt)
+ 		for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
+ 		{	for(l = *t; l; l = next)
+ 			{	next = l->_rght;
+-				l->_rght = htbl[k = l->_hash&(n-1)];
++				l->_rght = htbl[k = (ptrdiff_t)(l->_hash&((size_t)(n-1)))];
+ 				htbl[k] = l;
+ 			}
+ 		}
+@@ -137,7 +138,7 @@ static void* hnext(Dt_t* dt, Dtlink_t* l)
+ 		return _DTOBJ(dt->disc, next);
+ 	}
+ 	else
+-	{	t = hash->htbl + (l->_hash & (hash->tblz-1)) + 1;
++	{	t = hash->htbl + (l->_hash & ((uint)(hash->tblz-1))) + 1;
+ 		endt = hash->htbl + hash->tblz;
+ 		for(; t < endt; ++t)
+ 		{	if(!(l = *t) )
 @@ -230,8 +231,8 @@ static void* hstat(Dt_t* dt, Dtstat_t* st)
  	{	memset(st, 0, sizeof(Dtstat_t));
  		st->meth  = dt->meth->type;
@@ -643,6 +664,24 @@ index ce96ad65f..bc6d292cd 100644
  
  		for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
  		{	for(n = 0, l = *t; l; l = l->_rght)
+@@ -304,7 +305,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
+ 	}
+ 	hsh = _DTHSH(dt,key,disc);
+ 
+-	tbl = hash->htbl + (hsh & (hash->tblz-1));
++	tbl = hash->htbl + (hsh & ((uint)(hash->tblz-1)));
+ 	pp = ll = NULL; /* pp is the before, ll is the here */
+ 	for(p = NULL, l = *tbl; l; p = l, l = l->_rght)
+ 	{	if(hsh == l->_hash)
+@@ -377,7 +378,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
+ 	do_insert: /* inserting a new object */
+ 		if(hash->tblz < HLOAD(hash->data.size) )
+ 		{	htable(dt); /* resize table */
+-			tbl = hash->htbl + (hsh & (hash->tblz-1));
++			tbl = hash->htbl + (hsh & ((uint)(hash->tblz-1)));
+ 		}
+ 
+ 		if(!lnk) /* inserting a new object */
 diff --git a/src/lib/libast/cdt/dtlist.c b/src/lib/libast/cdt/dtlist.c
 index f5789e2f5..249d0f896 100644
 --- a/src/lib/libast/cdt/dtlist.c
@@ -1080,6 +1119,78 @@ index ee7db886d..fd9525109 100644
  				return 0;
  			}
  		return 0;
+diff --git a/src/lib/libast/features/lib b/src/lib/libast/features/lib
+index b18959f2f..727198189 100644
+--- a/src/lib/libast/features/lib
++++ b/src/lib/libast/features/lib
+@@ -16,7 +16,7 @@ hdr	wchar note{ <wchar.h> and isw*() really work }end execute{
+ 	main(void)
+ 	{
+ 		wchar_t	w = 'a';
+-		return iswalnum(w) == 0;
++		return iswalnum((wint_t)w) == 0;
+ 	}
+ }end
+ 
+@@ -150,9 +150,9 @@ tst	lib_posix_spawn unistd.h stdlib.h spawn.h -Dfork=______fork note{ posix_spaw
+ 	int
+ 	main(int argc, char **argv)
+ 	{
+-		char*			s;
+ 		pid_t			pid;
+ 		posix_spawnattr_t	attr;
++		size_t			len;
+ 		int			n;
+ 		int			status;
+ 		char*			cmd[3];
+@@ -196,17 +196,17 @@ tst	lib_posix_spawn unistd.h stdlib.h spawn.h -Dfork=______fork note{ posix_spaw
+ 			_exit(0);
+ 		}
+ 		/* must return exec-type errors or it's useless to us *unless* there is no [v]fork() */
+-		n = strlen(cmd[0]);
+-		if (n >= (sizeof(tmp) - 3))
++		len = strlen(cmd[0]);
++		if (len >= (sizeof(tmp) - 3))
+ 		{
+ 			NOTE("test executable path too long");
+ 			_exit(0);
+ 		}
+ 		strcpy(tmp, cmd[0]);
+-		tmp[n] = '.';
+-		tmp[n+1] = 's';
+-		tmp[n+2] = 'h';
+-		tmp[n+3] = 0;
++		tmp[len] = '.';
++		tmp[len+1] = 's';
++		tmp[len+2] = 'h';
++		tmp[len+3] = 0;
+ 		if ((n = open(tmp, O_CREAT|O_WRONLY, S_IRWXU|S_IRWXG|S_IRWXO)) < 0 ||
+ 		    chmod(tmp, S_IRWXU|S_IRWXG|S_IRWXO) < 0 ||
+ 		    write(n, "exit 99\n", 8) != 8 ||
+@@ -298,17 +298,17 @@ tst	socket_peek note{ recv(MSG_PEEK) works on socketpair() }end execute{
+ 	int
+ 	main(void)
+ 	{
+-		int		i;
+-		int		fds[2];
+-		char		buf[128];
+-
+-		static char	msg[] = "abcd";
+-
+ 	#ifdef __HAIKU__
+ 		/* On Haiku this test will either fail (without additional LDFLAGS),
+ 		   or with -lnetwork it will lock up. */
+ 		return 1;
+ 	#else
++		size_t		i;
++		int		fds[2];
++		char		buf[128];
++
++		static char	msg[] = "abcd";
++
+ 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds))
+ 			return 1;
+ 		if (write(fds[1], msg, sizeof(msg)) != sizeof(msg))
 diff --git a/src/lib/libast/features/limits.c b/src/lib/libast/features/limits.c
 index 30f66dff5..73abb8aad 100644
 --- a/src/lib/libast/features/limits.c
@@ -1114,6 +1225,28 @@ index 30f66dff5..73abb8aad 100644
  	ui = 0;
  	ui = ~ui;
  	ul = 0;
+diff --git a/src/lib/libast/features/mmap b/src/lib/libast/features/mmap
+index ccb166361..1b66b9d1c 100644
+--- a/src/lib/libast/features/mmap
++++ b/src/lib/libast/features/mmap
+@@ -49,7 +49,7 @@ tst	lib_mmap note{ standard mmap interface that works }end execute{
+ 		if ((fd = open(file, O_CREAT|O_TRUNC|O_WRONLY, 0666)) < 0)
+ 			return 1;
+ 
+-		for (i = 0; i < sizeof(buf); ++i)
++		for (i = 0; i < (int)sizeof(buf); ++i)
+ 			buf[i] = '0' + (i%10);
+ 		for (i = 0; i < WRITE; ++i)
+ 			if (write(fd,buf,sizeof(buf)) != sizeof(buf))
+@@ -190,7 +190,7 @@ tst	note{ mmap is fast enough to be worth using }end output{
+ 		if ((fd = open(file, O_CREAT|O_TRUNC|O_WRONLY, 0666)) < 0)
+ 			return 1;
+ 
+-		for (i = 0; i < sizeof(buf); ++i)
++		for (i = 0; i < (int)sizeof(buf); ++i)
+ 			buf[i] = '0' + (i%10);
+ 		for (i = 0; i < WRITE; ++i)
+ 			if (write(fd,buf,sizeof(buf)) != sizeof(buf))
 diff --git a/src/lib/libast/features/mode.c b/src/lib/libast/features/mode.c
 index a31b734a0..8db6a3ae5 100644
 --- a/src/lib/libast/features/mode.c
@@ -1259,6 +1392,21 @@ index 47dd64a67..157240356 100644
  }
  else pass{ no_stat_nsec=1 }end {
  	#define ST_ATIME_NSEC_GET(st)	0
+diff --git a/src/lib/libast/features/tvlib b/src/lib/libast/features/tvlib
+index ad604c59e..8663dde17 100644
+--- a/src/lib/libast/features/tvlib
++++ b/src/lib/libast/features/tvlib
+@@ -119,8 +119,8 @@ tst	lib_poll_notimer note{ poll with no fds ignores timeout }end execute{
+ 	int
+ 	main(void)
+ 	{
+-		unsigned long	start;
+-		unsigned long	finish;
++		time_t		start;
++		time_t		finish;
+ 		struct pollfd	fd;
+ 		start = time(NULL);
+ 		if (poll(&fd, 0, TIMEOUT * 1000) < 0)
 diff --git a/src/lib/libast/features/wchar b/src/lib/libast/features/wchar
 index 64d2fcf0f..c078fa8ab 100644
 --- a/src/lib/libast/features/wchar

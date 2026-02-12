@@ -310,7 +310,7 @@ translate(const char* loc, const char* cmd, const char* cat, const char* msg)
 
 	if (!cmd && !cat)
 		goto done;
-	if (cmd && (t = strrchr(cmd, '/')))
+	if (cmd && (t = (char*)strrchr(cmd, '/')))
 		cmd = (const char*)(t + 1);
 
 	/*

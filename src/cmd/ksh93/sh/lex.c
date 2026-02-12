@@ -1348,7 +1348,7 @@ breakloop:
 		lp->varnamelength = varnamelength;
 		if(sh_isoption(SH_NOEXEC))
 		{
-			char *cp = strchr(state, '=');
+			char *cp = (char*)strchr(state, '=');
 			if(cp && strncmp(++cp, "$((", 3) == 0)
 				errormsg(SH_DICT, ERROR_warn(0), e_lexarithwarn, sh.inlineno,
 					state, cp - state, state, cp + 3);

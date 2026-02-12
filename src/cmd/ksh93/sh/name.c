@@ -1467,7 +1467,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 		xp = &nvcache.entries[nvcache.index];
 		if(*cp)
 		{
-			char *sp = strchr(name,*cp);
+			const char *sp = strchr(name,*cp);
 			if(!sp)
 				goto nocache;
 			xp->len = (size_t)(sp-name);

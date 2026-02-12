@@ -821,7 +821,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
 		sh.bltin_dir = 0;
 		sh_stats(STAT_PATHS);
 		f = canexecute(stkptr(sh.stk,PATH_OFFSET),isfun);
-		if(isfun && f>=0 && (cp = strrchr(name,'.')))
+		if(isfun && f>=0 && (cp = (char*)strrchr(name,'.')))
 		{
 			*cp = 0;
 			if(nv_open(name,sh_subfuntree(1),NV_NOARRAY|NV_IDENT|NV_NOSCOPE))

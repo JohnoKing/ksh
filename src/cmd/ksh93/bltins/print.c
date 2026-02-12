@@ -472,12 +472,10 @@ static int echolist(Sfio_t *outfile, int raw, char *argv[])
  */
 static void strformat(char *s)
 {
-	char*		t;
+	char*		t = s;
 	int		c;
-	char*		b;
 	char*		p;
 	int		w;
-	b = t = s;
 	for (;;)
 	{
 		switch (c = *s++)

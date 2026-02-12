@@ -1,6 +1,6 @@
-From c8eb7eea6d30181aad444ae6733c5f73ebbe93f0 Mon Sep 17 00:00:00 2001
+From e53a211ff7f8fa3f33fea1fa0757e974953ed739 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:49:48 -0800
+Date: Wed, 11 Feb 2026 21:15:53 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-372 => 62 (progression from part 12 => part 13)
+374 => 62 (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 I'll note that I have a patch that expands nvflags to uint64_t which helps
@@ -46,6 +46,9 @@ Fixes https://github.com/ksh93/ksh/issues/592
 ---
  NEWS                            |   4 +
  src/cmd/ksh93/builtins.mm       |   4 +-
+ src/cmd/ksh93/features/externs  |  11 +--
+ src/cmd/ksh93/features/fchdir   |   5 +-
+ src/cmd/ksh93/features/poll     |   2 +-
  src/cmd/ksh93/features/rlimits  |   1 +
  src/cmd/ksh93/include/argnod.h  |   4 +-
  src/cmd/ksh93/include/jobs.h    |   8 +-
@@ -60,11 +63,11 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/io.c           | 128 ++++++++++++++++----------------
  src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         |  98 +++++++++++++-----------
+ src/cmd/ksh93/sh/path.c         | 100 +++++++++++++------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
  src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++-------------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++++
- 20 files changed, 381 insertions(+), 318 deletions(-)
+ 23 files changed, 391 insertions(+), 328 deletions(-)
 
 diff --git a/NEWS b/NEWS
 index 404633eeb..ea425f444 100644
@@ -96,6 +99,90 @@ index d9ef1dd96..64913fcc2 100644
          if(saveoffset=stktell(stkstd))
          	savebase = stkfreeze(stkstd,0);
          \fR...\fP
+diff --git a/src/cmd/ksh93/features/externs b/src/cmd/ksh93/features/externs
+index a9a58d7ac..cb9309ef5 100644
+--- a/src/cmd/ksh93/features/externs
++++ b/src/cmd/ksh93/features/externs
+@@ -54,7 +54,8 @@ tst	note{ determining default number of extra bytes per argument for arguments l
+ 
+ 	int main(int argc,char *argv[])
+ 	{
+-		int extra_bytes = 0, envlen, argmax, i;
++		size_t extra_bytes = 0, envlen;
++		int argmax, i;
+ 		pid_t childpid;
+ 		Sfio_t *notebuf;
+ 		char *note;
+@@ -69,7 +70,7 @@ tst	note{ determining default number of extra bytes per argument for arguments l
+ 			for(i=0; environ[i]; i++)
+ 				envlen += strlen(environ[i]) + 1 + extra_bytes;
+ 			envlen += 1 + extra_bytes;	/* final null element */
+-			argmax = (int)astconf_long(CONF_ARG_MAX) - envlen;
++			argmax = (int)astconf_long(CONF_ARG_MAX) - (int)envlen;
+ 			if (argmax < 2048)
+ 			{
+ 				error(ERROR_ERROR|2, "argmax too small");
+@@ -82,7 +83,7 @@ tst	note{ determining default number of extra bytes per argument for arguments l
+ 				int bytec;
+ 
+ 				error_info.id="_arg_extrabytes test (child)";
+-				argv = stkalloc(stkstd, (argmax / 2 + 1) * sizeof(char*));
++				argv = stkalloc(stkstd, (size_t)(argmax / 2 + 1) * sizeof(char*));
+ 				argc = bytec = 0;
+ 				while(bytec < argmax)
+ 				{
+@@ -137,13 +138,13 @@ tst	note{ determining default number of extra bytes per argument for arguments l
+ 		}
+ 		/* show note in iffe output via inherited FD 9 */
+ 		notebuf = sfstropen();
+-		sfprintf(notebuf," %d ...",extra_bytes);
++		sfprintf(notebuf," %zu ...",extra_bytes);
+ 		note = sfstruse(notebuf);
+ 		write(9,note,strlen(note));
+ 		sfclose(notebuf);
+ 		/* add #define to header via stdout */
+ 		sfprintf(sfstdout,
+-			"#define _arg_extrabytes\t%d\t/* extra bytes per argument for arguments list */\n",
++			"#define _arg_extrabytes\t%zu\t/* extra bytes per argument for arguments list */\n",
+ 			extra_bytes);
+ 		return 0;
+ 	}
+diff --git a/src/cmd/ksh93/features/fchdir b/src/cmd/ksh93/features/fchdir
+index aef7ce3bd..1c77fb856 100644
+--- a/src/cmd/ksh93/features/fchdir
++++ b/src/cmd/ksh93/features/fchdir
+@@ -46,9 +46,8 @@ tst	openat_enotdir note{ does openat set ENOTDIR when it fails because the file
+ 	int main(void)
+ 	{
+ 		char	filename[64];
+-		int	n, saverrno;
+-		pid_t	child;
+-		sprintf(filename,".file.%u",(unsigned int)getpid());
++		int	saverrno;
++		sprintf(filename,".file.%ju",(uintmax_t)getpid());
+ 		open(filename,O_RDWR|O_CREAT);  /* let the OS close the fd after completion */
+ 		openat(AT_FDCWD, filename, O_DIRECTORY|O_NONBLOCK|O_cloexec|O_SEARCH);
+ 		saverrno = errno;
+diff --git a/src/cmd/ksh93/features/poll b/src/cmd/ksh93/features/poll
+index 9fa23f7df..20e5d0760 100644
+--- a/src/cmd/ksh93/features/poll
++++ b/src/cmd/ksh93/features/poll
+@@ -19,6 +19,7 @@ tst	pipe_socketpair note{ use socketpair() for peekable pipe() }end execute{
+ 	#endif
+ 	static void handler(int sig)
+ 	{
++		NOT_USED(sig);
+ 		_exit(0);
+ 	}
+ 	int main(void)
+@@ -72,7 +73,6 @@ tst	socketpair_devfd note{ /dev/fd/N handles socketpair() }end execute{
+ 	#include <sys/socket.h>
+ 	int main(void)
+ 	{
+-		int		devfd;
+ 		int		n;
+ 		int		sfd[2];
+ 		ast_close(0);
 diff --git a/src/cmd/ksh93/features/rlimits b/src/cmd/ksh93/features/rlimits
 index 45ae222ce..fca7e0eec 100644
 --- a/src/cmd/ksh93/features/rlimits
@@ -1552,7 +1639,7 @@ index 0cd68887e..8d38e06f6 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index 164cbeafe..5798607a4 100644
+index 164cbeafe..b72dd8d71 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1633,6 +1720,15 @@ index 164cbeafe..5798607a4 100644
  				if(fp = strchr(bp, ':'))
  				{
  					*fp++ = 0;
+@@ -819,7 +821,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+ 		sh.bltin_dir = 0;
+ 		sh_stats(STAT_PATHS);
+ 		f = canexecute(stkptr(sh.stk,PATH_OFFSET),isfun);
+-		if(isfun && f>=0 && (cp = strrchr(name,'.')))
++		if(isfun && f>=0 && (cp = (char*)strrchr(name,'.')))
+ 		{
+ 			*cp = 0;
+ 			if(nv_open(name,sh_subfuntree(1),NV_NOARRAY|NV_IDENT|NV_NOSCOPE))
 @@ -841,7 +843,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  		}
  		else if(f>=0 && (oldpp->flags & PATH_STD_DIR))

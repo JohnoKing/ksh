@@ -1,6 +1,6 @@
-From 0be3aaf9af7f6afe4f3fc260cecc1a6af7578e05 Mon Sep 17 00:00:00 2001
+From 0c5ec5780915f963aeb1c4d6fcf82cd0b1911470 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:45:23 -0800
+Date: Wed, 11 Feb 2026 21:11:15 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -24,7 +24,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,600 => 1,201 => 62 (progression from part 6 => part 7 => part 13)
+1,602 => 1,204 => 62 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -60,10 +60,10 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/stty.c     |  66 +++++++++---------
  src/lib/libcmd/tail.c     |  40 +++++------
  src/lib/libcmd/tee.c      |   6 +-
- src/lib/libcmd/uname.c    |   6 +-
+ src/lib/libcmd/uname.c    |   8 +--
  src/lib/libcmd/uniq.c     |  40 ++++++-----
  src/lib/libcmd/wclib.c    |  34 ++++-----
- 35 files changed, 524 insertions(+), 509 deletions(-)
+ 35 files changed, 525 insertions(+), 510 deletions(-)
 
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
@@ -3343,7 +3343,7 @@ index 37b75b66d..c0683a4d1 100644
  			memset(&tp->disc, 0, sizeof(tp->disc));
  			tp->disc.writef = tee_write;
 diff --git a/src/lib/libcmd/uname.c b/src/lib/libcmd/uname.c
-index f16a10608..c7313810c 100644
+index f16a10608..42a7ad4db 100644
 --- a/src/lib/libcmd/uname.c
 +++ b/src/lib/libcmd/uname.c
 @@ -2,7 +2,7 @@
@@ -3373,6 +3373,15 @@ index f16a10608..c7313810c 100644
  			*t = 0;
  			sfprintf(sfstdout, "%s%c", *(t = astconf(buf, NULL, NULL)) ? t : *(t = astconf(buf+3, NULL, NULL)) ? t :  "unknown", *argv ? ' ' : '\n');
  		}
+@@ -401,7 +401,7 @@ b_uname(int argc, char** argv, Shbltin_t* context)
+ #endif
+ 			if (!s && !*(s = astconf("PLATFORM", NULL, NULL)) && !*(s = astconf("HW_NAME", NULL, NULL)))
+ 			{
+-				if (t = strchr(hosttype, '.'))
++				if (t = (char*)strchr(hosttype, '.'))
+ 					t++;
+ 				else
+ 					t = (char*)hosttype;
 diff --git a/src/lib/libcmd/uniq.c b/src/lib/libcmd/uniq.c
 index 17b1679df..70bbf8e0e 100644
 --- a/src/lib/libcmd/uniq.c

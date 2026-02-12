@@ -60,7 +60,7 @@ dllnames(const char* id, const char* name, Dllnames_t* names)
 	 * determine the base name
 	 */
 
-	if ((s = strrchr(name, '/')) || (s = strrchr(name, '\\')))
+	if ((s = (char*)strrchr(name, '/')) || (s = (char*)strrchr(name, '\\')))
 		s++;
 	else
 		s = (char*)name;

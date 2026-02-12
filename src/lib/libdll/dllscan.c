@@ -229,7 +229,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 		 * grab the local part of the library ID
 		 */
 
-		if (s = strrchr(lib, ':'))
+		if (s = (char*)strrchr(lib, ':'))
 			lib = (const char*)(s + 1);
 		i = 2 * sizeof(char**) + strlen(lib) + 5;
 	}
@@ -261,7 +261,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 		name = (const char*)"?*";
 		scan->flags |= DLL_MATCH_NAME;
 	}
-	else if (t = strrchr(name, '/'))
+	else if (t = (char*)strrchr(name, '/'))
 	{
 		if (!(scan->pb = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 2)))
 			goto bad;

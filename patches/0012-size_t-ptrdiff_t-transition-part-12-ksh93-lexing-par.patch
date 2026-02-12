@@ -1,6 +1,6 @@
-From 60f1e145c4a3c915bec4d48db914ed7cd96df714 Mon Sep 17 00:00:00 2001
+From 86803022f14b63cb1b2eb38d4fdfff14f6c966a1 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:49:04 -0800
+Date: Wed, 11 Feb 2026 21:15:06 -0800
 Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
  subshells
 
@@ -16,7 +16,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-497 => 372 => 62 (progression from part 11 => part 12 => part 13)
+500 => 374 => 62 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -24,14 +24,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/shlex.h   |  18 ++--
  src/cmd/ksh93/include/shnodes.h |   6 +-
  src/cmd/ksh93/sh/fcin.c         |  25 +++---
- src/cmd/ksh93/sh/lex.c          | 152 +++++++++++++++++---------------
+ src/cmd/ksh93/sh/lex.c          | 154 +++++++++++++++++---------------
  src/cmd/ksh93/sh/parse.c        |  83 +++++++++--------
  src/cmd/ksh93/sh/shcomp.c       |   4 +-
  src/cmd/ksh93/sh/subshell.c     |  14 +--
  src/cmd/ksh93/sh/tdump.c        |  38 ++++----
  src/cmd/ksh93/sh/timers.c       |   4 +-
  src/cmd/ksh93/sh/trestore.c     |  50 +++++------
- 11 files changed, 213 insertions(+), 198 deletions(-)
+ 11 files changed, 214 insertions(+), 199 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/fcin.h b/src/cmd/ksh93/include/fcin.h
 index 460d27575..605be211e 100644
@@ -285,7 +285,7 @@ index 2badaa5b0..5fc2984c7 100644
  			_Fcin.fcleft = n;
  			extra.next = extra.buff;
 diff --git a/src/cmd/ksh93/sh/lex.c b/src/cmd/ksh93/sh/lex.c
-index 1160c57f3..de3c62129 100644
+index 1160c57f3..da9c2e52d 100644
 --- a/src/cmd/ksh93/sh/lex.c
 +++ b/src/cmd/ksh93/sh/lex.c
 @@ -73,7 +73,7 @@ static int		alias_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
@@ -473,7 +473,7 @@ index 1160c57f3..de3c62129 100644
  		else if(n=='~')
  			c = ARG_MAC;
  		else
-@@ -1339,7 +1341,7 @@ breakloop:
+@@ -1339,14 +1341,14 @@ breakloop:
  	else
  		lp->arg = endword(0);
  	state = lp->arg->argval;
@@ -482,6 +482,14 @@ index 1160c57f3..de3c62129 100644
  	if(assignment)
  	{
  		lp->arg->argflag |= ARG_ASSIGN;
+ 		lp->varnamelength = varnamelength;
+ 		if(sh_isoption(SH_NOEXEC))
+ 		{
+-			char *cp = strchr(state, '=');
++			char *cp = (char*)strchr(state, '=');
+ 			if(cp && strncmp(++cp, "$((", 3) == 0)
+ 				errormsg(SH_DICT, ERROR_warn(0), e_lexarithwarn, sh.inlineno,
+ 					state, cp - state, state, cp + 3);
 @@ -1392,7 +1394,7 @@ breakloop:
  			lp->token = ETESTSYM;
  			return lp->token;

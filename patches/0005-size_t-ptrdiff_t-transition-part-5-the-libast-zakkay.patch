@@ -1,6 +1,6 @@
-From 95e0c1d5e2e3dd3773d9f56ea55489d8c1a55391 Mon Sep 17 00:00:00 2001
+From e047f9987efeda5ce5eeec46c2701adad369f3f6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:43:55 -0800
+Date: Wed, 11 Feb 2026 21:09:44 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -27,12 +27,13 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,493 => 1,984 => 62 (progression from part 4 => part 5 => part 13)
+2,493 => 1,985 => 62 (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/comp/arc4random.c  |   2 +-
  src/lib/libast/comp/assert.c      |   5 +-
+ src/lib/libast/comp/conf.tab      |   2 +-
  src/lib/libast/comp/eaccess.c     |   4 +-
  src/lib/libast/comp/fmtmsglib.c   |  29 ++---
  src/lib/libast/comp/fnmatch.c     |  22 ++--
@@ -53,7 +54,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/misc/cmdlib.h      |   9 +-
  src/lib/libast/misc/conformance.c |  17 +--
  src/lib/libast/misc/debug.c       |   4 +-
- src/lib/libast/misc/error.c       |  26 ++--
+ src/lib/libast/misc/error.c       |  28 ++---
  src/lib/libast/misc/fastfind.c    |  94 ++++++++-------
  src/lib/libast/misc/findlib.h     |   6 +-
  src/lib/libast/misc/fmtrec.c      |  27 +++--
@@ -70,15 +71,15 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/misc/setenviron.c  |   9 +-
  src/lib/libast/misc/sigcrit.c     |   5 +-
  src/lib/libast/misc/systrace.c    |   7 +-
- src/lib/libast/misc/translate.c   |   8 +-
- src/lib/libast/port/astconf.c     |  80 ++++++------
+ src/lib/libast/misc/translate.c   |  10 +-
+ src/lib/libast/port/astconf.c     |  84 ++++++-------
  src/lib/libast/port/astwinsize.c  |   8 +-
  src/lib/libast/port/lc.c          |  86 ++++++-------
  src/lib/libast/port/lcgen.c       |  45 +++----
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 47 files changed, 664 insertions(+), 646 deletions(-)
+ 48 files changed, 670 insertions(+), 650 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -121,6 +122,19 @@ index d5e924998..48f1f293e 100644
  {
  #if _has___func__ || _has___FUNCTION__
  	sfprintf(sfstderr,"\n*** assertion %s failed in %s(), %s:%d\n", a, fun, file, line);
+diff --git a/src/lib/libast/comp/conf.tab b/src/lib/libast/comp/conf.tab
+index 413ac3222..70dd876c8 100644
+--- a/src/lib/libast/comp/conf.tab
++++ b/src/lib/libast/comp/conf.tab
+@@ -1,7 +1,7 @@
+ #
+ # posix { getconf limits } macro table
+ #
+-# @(#)conf.tab (ksh 93u+m) 2025-04-11
++# @(#)conf.tab (ksh 93u+m) 2024-07-01
+ #
+ # name standard call section flags [ header ... ] [ value ... ]
+ #
 diff --git a/src/lib/libast/comp/eaccess.c b/src/lib/libast/comp/eaccess.c
 index 3690ed580..edd60112c 100644
 --- a/src/lib/libast/comp/eaccess.c
@@ -1730,7 +1744,7 @@ index 4620cf128..226359c4a 100644
  {
  	error(2, "%s:%d: debug error", file, line);
 diff --git a/src/lib/libast/misc/error.c b/src/lib/libast/misc/error.c
-index c1b90825a..33593c043 100644
+index c1b90825a..38ee0096a 100644
 --- a/src/lib/libast/misc/error.c
 +++ b/src/lib/libast/misc/error.c
 @@ -2,7 +2,7 @@
@@ -1802,6 +1816,15 @@ index c1b90825a..33593c043 100644
  	int		fd;
  	int		flags;
  	char*		s;
+@@ -377,7 +377,7 @@ errorv(const char* id, int level, va_list ap)
+ 			catalog = 0;
+ 			library = 0;
+ 		}
+-		else if ((library = strchr(catalog, ':')) && !*++library)
++		else if ((library = (char*)strchr(catalog, ':')) && !*++library)
+ 			library = 0;
+ 	}
+ 	else
 @@ -407,7 +407,7 @@ errorv(const char* id, int level, va_list ap)
  	fd = (flags & ERROR_OUTPUT) ? va_arg(ap, int) : error_info.fd;
  	if (error_info.write)
@@ -3718,7 +3741,7 @@ index 66093d421..6ed0e2265 100644
  		if (!procfree(procopen(trace[n], av + 1, NULL, ov, PROC_ARGMOD|PROC_GID|PROC_UID|(n == (elementsof(trace) - 1) ? PROC_CLEANUP : 0))))
  		{
 diff --git a/src/lib/libast/misc/translate.c b/src/lib/libast/misc/translate.c
-index 04540f5af..687f45fee 100644
+index 04540f5af..4d1bc18f2 100644
 --- a/src/lib/libast/misc/translate.c
 +++ b/src/lib/libast/misc/translate.c
 @@ -2,7 +2,7 @@
@@ -3757,8 +3780,17 @@ index 04540f5af..687f45fee 100644
  	int		oerrno;
  	Catalog_t*	cp = NULL;
  	Message_t*	mp;
+@@ -310,7 +310,7 @@ translate(const char* loc, const char* cmd, const char* cat, const char* msg)
+ 
+ 	if (!cmd && !cat)
+ 		goto done;
+-	if (cmd && (t = strrchr(cmd, '/')))
++	if (cmd && (t = (char*)strrchr(cmd, '/')))
+ 		cmd = (const char*)(t + 1);
+ 
+ 	/*
 diff --git a/src/lib/libast/port/astconf.c b/src/lib/libast/port/astconf.c
-index f42ed0a23..92dcdf63e 100644
+index f42ed0a23..a8b26bb44 100644
 --- a/src/lib/libast/port/astconf.c
 +++ b/src/lib/libast/port/astconf.c
 @@ -94,7 +94,7 @@ typedef struct Feature_s
@@ -3879,7 +3911,19 @@ index f42ed0a23..92dcdf63e 100644
  								sfputc(tmp, '/');
  								sfputr(tmp, command, 0);
  								if ((d = sfstruse(tmp)) && !eaccess(d, X_OK))
-@@ -624,7 +624,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+@@ -615,8 +615,10 @@ static char*
+ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, Error_f conferror)
+ {
+ 	Feature_t*		sp;
+-	int			n;
+ 	static struct utsname	uts;
++#ifdef UNIV_MAX
++	int			n;
++#endif
+ 
+ #if DEBUG_astconf
+ 	error(-6, "astconf format name=%s path=%s value=%s flags=%04x fp=%p%s", fp->name, path, value, flags, fp, state.synthesizing ? " SYNTHESIZING" : "");
+@@ -624,7 +626,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  	NOT_USED(flags);
  #endif
  	if (value)
@@ -3888,7 +3932,7 @@ index f42ed0a23..92dcdf63e 100644
  	else if (fp->flags & CONF_GLOBAL)
  		return fp->value;
  	switch (fp->op)
-@@ -712,10 +712,11 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+@@ -712,10 +714,11 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  		{
  			if (state.synthesizing)
  			{
@@ -3902,7 +3946,7 @@ index f42ed0a23..92dcdf63e 100644
  				{
  					if (conferror)
  						(*conferror)(&state, &state, 2, "%s: out of memory", value);
-@@ -724,8 +725,8 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+@@ -724,8 +727,8 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  				else
  				{
  					fp->flags |= CONF_ALLOC;
@@ -3913,7 +3957,7 @@ index f42ed0a23..92dcdf63e 100644
  				}
  			}
  			else
-@@ -759,7 +760,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+@@ -759,7 +762,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  static char*
  feature(Feature_t* fp, const char* name, const char* path, const char* value, unsigned int flags, Error_f conferror)
  {
@@ -3922,7 +3966,7 @@ index f42ed0a23..92dcdf63e 100644
  
  	if (value && (streq(value, "-") || streq(value, "0")))
  		value = null;
-@@ -784,7 +785,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
+@@ -784,7 +787,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
  		fp->op = -1;
  		fp->name = (const char*)fp + sizeof(Feature_t);
  		strcpy((char*)fp->name, name);
@@ -3931,7 +3975,7 @@ index f42ed0a23..92dcdf63e 100644
  		fp->std = &null[0];
  		fp->next = state.features;
  		state.features = fp;
-@@ -830,7 +831,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
+@@ -830,7 +833,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
  		name++;
   again:
  	for (p = prefix; p < &prefix[prefix_elements]; p++)
@@ -3940,7 +3984,7 @@ index f42ed0a23..92dcdf63e 100644
  		{
  			if (p->call < 0)
  			{
-@@ -934,7 +935,7 @@ fmtlower(const char* s)
+@@ -934,7 +937,7 @@ fmtlower(const char* s)
  	{
  		if (isupper(c))
  			c = tolower(c);
@@ -3949,7 +3993,7 @@ index f42ed0a23..92dcdf63e 100644
  	}
  	*t = 0;
  	return b;
-@@ -956,7 +957,6 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -956,7 +959,6 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  	char*		f;
  	const char*	s;
  	int		i;
@@ -3957,7 +4001,7 @@ index f42ed0a23..92dcdf63e 100644
  	int		olderrno;
  	int		drop;
  	int		defined;
-@@ -1040,7 +1040,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1040,7 +1042,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  	case CONF_confstr:
  		call = "confstr";
  #if _lib_confstr
@@ -3966,7 +4010,7 @@ index f42ed0a23..92dcdf63e 100644
  		{
  			defined = 0;
  			v = -1;
-@@ -1101,7 +1101,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1101,7 +1103,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  		{
  			if (streq(p->name, "RELEASE") && (i = open("/proc/version", O_RDONLY|O_cloexec)) >= 0)
  			{
@@ -3975,7 +4019,7 @@ index f42ed0a23..92dcdf63e 100644
  				ast_close(i);
  				if (n > 0 && buf[n - 1] == '\n')
  					n--;
-@@ -1146,7 +1146,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1146,7 +1148,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  			s = p->limit.string;
  			break;
  		}
@@ -3984,7 +4028,7 @@ index f42ed0a23..92dcdf63e 100644
  		v = -1;
  		errno = EINVAL;
  		defined = 0;
-@@ -1157,10 +1157,10 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1157,10 +1159,10 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  		if (!errno)
  		{
  			if ((p->flags & CONF_FEATURE) || !(p->flags & (CONF_LIMIT|CONF_MINMAX)))
@@ -3997,7 +4041,7 @@ index f42ed0a23..92dcdf63e 100644
  		else if (errno != EINVAL || !i)
  		{
  			if (!sp)
-@@ -1176,7 +1176,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1176,7 +1178,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  			}
  			else
  			{
@@ -4006,7 +4050,7 @@ index f42ed0a23..92dcdf63e 100644
  				flags |= CONF_ERROR;
  			}
  		}
-@@ -1310,7 +1310,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1310,7 +1312,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  	if (!(listflags & ~(ASTCONF_error|ASTCONF_system)))
  		for (fp = state.features; fp; fp = fp->next)
  			if (streq(name, fp->name))
@@ -4015,7 +4059,7 @@ index f42ed0a23..92dcdf63e 100644
  	return (listflags & ASTCONF_error) ? NULL : null;
  }
  
-@@ -1336,7 +1336,7 @@ nativeconf(Proc_t** pp, const char* operand)
+@@ -1336,7 +1338,7 @@ nativeconf(Proc_t** pp, const char* operand)
  	ops[1] = 0;
  	if (*pp = procopen(_pth_getconf, cmd, environ, ops, PROC_READ))
  	{
@@ -4024,7 +4068,7 @@ index f42ed0a23..92dcdf63e 100644
  		{
  			sfdisc(sp, SFIO_POPDISC);
  			return sp;
-@@ -1371,7 +1371,7 @@ char*
+@@ -1371,7 +1373,7 @@ char*
  astgetconf(const char* name, const char* path, const char* value, int flags, Error_f conferror)
  {
  	char*		s;
@@ -4033,7 +4077,7 @@ index f42ed0a23..92dcdf63e 100644
  	Lookup_t	look;
  	Sfio_t*		tmp;
  
-@@ -1401,9 +1401,9 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1401,9 +1403,9 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  	INITIALIZE();
  	if (!path)
  		path = root;
@@ -4045,7 +4089,7 @@ index f42ed0a23..92dcdf63e 100644
  	{
  		if (value)
  		{
-@@ -1444,7 +1444,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1444,7 +1446,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  
  			strcpy(altname, name);
  			altname[n - 3] = 0;
@@ -4054,7 +4098,7 @@ index f42ed0a23..92dcdf63e 100644
  			{
  				if (value)
  				{
-@@ -1457,7 +1457,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1457,7 +1459,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  			}
  			for (s = altname; *s; s++)
  				if (isupper(*s))
@@ -4063,7 +4107,7 @@ index f42ed0a23..92dcdf63e 100644
  			if (tmp = sfstropen())
  			{
  				for (n = 0; n < elementsof(dirs); n++)
-@@ -1476,7 +1476,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1476,7 +1478,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  			}
  		}
  	}
@@ -4072,7 +4116,7 @@ index f42ed0a23..92dcdf63e 100644
  		return s;
  	errno = EINVAL;
  	if (conferror && !(flags & ASTCONF_system))
-@@ -1592,7 +1592,7 @@ astconflist(Sfio_t* sp, const char* path, int flags, const char* pattern)
+@@ -1592,7 +1594,7 @@ astconflist(Sfio_t* sp, const char* path, int flags, const char* pattern)
  				for (s = f; *s && *s != '=' && *s != ':' && !isspace(*s); s++);
  				if (*s)
  					for (*s++ = 0; isspace(*s); s++);

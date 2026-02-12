@@ -1,6 +1,6 @@
-From 0a7b5f178bdaba4209cf6e03159146c3e1f2fc1d Mon Sep 17 00:00:00 2001
+From 4f798287b134f6e163f563769e3cc099e6067e4e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 02:46:07 -0800
+Date: Wed, 11 Feb 2026 21:12:01 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -18,16 +18,16 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,201 => 1,045 => 62 (progression from part 7 => part 8 => part 13)
+1,204 => 1,048 => 62 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/INIT/mamake.c        | 62 ++++++++++++++++++------------------
- src/cmd/builtin/features/pty |  2 ++
+ src/cmd/builtin/features/pty |  4 ++-
  src/cmd/builtin/pty.c        | 62 ++++++++++++++++++------------------
- src/lib/libdll/dll_lib.c     | 12 ++++---
+ src/lib/libdll/dll_lib.c     | 14 ++++----
  src/lib/libdll/dllopen.c     | 58 +--------------------------------
- src/lib/libdll/dllscan.c     | 40 +++++++++++------------
+ src/lib/libdll/dllscan.c     | 44 ++++++++++++-------------
  src/lib/libsum/sum-ast4.c    |  4 +--
  src/lib/libsum/sum-crc.c     | 29 +++++++++--------
  src/lib/libsum/sum-lmd.c     |  6 ++--
@@ -36,7 +36,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libsum/sum-sha1.c    |  4 +--
  src/lib/libsum/sum-sha2.c    |  2 +-
  src/lib/libsum/sumlib.c      | 14 ++++----
- 14 files changed, 132 insertions(+), 182 deletions(-)
+ 14 files changed, 136 insertions(+), 186 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
 index b6423b98e..2210c9f38 100644
@@ -305,7 +305,7 @@ index b6423b98e..2210c9f38 100644
  			}
  		}
 diff --git a/src/cmd/builtin/features/pty b/src/cmd/builtin/features/pty
-index 73a44e473..55a83e148 100644
+index 73a44e473..335f0d650 100644
 --- a/src/cmd/builtin/features/pty
 +++ b/src/cmd/builtin/features/pty
 @@ -11,6 +11,8 @@ lib	openpty,_getpty,ptsname -lutil
@@ -316,6 +316,15 @@ index 73a44e473..55a83e148 100644
 +
  tst output{
  	#include	<fcntl.h>
+ 	#if _lib_ptsname
+@@ -22,7 +24,7 @@ tst output{
+ 	#include	<sfio.h>
+ 	int main(void)
+ 	{
+-		int		i;
++		size_t		i;
+ 		struct stat	statb;
+ 		static char*	pty[] = { "/dev/ptyp0000", "/dev/ptym/ptyp0", "/dev/ptyp0" };
  	#if _lib_ptsname
 diff --git a/src/cmd/builtin/pty.c b/src/cmd/builtin/pty.c
 index 5944a3071..7824af3c7 100644
@@ -551,7 +560,7 @@ index 5944a3071..7824af3c7 100644
  		ap->argv = (char**)(ap + 1);
  		ap->args = (char*)(ap->argv + n + 2);
 diff --git a/src/lib/libdll/dll_lib.c b/src/lib/libdll/dll_lib.c
-index 172c0fb79..8e835803c 100644
+index 172c0fb79..bac33c412 100644
 --- a/src/lib/libdll/dll_lib.c
 +++ b/src/lib/libdll/dll_lib.c
 @@ -2,7 +2,7 @@
@@ -571,6 +580,15 @@ index 172c0fb79..8e835803c 100644
  *                                                                      *
  ***********************************************************************/
  /*
+@@ -59,7 +60,7 @@ dllnames(const char* id, const char* name, Dllnames_t* names)
+ 	 * determine the base name
+ 	 */
+ 
+-	if ((s = strrchr(name, '/')) || (s = strrchr(name, '\\')))
++	if ((s = (char*)strrchr(name, '/')) || (s = (char*)strrchr(name, '\\')))
+ 		s++;
+ 	else
+ 		s = (char*)name;
 @@ -108,7 +109,7 @@ dll_lib(Dllnames_t* names, unsigned long version, Dllerror_f dllerrorf, void* di
  	void*			dll;
  	Dll_lib_t*		lib;
@@ -685,7 +703,7 @@ index 6003c592c..d7f980db9 100644
 -
 -#endif
 diff --git a/src/lib/libdll/dllscan.c b/src/lib/libdll/dllscan.c
-index d4ff7b598..08f1c01b0 100644
+index d4ff7b598..0c8dccb28 100644
 --- a/src/lib/libdll/dllscan.c
 +++ b/src/lib/libdll/dllscan.c
 @@ -2,7 +2,7 @@
@@ -780,9 +798,21 @@ index d4ff7b598..08f1c01b0 100644
  	char		buf[32];
  
  	if (!(vm = vmopen()))
-@@ -263,9 +263,9 @@ dllsopen(const char* lib, const char* name, const char* version)
+@@ -229,7 +229,7 @@ dllsopen(const char* lib, const char* name, const char* version)
+ 		 * grab the local part of the library ID
+ 		 */
+ 
+-		if (s = strrchr(lib, ':'))
++		if (s = (char*)strrchr(lib, ':'))
+ 			lib = (const char*)(s + 1);
+ 		i = 2 * sizeof(char**) + strlen(lib) + 5;
  	}
- 	else if (t = strrchr(name, '/'))
+@@ -261,11 +261,11 @@ dllsopen(const char* lib, const char* name, const char* version)
+ 		name = (const char*)"?*";
+ 		scan->flags |= DLL_MATCH_NAME;
+ 	}
+-	else if (t = strrchr(name, '/'))
++	else if (t = (char*)strrchr(name, '/'))
  	{
 -		if (!(scan->pb = vmnewof(vm, 0, char, t - (char*)name, 2)))
 +		if (!(scan->pb = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 2)))
