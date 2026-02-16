@@ -32,12 +32,12 @@
 #   endif
 #endif /* !SHOPT_SPAWN */
 
-#define PATH_PATH		0001
-#define PATH_FPATH		0002
-#define PATH_CDPATH		0004
-#define PATH_BFPATH		0010
-#define PATH_SKIP		0020
-#define PATH_STD_DIR		0100	/* directory is on  $(getconf PATH) */
+#define PATH_PATH		0001U
+#define PATH_FPATH		0002U
+#define PATH_CDPATH		0004U
+#define PATH_BFPATH		0010U
+#define PATH_SKIP		0020U
+#define PATH_STD_DIR		0100U	/* directory is on  $(getconf PATH) */
 
 #define PATH_OFFSET	2		/* path offset for path_join */
 #define MAXDEPTH	1024		/* maximum shell function recursion depth */
@@ -57,7 +57,7 @@ typedef struct pathcomp
 	char		*bbuf;
 	char		*blib;
 	size_t		len;
-	unsigned short	flags;
+	uint16_t	flags;
 } Pathcomp_t;
 
 #ifndef ARG_RAW
@@ -68,7 +68,7 @@ typedef struct pathcomp
 extern void		path_newdir(Pathcomp_t*);
 extern Pathcomp_t	*path_dirfind(Pathcomp_t*,const char*,int);
 extern Pathcomp_t	*path_unsetfpath(void);
-extern Pathcomp_t	*path_addpath(Pathcomp_t*,const char*,int);
+extern Pathcomp_t	*path_addpath(Pathcomp_t*,const char*,uint16_t);
 extern Pathcomp_t	*path_dup(Pathcomp_t*);
 extern void		path_delete(Pathcomp_t*);
 extern void 		path_settrackedalias(const char*,Pathcomp_t*);

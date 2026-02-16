@@ -1456,7 +1456,7 @@ static noreturn void exscript(char *path,char *argv[])
  * add a path component to the path search list and eliminate duplicates
  * and non-existing absolute paths.
  */
-static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, int flag)
+static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, uint16_t flag)
 {
 	Pathcomp_t *pp, *oldpp;
 	ptrdiff_t offset=stktell(sh.stk);
@@ -1591,7 +1591,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 }
 
 
-Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
+Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,uint16_t type)
 {
 	const char *cp;
 	Pathcomp_t *old=0;
