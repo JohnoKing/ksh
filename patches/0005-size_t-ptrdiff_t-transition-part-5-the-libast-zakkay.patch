@@ -1,6 +1,6 @@
-From e047f9987efeda5ce5eeec46c2701adad369f3f6 Mon Sep 17 00:00:00 2001
+From c7c96318de25da3d89fe54ea7d9ce4c397482cd6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:09:44 -0800
+Date: Sun, 15 Feb 2026 22:49:33 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -27,13 +27,12 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,493 => 1,985 => 62 (progression from part 4 => part 5 => part 13)
+2,493 => 1,985 => 60 (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/comp/arc4random.c  |   2 +-
  src/lib/libast/comp/assert.c      |   5 +-
- src/lib/libast/comp/conf.tab      |   2 +-
  src/lib/libast/comp/eaccess.c     |   4 +-
  src/lib/libast/comp/fmtmsglib.c   |  29 ++---
  src/lib/libast/comp/fnmatch.c     |  22 ++--
@@ -61,7 +60,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/misc/fts.c         |  24 ++--
  src/lib/libast/misc/ftwalk.c      |  13 +-
  src/lib/libast/misc/getcwd.c      |  21 ++--
- src/lib/libast/misc/glob.c        |  48 ++++----
+ src/lib/libast/misc/glob.c        |  46 +++----
  src/lib/libast/misc/optesc.c      |  13 +-
  src/lib/libast/misc/optget.c      | 194 +++++++++++++++---------------
  src/lib/libast/misc/procopen.c    |  26 ++--
@@ -79,7 +78,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 48 files changed, 670 insertions(+), 650 deletions(-)
+ 47 files changed, 668 insertions(+), 648 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -122,19 +121,6 @@ index d5e924998..48f1f293e 100644
  {
  #if _has___func__ || _has___FUNCTION__
  	sfprintf(sfstderr,"\n*** assertion %s failed in %s(), %s:%d\n", a, fun, file, line);
-diff --git a/src/lib/libast/comp/conf.tab b/src/lib/libast/comp/conf.tab
-index 413ac3222..70dd876c8 100644
---- a/src/lib/libast/comp/conf.tab
-+++ b/src/lib/libast/comp/conf.tab
-@@ -1,7 +1,7 @@
- #
- # posix { getconf limits } macro table
- #
--# @(#)conf.tab (ksh 93u+m) 2025-04-11
-+# @(#)conf.tab (ksh 93u+m) 2024-07-01
- #
- # name standard call section flags [ header ... ] [ value ... ]
- #
 diff --git a/src/lib/libast/comp/eaccess.c b/src/lib/libast/comp/eaccess.c
 index 3690ed580..edd60112c 100644
 --- a/src/lib/libast/comp/eaccess.c
@@ -932,10 +918,10 @@ index 15ac109ab..25cad61d2 100644
  	for (i = 0; i < elementsof(convertvars); i++)
  	{
 diff --git a/src/lib/libast/comp/setlocale.c b/src/lib/libast/comp/setlocale.c
-index bcf5991ff..ae2653e96 100644
+index c7f3033f0..32d1257e2 100644
 --- a/src/lib/libast/comp/setlocale.c
 +++ b/src/lib/libast/comp/setlocale.c
-@@ -202,7 +202,7 @@ debug_mbtowc(wchar_t* p, const char* s, size_t n)
+@@ -220,7 +220,7 @@ debug_mbtowc(wchar_t* p, const char* s, size_t n)
  		return -1;
  	if ((w = ((unsigned char*)s)[1]) < '0' || w > ('0' + DX))
  		goto single;
@@ -944,7 +930,7 @@ index bcf5991ff..ae2653e96 100644
  		return -1;
  	r = s + w - 1;
  	q = s += 2;
-@@ -237,7 +237,7 @@ debug_wctomb(char* s, wchar_t c)
+@@ -255,7 +255,7 @@ debug_wctomb(char* s, wchar_t c)
  	{
  		w++;
  		if (s)
@@ -953,7 +939,7 @@ index bcf5991ff..ae2653e96 100644
  	}
  	else if ((i = c & ((1<<DZ)-1)) > DX)
  		return -1;
-@@ -249,12 +249,12 @@ debug_wctomb(char* s, wchar_t c)
+@@ -267,12 +267,12 @@ debug_wctomb(char* s, wchar_t c)
  		c >>= DZ;
  		w++;
  		if (s)
@@ -968,7 +954,7 @@ index bcf5991ff..ae2653e96 100644
  			c >>= DC;
  		}
  		w++;
-@@ -315,7 +315,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
+@@ -333,7 +333,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
  				{
  					for (q = s + 2; q < r; q++)
  						if (t < e)
@@ -977,7 +963,7 @@ index bcf5991ff..ae2653e96 100644
  					while (w++ < DX)
  						if (t < e)
  							*t++ = 1;
-@@ -330,9 +330,9 @@ debug_strxfrm(char* t, const char* s, size_t n)
+@@ -348,9 +348,9 @@ debug_strxfrm(char* t, const char* s, size_t n)
  			if (t)
  			{
  				if (t < e)
@@ -989,7 +975,7 @@ index bcf5991ff..ae2653e96 100644
  				if (t < e)
  					*t++ = 1;
  				if (t < e)
-@@ -347,11 +347,11 @@ debug_strxfrm(char* t, const char* s, size_t n)
+@@ -365,11 +365,11 @@ debug_strxfrm(char* t, const char* s, size_t n)
  			if (t)
  			{
  				if (t < e)
@@ -1004,7 +990,7 @@ index bcf5991ff..ae2653e96 100644
  				if (t < e)
  					*t++ = 1;
  			}
-@@ -362,7 +362,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
+@@ -380,7 +380,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
  		if (t)
  		{
  			if (t < e)
@@ -1013,7 +999,7 @@ index bcf5991ff..ae2653e96 100644
  			if (t < e)
  				*t++ = 1;
  			if (t < e)
-@@ -377,7 +377,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
+@@ -395,7 +395,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
  		return z;
  	if (t < e)
  		*t = 0;
@@ -1022,7 +1008,7 @@ index bcf5991ff..ae2653e96 100644
  }
  
  static int
-@@ -464,7 +464,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
+@@ -476,7 +476,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
  		*p = *s;
  		return 1;
  	}
@@ -1031,7 +1017,7 @@ index bcf5991ff..ae2653e96 100644
  }
  
  #else
-@@ -476,7 +476,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
+@@ -488,7 +488,7 @@ sjis_mbtowc(wchar_t* p, const char* s, size_t n)
  static int
  utf8_wctomb(char* u, wchar_t w)
  {
@@ -1040,7 +1026,7 @@ index bcf5991ff..ae2653e96 100644
  }
  
  static const uint32_t		utf8mask[] =
-@@ -515,7 +515,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
+@@ -527,7 +527,7 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
  {
  	unsigned char*	sp = (unsigned char*)str;
  	size_t		m;
@@ -1049,7 +1035,7 @@ index bcf5991ff..ae2653e96 100644
  	int		c;
  	wchar_t		w = 0;
  
-@@ -540,17 +540,17 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
+@@ -552,17 +552,17 @@ utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
  					goto invalid;
  				w = (w<<6) | (c&0x3f);
  			}
@@ -1070,7 +1056,7 @@ index bcf5991ff..ae2653e96 100644
  	return -1;
  }
  
-@@ -2444,7 +2444,7 @@ single(int category, Lc_t* lc, unsigned int flags)
+@@ -2456,7 +2456,7 @@ single(int category, Lc_t* lc, unsigned int flags)
  			return NULL;
  		}
  		if ((lc->flags & LC_default) || category == AST_LC_MESSAGES && lc->name[0] == 'e' && lc->name[1] == 'n' && (lc->name[2] == 0 || lc->name[2] == '_' && lc->name[3] == 'U'))
@@ -1079,7 +1065,7 @@ index bcf5991ff..ae2653e96 100644
  		else
  			ast.locale.set |= (1<<category);
  	}
-@@ -2502,15 +2502,15 @@ single(int category, Lc_t* lc, unsigned int flags)
+@@ -2514,15 +2514,15 @@ single(int category, Lc_t* lc, unsigned int flags)
   * return <0:composite-error 0:not-composite >0:composite-ok
   */
  
@@ -1101,7 +1087,7 @@ index bcf5991ff..ae2653e96 100644
  	const char*	w;
  	Lc_t*		p;
  	int		cat[AST_LC_COUNT];
-@@ -2530,11 +2530,10 @@ composite(const char* s, int initialize)
+@@ -2542,11 +2542,10 @@ composite(const char* s, int initialize)
  			while (*t && *s++ == *t++);
  			if (!*t && *s++ == '=')
  			{
@@ -1114,7 +1100,7 @@ index bcf5991ff..ae2653e96 100644
  			}
  		}
  		for (s = w; *s && *s != '='; s++);
-@@ -2542,7 +2541,7 @@ composite(const char* s, int initialize)
+@@ -2554,7 +2553,7 @@ composite(const char* s, int initialize)
  		{
  			for (i = 0; i < k; i++)
  				single(stk[i], NULL, 0);
@@ -1123,7 +1109,7 @@ index bcf5991ff..ae2653e96 100644
  		}
  		w = ++s;
  		for (;;)
-@@ -2554,7 +2553,7 @@ composite(const char* s, int initialize)
+@@ -2566,7 +2565,7 @@ composite(const char* s, int initialize)
  			}
  			else if (*s++ == ';')
  			{
@@ -1132,7 +1118,7 @@ index bcf5991ff..ae2653e96 100644
  					m = sizeof(buf) - 1;
  				memcpy(buf, w, m);
  				buf[m] = 0;
-@@ -2569,7 +2568,7 @@ composite(const char* s, int initialize)
+@@ -2581,7 +2580,7 @@ composite(const char* s, int initialize)
  				{
  					for (i = 0; i < k; i++)
  						single(stk[i], NULL, 0);
@@ -1141,7 +1127,7 @@ index bcf5991ff..ae2653e96 100644
  				}
  				stk[k++] = cat[i];
  			}
-@@ -2584,7 +2583,7 @@ composite(const char* s, int initialize)
+@@ -2596,7 +2595,7 @@ composite(const char* s, int initialize)
  			p = lcmake(w);
  		else
  		{
@@ -1150,7 +1136,7 @@ index bcf5991ff..ae2653e96 100644
  				j = sizeof(buf) - 1;
  			memcpy(buf, w, j);
  			buf[j] = 0;
-@@ -2592,11 +2591,11 @@ composite(const char* s, int initialize)
+@@ -2604,11 +2603,11 @@ composite(const char* s, int initialize)
  		}
  		if (!initialize)
  		{
@@ -1165,7 +1151,7 @@ index bcf5991ff..ae2653e96 100644
  			}
  		}
  		else if (!lc_categories[n].prev && !(ast.locale.set & AST_LC_internal))
-@@ -2623,7 +2622,7 @@ _ast_setlocale(int category, const char* locale)
+@@ -2635,7 +2634,7 @@ _ast_setlocale(int category, const char* locale)
  	int			i;
  	int			j;
  	int			k;
@@ -1174,7 +1160,7 @@ index bcf5991ff..ae2653e96 100644
  	Lc_t*			p;
  	int			cat[AST_LC_COUNT];
  
-@@ -2777,7 +2776,7 @@ _ast_setlocale(int category, const char* locale)
+@@ -2789,7 +2788,7 @@ _ast_setlocale(int category, const char* locale)
  			lc_categories[category].prev = p;
  		return (char*)locales[category]->name;
  	}
@@ -2544,18 +2530,9 @@ index aa3af5cb5..0dc3c9680 100644
  			while (p > buf + len - 1 - x) *--p = *--s;
  		}
 diff --git a/src/lib/libast/misc/glob.c b/src/lib/libast/misc/glob.c
-index 88a8523f9..3e97fc445 100644
+index 98868b49d..653cb00aa 100644
 --- a/src/lib/libast/misc/glob.c
 +++ b/src/lib/libast/misc/glob.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -60,7 +60,7 @@ typedef int (*GL_stat_f)(const char*, struct stat*);
  	globlist_t*	gl_rescan; \
  	globlist_t*	gl_match; \
@@ -2676,8 +2653,8 @@ index 88a8523f9..3e97fc445 100644
  		*argv = 0;
  		if (!(flags & GLOB_NOSORT) && (argv - av) > 1)
  		{
--			strsort(av, argv - av, strcoll);
-+			strsort(av, (int)(argv - av), strcoll);
+-			strsort(av, argv - av, ast.locale.collate);
++			strsort(av, (int)(argv - av), ast.locale.collate);
  			if (gp->gl_starstar > 1)
 -				av[gp->gl_pathc = struniq(av, argv - av)] = 0;
 +				av[gp->gl_pathc = (size_t)struniq(av, (int)(argv - av))] = 0;
@@ -3790,7 +3767,7 @@ index 04540f5af..4d1bc18f2 100644
  
  	/*
 diff --git a/src/lib/libast/port/astconf.c b/src/lib/libast/port/astconf.c
-index f42ed0a23..a8b26bb44 100644
+index f42ed0a23..7fb10639c 100644
 --- a/src/lib/libast/port/astconf.c
 +++ b/src/lib/libast/port/astconf.c
 @@ -94,7 +94,7 @@ typedef struct Feature_s
@@ -3880,7 +3857,7 @@ index f42ed0a23..a8b26bb44 100644
  	if (n == 1 && (*value == '0' || *value == '-'))
  		n = 0;
 -	if(!(newvalue = malloc(n + 1)))
-+	if(!(newvalue = malloc((size_t)n + 1)))
++	if(!(newvalue = malloc((size_t)(n + 1))))
  	{
  		if(fp->value && fp->value != null)
  			free(fp->value);

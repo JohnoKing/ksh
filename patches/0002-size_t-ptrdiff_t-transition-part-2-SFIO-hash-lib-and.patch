@@ -1,6 +1,6 @@
-From 0f9029b42a07273b7366c3fb8b65a98e5b200d8d Mon Sep 17 00:00:00 2001
+From 2b645d434430194581b92ec04fb0d36d6883c84a Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:07:29 -0800
+Date: Sun, 15 Feb 2026 22:47:01 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -39,7 +39,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,866 => 3,182 => 62 (progression from part 1 => part 2 => part 13)
+3,853 => 3,182 => 60 (progression from part 1 => part 2 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -116,7 +116,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfrd.c         |  33 +++----
  src/lib/libast/sfio/sfread.c       |  41 ++++----
  src/lib/libast/sfio/sfreserve.c    |   9 +-
- src/lib/libast/sfio/sfresize.c     |  13 +--
+ src/lib/libast/sfio/sfresize.c     |  15 +--
  src/lib/libast/sfio/sfscanf.c      |   5 +-
  src/lib/libast/sfio/sfseek.c       |  17 ++--
  src/lib/libast/sfio/sfsetbuf.c     |  52 ++++++-----
@@ -169,7 +169,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++--------
  src/lib/libast/string/strmode.c    |  11 ++-
  src/lib/libast/string/strperm.c    |  16 ++--
- 126 files changed, 1039 insertions(+), 962 deletions(-)
+ 126 files changed, 1040 insertions(+), 963 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
 index 346f55960..e28e9d7d7 100644
@@ -1090,7 +1090,7 @@ index b0d0336ca..c489e8847 100644
  	return c & 0xffffffff;
  #else
 diff --git a/src/lib/libast/include/ast.h b/src/lib/libast/include/ast.h
-index 8c41f716d..163296d24 100644
+index 453a5f785..9b65d3009 100644
 --- a/src/lib/libast/include/ast.h
 +++ b/src/lib/libast/include/ast.h
 @@ -156,6 +156,11 @@
@@ -1113,25 +1113,25 @@ index 8c41f716d..163296d24 100644
  
  /*
   * fmtquote() flags
-@@ -217,7 +221,7 @@
+@@ -216,7 +220,7 @@
  			( (p+=ast.mb.tmp_i),ast.mb.tmp_w) : (p+=ast.mb.sync+1,ast.mb.tmp_i) ) : (*(unsigned char*)(p++)) )
  #define mbsize(p)	mbnsize(p, mbmax())
  #define mbnsize(p,n)	( mbwide() ? (*ast.mb.len)((char*)(p), n) : ((p), 1) )
 -#define mbconv(s,w)	( ast.mb.conv ? (*ast.mb.conv)(s,w) : ((*(s)=(w)), 1) )
 +#define mbconv(s,w)	( ast.mb.conv ? (*ast.mb.conv)(s,w) : ((*(s)=(char)(w)), 1) )
  #define mbwidth(w)	( ast.mb.width ? (*ast.mb.width)(w) : (w >= 0 && w <= 255 && !iscntrl(w) ? 1 : -1) )
- #define mbxfrm(t,f,n)	( mbcoll() ? (*ast.mb.xfrm)((char*)(t), (char*)(f), n) : 0 )
  #define mbalpha(w)	( ast.mb.alpha ? (*ast.mb.alpha)(w) : isalpha((w) & 0xff) )
-@@ -235,7 +239,7 @@
+ 
+@@ -232,7 +236,7 @@
  #define mbnchar(p,n)	mbchar(p)
  #define mbsize(p)	1
  #define mbnsize(p,n)	1
 -#define mbconv(s,w)	( (*(s)=(w)), 1 )
 +#define mbconv(s,w)	( (*(s)=(char)(w)), 1 )
  #define mbwidth(w)	( w >= 0 && w <= 255 && !iscntrl(w) ? 1 : -1 )
- #define mbxfrm(t,f,n)	0
  #define mbalpha(w)	( isalpha((w) & 0xff) )
-@@ -254,7 +258,6 @@
+ 
+@@ -250,7 +254,6 @@
  #define oldof(p,t,n,x)	((p)?(t*)realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)malloc(sizeof(t)*(n)+(x)))
  #define pointerof(x)	((void*)((uintptr_t)(x)))
  #define roundof(x,y)	(((x)+(y)-1)&~((y)-1))
@@ -1139,7 +1139,7 @@ index 8c41f716d..163296d24 100644
  
  #define streq(a,b)	(!strcmp(a,b))
  #define strneq(a,b,n)	(!strncmp(a,b,n))
-@@ -322,7 +325,7 @@ extern char*		conformance(const char*, size_t);
+@@ -318,7 +321,7 @@ extern char*		conformance(const char*, size_t);
  extern char*		getcodeset(void);
  extern char*		fmtbuf(size_t);
  extern char*		fmtclock(Sfulong_t);
@@ -1148,7 +1148,7 @@ index 8c41f716d..163296d24 100644
  extern char*		fmtesc(const char*);
  extern char*		fmtesq(const char*, const char*);
  extern char*		fmtident(const char*);
-@@ -331,18 +334,18 @@ extern char*		fmtfmt(const char*);
+@@ -327,18 +330,18 @@ extern char*		fmtfmt(const char*);
  extern char*		fmtgid(int);
  extern char*		fmtint(intmax_t, int);
  extern char*		fmtmatch(const char*);
@@ -1171,7 +1171,7 @@ index 8c41f716d..163296d24 100644
  extern unsigned long	memsum(const void*, int, unsigned long);
  extern char*		pathaccess(char*, const char*, const char*, const char*, int);
  extern char*		pathaccess_20100601(const char*, const char*, const char*, int, char*, size_t);
-@@ -354,7 +357,7 @@ extern char*		pathcat_20100601(const char*, int, const char*, const char*, char*
+@@ -350,7 +353,7 @@ extern char*		pathcat_20100601(const char*, int, const char*, const char*, char*
  extern int		pathcd(const char*, const char*);
  extern int		pathexists(char*, int);
  extern char*		pathfind(const char*, const char*, const char*, char*, size_t);
@@ -1180,7 +1180,7 @@ index 8c41f716d..163296d24 100644
  extern int		pathicase(const char*);
  extern int		pathinclude(const char*);
  extern size_t		pathnative(const char*, char*, size_t);
-@@ -376,12 +379,12 @@ extern int		strexp(char*, int);
+@@ -372,12 +375,12 @@ extern int		strexp(char*, int);
  extern long		streval(const char*, char**, long(*)(const char*, char**));
  extern long		strexpr(const char*, char**, long(*)(const char*, char**, void*), void*);
  extern int		strgid(const char*);
@@ -1198,7 +1198,7 @@ index 8c41f716d..163296d24 100644
  extern int		strnacmp(const char*, const char*, size_t);
  extern char*		strncopy(char*, const char*, size_t);
  extern int		strnpcmp(const char*, const char*, size_t);
-@@ -396,11 +399,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
+@@ -392,11 +395,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
  extern int		strnvcmp(const char*, const char*, size_t);
  extern int		stropt(const char*, const void*, int, int(*)(void*, const void*, int, const char*), void*);
  extern int		strpcmp(const char*, const char*);
@@ -3748,7 +3748,7 @@ index 5e877dbeb..4bbdcbb30 100644
  	char*		av[4];
  
 diff --git a/src/lib/libast/sfio/sfprintf.c b/src/lib/libast/sfio/sfprintf.c
-index 2fa6633b8..8ab2f337b 100644
+index 2fa6633b8..08b5b958b 100644
 --- a/src/lib/libast/sfio/sfprintf.c
 +++ b/src/lib/libast/sfio/sfprintf.c
 @@ -2,7 +2,7 @@
@@ -3798,7 +3798,7 @@ index 2fa6633b8..8ab2f337b 100644
  		return -1;
  	if(s && n > 0)
 -	{	if((rv+1) >= n)
-+	{	if(((size_t)rv+1) >= n)
++	{	if((size_t)(rv+1) >= n)
  			n--;
  		else
 -			n = rv;
@@ -4421,7 +4421,7 @@ index 8eef92193..0eaf07ad3 100644
  		else	rsrv->slen = -n;
  	}
 diff --git a/src/lib/libast/sfio/sfresize.c b/src/lib/libast/sfio/sfresize.c
-index 5ba081c92..c27706a64 100644
+index 5ba081c92..3718e746f 100644
 --- a/src/lib/libast/sfio/sfresize.c
 +++ b/src/lib/libast/sfio/sfresize.c
 @@ -2,7 +2,7 @@
@@ -4441,9 +4441,12 @@ index 5ba081c92..c27706a64 100644
  *                                                                      *
  ***********************************************************************/
  #include	"sfhdr.h"
-@@ -38,18 +39,18 @@ int sfresize(Sfio_t* f, Sfoff_t size)
+@@ -36,20 +37,20 @@ int sfresize(Sfio_t* f, Sfoff_t size)
+ 
+ 		if(f->extent >= size)
  		{	if((f->flags&SFIO_MALLOC) && (f->next - f->data) <= size)
- 			{	size_t	s = (((size_t)size + 1023)/1024)*1024;
+-			{	size_t	s = (((size_t)size + 1023)/1024)*1024;
++			{	size_t	s = ((size_t)(size + 1023)/1024)*1024;
  				void*	d;
 -				if(s < f->size && (d = realloc(f->data, s)) )
 +				if(s < (size_t)f->size && (d = realloc(f->data, s)) )
@@ -4939,7 +4942,7 @@ index 7f41f8e0b..af129dca9 100644
  		}
  
 diff --git a/src/lib/libast/sfio/sftable.c b/src/lib/libast/sfio/sftable.c
-index 29c9eb1f2..c87ead9d6 100644
+index 29c9eb1f2..e8c061466 100644
 --- a/src/lib/libast/sfio/sftable.c
 +++ b/src/lib/libast/sfio/sftable.c
 @@ -2,7 +2,7 @@
@@ -5000,7 +5003,7 @@ index 29c9eb1f2..c87ead9d6 100644
  	maxp = nargs > xargs ? nargs : xargs;
  	if(!fp) /* constructing position array only */
 -	{	if(!dollar || !(fp = (Fmtpos_t*)malloc((maxp+1)*sizeof(Fmtpos_t))) )
-+	{	if(!dollar || !(fp = (Fmtpos_t*)malloc(((size_t)maxp+1)*sizeof(Fmtpos_t))) )
++	{	if(!dollar || !(fp = (Fmtpos_t*)malloc((size_t)(maxp+1)*sizeof(Fmtpos_t))) )
  			return NULL;
  		for(n = 0; n <= maxp; ++n)
  			fp[n].ft.fmt = 0;
@@ -5062,7 +5065,7 @@ index 4e46683e5..3a916d0e5 100644
  			(void)sfwrite(f,savf.data,(size_t)savf.extent);
  		(void)sfseek(f,(Sfoff_t)(savf.next - savf.data),SEEK_SET);
 diff --git a/src/lib/libast/sfio/sfungetc.c b/src/lib/libast/sfio/sfungetc.c
-index e1bf2912a..9b3d285c0 100644
+index e1bf2912a..e5f8807db 100644
 --- a/src/lib/libast/sfio/sfungetc.c
 +++ b/src/lib/libast/sfio/sfungetc.c
 @@ -2,7 +2,7 @@
@@ -5079,7 +5082,7 @@ index e1bf2912a..9b3d285c0 100644
  		if(f->size < 0)
  			f->size = 0;
 -		if(!(data = (uchar*)malloc(f->size+16)))
-+		if(!(data = (uchar*)malloc((size_t)f->size+16)))
++		if(!(data = (uchar*)malloc((size_t)(f->size+16))))
  		{	c = -1;
  			goto done;
  		}

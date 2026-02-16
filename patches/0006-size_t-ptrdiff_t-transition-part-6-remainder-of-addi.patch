@@ -1,6 +1,6 @@
-From 1a5e307955e7a87600690770133dd1ef732fcdb5 Mon Sep 17 00:00:00 2001
+From 4c19113ec62d2e124ea6cdbeff59734c42ad6783 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:10:29 -0800
+Date: Sun, 15 Feb 2026 22:50:24 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,985 => 1,602 => 62 (progression from part 5 => part 6 => part 13)
+1,985 => 1,602 => 60 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -544,7 +544,7 @@ index 5b4eacf53..24756af92 100644
  	memset(un, 0, sizeof(*un));
  
 diff --git a/src/lib/libast/disc/sfkeyprintf.c b/src/lib/libast/disc/sfkeyprintf.c
-index 91c4d6806..e53b0aa1e 100644
+index 91c4d6806..5321da590 100644
 --- a/src/lib/libast/disc/sfkeyprintf.c
 +++ b/src/lib/libast/disc/sfkeyprintf.c
 @@ -2,7 +2,7 @@
@@ -578,7 +578,7 @@ index 91c4d6806..e53b0aa1e 100644
  	NOT_USED(sp);
  	fp->level++;
 -	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf(fp->fmt.n_str + 1)))
-+	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)fp->fmt.n_str + 1)))
++	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)(fp->fmt.n_str + 1))))
  	{
 -		memcpy(v, fp->fmt.t_str, fp->fmt.n_str);
 +		memcpy(v, fp->fmt.t_str, (size_t)fp->fmt.n_str);
@@ -712,13 +712,13 @@ index 7096a1284..d4c8680b4 100644
  cat{
  
 diff --git a/src/lib/libast/include/ast_std.h b/src/lib/libast/include/ast_std.h
-index 4afc02519..5f702e732 100644
+index dd507a0de..a64677fbf 100644
 --- a/src/lib/libast/include/ast_std.h
 +++ b/src/lib/libast/include/ast_std.h
-@@ -166,19 +166,19 @@ extern char*		setlocale(int, const char*);
- #define AST_LC_COUNT		13	/* number of preceding AST_LC_* defines */
+@@ -167,19 +167,19 @@ extern char*		setlocale(int, const char*);
  #define AST_LC_LANG		255
  
+ /* bit flags for ast.locale.set */
 -#define AST_LC_internal		1
 -#define AST_LC_7bit		(1 << 23)
 +#define AST_LC_internal		1U
@@ -744,7 +744,7 @@ index 4afc02519..5f702e732 100644
  
  #ifndef LC_ALL
  #define LC_ALL			(-AST_LC_ALL)
-@@ -252,7 +252,7 @@ typedef struct
+@@ -247,7 +247,7 @@ typedef struct
  #if !AST_NOMULTIBYTE
  	struct				/* ast.mb.* -- multibyte encoding/decoding state */
  	{

@@ -1,6 +1,6 @@
-From 3915d6aca17c51151f80971ecad1c62bc7a72f0a Mon Sep 17 00:00:00 2001
+From 2fca2d2fb70a4591d8043dc8afe4a5286196673f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:06:45 -0800
+Date: Sun, 15 Feb 2026 22:46:10 -0800
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
  expansion, init and stk(3)
 
@@ -55,7 +55,7 @@ so I've decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,086 => 3,866 => 62 (progression from 71aff4e5f => part 1 => part 13)
+4,086 => 3,853 => 60 (progression from eecb9e2a7 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on its own). The full suite of
@@ -78,7 +78,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  10 files changed, 330 insertions(+), 300 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
-index e5f01c058..6e874c69f 100644
+index 2a72c225b..2d8745cc9 100644
 --- a/src/cmd/ksh93/bltins/test.c
 +++ b/src/cmd/ksh93/bltins/test.c
 @@ -86,8 +86,9 @@ static inline int posix_andor(char *arg)
@@ -347,7 +347,7 @@ index a2daaf59b..fb260b198 100644
  extern const char	sh_opttest[];
  extern const char	test_opchars[];
 diff --git a/src/cmd/ksh93/sh/init.c b/src/cmd/ksh93/sh/init.c
-index 67f394ac0..f62101b4e 100644
+index 67f394ac0..aa75ed581 100644
 --- a/src/cmd/ksh93/sh/init.c
 +++ b/src/cmd/ksh93/sh/init.c
 @@ -165,14 +165,14 @@ struct match
@@ -518,7 +518,7 @@ index 67f394ac0..f62101b4e 100644
  		mp->rval[i] = 0;
  	}
 -	mp->rval[i] = (char*)sh_malloc(n+1);
-+	mp->rval[i] = (char*)sh_malloc((size_t)n+1);
++	mp->rval[i] = (char*)sh_malloc((size_t)(n+1));
  	mp->lastsub[i] = sub;
 -	memcpy(mp->rval[i],val,n);
 +	memcpy(mp->rval[i],val,(size_t)n);
@@ -1926,7 +1926,7 @@ index 739a0dce7..7dac70f56 100644
  .fi
  .SH DESCRIPTION
 diff --git a/src/lib/libast/misc/stk.c b/src/lib/libast/misc/stk.c
-index 7eacec2ed..6e43e7d7b 100644
+index 7eacec2ed..661ca2358 100644
 --- a/src/lib/libast/misc/stk.c
 +++ b/src/lib/libast/misc/stk.c
 @@ -2,7 +2,7 @@
@@ -1995,7 +1995,7 @@ index 7eacec2ed..6e43e7d7b 100644
 +	ptrdiff_t n;
  	if(!init)
 -		stkinit(offset+1);
-+		stkinit((size_t)offset+1);
++		stkinit((size_t)(offset+1));
  	while(1)
  	{
  		fp = (struct frame*)sp->stkbase;

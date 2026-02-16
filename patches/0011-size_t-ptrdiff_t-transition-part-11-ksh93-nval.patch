@@ -1,6 +1,6 @@
-From 4a30968cf5b6a097f1e776e94980ae665ebe1c65 Mon Sep 17 00:00:00 2001
+From 9a2b6e59e03c0fd25123c142f74a4c73a3efc5da Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:14:20 -0800
+Date: Sun, 15 Feb 2026 22:54:40 -0800
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-823 => 500 => 62 (progression from part 10 => part 11 => part 13)
+823 => 500 => 60 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -813,7 +813,7 @@ index 3d2af19dd..92f6e35e9 100644
  	if(nv_isarray(np))
  	{
 diff --git a/src/cmd/ksh93/sh/name.c b/src/cmd/ksh93/sh/name.c
-index 759dce62d..0730995ac 100644
+index 759dce62d..4d44b9e0d 100644
 --- a/src/cmd/ksh93/sh/name.c
 +++ b/src/cmd/ksh93/sh/name.c
 @@ -43,7 +43,7 @@ static Dtdisc_t	_Refdisc =
@@ -1466,7 +1466,7 @@ index 759dce62d..0730995ac 100644
  	namec = nv_scan(sh.var_tree,nullscan,NULL,NV_EXPORT,NV_EXPORT);
  	namec += sh.save_env_n;
 -	er = stkalloc(sh.stk,(namec+4)*sizeof(char*));
-+	er = stkalloc(sh.stk,((size_t)namec+4)*sizeof(char*));
++	er = stkalloc(sh.stk,(size_t)(namec+4)*sizeof(char*));
  	data.argnam = (er+=2) + sh.save_env_n;
  	/* Physically copy the saved non-importable env vars, as the old environ[] may be freed by exscript() */
  	for (i = 0; i < sh.save_env_n; i++)
@@ -1759,7 +1759,7 @@ index ef7f25942..d2ba0b758 100644
  		sfputr(sh.stk,fname,0);
  		fname = stkptr(sh.stk,offset);
 diff --git a/src/cmd/ksh93/sh/nvtree.c b/src/cmd/ksh93/sh/nvtree.c
-index d6888ad3a..751f19425 100644
+index d6888ad3a..2809aecb4 100644
 --- a/src/cmd/ksh93/sh/nvtree.c
 +++ b/src/cmd/ksh93/sh/nvtree.c
 @@ -39,7 +39,7 @@ struct nvdir
@@ -2008,7 +2008,7 @@ index d6888ad3a..751f19425 100644
  		return NULL;
  	}
 -	argv = stkalloc(sh.stk,(n+1)*sizeof(char*));
-+	argv = stkalloc(sh.stk,((size_t)n+1)*sizeof(char*));
++	argv = stkalloc(sh.stk,(size_t)(n+1)*sizeof(char*));
  	argv += n;
  	*argv = 0;
  	for(; ap; ap=ap->argchn.ap)

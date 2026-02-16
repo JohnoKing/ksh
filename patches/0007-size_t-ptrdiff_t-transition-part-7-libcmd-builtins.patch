@@ -1,6 +1,6 @@
-From 0c5ec5780915f963aeb1c4d6fcf82cd0b1911470 Mon Sep 17 00:00:00 2001
+From 949279a14c63edb312e973bd7d2f4a7d0cd68e02 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:11:15 -0800
+Date: Sun, 15 Feb 2026 22:51:15 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -24,7 +24,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,602 => 1,204 => 62 (progression from part 6 => part 7 => part 13)
+1,602 => 1,204 => 60 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -32,7 +32,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/cat.c      |  39 ++++++-----
  src/lib/libcmd/chgrp.c    |  59 ++++++++--------
  src/lib/libcmd/chmod.c    |  27 ++++----
- src/lib/libcmd/cksum.c    |  30 ++++----
+ src/lib/libcmd/cksum.c    |  28 ++++----
  src/lib/libcmd/cmp.c      |  16 ++---
  src/lib/libcmd/comm.c     |  14 ++--
  src/lib/libcmd/context.c  |  33 ++++-----
@@ -40,7 +40,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/cut.c      | 105 ++++++++++++++--------------
  src/lib/libcmd/date.c     |  16 ++---
  src/lib/libcmd/dirname.c  |   4 +-
- src/lib/libcmd/expr.c     |  23 +++---
+ src/lib/libcmd/expr.c     |  21 +++---
  src/lib/libcmd/fds.c      |  17 ++---
  src/lib/libcmd/fmt.c      |  30 ++++----
  src/lib/libcmd/fold.c     |  22 +++---
@@ -63,7 +63,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/uname.c    |   8 +--
  src/lib/libcmd/uniq.c     |  40 ++++++-----
  src/lib/libcmd/wclib.c    |  34 ++++-----
- 35 files changed, 525 insertions(+), 510 deletions(-)
+ 35 files changed, 523 insertions(+), 508 deletions(-)
 
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
@@ -483,18 +483,9 @@ index 49343b46b..5c26c20e9 100644
  	int		chlink = 0;
  	struct stat	st;
 diff --git a/src/lib/libcmd/cksum.c b/src/lib/libcmd/cksum.c
-index 0e71981c7..4bdc33602 100644
+index afbfcc0a1..6e95d71e3 100644
 --- a/src/lib/libcmd/cksum.c
 +++ b/src/lib/libcmd/cksum.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -203,7 +203,7 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
  				if (*p != '\n')
  					sumblock(state->sum, "\r", 1);
@@ -842,7 +833,7 @@ index 10b4b2c39..f42f20827 100644
  	for (j = 0; j < cp->total; j++)
  	{
 diff --git a/src/lib/libcmd/cp.c b/src/lib/libcmd/cp.c
-index 0c072ee16..b51dcfd0d 100644
+index 0c072ee16..107ab7b33 100644
 --- a/src/lib/libcmd/cp.c
 +++ b/src/lib/libcmd/cp.c
 @@ -135,7 +135,7 @@ static const char usage_tail[] =
@@ -1036,13 +1027,13 @@ index 0c072ee16..b51dcfd0d 100644
  		argv++;
  	}
 -	if (!(v = stkalloc(stkstd, (argc + 2) * sizeof(char*))))
-+	if (!(v = stkalloc(stkstd, ((size_t)argc + 2) * sizeof(char*))))
++	if (!(v = stkalloc(stkstd, (size_t)(argc + 2) * sizeof(char*))))
  	{
  		error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
  		UNREACHABLE();
  	}
 -	memcpy(v, argv, (argc + 1) * sizeof(char*));
-+	memcpy(v, argv, ((size_t)argc + 1) * sizeof(char*));
++	memcpy(v, argv, (size_t)(argc + 1) * sizeof(char*));
  	argv = v;
  	if (!standard)
  	{
@@ -1423,18 +1414,9 @@ index b5316af5f..cc470cf41 100644
  }
  
 diff --git a/src/lib/libcmd/expr.c b/src/lib/libcmd/expr.c
-index 7c1fcdb9c..1ca6b6171 100644
+index 7aa301a42..0f48b4023 100644
 --- a/src/lib/libcmd/expr.c
 +++ b/src/lib/libcmd/expr.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -183,9 +183,10 @@ static int getnode(State_t* state, Node_t *np)
  {
  	char*	sp;
@@ -1771,7 +1753,7 @@ index 49d476fd0..3ebd1f822 100644
  			continue;
  		case ':':
 diff --git a/src/lib/libcmd/getconf.c b/src/lib/libcmd/getconf.c
-index f762ae7da..d58b8af5d 100644
+index f762ae7da..fd21ddca0 100644
 --- a/src/lib/libcmd/getconf.c
 +++ b/src/lib/libcmd/getconf.c
 @@ -2,7 +2,7 @@
@@ -1788,7 +1770,7 @@ index f762ae7da..d58b8af5d 100644
  	 * Run the external getconf command
  	 */
 -	new_argv = stkalloc(stkstd, (argc + 3) * sizeof(char*));
-+	new_argv = stkalloc(stkstd, ((size_t)argc + 3) * sizeof(char*));
++	new_argv = stkalloc(stkstd, (size_t)(argc + 3) * sizeof(char*));
  	new_argv[0] = "command";
  	new_argv[1] = "-x";
  	new_argv[2] = native;
@@ -3343,7 +3325,7 @@ index 37b75b66d..c0683a4d1 100644
  			memset(&tp->disc, 0, sizeof(tp->disc));
  			tp->disc.writef = tee_write;
 diff --git a/src/lib/libcmd/uname.c b/src/lib/libcmd/uname.c
-index f16a10608..42a7ad4db 100644
+index f16a10608..7ac0739d9 100644
 --- a/src/lib/libcmd/uname.c
 +++ b/src/lib/libcmd/uname.c
 @@ -2,7 +2,7 @@
@@ -3360,7 +3342,7 @@ index f16a10608..42a7ad4db 100644
  		case ':':
  			{
 -				char **new_argv = stkalloc(stkstd, (argc + 3) * sizeof(char*));
-+				char **new_argv = stkalloc(stkstd, ((size_t)argc + 3) * sizeof(char*));
++				char **new_argv = stkalloc(stkstd, (size_t)(argc + 3) * sizeof(char*));
  				new_argv[0] = "command";
  				new_argv[1] = "-px";
  				for (n = 0; n <= argc; n++)

@@ -1,6 +1,6 @@
-From 4f798287b134f6e163f563769e3cc099e6067e4e Mon Sep 17 00:00:00 2001
+From 9bca9afb744c3e3cbd3acb39067bced60298538b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:12:01 -0800
+Date: Sun, 15 Feb 2026 22:52:06 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,204 => 1,048 => 62 (progression from part 7 => part 8 => part 13)
+1,204 => 1,048 => 60 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -39,7 +39,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  14 files changed, 136 insertions(+), 186 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
-index b6423b98e..2210c9f38 100644
+index 43a57ddb5..149a73f3f 100644
 --- a/src/cmd/INIT/mamake.c
 +++ b/src/cmd/INIT/mamake.c
 @@ -295,13 +295,13 @@ static struct				/* program state		*/
@@ -327,7 +327,7 @@ index 73a44e473..335f0d650 100644
  		static char*	pty[] = { "/dev/ptyp0000", "/dev/ptym/ptyp0", "/dev/ptyp0" };
  	#if _lib_ptsname
 diff --git a/src/cmd/builtin/pty.c b/src/cmd/builtin/pty.c
-index 5944a3071..7824af3c7 100644
+index 5944a3071..b04a0229c 100644
 --- a/src/cmd/builtin/pty.c
 +++ b/src/cmd/builtin/pty.c
 @@ -257,13 +257,13 @@ mkpty(int* master, int* minion)
@@ -555,7 +555,7 @@ index 5944a3071..7824af3c7 100644
  			if (isspace(*s))
  				n++;
 -		ap = newof(0, Argv_t, 1, (n + 2) * sizeof(char*) + (s - stty + 1));
-+		ap = newof(0, Argv_t, 1, ((size_t)n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
++		ap = newof(0, Argv_t, 1, (size_t)(n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
  		ap->argc = n + 1;
  		ap->argv = (char**)(ap + 1);
  		ap->args = (char*)(ap->argv + n + 2);

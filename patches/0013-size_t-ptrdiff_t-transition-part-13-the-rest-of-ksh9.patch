@@ -1,6 +1,6 @@
-From e53a211ff7f8fa3f33fea1fa0757e974953ed739 Mon Sep 17 00:00:00 2001
+From 0a48ecec9b16b753b84aa2a99500d570e88dbccf Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:15:53 -0800
+Date: Sun, 15 Feb 2026 22:56:23 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-374 => 62 (progression from part 12 => part 13)
+374 => 60 (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 I'll note that I have a patch that expands nvflags to uint64_t which helps
@@ -52,38 +52,38 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/features/rlimits  |   1 +
  src/cmd/ksh93/include/argnod.h  |   4 +-
  src/cmd/ksh93/include/jobs.h    |   8 +-
- src/cmd/ksh93/include/path.h    |  10 +--
+ src/cmd/ksh93/include/path.h    |  26 +++----
  src/cmd/ksh93/include/streval.h |  16 ++--
  src/cmd/ksh93/include/ulimit.h  |   6 +-
- src/cmd/ksh93/sh/args.c         |  46 ++++++------
- src/cmd/ksh93/sh/arith.c        |  30 ++++----
+ src/cmd/ksh93/sh/args.c         |  44 ++++++-----
+ src/cmd/ksh93/sh/arith.c        |  28 +++----
  src/cmd/ksh93/sh/deparse.c      |  25 ++++---
  src/cmd/ksh93/sh/expand.c       |  25 ++++---
  src/cmd/ksh93/sh/fault.c        |  42 +++++------
  src/cmd/ksh93/sh/io.c           | 128 ++++++++++++++++----------------
  src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         | 100 +++++++++++++------------
+ src/cmd/ksh93/sh/path.c         | 104 ++++++++++++++------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
  src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++-------------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++++
- 23 files changed, 391 insertions(+), 328 deletions(-)
+ 23 files changed, 399 insertions(+), 336 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 404633eeb..ea425f444 100644
+index cdf026ecd..406c435b4 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
- For full details, see the git log at: https://github.com/ksh93/ksh
- Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2026-02-11:
-+
+ 2026-02-15:
+ 
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2026-02-06:
- 
- - Fixed a file descriptor leak introduced in 93u+ 2012-07-27 that occurred
++2026-02-15:
++
+ - Fixed a bug in 'ksh -n' that caused the shell to overlook many
+   obsolete options passed to set(1) and alias(1) and incorrectly
+   flag non-obsolete options as obsolete.
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -255,7 +255,7 @@ index 6de9e2917..01d268e47 100644
  
  /* flags for joblist */
 diff --git a/src/cmd/ksh93/include/path.h b/src/cmd/ksh93/include/path.h
-index 8c4882a75..96dc1babe 100644
+index 8c4882a75..5ddf292fc 100644
 --- a/src/cmd/ksh93/include/path.h
 +++ b/src/cmd/ksh93/include/path.h
 @@ -2,7 +2,7 @@
@@ -267,15 +267,45 @@ index 8c4882a75..96dc1babe 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -56,7 +56,7 @@ typedef struct pathcomp
+@@ -32,12 +32,12 @@
+ #   endif
+ #endif /* !SHOPT_SPAWN */
+ 
+-#define PATH_PATH		0001
+-#define PATH_FPATH		0002
+-#define PATH_CDPATH		0004
+-#define PATH_BFPATH		0010
+-#define PATH_SKIP		0020
+-#define PATH_STD_DIR		0100	/* directory is on  $(getconf PATH) */
++#define PATH_PATH		0001U
++#define PATH_FPATH		0002U
++#define PATH_CDPATH		0004U
++#define PATH_BFPATH		0010U
++#define PATH_SKIP		0020U
++#define PATH_STD_DIR		0100U	/* directory is on  $(getconf PATH) */
+ 
+ #define PATH_OFFSET	2		/* path offset for path_join */
+ #define MAXDEPTH	1024		/* maximum shell function recursion depth */
+@@ -56,8 +56,8 @@ typedef struct pathcomp
  	char		*lib;
  	char		*bbuf;
  	char		*blib;
 -	unsigned short	len;
+-	unsigned short	flags;
 +	size_t		len;
- 	unsigned short	flags;
++	uint16_t	flags;
  } Pathcomp_t;
  
+ #ifndef ARG_RAW
+@@ -68,7 +68,7 @@ typedef struct pathcomp
+ extern void		path_newdir(Pathcomp_t*);
+ extern Pathcomp_t	*path_dirfind(Pathcomp_t*,const char*,int);
+ extern Pathcomp_t	*path_unsetfpath(void);
+-extern Pathcomp_t	*path_addpath(Pathcomp_t*,const char*,int);
++extern Pathcomp_t	*path_addpath(Pathcomp_t*,const char*,uint16_t);
+ extern Pathcomp_t	*path_dup(Pathcomp_t*);
+ extern void		path_delete(Pathcomp_t*);
+ extern void 		path_settrackedalias(const char*,Pathcomp_t*);
 @@ -76,7 +76,7 @@ extern Namval_t		*path_gettrackedalias(const char*);
  extern Pathcomp_t 	*path_absolute(const char*, Pathcomp_t*, int);
  extern char 		*path_basename(const char*);
@@ -367,18 +397,9 @@ index f525cc330..3c01fb2b5 100644
  {
  	const char*	name;
 diff --git a/src/cmd/ksh93/sh/args.c b/src/cmd/ksh93/sh/args.c
-index 99d22f686..c992ea6ce 100644
+index 017a4df87..2509cecd0 100644
 --- a/src/cmd/ksh93/sh/args.c
 +++ b/src/cmd/ksh93/sh/args.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -57,7 +57,7 @@ static  const char optksh[] =
  	"H"
  #endif
@@ -516,7 +537,7 @@ index 99d22f686..c992ea6ce 100644
  			{
 -				if((argn=comargm-comargn)>1)
 +				if((argn=(int)(comargm-comargn))>1)
- 					strsort(comargn,argn,strcoll);
+ 					strsort(comargn,argn,ast.locale.collate);
  				comargm = comargn;
  			}
 @@ -768,7 +772,7 @@ struct argnod *sh_argprocsub(struct argnod *argp)
@@ -529,18 +550,9 @@ index 99d22f686..c992ea6ce 100644
  	sh.subshell = savesubshell;
  	job.jobcontrol = savejobcontrol;
 diff --git a/src/cmd/ksh93/sh/arith.c b/src/cmd/ksh93/sh/arith.c
-index ebfcd7c41..bdc0cfced 100644
+index df5e94bd3..c9acb9759 100644
 --- a/src/cmd/ksh93/sh/arith.c
 +++ b/src/cmd/ksh93/sh/arith.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -74,9 +74,9 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
  	lvalue->ovalue = 0;
  	if(cp>=lvalue->expr &&  cp < lvalue->expr+lvalue->elen)
@@ -614,7 +626,7 @@ index ebfcd7c41..bdc0cfced 100644
  				cp = str;
  				while(c=='[' || c=='.')
  				{
-@@ -416,7 +417,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -418,7 +419,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  				else
  					stkseek(sh.stk,offset);
  			}
@@ -623,7 +635,7 @@ index ebfcd7c41..bdc0cfced 100644
  			if(!np && lvalue->value)
  				break;
  			lvalue->value = (char*)np;
-@@ -444,7 +445,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -446,7 +447,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  		}
  		else
  		{
@@ -633,7 +645,7 @@ index ebfcd7c41..bdc0cfced 100644
  			lvalue->isenum = 0;
  			errno = 0;
  			r = strtonll(val,&str, &lastbase,-1);
-@@ -483,7 +485,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -485,7 +487,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  			{
  				if(val[2]=='#')
  					val += 3;
@@ -989,7 +1001,7 @@ index e6c4f14de..eeb269e87 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 65b1f64c8..30391c7d3 100644
+index 65b1f64c8..aa7fdfe2d 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
@@ -1029,7 +1041,7 @@ index 65b1f64c8..30391c7d3 100644
 +		n = (int)max;
  	max = sh.lim.open_max;
 -	sh.sftable = (Sfio_t**)sh_calloc((n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
-+	sh.sftable = (Sfio_t**)sh_calloc(((size_t)n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
++	sh.sftable = (Sfio_t**)sh_calloc((size_t)(n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
  	if(max)
 -		memcpy(sh.sftable,sftable,max*sizeof(Sfio_t*));
 +		memcpy(sh.sftable,sftable,(size_t)max*sizeof(Sfio_t*));
@@ -1639,7 +1651,7 @@ index 0cd68887e..8d38e06f6 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index 164cbeafe..b72dd8d71 100644
+index 164cbeafe..91be27068 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1829,8 +1841,12 @@ index 164cbeafe..b72dd8d71 100644
  }
  
  /*
-@@ -1454,13 +1459,14 @@ static noreturn void exscript(char *path,char *argv[])
- static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, int flag)
+@@ -1451,16 +1456,17 @@ static noreturn void exscript(char *path,char *argv[])
+  * add a path component to the path search list and eliminate duplicates
+  * and non-existing absolute paths.
+  */
+-static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, int flag)
++static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *name, uint16_t flag)
  {
  	Pathcomp_t *pp, *oldpp;
 -	int len, offset=stktell(sh.stk);
@@ -1915,7 +1931,12 @@ index 164cbeafe..b72dd8d71 100644
  				strcpy(&pp->lib[k+1],ep);
  				pathcanon(&pp->lib[m],0);
  				if(!first)
-@@ -1587,7 +1595,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
+@@ -1583,11 +1591,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+ }
+ 
+ 
+-Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,int type)
++Pathcomp_t *path_addpath(Pathcomp_t *first, const char *path,uint16_t type)
  {
  	const char *cp;
  	Pathcomp_t *old=0;
@@ -2140,7 +2161,7 @@ index 1e77d44f8..77e67ea84 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index 482326d15..cc16b6863 100644
+index 482326d15..c3536f6c9 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
 @@ -152,10 +152,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
@@ -2434,7 +2455,7 @@ index 482326d15..cc16b6863 100644
  	dp->dolnum = argn;
  	dp->dolbot = ARG_SPARE;
 -	memcpy(dp->dolval+ARG_SPARE, argv, (argn+1)*sizeof(char*));
-+	memcpy(dp->dolval+ARG_SPARE, argv, ((size_t)argn+1)*sizeof(char*));
++	memcpy(dp->dolval+ARG_SPARE, argv, (size_t)(argn+1)*sizeof(char*));
  	t->comarg.dp = dp;
  	if(!strchr(argv[0],'/'))
  		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);

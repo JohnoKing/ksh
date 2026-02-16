@@ -1,6 +1,6 @@
-From 9dce8849f5051f9320726577b8d27a321b65a1c7 Mon Sep 17 00:00:00 2001
+From 2482685352f194b3f79591756b88d1e52efeda3e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:13:34 -0800
+Date: Sun, 15 Feb 2026 22:53:49 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -15,7 +15,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-933 => 823 => 62 (progression from part 9 => part 10 => part 13)
+933 => 823 => 60 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -31,8 +31,8 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
  src/cmd/ksh93/bltins/ulimit.c    | 24 ++++-----
  src/cmd/ksh93/bltins/umask.c     |  8 +--
- src/cmd/ksh93/include/builtins.h |  4 +-
- 13 files changed, 127 insertions(+), 118 deletions(-)
+ src/cmd/ksh93/include/builtins.h |  2 +-
+ 13 files changed, 126 insertions(+), 117 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -246,7 +246,7 @@ index fde5e36a7..501e60b77 100644
  	string[c] = 0;
  	*newp++ =  0;
 diff --git a/src/cmd/ksh93/bltins/misc.c b/src/cmd/ksh93/bltins/misc.c
-index 5b01fa617..0e421b6f2 100644
+index 5b01fa617..2920c3166 100644
 --- a/src/cmd/ksh93/bltins/misc.c
 +++ b/src/cmd/ksh93/bltins/misc.c
 @@ -153,12 +153,12 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
@@ -260,7 +260,7 @@ index 5b01fa617..0e421b6f2 100644
  			dp->dolnum = argc;
  			dp->dolbot = ARG_SPARE;
 -			memcpy(dp->dolval+ARG_SPARE, argv, (argc+1)*sizeof(char*));
-+			memcpy(dp->dolval+ARG_SPARE, argv, ((size_t)argc+1)*sizeof(char*));
++			memcpy(dp->dolval+ARG_SPARE, argv, (size_t)(argc+1)*sizeof(char*));
  			t->comarg.dp = dp;
  			sh_exec((Shnode_t*)t,sh_isstate(SH_ERREXIT));
  			sh_offstate(SH_EXEC);
@@ -324,7 +324,7 @@ index 5643e7e3d..9ed3c3930 100644
  
  	for (i = 0; cp = disctab[i]; i++)
 diff --git a/src/cmd/ksh93/bltins/read.c b/src/cmd/ksh93/bltins/read.c
-index 4c7c2c0fc..96ef0333d 100644
+index 4c7c2c0fc..093056d93 100644
 --- a/src/cmd/ksh93/bltins/read.c
 +++ b/src/cmd/ksh93/bltins/read.c
 @@ -52,11 +52,11 @@ struct read_save
@@ -458,7 +458,7 @@ index 4c7c2c0fc..96ef0333d 100644
 +		if((c=size)>=(ssize_t)sizeof(buf))
  		{
 -			var = (char*)sh_malloc(c+1);
-+			var = (char*)sh_malloc((size_t)c+1);
++			var = (char*)sh_malloc((size_t)(c+1));
  			end = var + c;
  		}
  		else
@@ -506,7 +506,7 @@ index 4c7c2c0fc..96ef0333d 100644
  						{
 -							v = (char*)sh_malloc(m+1);
 -							var = memcpy(v, var, cur - var);
-+							v = (char*)sh_malloc((size_t)m+1);
++							v = (char*)sh_malloc((size_t)(m+1));
 +							var = memcpy(v, var, (size_t)(cur - var));
  						}
  						else
@@ -664,7 +664,7 @@ index fa4d6085b..e8e59c82d 100644
  	}
  	if(flag > 0)
 diff --git a/src/cmd/ksh93/bltins/typeset.c b/src/cmd/ksh93/bltins/typeset.c
-index fc515ae92..d3b491989 100644
+index 3e5d3c07e..07bbaafaf 100644
 --- a/src/cmd/ksh93/bltins/typeset.c
 +++ b/src/cmd/ksh93/bltins/typeset.c
 @@ -69,7 +69,7 @@ struct tdata
@@ -681,7 +681,7 @@ index fc515ae92..d3b491989 100644
  	else if(argv[0][0] != 't')		/* not <t>ypeset */
  	{
 -		char **new_argv = stkalloc(sh.stk, (argc + 2) * sizeof(char*));
-+		char **new_argv = stkalloc(sh.stk, ((size_t)argc + 2) * sizeof(char*));
++		char **new_argv = stkalloc(sh.stk, (size_t)(argc + 2) * sizeof(char*));
  		error_info.id = new_argv[0] = SYSTYPESET->nvname;
  		if(argv[0][0] == 'a')		/* <a>utoload == typeset -fu */
  			new_argv[1] = "-fu";
@@ -804,10 +804,10 @@ index fc515ae92..d3b491989 100644
  		tp->scanmask |= NV_UTOL|NV_LTOU;
  	namec = nv_scan(root, nullscan, tp, tp->scanmask, flag&~NV_IARRAY);
 -	argv = tp->argnam  = stkalloc(sh.stk,(namec+1)*sizeof(char*));
-+	argv = tp->argnam  = stkalloc(sh.stk,((size_t)namec+1)*sizeof(char*));
++	argv = tp->argnam  = stkalloc(sh.stk,(size_t)(namec+1)*sizeof(char*));
  	namec = nv_scan(root, pushname, tp, tp->scanmask, flag&~NV_IARRAY);
- 	if(mbcoll())
- 		strsort(argv,namec,strcoll);
+ 	if(ast.locale.transform)
+ 		strsort(argv,namec,ast.locale.collate);
 diff --git a/src/cmd/ksh93/bltins/ulimit.c b/src/cmd/ksh93/bltins/ulimit.c
 index 930b32a68..cc70eba06 100644
 --- a/src/cmd/ksh93/bltins/ulimit.c
@@ -938,19 +938,10 @@ index c6a79d12f..46300d00e 100644
  			c = strperm(cp,&cp,~flag&0777);
  			if(*cp)
 diff --git a/src/cmd/ksh93/include/builtins.h b/src/cmd/ksh93/include/builtins.h
-index 61991df24..268544ac2 100644
+index f61893ec4..92387f3b0 100644
 --- a/src/cmd/ksh93/include/builtins.h
 +++ b/src/cmd/ksh93/include/builtins.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -112,7 +112,7 @@ extern int b_times(int, char*[],Shbltin_t*);
+@@ -113,7 +113,7 @@ extern int b_times(int, char*[],Shbltin_t*);
      extern int B_echo(int, char*[],Shbltin_t*);
  #endif /* SHOPT_ECHOPRINT */
  

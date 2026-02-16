@@ -1,6 +1,6 @@
-From 4378f5a4d83db154297c45560fc179ba743df373 Mon Sep 17 00:00:00 2001
+From 078ca85325160b40c700b6da823a4d265b853510 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 11 Feb 2026 21:08:58 -0800
+Date: Sun, 15 Feb 2026 22:48:42 -0800
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -13,7 +13,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,092 => 2,493 => 62 (progression from part 3 => part 4 => part 13)
+3,092 => 2,493 => 60 (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -23,11 +23,11 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/regex/regcache.c     |  41 ++---
  src/lib/libast/regex/regclass.c     |  66 ++++----
  src/lib/libast/regex/regcoll.c      |  22 +--
- src/lib/libast/regex/regcomp.c      | 226 ++++++++++++++--------------
+ src/lib/libast/regex/regcomp.c      | 224 ++++++++++++++--------------
  src/lib/libast/regex/regerror.c     |   4 +-
  src/lib/libast/regex/regexec.c      |  10 +-
  src/lib/libast/regex/reglib.h       |  30 ++--
- src/lib/libast/regex/regnexec.c     | 129 ++++++++--------
+ src/lib/libast/regex/regnexec.c     | 127 ++++++++--------
  src/lib/libast/regex/regsubcomp.c   |  37 ++---
  src/lib/libast/regex/regsubexec.c   |  38 ++---
  src/lib/libast/string/base64.c      |  45 +++---
@@ -53,7 +53,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/fmttmx.c      |   5 +-
  src/lib/libast/string/fmttv.c       |  41 +++++
  src/lib/libast/string/fmtuid.c      |   6 +-
- src/lib/libast/string/fmtversion.c  |  50 ++++++
+ src/lib/libast/string/fmtversion.c  |  50 +++++++
  src/lib/libast/string/strelapsed.c  |  14 +-
  src/lib/libast/string/stresc.c      |   7 +-
  src/lib/libast/string/strgid.c      |  16 +-
@@ -76,7 +76,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |   8 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 59 files changed, 676 insertions(+), 546 deletions(-)
+ 59 files changed, 674 insertions(+), 544 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -378,19 +378,10 @@ index 04885549d..d697d316e 100644
  	for (cp = ctypes; cp; cp = cp->next)
  		if (n == cp->size && strneq(s, cp->name, n))
 diff --git a/src/lib/libast/regex/regcoll.c b/src/lib/libast/regex/regcoll.c
-index 078255be8..ce302a84f 100644
+index aaea43895..73c32ceac 100644
 --- a/src/lib/libast/regex/regcoll.c
 +++ b/src/lib/libast/regex/regcoll.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -38,13 +38,13 @@
+@@ -38,19 +38,19 @@
  int
  regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
  {
@@ -400,15 +391,12 @@ index 078255be8..ce302a84f 100644
  	char*			b;
  	char*			x;
  	const char*		t;
--	int			i;
 -	int			r;
 -	int			term;
-+	ptrdiff_t		i;
 +	ptrdiff_t		r;
  	wchar_t			w;
- 	char			xfm[256];
- 	char			tmp[sizeof(xfm)];
-@@ -53,7 +53,7 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
+ 
+ 	if (size < 2 || (term = *s) != '.' && term != '=' || !*++s || *s == term && *(s + 1) == ']')
  		goto nope;
  	t = s;
  	w = mbchar(s);
@@ -417,16 +405,21 @@ index 078255be8..ce302a84f 100644
  	{
  		if (*s++ != term || *s++ != ']')
  			goto oops;
-@@ -90,24 +90,24 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
- 	if (b >= x)
- 		goto done;
- 	*b = 0;
--	for (i = 0; i < r && i < sizeof(tmp) - 1; i++)
-+	for (i = 0; i < r && i < (ptrdiff_t)sizeof(tmp) - 1; i++)
- 		tmp[i] = '0';
- 	tmp[i] = 0;
- 	if (mbxfrm(xfm, buf, sizeof(xfm)) >= mbxfrm(xfm, tmp, sizeof(xfm)))
+@@ -90,9 +90,9 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
+ 	if(!ast.locale.transform)
  		goto nope;
+ 	{
+-		char	tmp[256];
+-		int	i;
+-		for (i = 0; i < r && i < sizeof(tmp) - 1; i++)
++		char		tmp[256];
++		ptrdiff_t	i;
++		for (i = 0; i < r && i < (int)sizeof(tmp) - 1; i++)
+ 			tmp[i] = '0';
+ 		tmp[i] = 0;
+ 		if (ast.locale.transform(NULL, buf, 0) >= ast.locale.transform(NULL, tmp, 0))
+@@ -100,17 +100,17 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
+ 	}
  	t = (const char*)buf;
   done:
 -	if (r <= size && (char*)t != buf)
@@ -448,18 +441,9 @@ index 078255be8..ce302a84f 100644
   	s--;
   nope:
 diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
-index 09997ecda..250cb64ff 100644
+index fc6473c01..fcf33b6df 100644
 --- a/src/lib/libast/regex/regcomp.c
 +++ b/src/lib/libast/regex/regcomp.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -23,6 +23,10 @@
   * POSIX regex compiler
   */
@@ -631,7 +615,7 @@ index 09997ecda..250cb64ff 100644
  							break;
  						}
  						c = T_OPEN;
-@@ -1051,7 +1055,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+@@ -1052,7 +1056,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  					cc = -1;
  				}
  			}
@@ -640,7 +624,7 @@ index 09997ecda..250cb64ff 100644
  		}
  		else if (bw < COLL_KEY_MAX)
  		{
-@@ -1059,14 +1063,14 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+@@ -1060,14 +1064,14 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  			if (ic)
  			{
  				c = mbchar(s);
@@ -659,7 +643,7 @@ index 09997ecda..250cb64ff 100644
  					cc = 1;
  				}
  			}
-@@ -1076,7 +1080,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+@@ -1077,7 +1081,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  				k += mbconv((char*)k, c);
  			}
  			else
@@ -667,8 +651,8 @@ index 09997ecda..250cb64ff 100644
 +				for (e = k + bw; k < e; *k++ = (unsigned char)*s++);
  		}
  		*k = 0;
- 		mbxfrm(ce->beg, key, COLL_KEY_MAX);
-@@ -1084,9 +1088,9 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+ 		ast.locale.transform((char*)ce->beg, (const char*)key, COLL_KEY_MAX);
+@@ -1085,9 +1089,9 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  		{
  			k = key;
  			c = mbchar(k);
@@ -680,7 +664,7 @@ index 09997ecda..250cb64ff 100644
  				bt = COLL_range_lc;
  			else
  				bt = COLL_range;
-@@ -1107,7 +1111,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+@@ -1108,7 +1112,7 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  						cc = -1;
  					}
  				}
@@ -689,7 +673,7 @@ index 09997ecda..250cb64ff 100644
  			}
  			else if (ew < COLL_KEY_MAX)
  			{
-@@ -1115,14 +1119,14 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+@@ -1116,14 +1120,14 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  				if (ic)
  				{
  					c = mbchar(s);
@@ -708,7 +692,7 @@ index 09997ecda..250cb64ff 100644
  						cc = 1;
  					}
  				}
-@@ -1132,19 +1136,19 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
+@@ -1133,19 +1137,19 @@ col(Celt_t* ce, int ic, unsigned char* bp, int bw, int bc, unsigned char* ep, in
  					k += mbconv((char*)k, c);
  				}
  				else
@@ -716,7 +700,7 @@ index 09997ecda..250cb64ff 100644
 +					for (e = k + ew; k < e; *k++ = (unsigned char)*s++);
  			}
  			*k = 0;
- 			mbxfrm(ce->end, key, COLL_KEY_MAX);
+ 			ast.locale.transform((char*)ce->end, (const char*)key, COLL_KEY_MAX);
  			k = key;
  			c = mbchar(k);
 -			if (iswupper(c))
@@ -732,7 +716,7 @@ index 09997ecda..250cb64ff 100644
  		}
  		else
  			ce->typ = COLL_char;
-@@ -1161,14 +1165,14 @@ bra(Cenv_t* env)
+@@ -1162,14 +1166,14 @@ bra(Cenv_t* env)
  {
  	Rex_t*		e;
  	int		c;
@@ -749,7 +733,7 @@ index 09997ecda..250cb64ff 100644
  	unsigned char*	first;
  	unsigned char*	start;
  	unsigned char*	begin;
-@@ -1307,25 +1311,26 @@ bra(Cenv_t* env)
+@@ -1308,25 +1312,26 @@ bra(Cenv_t* env)
  						while (*++s && *s != ':');
  						if (*s == ':' && *(s + 1) == ']' && *(s + 2) == ']')
  						{
@@ -782,7 +766,7 @@ index 09997ecda..250cb64ff 100644
  								}
  							}
  						}
-@@ -1384,8 +1389,9 @@ bra(Cenv_t* env)
+@@ -1385,8 +1390,9 @@ bra(Cenv_t* env)
  		{
  			if (last <= c)
  			{
@@ -794,13 +778,13 @@ index 09997ecda..250cb64ff 100644
  				inrange = env->type >= SRE || (env->flags & (REG_LENIENT|REG_REGEXP));
  				elements += 2;
  			}
-@@ -1436,12 +1442,12 @@ bra(Cenv_t* env)
+@@ -1437,12 +1443,12 @@ bra(Cenv_t* env)
  			{
  				for (i = 0; i < elementsof(primary) - 1; i++, cc++)
  				{
 -					cc->nam[0] = primary[i];
 +					cc->nam[0] = (unsigned char)primary[i];
- 					mbxfrm(cc->key, cc->nam, COLL_KEY_MAX);
+ 					ast.locale.transform((char*)cc->key, (const char*)cc->nam, COLL_KEY_MAX);
  					dtinsert(dt, cc);
  				}
  				for (i = 0; i < elementsof(cc->key); i++)
@@ -809,7 +793,7 @@ index 09997ecda..250cb64ff 100644
  				dtinsert(dt, cc);
  				LCINFO(AST_LC_COLLATE)->data = dt;
  			}
-@@ -1557,23 +1563,24 @@ bra(Cenv_t* env)
+@@ -1558,23 +1564,24 @@ bra(Cenv_t* env)
  						{
  							if (env->cursor == start && (c = *(env->cursor + 1)) && *(env->cursor + 2) == ':' && *(env->cursor + 3) == ']' && *(env->cursor + 4) == ']')
  							{
@@ -839,7 +823,7 @@ index 09997ecda..250cb64ff 100644
  								}
  							}
  							env->error = REG_ECTYPE;
-@@ -1598,13 +1605,13 @@ bra(Cenv_t* env)
+@@ -1599,13 +1606,13 @@ bra(Cenv_t* env)
  						c = 0;
  						if (ic)
  						{
@@ -856,7 +840,7 @@ index 09997ecda..250cb64ff 100644
  								c = 'l';
  						}
  						i = 1;
-@@ -1646,12 +1653,12 @@ bra(Cenv_t* env)
+@@ -1647,12 +1654,12 @@ bra(Cenv_t* env)
  								break;
  							if (c == 'u')
  							{
@@ -871,7 +855,7 @@ index 09997ecda..250cb64ff 100644
  								c = 'U';
  							}
  							rw = mbconv((char*)pp, wc);
-@@ -1708,10 +1715,10 @@ bra(Cenv_t* env)
+@@ -1709,10 +1716,10 @@ bra(Cenv_t* env)
  		for (i = 0; i <= UCHAR_MAX; i++)
  			if (settst(e->re.charclass, i))
  			{
@@ -886,7 +870,7 @@ index 09997ecda..250cb64ff 100644
  				else
  					continue;
  				setadd(e->re.charclass, c);
-@@ -1788,7 +1795,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+@@ -1789,7 +1796,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
  	{
  	case T_BANG:
  		eat(env);
@@ -895,7 +879,7 @@ index 09997ecda..250cb64ff 100644
  		{
  			drop(env->disc, e);
  			return NULL;
-@@ -1834,8 +1841,8 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+@@ -1835,8 +1842,8 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
  	case REX_CLASS:
  	case REX_COLL_CLASS:
  	case REX_ONECHAR:
@@ -906,7 +890,7 @@ index 09997ecda..250cb64ff 100644
  		if (minimal >= 0)
  			mark(e, minimal);
  		return e;
-@@ -1856,7 +1863,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
+@@ -1857,7 +1864,7 @@ rep(Cenv_t* env, Rex_t* e, int number, int last)
  			mark(e, minimal);
  		return e;
  	}
@@ -915,7 +899,7 @@ index 09997ecda..250cb64ff 100644
  	{
  		drop(env->disc, e);
  		return NULL;
-@@ -1889,7 +1896,7 @@ isstring(Rex_t* e)
+@@ -1890,7 +1897,7 @@ isstring(Rex_t* e)
  }
  
  static Trie_node_t*
@@ -924,7 +908,7 @@ index 09997ecda..250cb64ff 100644
  {
  	Trie_node_t*	t;
  
-@@ -1907,7 +1914,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
+@@ -1908,7 +1915,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
  	unsigned char*	s;
  	unsigned char*	e;
  	Trie_node_t*	t;
@@ -933,7 +917,7 @@ index 09997ecda..250cb64ff 100644
  	unsigned char	tmp[2];
  
  	switch (f->type)
-@@ -1989,7 +1996,7 @@ trie(Cenv_t* env, Rex_t* e, Rex_t* f)
+@@ -1990,7 +1997,7 @@ trie(Cenv_t* env, Rex_t* e, Rex_t* f)
  static Rex_t*		alt(Cenv_t*, int, int);
  
  static int
@@ -942,7 +926,7 @@ index 09997ecda..250cb64ff 100644
  {
  	unsigned char*	p;
  	int		c;
-@@ -2026,13 +2033,13 @@ grp(Cenv_t* env, int parno)
+@@ -2027,13 +2034,13 @@ grp(Cenv_t* env, int parno)
  	Rex_t*		e;
  	Rex_t*		f;
  	int		c;
@@ -958,7 +942,7 @@ index 09997ecda..250cb64ff 100644
  	unsigned char*	p;
  
  	g = env->flags;
-@@ -2280,7 +2287,7 @@ grp(Cenv_t* env, int parno)
+@@ -2281,7 +2288,7 @@ grp(Cenv_t* env, int parno)
  					goto invalid;
  				if (e->re.nest.type[i] & ~x)
  					goto invalid;
@@ -967,7 +951,7 @@ index 09997ecda..250cb64ff 100644
  				continue;
  			case 'E':
  				x = REX_NEST_escape;
-@@ -2306,7 +2313,7 @@ grp(Cenv_t* env, int parno)
+@@ -2307,7 +2314,7 @@ grp(Cenv_t* env, int parno)
  					goto invalid;
  				if (e->re.nest.type[i] & ~x)
  					goto invalid;
@@ -976,7 +960,7 @@ index 09997ecda..250cb64ff 100644
  				continue;
  			case 'S':
  				x = REX_NEST_separator;
-@@ -2357,7 +2364,7 @@ grp(Cenv_t* env, int parno)
+@@ -2358,7 +2365,7 @@ grp(Cenv_t* env, int parno)
  					drop(env->disc, e);
  					return NULL;
  				}
@@ -985,7 +969,7 @@ index 09997ecda..250cb64ff 100644
  					env->paren[parno] = f;
  				f->re.group.back = 0;
  				f->re.group.number = parno;
-@@ -2464,7 +2471,7 @@ grp(Cenv_t* env, int parno)
+@@ -2465,7 +2472,7 @@ grp(Cenv_t* env, int parno)
  		if (!(e = node(env, REX_EXEC, 0, 0, 0)))
  			return NULL;
  		e->re.exec.text = (const char*)p;
@@ -994,7 +978,7 @@ index 09997ecda..250cb64ff 100644
  		if (!env->disc->re_compf)
  			e->re.exec.data = 0;
  		else
-@@ -2528,7 +2535,7 @@ grp(Cenv_t* env, int parno)
+@@ -2529,7 +2536,7 @@ grp(Cenv_t* env, int parno)
  			env->type = typ;
  		return NULL;
  	}
@@ -1003,7 +987,7 @@ index 09997ecda..250cb64ff 100644
  	{
  		drop(env->disc, e);
  		goto nope;
-@@ -2543,7 +2550,7 @@ grp(Cenv_t* env, int parno)
+@@ -2544,7 +2551,7 @@ grp(Cenv_t* env, int parno)
  				env->error = REG_ECOUNT;
  			goto nope;
  		}
@@ -1012,7 +996,7 @@ index 09997ecda..250cb64ff 100644
  		memset(&env->stats, 0, sizeof(env->stats));
  	}
  	switch (x)
-@@ -2568,10 +2575,10 @@ seq(Cenv_t* env)
+@@ -2569,10 +2576,10 @@ seq(Cenv_t* env)
  	Rex_t*		e;
  	Rex_t*		f;
  	Token_t		tok;
@@ -1027,7 +1011,7 @@ index 09997ecda..250cb64ff 100644
  	int		parno;
  	int		type;
  	regflags_t	flags;
-@@ -2584,24 +2591,24 @@ seq(Cenv_t* env)
+@@ -2585,24 +2592,24 @@ seq(Cenv_t* env)
  	for (;;)
  	{
  		s = buf;
@@ -1058,7 +1042,7 @@ index 09997ecda..250cb64ff 100644
  				else if (n)
  					s += n;
  				else
-@@ -2632,10 +2639,10 @@ seq(Cenv_t* env)
+@@ -2633,10 +2640,10 @@ seq(Cenv_t* env)
  				else
  				{
  					i = s - buf;
@@ -1072,7 +1056,7 @@ index 09997ecda..250cb64ff 100644
  				}
  				if (x >= 0)
  				{
-@@ -2644,14 +2651,14 @@ seq(Cenv_t* env)
+@@ -2645,14 +2652,14 @@ seq(Cenv_t* env)
  						drop(env->disc, e);
  						return NULL;
  					}
@@ -1091,7 +1075,7 @@ index 09997ecda..250cb64ff 100644
  				}
  				if (!(f = rep(env, f, 0, 0)) || !(f = cat(env, f, seq(env))))
  				{
-@@ -2663,10 +2670,10 @@ seq(Cenv_t* env)
+@@ -2664,10 +2671,10 @@ seq(Cenv_t* env)
  				return f;
  			default:
  				c = s - buf;
@@ -1105,7 +1089,7 @@ index 09997ecda..250cb64ff 100644
  				return cat(env, e, seq(env));
  			}
  		else if (c > T_BACK)
-@@ -2730,7 +2737,7 @@ seq(Cenv_t* env)
+@@ -2731,7 +2738,7 @@ seq(Cenv_t* env)
  					drop(env->disc, e);
  					return NULL;
  				}
@@ -1114,7 +1098,7 @@ index 09997ecda..250cb64ff 100644
  					env->paren[parno] = f;
  				f->re.group.back = 0;
  				f->re.group.number = parno;
-@@ -2749,7 +2756,7 @@ seq(Cenv_t* env)
+@@ -2750,7 +2757,7 @@ seq(Cenv_t* env)
  						drop(env->disc, e);
  						return NULL;
  					}
@@ -1123,7 +1107,7 @@ index 09997ecda..250cb64ff 100644
  						env->paren[parno] = f;
  					f->re.group.back = 0;
  					f->re.group.number = parno;
-@@ -2787,7 +2794,7 @@ seq(Cenv_t* env)
+@@ -2788,7 +2795,7 @@ seq(Cenv_t* env)
  			case T_SPACE:
  			case T_SPACE_NOT:
  				eat(env);
@@ -1132,7 +1116,7 @@ index 09997ecda..250cb64ff 100644
  					e = rep(env, e, 0, 0);
  				break;
  			case T_LT:
-@@ -2930,6 +2937,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -2931,6 +2938,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  	regdisc_t*		disc;
  	unsigned char*		fold;
  	int			i;
@@ -1140,7 +1124,7 @@ index 09997ecda..250cb64ff 100644
  	Cenv_t			env;
  
  	if (!p)
-@@ -2949,15 +2957,15 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -2950,15 +2958,15 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  	if (!state.initialized)
  	{
  		state.initialized = 1;
@@ -1159,7 +1143,7 @@ index 09997ecda..250cb64ff 100644
  		LCINFO(AST_LC_CTYPE)->data = fold;
  	}
   again:
-@@ -3075,9 +3083,9 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -3076,9 +3084,9 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  		p->env->stats.re_min = p->env->stats.re_max = -1;
  	else
  	{
@@ -1171,7 +1155,7 @@ index 09997ecda..250cb64ff 100644
  			p->env->stats.re_max = -1;
  	}
  	serialize(&env, p->env->rex, 1);
-@@ -3086,7 +3094,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
+@@ -3087,7 +3095,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  		p->re_nsub /= 2;
  	if (env.flags & REG_DELIMITED)
  	{
@@ -1240,7 +1224,7 @@ index 2a9280c13..3ad83b895 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/regex/reglib.h b/src/lib/libast/regex/reglib.h
-index 16fd8e9ac..6a60c9cdb 100644
+index 53b29a9af..2528f59c4 100644
 --- a/src/lib/libast/regex/reglib.h
 +++ b/src/lib/libast/regex/reglib.h
 @@ -38,11 +38,15 @@
@@ -1269,10 +1253,10 @@ index 16fd8e9ac..6a60c9cdb 100644
 -#include <cdt.h>
 -#include <stk.h>
 -
- #include "regex.h"
- 
- #include <ctype.h>
-@@ -299,9 +299,9 @@ typedef struct Vector_s
+ #include <ast_release.h>
+ #if _AST_release
+ #define NDEBUG
+@@ -305,9 +305,9 @@ typedef struct Vector_s
  {
  	Stk_t*		stk;		/* stack pointer		*/
  	char*		vec;		/* the data			*/
@@ -1285,7 +1269,7 @@ index 16fd8e9ac..6a60c9cdb 100644
  	ssize_t		cur;		/* current index -- user domain	*/
  } Vector_t;
  
-@@ -359,7 +359,7 @@ typedef struct Group_s
+@@ -365,7 +365,7 @@ typedef struct Group_s
  {
  	int		number;		/* group number			*/
  	int		last;		/* last contained group number	*/
@@ -1294,7 +1278,7 @@ index 16fd8e9ac..6a60c9cdb 100644
  	int		back;		/* backreferenced		*/
  	regflags_t	flags;		/* group flags			*/
  	union
-@@ -465,8 +465,8 @@ typedef struct Trie_node_s
+@@ -471,8 +471,8 @@ typedef struct Trie_node_s
  typedef struct Trie_s
  {
  	Trie_node_t**	root;
@@ -1305,7 +1289,7 @@ index 16fd8e9ac..6a60c9cdb 100644
  } Trie_t;
  
  /*
-@@ -477,12 +477,12 @@ typedef struct Rex_s
+@@ -483,12 +483,12 @@ typedef struct Rex_s
  {
  	unsigned char	type;			/* node type		*/
  	unsigned char	marked;			/* already marked	*/
@@ -1322,18 +1306,9 @@ index 16fd8e9ac..6a60c9cdb 100644
  	union
  	{
 diff --git a/src/lib/libast/regex/regnexec.c b/src/lib/libast/regex/regnexec.c
-index d19b15398..33dd92c45 100644
+index 8d6bbb7ef..07df6d020 100644
 --- a/src/lib/libast/regex/regnexec.c
 +++ b/src/lib/libast/regex/regnexec.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -130,16 +130,16 @@ typedef struct
  {
  	unsigned char*	p;		/* where in string		*/
@@ -1435,7 +1410,7 @@ index d19b15398..33dd92c45 100644
  {
  	Ckey_t	elt;
  
-@@ -596,11 +596,11 @@ collelt(Celt_t* ce, char* key, int c, int x)
+@@ -597,11 +597,11 @@ collelt(Celt_t* ce, char* key, int c, int x)
  				return 1;
  			continue;
  		case COLL_range_lc:
@@ -1449,7 +1424,7 @@ index d19b15398..33dd92c45 100644
  				return 1;
  			continue;
  		}
-@@ -610,16 +610,16 @@ collelt(Celt_t* ce, char* key, int c, int x)
+@@ -611,16 +611,16 @@ collelt(Celt_t* ce, char* key, int c, int x)
  }
  
  static int
@@ -1471,7 +1446,7 @@ index d19b15398..33dd92c45 100644
  		else
  			return 0;
  		x = mbconv(key, c);
-@@ -631,9 +631,9 @@ collic(Celt_t* ce, char* key, char* nxt, int c, int x)
+@@ -632,9 +632,9 @@ collic(Celt_t* ce, char* key, char* nxt, int c, int x)
  		if (collic(ce, key, nxt + 1, c, x))
  			return 1;
  		if (islower(*nxt))
@@ -1483,12 +1458,11 @@ index d19b15398..33dd92c45 100644
  		else
  			return 0;
  		nxt++;
-@@ -646,9 +646,10 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+@@ -647,9 +647,9 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
  {
  	unsigned char*		t;
  	wchar_t			c;
 -	int			w;
-+	size_t			z;
  	int			r;
 -	int			x;
 +	ptrdiff_t		w;
@@ -1496,7 +1470,7 @@ index d19b15398..33dd92c45 100644
  	int			ic;
  	Ckey_t			key;
  	Ckey_t			elt;
-@@ -656,7 +657,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+@@ -658,7 +658,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
  	ic = (rex->flags & REG_ICASE);
  	if ((w = MBSIZE(s)) > 1)
  	{
@@ -1505,7 +1479,7 @@ index d19b15398..33dd92c45 100644
  		key[w] = 0;
  		t = s;
  		c = mbchar(t);
-@@ -670,7 +671,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+@@ -672,7 +672,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
  		c = s[0];
  		if (ic && isupper(c))
  			c = tolower(c);
@@ -1514,23 +1488,27 @@ index d19b15398..33dd92c45 100644
  		key[1] = 0;
  		if (isalpha(c))
  		{
-@@ -682,12 +683,12 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+@@ -681,15 +681,16 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
+ 				x = COLL_KEY_MAX;
+ 			while (w < x)
+ 			{
++				size_t	z;
  				c = s[w];
  				if (!isalpha(c))
  					break;
--				r = mbxfrm(elt, key, COLL_KEY_MAX);
-+				z = mbxfrm(elt, key, COLL_KEY_MAX);
+-				r = ast.locale.transform((char*)elt, (const char*)key, COLL_KEY_MAX);
++				z = ast.locale.transform((char*)elt, (const char*)key, COLL_KEY_MAX);
  				if (ic && isupper(c))
  					c = tolower(c);
 -				key[w] = c;
 +				key[w] = (unsigned char)c;
  				key[w + 1] = 0;
--				if (mbxfrm(elt, key, COLL_KEY_MAX) != r)
-+				if (mbxfrm(elt, key, COLL_KEY_MAX) != z)
+-				if (ast.locale.transform((char*)elt, (const char*)key, COLL_KEY_MAX) != r)
++				if (ast.locale.transform((char*)elt, (const char*)key, COLL_KEY_MAX) != z)
  					break;
  				w++;
  			}
-@@ -793,10 +794,10 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
+@@ -795,10 +796,10 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
  {
  	int		c;
  	int		d;
@@ -1544,7 +1522,7 @@ index d19b15398..33dd92c45 100644
  	unsigned char*	p;
  	unsigned char*	t;
  	unsigned char*	b;
-@@ -831,7 +832,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -833,7 +834,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  					((Pos_t*)env->pos->vec + env->pos->cur - 1)->serial = catcher.serial = rex->re.group.expr.binary.serial;
  					n = parse(env, rex->re.group.expr.binary.right, &catcher, s);
  					if (n != NONE)
@@ -1553,7 +1531,7 @@ index d19b15398..33dd92c45 100644
  				}
  				pospop(env);
  				matchpop(env, rex);
-@@ -877,7 +878,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -879,7 +880,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  				{
  					c = mbchar(s);
  					d = mbchar(t);
@@ -1562,7 +1540,7 @@ index d19b15398..33dd92c45 100644
  						return NONE;
  				}
  			}
-@@ -955,14 +956,14 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -957,14 +958,14 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  			e = env->end;
  			if (!(rex->flags & REG_MINIMAL))
  			{
@@ -1579,7 +1557,7 @@ index d19b15398..33dd92c45 100644
  					s = t;
  				}
  				for (; i-- >= rex->lo; s -= b[i])
-@@ -1032,7 +1033,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -1034,7 +1035,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  			if (!env->stack)
  				return BEST;
  			n = s - env->beg;
@@ -1588,7 +1566,7 @@ index d19b15398..33dd92c45 100644
  			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
  			if ((i = env->best[0].rm_eo) >= 0)
  			{
-@@ -1054,8 +1055,8 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -1056,8 +1057,8 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  						     0) <= 0)
  					return GOOD;
  			}
@@ -1599,7 +1577,7 @@ index d19b15398..33dd92c45 100644
  			n = env->pos->cur;
  			pos = vector(Pos_t, env->bestpos, n);
  			if (!pos)
-@@ -1063,8 +1064,8 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -1065,8 +1066,8 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  				env->error = REG_ESPACE;
  				return BAD;
  			}
@@ -1610,7 +1588,7 @@ index d19b15398..33dd92c45 100644
  			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
  			return GOOD;
  		}
-@@ -1105,14 +1106,14 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
+@@ -1107,14 +1108,14 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
  				}
  				else
  				{
@@ -1627,7 +1605,7 @@ index d19b15398..33dd92c45 100644
  					for (; i-- >= m; s -= b[i])
  						switch (follow(env, rex, cont, s))
  						{
-@@ -1348,9 +1349,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+@@ -1350,9 +1351,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
  			n = ((i + 7) >> 3) + 1;
  			catcher.type = REX_NEG_CATCH;
  			catcher.re.neg_catch.beg = s;
@@ -1639,7 +1617,7 @@ index d19b15398..33dd92c45 100644
  			catcher.next = rex->next;
  			if (parse(env, rex->re.group.expr.rex, &catcher, s) == BAD)
  				r = BAD;
-@@ -1447,7 +1448,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+@@ -1449,7 +1450,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
  				}
  				else
  				{
@@ -1648,7 +1626,7 @@ index d19b15398..33dd92c45 100644
  					{
  						env->error = REG_ESPACE;
  						return BAD;
-@@ -1460,7 +1461,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+@@ -1462,7 +1463,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
  							t = s;
  							if (mbchar(t) != c)
  								break;
@@ -1657,7 +1635,7 @@ index d19b15398..33dd92c45 100644
  						}
  					}
  					else
-@@ -1468,9 +1469,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+@@ -1470,9 +1471,9 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
  						for (i = 0; s < e && i < n; i++, s = t)
  						{
  							t = s;
@@ -1669,7 +1647,7 @@ index d19b15398..33dd92c45 100644
  						}
  					}
  					for (; i-- >= m; s -= b[i])
-@@ -1576,7 +1577,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+@@ -1578,7 +1579,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
  						for (i = 0; i < m && s < e; i++, s = t)
  						{
  							t = s;
@@ -1678,7 +1656,7 @@ index d19b15398..33dd92c45 100644
  								return r;
  						}
  						while (i++ <= n)
-@@ -1593,7 +1594,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
+@@ -1595,7 +1596,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
  							}
  							if (s >= e)
  								break;
@@ -1687,7 +1665,7 @@ index d19b15398..33dd92c45 100644
  								break;
  						}
  					}
-@@ -1635,7 +1636,7 @@ DEBUG_TEST(0x0002,(sfprintf(sfstdout, "AHA#%04d %p re.group.back=%d re.group.exp
+@@ -1637,7 +1638,7 @@ DEBUG_TEST(0x0002,(sfprintf(sfstdout, "AHA#%04d %p re.group.back=%d re.group.exp
  			return r;
  		case REX_STRING:
  DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'\n", __LINE__, debug_flag, rexname(rex), rex->re.string.size, rex->re.string.base, env->end - s, s)),(0));
@@ -1696,7 +1674,7 @@ index d19b15398..33dd92c45 100644
  				return NONE;
  			t = rex->re.string.base;
  			e = t + rex->re.string.size;
-@@ -1657,7 +1658,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
+@@ -1659,7 +1660,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
  				{
  					c = mbchar(s);
  					d = mbchar(t);
@@ -1705,7 +1683,7 @@ index d19b15398..33dd92c45 100644
  						return NONE;
  				}
  			}
-@@ -1668,7 +1669,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
+@@ -1670,7 +1671,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s \"%-.*s\" `%-.*s'
  			return parsetrie(env, x, rex, cont, s);
  		case REX_EXEC:
  			u = 0;
@@ -1714,7 +1692,7 @@ index d19b15398..33dd92c45 100644
  			e = (unsigned char*)u;
  			if (e >= s && e <= env->end)
  				s = e;
-@@ -1780,9 +1781,9 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
+@@ -1782,9 +1783,9 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
  {
  	ssize_t		n = 0;
  	int		i;
@@ -1726,18 +1704,18 @@ index d19b15398..33dd92c45 100644
  	int		advance;
  	Env_t*		env;
  
-@@ -1806,8 +1807,8 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
+@@ -1808,8 +1809,8 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
  	stknew(env->mst, &env->stk);
  	if (env->stack = env->hard || !(env->flags & REG_NOSUB) && nmatch)
  	{
 -		n = env->nsub;
 -		if (!(env->match = stkpush(env->mst, 2 * (n + 1) * sizeof(regmatch_t))) ||
 +		n = (ssize_t)env->nsub;
-+		if (!(env->match = stkpush(env->mst, 2 * ((size_t)n + 1) * sizeof(regmatch_t))) ||
++		if (!(env->match = stkpush(env->mst, 2 * (size_t)(n + 1) * sizeof(regmatch_t))) ||
  		    !env->pos && !(env->pos = vecopen(16, sizeof(Pos_t))) ||
  		    !env->bestpos && !(env->bestpos = vecopen(16, sizeof(Pos_t))))
  		{
-@@ -1826,7 +1827,7 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
+@@ -1828,7 +1829,7 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
  	DEBUG_TEST(0x1000,(list(env,env->rex)),(0));
  	k = REG_NOMATCH;
  	j = env->once || (flags & REG_LEFT);
@@ -1746,7 +1724,7 @@ index d19b15398..33dd92c45 100644
  	while ((i = parse(env, env->rex, &env->done, (unsigned char*)s)) == NONE || advance && !env->best[0].rm_eo && !(advance = 0))
  	{
  		if (j)
-@@ -1917,7 +1918,7 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
+@@ -1919,7 +1920,7 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
  	if (oldmatch)
  	{
  		regmatch_t*	match;
@@ -1755,7 +1733,7 @@ index d19b15398..33dd92c45 100644
  		int		r;
  
  		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
-@@ -1925,8 +1926,8 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
+@@ -1927,8 +1928,8 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
  		if (!(r = regnexec_20120528(p, s, len, nmatch, match, flags)))
  			for (i = 0; i < nmatch; i++)
  			{
