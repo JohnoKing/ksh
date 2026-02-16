@@ -276,7 +276,7 @@ b_getconf(int argc, char** argv, Shbltin_t* context)
 	/*
 	 * Run the external getconf command
 	 */
-	new_argv = stkalloc(stkstd, ((size_t)argc + 3) * sizeof(char*));
+	new_argv = stkalloc(stkstd, (size_t)(argc + 3) * sizeof(char*));
 	new_argv[0] = "command";
 	new_argv[1] = "-x";
 	new_argv[2] = native;

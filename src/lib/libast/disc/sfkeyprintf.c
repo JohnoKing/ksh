@@ -151,7 +151,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 
 	NOT_USED(sp);
 	fp->level++;
-	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)fp->fmt.n_str + 1)))
+	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)(fp->fmt.n_str + 1))))
 	{
 		memcpy(v, fp->fmt.t_str, (size_t)fp->fmt.n_str);
 		v[fp->fmt.n_str] = 0;

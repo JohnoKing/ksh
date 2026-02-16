@@ -2634,7 +2634,7 @@ int sh_run(int argn, char *argv[])
 	dp = stkalloc(sh.stk, sizeof(struct dolnod) + ARG_SPARE*sizeof(char*) + (size_t)argn*sizeof(char*));
 	dp->dolnum = argn;
 	dp->dolbot = ARG_SPARE;
-	memcpy(dp->dolval+ARG_SPARE, argv, ((size_t)argn+1)*sizeof(char*));
+	memcpy(dp->dolval+ARG_SPARE, argv, (size_t)(argn+1)*sizeof(char*));
 	t->comarg.dp = dp;
 	if(!strchr(argv[0],'/'))
 		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);

@@ -412,7 +412,7 @@ int  sh_iovalidfd(int fd)
 	if(n > max)
 		n = (int)max;
 	max = sh.lim.open_max;
-	sh.sftable = (Sfio_t**)sh_calloc(((size_t)n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
+	sh.sftable = (Sfio_t**)sh_calloc((size_t)(n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
 	if(max)
 		memcpy(sh.sftable,sftable,(size_t)max*sizeof(Sfio_t*));
 	sh.fdptrs = (int**)(&sh.sftable[n]);

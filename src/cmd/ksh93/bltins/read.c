@@ -381,7 +381,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 		/* reserved buffer */
 		if((c=size)>=(ssize_t)sizeof(buf))
 		{
-			var = (char*)sh_malloc((size_t)c+1);
+			var = (char*)sh_malloc((size_t)(c+1));
 			end = var + c;
 		}
 		else
@@ -443,7 +443,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 						m = (end - var) + (c - (end - cur));
 						if (var == buf)
 						{
-							v = (char*)sh_malloc((size_t)m+1);
+							v = (char*)sh_malloc((size_t)(m+1));
 							var = memcpy(v, var, (size_t)(cur - var));
 						}
 						else

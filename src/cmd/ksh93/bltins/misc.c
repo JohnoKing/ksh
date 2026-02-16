@@ -158,7 +158,7 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
 			memset(t, 0, sizeof(struct comnod));
 			dp->dolnum = argc;
 			dp->dolbot = ARG_SPARE;
-			memcpy(dp->dolval+ARG_SPARE, argv, ((size_t)argc+1)*sizeof(char*));
+			memcpy(dp->dolval+ARG_SPARE, argv, (size_t)(argc+1)*sizeof(char*));
 			t->comarg.dp = dp;
 			sh_exec((Shnode_t*)t,sh_isstate(SH_ERREXIT));
 			sh_offstate(SH_EXEC);

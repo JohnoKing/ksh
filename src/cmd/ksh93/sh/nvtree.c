@@ -1027,7 +1027,7 @@ static char *walk_tree(Namval_t *np, Namval_t *xp, int flags)
 		sh.var_tree = save_tree;
 		return NULL;
 	}
-	argv = stkalloc(sh.stk,((size_t)n+1)*sizeof(char*));
+	argv = stkalloc(sh.stk,(size_t)(n+1)*sizeof(char*));
 	argv += n;
 	*argv = 0;
 	for(; ap; ap=ap->argchn.ap)

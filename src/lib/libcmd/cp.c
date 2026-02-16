@@ -876,12 +876,12 @@ b_cp(int argc, char** argv, Shbltin_t* context)
 		argc--;
 		argv++;
 	}
-	if (!(v = stkalloc(stkstd, ((size_t)argc + 2) * sizeof(char*))))
+	if (!(v = stkalloc(stkstd, (size_t)(argc + 2) * sizeof(char*))))
 	{
 		error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
 		UNREACHABLE();
 	}
-	memcpy(v, argv, ((size_t)argc + 1) * sizeof(char*));
+	memcpy(v, argv, (size_t)(argc + 1) * sizeof(char*));
 	argv = v;
 	if (!standard)
 	{

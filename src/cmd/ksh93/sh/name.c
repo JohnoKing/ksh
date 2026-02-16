@@ -2164,7 +2164,7 @@ char **sh_envgen(void)
 	nv_offattr(L_ARGNOD,NV_EXPORT);
 	namec = nv_scan(sh.var_tree,nullscan,NULL,NV_EXPORT,NV_EXPORT);
 	namec += sh.save_env_n;
-	er = stkalloc(sh.stk,((size_t)namec+4)*sizeof(char*));
+	er = stkalloc(sh.stk,(size_t)(namec+4)*sizeof(char*));
 	data.argnam = (er+=2) + sh.save_env_n;
 	/* Physically copy the saved non-importable env vars, as the old environ[] may be freed by exscript() */
 	for (i = 0; i < sh.save_env_n; i++)

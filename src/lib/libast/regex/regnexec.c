@@ -1810,7 +1810,7 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
 	if (env->stack = env->hard || !(env->flags & REG_NOSUB) && nmatch)
 	{
 		n = (ssize_t)env->nsub;
-		if (!(env->match = stkpush(env->mst, 2 * ((size_t)n + 1) * sizeof(regmatch_t))) ||
+		if (!(env->match = stkpush(env->mst, 2 * (size_t)(n + 1) * sizeof(regmatch_t))) ||
 		    !env->pos && !(env->pos = vecopen(16, sizeof(Pos_t))) ||
 		    !env->bestpos && !(env->bestpos = vecopen(16, sizeof(Pos_t))))
 		{

@@ -70,7 +70,7 @@ int sfungetc(Sfio_t*	f,	/* push back one byte to this stream */
 	{	uchar*	data;
 		if(f->size < 0)
 			f->size = 0;
-		if(!(data = (uchar*)malloc((size_t)f->size+16)))
+		if(!(data = (uchar*)malloc((size_t)(f->size+16))))
 		{	c = -1;
 			goto done;
 		}

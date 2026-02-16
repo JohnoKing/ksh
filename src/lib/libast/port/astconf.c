@@ -467,7 +467,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 		fp->value = 0;
 	if (n == 1 && (*value == '0' || *value == '-'))
 		n = 0;
-	if(!(newvalue = malloc((size_t)n + 1)))
+	if(!(newvalue = malloc((size_t)(n + 1))))
 	{
 		if(fp->value && fp->value != null)
 			free(fp->value);

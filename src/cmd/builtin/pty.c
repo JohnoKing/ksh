@@ -1091,7 +1091,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 		for (s = stty; *s; s++)
 			if (isspace(*s))
 				n++;
-		ap = newof(0, Argv_t, 1, ((size_t)n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
+		ap = newof(0, Argv_t, 1, (size_t)(n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
 		ap->argc = n + 1;
 		ap->argv = (char**)(ap + 1);
 		ap->args = (char*)(ap->argv + n + 2);
