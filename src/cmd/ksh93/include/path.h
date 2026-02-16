@@ -37,7 +37,7 @@
 #define PATH_CDPATH		0004U
 #define PATH_BFPATH		0010U
 #define PATH_SKIP		0020U
-#define PATH_STD_DIR		0100U	/* directory is on  $(getconf PATH) */
+#define PATH_STD_DIR		0100U	/* directory is on $(getconf PATH) */
 
 #define PATH_OFFSET	2		/* path offset for path_join */
 #define MAXDEPTH	1024		/* maximum shell function recursion depth */
