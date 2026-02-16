@@ -309,9 +309,9 @@ int sh_argopts(int argc,char *argv[])
 		if(action==SORT)
 		{
 			if(argc>0)
-				strsort(argv,argc,strcoll);
+				strsort(argv,argc,ast.locale.collate);
 			else
-				strsort(sh.st.dolv+1,sh.st.dolc,strcoll);
+				strsort(sh.st.dolv+1,sh.st.dolc,ast.locale.collate);
 		}
 		if(np)
 			nv_setvec(np,0,argc,argv);
@@ -708,7 +708,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
 			if(!(argp=nextarg) || (argp->argflag&ARG_MAKE))
 			{
 				if((argn=(int)(comargm-comargn))>1)
-					strsort(comargn,argn,strcoll);
+					strsort(comargn,argn,ast.locale.collate);
 				comargm = comargn;
 			}
 			argi++;

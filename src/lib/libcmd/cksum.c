@@ -423,7 +423,7 @@ list(State_t* state, Sfio_t* lp)
 static int
 order(FTSENT* const* f1, FTSENT* const* f2)
 {
-	return strcoll((*f1)->fts_name, (*f2)->fts_name);
+	return ast.locale.collate((*f1)->fts_name, (*f2)->fts_name);
 }
 
 /*

@@ -43,11 +43,8 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 	char*			b;
 	char*			x;
 	const char*		t;
-	ptrdiff_t		i;
 	ptrdiff_t		r;
 	wchar_t			w;
-	char			xfm[256];
-	char			tmp[sizeof(xfm)];
 
 	if (size < 2 || (term = *s) != '.' && term != '=' || !*++s || *s == term && *(s + 1) == ']')
 		goto nope;
@@ -90,11 +87,17 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 	if (b >= x)
 		goto done;
 	*b = 0;
-	for (i = 0; i < r && i < (ptrdiff_t)sizeof(tmp) - 1; i++)
-		tmp[i] = '0';
-	tmp[i] = 0;
-	if (mbxfrm(xfm, buf, sizeof(xfm)) >= mbxfrm(xfm, tmp, sizeof(xfm)))
+	if(!ast.locale.transform)
 		goto nope;
+	{
+		char		tmp[256];
+		ptrdiff_t	i;
+		for (i = 0; i < r && i < (int)sizeof(tmp) - 1; i++)
+			tmp[i] = '0';
+		tmp[i] = 0;
+		if (ast.locale.transform(NULL, buf, 0) >= ast.locale.transform(NULL, tmp, 0))
+			goto nope;
+	}
 	t = (const char*)buf;
  done:
 	if (r <= (ptrdiff_t)size && (char*)t != buf)

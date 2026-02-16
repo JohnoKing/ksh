@@ -825,7 +825,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 		*argv = 0;
 		if (!(flags & GLOB_NOSORT) && (argv - av) > 1)
 		{
-			strsort(av, (int)(argv - av), strcoll);
+			strsort(av, (int)(argv - av), ast.locale.collate);
 			if (gp->gl_starstar > 1)
 				av[gp->gl_pathc = (size_t)struniq(av, (int)(argv - av))] = 0;
 			gp->gl_starstar = 0;

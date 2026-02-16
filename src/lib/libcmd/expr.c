@@ -458,16 +458,16 @@ static int expr_cmp(State_t* state, Node_t *np)
 			np->num = streq(left,right);
 			break;
 		    case 1:
-			np->num = (strcoll(left,right)>0);
+			np->num = ast.locale.collate(left,right) > 0;
 			break;
 		    case 2:
-			np->num = (strcoll(left,right)<0);
+			np->num = ast.locale.collate(left,right) < 0;
 			break;
 		    case 3:
-			np->num = (strcoll(left,right)>=0);
+			np->num = ast.locale.collate(left,right) >= 0;
 			break;
 		    case 4:
-			np->num = (strcoll(left,right)<=0);
+			np->num = ast.locale.collate(left,right) <= 0;
 			break;
 		    case 5:
 			np->num = !streq(left,right);

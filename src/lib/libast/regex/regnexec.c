@@ -578,7 +578,8 @@ collelt(Celt_t* ce, char* key, int c, ptrdiff_t x)
 {
 	Ckey_t	elt;
 
-	mbxfrm(elt, key, COLL_KEY_MAX);
+	assert(ast.locale.transform != 0);
+	ast.locale.transform((char*)elt, key, COLL_KEY_MAX);
 	for (;; ce++)
 	{
 		switch (ce->typ)
@@ -646,7 +647,6 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 {
 	unsigned char*		t;
 	wchar_t			c;
-	size_t			z;
 	int			r;
 	ptrdiff_t		w;
 	ptrdiff_t		x;
@@ -654,6 +654,7 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 	Ckey_t			key;
 	Ckey_t			elt;
 
+	assert(ast.locale.transform != 0);
 	ic = (rex->flags & REG_ICASE);
 	if ((w = MBSIZE(s)) > 1)
 	{
@@ -680,15 +681,16 @@ collmatch(Rex_t* rex, unsigned char* s, unsigned char* e, unsigned char** p)
 				x = COLL_KEY_MAX;
 			while (w < x)
 			{
+				size_t	z;
 				c = s[w];
 				if (!isalpha(c))
 					break;
-				z = mbxfrm(elt, key, COLL_KEY_MAX);
+				z = ast.locale.transform((char*)elt, (const char*)key, COLL_KEY_MAX);
 				if (ic && isupper(c))
 					c = tolower(c);
 				key[w] = (unsigned char)c;
 				key[w + 1] = 0;
-				if (mbxfrm(elt, key, COLL_KEY_MAX) != z)
+				if (ast.locale.transform((char*)elt, (const char*)key, COLL_KEY_MAX) != z)
 					break;
 				w++;
 			}

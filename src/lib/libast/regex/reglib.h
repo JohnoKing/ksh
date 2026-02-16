@@ -55,6 +55,12 @@ typedef struct regsubop_s
 	regsubop_t*	re_ops;		/* rhs ops			*/ \
 	char		re_rhs[1];	/* substitution rhs		*/
 
+#include <ast_release.h>
+#if _AST_release
+#define NDEBUG
+#endif
+#include <assert.h>
+
 #include "regex.h"
 
 #include <ctype.h>
