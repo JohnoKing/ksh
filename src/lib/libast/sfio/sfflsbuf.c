@@ -26,7 +26,7 @@
 */
 
 ptrdiff_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream */
-		  ptrdiff_t	c)	/* if c>=0, c is also written out */
+		  ptrdiff_t c)		/* if c>=0, c is also written out */
 {
 	ssize_t		n, w, written;
 	uchar*		data;

@@ -87,6 +87,7 @@ static void fold(Sfio_t *in, Sfio_t *out, ptrdiff_t width, const char *cont, siz
 {
 	char *cp, *first;
 	ptrdiff_t n, col=0;
+	ssize_t s;
 	char x=0;
 	char *last_space=0;
 	cols[0] = 0;
@@ -94,15 +95,15 @@ static void fold(Sfio_t *in, Sfio_t *out, ptrdiff_t width, const char *cont, siz
 	{
 		if (!(cp  = sfgetr(in,'\n',0)))
 		{
-			if (!(cp = sfgetr(in,'\n',-1)) || (n = sfvalue(in)) <= 0)
+			if (!(cp = sfgetr(in,'\n',-1)) || (s = sfvalue(in)) <= 0)
 				break;
-			x = cp[--n];
-			cp[n] = '\n';
+			x = cp[--s];
+			cp[s] = '\n';
 		}
 		/* special case -b since no column adjustment is needed */
-		if(cols['\b']==0 && (n=sfvalue(in))<=width)
+		if(cols['\b']==0 && (s=sfvalue(in))<=width)
 		{
-			sfwrite(out,cp,(size_t)n);
+			sfwrite(out,cp,(size_t)s);
 			continue;
 		}
 		first = cp;

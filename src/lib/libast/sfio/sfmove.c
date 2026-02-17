@@ -150,7 +150,7 @@ Sfoff_t sfmove(Sfio_t*	fr,	/* moving data from this stream */
 						r = (ssize_t)n;
 				}
 				else	r = -1;
-				if((r = (ssize_t)SFFILBUF(fr,r)) <= 0)
+				if((r = (ssize_t)SFFILBUF(fr,(ptrdiff_t)r)) <= 0)
 					break;
 				next = fr->next;
 			}

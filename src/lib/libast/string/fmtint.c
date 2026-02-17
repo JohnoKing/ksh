@@ -85,7 +85,7 @@ fmtint(intmax_t ll, int unsign)
 	char		*buff;
 	uintmax_t	n,m;
 	int		j=0;
-	ptrdiff_t	k=3*(ptrdiff_t)sizeof(ll);
+	signed_size_t	k=3*(signed_size_t)sizeof(ll);
 	if(unsign || ll>=0)
 		n = (uintmax_t)ll;
 	else

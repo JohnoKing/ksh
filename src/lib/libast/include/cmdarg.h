@@ -72,9 +72,9 @@ typedef struct Cmdarg_s			/* cmdopen() handle		*/
 } Cmdarg_t;
 
 #ifndef cmdopen
-extern Cmdarg_t*	cmdopen(char**, int, ptrdiff_t, const char*, uint32_t);
+extern Cmdarg_t*	cmdopen(char**, int, signed_size_t, const char*, uint32_t);
 #endif
-extern Cmdarg_t*	cmdopen_20120411(char**, int, ptrdiff_t, const char*, Cmddisc_t*);
+extern Cmdarg_t*	cmdopen_20120411(char**, int, signed_size_t, const char*, Cmddisc_t*);
 extern int		cmdflush(Cmdarg_t*);
 extern int		cmdarg(Cmdarg_t*, const char*, int);
 extern int		cmdclose(Cmdarg_t*);

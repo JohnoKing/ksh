@@ -103,7 +103,7 @@ extern const char is_spcbuiltin[];
 struct Enum
 {
 	Namfun_t	hdr;
-	ptrdiff_t	nelem;
+	signed_size_t	nelem;
 	char		iflag;
 	const char	*values[1];
 };
@@ -111,7 +111,7 @@ struct Enum
 /*
  * For range checking in arith.c
  */
-ptrdiff_t b_enum_nelem(Namfun_t *fp)
+signed_size_t b_enum_nelem(Namfun_t *fp)
 {
 	return ((struct Enum *)fp)->nelem;
 }
@@ -120,7 +120,7 @@ static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 {
 	Namval_t	*np;
 	struct Enum	*ep;
-	ptrdiff_t	n=0;
+	signed_size_t	n=0;
 	const char	*v;
 	NOT_USED(op);
 	np = *(Namval_t**)(fp+1);
@@ -200,7 +200,7 @@ static char* get_enum(Namval_t* np, Namfun_t *fp)
 {
 	static char buff[6];
 	struct Enum *ep = (struct Enum*)fp;
-	ptrdiff_t n = nv_getn(np,fp);
+	signed_size_t n = nv_getn(np,fp);
 	if(n < ep->nelem)
 		return (char*)ep->values[n];
 	sfsprintf(buff,sizeof(buff),"%td%c",n,0);
@@ -278,7 +278,7 @@ int b_enum(int argc, char** argv, Shbltin_t *context)
 		sz += n*sizeof(char*);
 		ep = sh_newof(0,struct Enum,1,sz);
 		ep->iflag = iflag;
-		ep->nelem = (ptrdiff_t)n;
+		ep->nelem = (signed_size_t)n;
 		cp = (char*)&ep->values[n+1];
 		nv_putsub(np, NULL, ARRAY_SCAN);
 		ep->values[n] = 0;

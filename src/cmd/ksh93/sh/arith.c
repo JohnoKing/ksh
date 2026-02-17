@@ -110,7 +110,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 	{
 #if SHOPT_FIXEDARRAY
 		int dim;
-		ptrdiff_t n;
+		signed_size_t n;
 		dim = nv_refdimen(np);
 		n = nv_refindex(np);
 #endif /* SHOPT_FIXEDARRAY */
@@ -327,7 +327,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			}
 			if(c=='(')
 			{
-				ptrdiff_t off=stktell(sh.stk);
+				ptrdiff_t off = stktell(sh.stk);
 				size_t fsize = (size_t)(str- (char*)(*ptr));
 				const struct mathtab *tp;
 				c = **ptr;
@@ -487,7 +487,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			{
 				if(val[2]=='#')
 					val += 3;
-				if((str-val)>(2*(ptrdiff_t)sizeof(Sflong_t)))
+				if((str-val)>(2*(signed_size_t)sizeof(Sflong_t)))
 				{
 					Sfdouble_t rr;
 					rr = strtold(val,&str);

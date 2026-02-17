@@ -28,7 +28,7 @@
 
 char* sfvprints(const char* form, va_list args)
 {
-	ptrdiff_t	rv;
+	signed_size_t	rv;
 	Sfnotify_f	notify = _Sfnotify;
 	static Sfio_t*	f;
 
@@ -60,7 +60,7 @@ char* sfprints(const char* form, ...)
 	return s;
 }
 
-ptrdiff_t sfvaprints(char** sp, const char* form, va_list args)
+signed_size_t sfvaprints(char** sp, const char* form, va_list args)
 {
 	char	*s;
 	size_t	n;
@@ -71,13 +71,13 @@ ptrdiff_t sfvaprints(char** sp, const char* form, va_list args)
 	{	if(!(*sp = (char*)malloc(n = strlen(s)+1)) )
 			return -1;
 		memcpy(*sp, s, n);
-		return (ptrdiff_t)n-1;
+		return (signed_size_t)n-1;
 	}
 }
 
-ptrdiff_t sfaprints(char** sp, const char* form, ...)
+signed_size_t sfaprints(char** sp, const char* form, ...)
 {
-	ptrdiff_t n;
+	signed_size_t n;
 	va_list	args;
 	va_start(args,form);
 	n = sfvaprints(sp, form, args);

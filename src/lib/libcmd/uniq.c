@@ -79,22 +79,24 @@ static const char usage[] =
 
 typedef int (*Compare_f)(const char*, const char*, size_t);
 
-static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, ptrdiff_t width, int mode, int* all, Compare_f compare)
+static int uniq(Sfio_t *fdin, Sfio_t *fdout, signed_size_t fields, signed_size_t chars, signed_size_t width, int mode, int* all, Compare_f compare)
 {
-	ptrdiff_t n, f, outsize=0,cwidth=0,sep;
-	int mb = mbwide();
+	signed_size_t f;
+	ptrdiff_t n, outsize=0, cwidth=0;
+	int sep, mb = mbwide();
 	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
 	char *orecp=NULL, *sbufp=0, *outbuff;
-	ptrdiff_t reclen,oreclen= -1,count=0,next;
+	ptrdiff_t reclen,oreclen= -1;
+	int count=0,next;
 	if(mode&C_FLAG)
 		cwidth = CWIDTH+1;
 	while(1)
 	{
 		if(bufp = sfgetr(fdin,'\n',0))
-			n = sfvalue(fdin);
+			n = (ptrdiff_t)sfvalue(fdin);
 		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
 		{
-			n = sfvalue(fdin);
+			n = (ptrdiff_t)sfvalue(fdin);
 			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
 			bufp[n++] = '\n';
 		}
@@ -139,7 +141,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, 
 					reclen = mp - cp;
 				}
 				else
-					reclen = width;
+					reclen = (ptrdiff_t)width;
 			}
 		}
 		else
@@ -219,7 +221,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, 
 		else
 			sep = all && *all > 0;
 		/* save current record */
-		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = sfvalue(fdout)) < 0)
+		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = (ptrdiff_t)sfvalue(fdout)) < 0)
 			return 1;
 		outp = outbuff;
 		if(outsize < n+cwidth+sep)
@@ -246,7 +248,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 {
 	int mode=0;
 	char *cp;
-	ptrdiff_t fields=0, chars=0, width=-1;
+	signed_size_t fields=0, chars=0, width=-1;
 	Sfio_t *fpin, *fpout;
 	int* all = 0;
 	int sep;
@@ -287,15 +289,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 			continue;
 		case 'f':
 			if(*opt_info.option=='-')
-				fields = (ptrdiff_t)opt_info.num;
+				fields = (signed_size_t)opt_info.num;
 			else
-				chars = (ptrdiff_t)opt_info.num;
+				chars = (signed_size_t)opt_info.num;
 			continue;
 		case 's':
-			chars = (ptrdiff_t)opt_info.num;
+			chars = (signed_size_t)opt_info.num;
 			continue;
 		case 'w':
-			width = (ptrdiff_t)opt_info.num;
+			width = (signed_size_t)opt_info.num;
 			continue;
 		case ':':
 			error(2, "%s", opt_info.arg);

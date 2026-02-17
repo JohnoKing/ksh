@@ -236,14 +236,14 @@ static int must_disallow_bracepat(char *cp, int withbackslash)
 	return change ? (c && incompat && !shellpat) : -1;
 }
 
-ptrdiff_t path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
+signed_size_t path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
 /*@
 	assume todo!=0;
 	return count satisfying count>=1;
 @*/
 {
 	char *cp;
-	ptrdiff_t brace;
+	signed_size_t brace;
 	int nobracepat = 0;
 	struct argnod *ap;
 	struct argnod *top = 0;
@@ -251,7 +251,7 @@ ptrdiff_t path_generate(struct argnod *todo, struct argnod **arghead, int musttr
 	char *pat = NULL, *rescan;
 	char *format;
 	char comma, range=0;
-	ptrdiff_t first = 0, last = 0, incr = 0, count = 0;
+	signed_size_t first = 0, last = 0, incr = 0, count = 0;
 	char tmp[32], end[1];
 	todo->argchn.ap = 0;
 again:
@@ -280,12 +280,12 @@ again:
 				incr = 1;
 				if(isdigit(*pat) || *pat=='+' || *pat=='-')
 				{
-					first = strtol(pat,&endc,0);
+					first = (signed_size_t)strtol(pat,&endc,0);
 					if(endc==(cp-1))
 					{
-						last = strtol(cp+1,&endc,0);
+						last = (signed_size_t)strtol(cp+1,&endc,0);
 						if(*endc=='.' && endc[1]=='.')
-							incr = strtol(endc+2,&endc,0);
+							incr = (signed_size_t)strtol(endc+2,&endc,0);
 						else if(last<first)
 							incr = -1;
 						if(incr)
@@ -331,7 +331,7 @@ again:
 					cp += 2;
 					if(*cp=='.')
 					{
-						incr = strtol(cp+2,&endc,0);
+						incr = (signed_size_t)strtol(cp+2,&endc,0);
 						cp = endc;
 					}
 					else if(first>last)
@@ -371,7 +371,7 @@ again:
 			{
 				apin = ap->argchn.ap;
 				if(!sh_isoption(SH_NOGLOB) || sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE))
-					brace = (ptrdiff_t)path_expand(ap->argval,arghead,musttrim);
+					brace = (signed_size_t)path_expand(ap->argval,arghead,musttrim);
 				else
 				{
 					ap->argchn.ap = *arghead;

@@ -81,7 +81,7 @@ static int htable(Dt_t* dt)
 		for(endt = (t = hash->htbl) + hash->tblz; t < endt; ++t)
 		{	for(l = *t; l; l = next)
 			{	next = l->_rght;
-				l->_rght = htbl[k = (ptrdiff_t)(l->_hash&((size_t)(n-1)))];
+				l->_rght = htbl[k = (ssize_t)(l->_hash&((size_t)(n-1)))];
 				htbl[k] = l;
 			}
 		}

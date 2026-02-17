@@ -24,12 +24,13 @@
 **	Written by Kiem-Phong Vo.
 */
 
-ptrdiff_t _sfputl(Sfio_t*	f,	/* write a portable long to this stream */
+signed_size_t _sfputl(Sfio_t*	f,	/* write a portable long to this stream */
 		  Sflong_t	v)	/* the value to be written */
 {
 #define N_ARRAY		(2*sizeof(Sflong_t))
-	uchar	*s, *ps;
-	ptrdiff_t n, p;
+	uchar		*s, *ps;
+	signed_size_t	n;
+	ptrdiff_t	p;
 	uchar		c[N_ARRAY];
 
 	if(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
@@ -49,10 +50,10 @@ ptrdiff_t _sfputl(Sfio_t*	f,	/* write a portable long to this stream */
 	{	*--s = (uchar)(SFUVALUE(v) | SFIO_MORE);
 		v = (Sfulong_t)v >> SFIO_UBITS;
 	}
-	n = (ps-s)+1;
+	n = (signed_size_t)(ps-s)+1;
 
 	if(n > 8 || SFWPEEK(f,ps,p) < n)
-		n = SFWRITE(f,s,(size_t)n); /* write the hard way */
+		n = (signed_size_t)SFWRITE(f,s,(size_t)n); /* write the hard way */
 	else
 	{	switch(n)
 		{

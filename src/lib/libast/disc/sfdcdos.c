@@ -47,17 +47,17 @@ typedef struct _dosdisc
 	Sfoff_t		plast;
 	Sfoff_t		begin;
 	size_t		mapsize;
-	ptrdiff_t	skip;
+	Sfoff_t		skip;
 	ptrdiff_t	bsize;
-	ptrdiff_t	maptop;
+	signed_size_t	maptop;
 	char		last;
 	char		extra;
 } Dosdisc_t;
 
 static void addmapping(Dosdisc_t *dp)
 {
-	ptrdiff_t n;
-	if((n=dp->maptop++)>=(ptrdiff_t)dp->mapsize)
+	signed_size_t n;
+	if((n=dp->maptop++)>=(signed_size_t)dp->mapsize)
 	{
 		dp->mapsize *= 2;
 		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))
@@ -135,7 +135,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 		if(cp > cpmax || *cp=='\n')
 			break;
 	}
-	dp->skip = cp-1 - (char*)buff;
+	dp->skip = (Sfoff_t)(cp-1 - (char*)buff);
 	/* if not \r\n in buffer, just return */
 	if((count = cpmax+1-cp) <=0)
 	{
@@ -240,7 +240,7 @@ static Sfoff_t dos_seek(Sfio_t *iop, Sfoff_t offset, int whence, Sfdisc_t* disc)
 	Dosdisc_t *dp = (Dosdisc_t*)disc;
 	struct map dummy, *mp=0;
 	Sfoff_t physical;
-	ptrdiff_t n;
+	ssize_t n;
 	size_t size;
 retry:
 	switch(whence)

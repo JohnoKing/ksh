@@ -32,7 +32,7 @@
  */
 
 void
-hashsize(Hash_table_t* tab, ptrdiff_t size)
+hashsize(Hash_table_t* tab, signed_size_t size)
 {
 	Hash_bucket_t**		old_s;
 	Hash_bucket_t**		new_s;

@@ -210,7 +210,7 @@ union Shnode_u
 extern void			sh_freeup(void);
 extern void			sh_funstaks(struct slnod*,int);
 extern Sfio_t 			*sh_subshell(Shnode_t*, volatile int, char);
-extern ptrdiff_t		sh_tdump(Sfio_t*, const Shnode_t*);
+extern signed_size_t		sh_tdump(Sfio_t*, const Shnode_t*);
 extern Shnode_t			*sh_trestore(Sfio_t*);
 
 #endif /* _SHNODES_H */

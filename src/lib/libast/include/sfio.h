@@ -86,7 +86,7 @@ struct _sffmt_s
 		((type) ? ((fe)->version = SFIO_VERSION) : (fe)->version)
 
 #define SFFMT_SSHORT	000000010 /* 'hh' flag, char			*/
-#define SFFMT_TFLAG	000000020 /* 't' flag, ptrdiff_t		*/
+#define SFFMT_TFLAG	000000020 /* 't' flag, signed_size_t		*/
 #define SFFMT_ZFLAG	000000040 /* 'z' flag, size_t			*/
 
 #define SFFMT_LEFT	000000100 /* left-justification			*/
@@ -169,7 +169,7 @@ struct _sffmt_s
 #define SFIO_UNBOUND	(-1)	/* unbounded buffer size		*/
 
 extern ptrdiff_t	_Sfi;
-extern ptrdiff_t	_Sfmaxr;
+extern signed_size_t	_Sfmaxr;
 
 /* standard in/out/err streams */
 extern Sfio_t*		sfstdin;
@@ -211,13 +211,13 @@ extern ptrdiff_t	sfputr(Sfio_t*, const char*, int);
 extern char*		sfgetr(Sfio_t*, int, int);
 extern ssize_t		sfnputc(Sfio_t*, int, size_t);
 extern int		sfungetc(Sfio_t*, int);
-extern ptrdiff_t	sfprintf(Sfio_t*, const char*, ...);
+extern signed_size_t	sfprintf(Sfio_t*, const char*, ...);
 extern char*		sfprints(const char*, ...);
-extern ptrdiff_t	sfaprints(char**, const char*, ...);
-extern ptrdiff_t	sfsprintf(char*, size_t, const char*, ...);
-extern ptrdiff_t	sfvsprintf(char*, size_t, const char*, va_list);
-extern ptrdiff_t	sfvasprints(char**, const char*, va_list);
-extern ptrdiff_t	sfvprintf(Sfio_t*, const char*, va_list);
+extern signed_size_t	sfaprints(char**, const char*, ...);
+extern signed_size_t	sfsprintf(char*, size_t, const char*, ...);
+extern signed_size_t	sfvsprintf(char*, size_t, const char*, va_list);
+extern signed_size_t	sfvasprints(char**, const char*, va_list);
+extern signed_size_t	sfvprintf(Sfio_t*, const char*, va_list);
 extern int		sfscanf(Sfio_t*, const char*, ...);
 extern int		sfsscanf(const char*, const char*, ...);
 extern int		sfvsscanf(const char*, const char*, va_list);
@@ -234,11 +234,11 @@ extern int		sfdlen(Sfdouble_t);
 extern int		sfllen(Sflong_t);
 extern int		sfulen(Sfulong_t);
 
-extern ptrdiff_t	sfputd(Sfio_t*, Sfdouble_t);
-extern ptrdiff_t	sfputl(Sfio_t*, Sflong_t);
-extern ptrdiff_t	sfputu(Sfio_t*, Sfulong_t);
-extern ptrdiff_t	sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
-extern ptrdiff_t	sfputc(Sfio_t*, int);
+extern signed_size_t	sfputd(Sfio_t*, Sfdouble_t);
+extern signed_size_t	sfputl(Sfio_t*, Sflong_t);
+extern signed_size_t	sfputu(Sfio_t*, Sfulong_t);
+extern signed_size_t	sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
+extern signed_size_t	sfputc(Sfio_t*, int);
 
 extern Sfdouble_t	sfgetd(Sfio_t*);
 extern Sflong_t		sfgetl(Sfio_t*);
@@ -246,10 +246,10 @@ extern Sfulong_t	sfgetu(Sfio_t*);
 extern Sfulong_t	sfgetm(Sfio_t*, Sfulong_t);
 extern int		sfgetc(Sfio_t*);
 
-extern ptrdiff_t	_sfputd(Sfio_t*, Sfdouble_t);
-extern ptrdiff_t	_sfputl(Sfio_t*, Sflong_t);
-extern ptrdiff_t	_sfputu(Sfio_t*, Sfulong_t);
-extern ptrdiff_t	_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
+extern signed_size_t	_sfputd(Sfio_t*, Sfdouble_t);
+extern signed_size_t	_sfputl(Sfio_t*, Sflong_t);
+extern signed_size_t	_sfputu(Sfio_t*, Sfulong_t);
+extern signed_size_t	_sfputm(Sfio_t*, Sfulong_t, Sfulong_t);
 
 extern ptrdiff_t	_sfflsbuf(Sfio_t*, ptrdiff_t);
 extern ptrdiff_t	_sffilbuf(Sfio_t*, ptrdiff_t);
@@ -329,7 +329,7 @@ __INLINE__ int sferror(Sfio_t* f)		{ return __sf_error(f); }
 __INLINE__ int sfclrerr(Sfio_t* f)		{ return __sf_clrerr(f); }
 __INLINE__ int sfstacked(Sfio_t* f)		{ return __sf_stacked(f); }
 __INLINE__ ssize_t sfvalue(Sfio_t* f)		{ return __sf_value(f); }
-__INLINE__ ptrdiff_t sfslen()			{ return __sf_slen(); }
+__INLINE__ signed_size_t sfslen()			{ return __sf_slen(); }
 __INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
 
 #else

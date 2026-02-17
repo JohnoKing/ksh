@@ -47,7 +47,8 @@ int _sfexcept(Sfio_t*	f,	/* stream where the exception happened */
 			SFOPEN(f,0);
 
 		/* so that exception handler knows what we are asking for */
-		_Sfi = f->val = io;
+		f->val = io;
+		_Sfi = (ptrdiff_t)io;
 		ev = (*(disc->exceptf))(f,type,&io,disc);
 
 		/* relock if necessary */

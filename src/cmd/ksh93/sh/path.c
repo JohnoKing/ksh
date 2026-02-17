@@ -111,14 +111,14 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 	char *cp, **av, **xv;
 	char **avlast= &argv[sh.xargmax], **saveargs=0;
 	char *const *ev;
-	ptrdiff_t size, left;
+	signed_size_t size, left;
 	size_t nlast=1,n;
 	int exitval=0;
 	pid_t pid;
 	if(sh.xargmin < 0)
 		abort();
 	/* get env/args buffer size (may change dynamically on Linux) */
-	if((size = astconf_long(CONF_ARG_MAX)) < 0)
+	if((size = (signed_size_t)astconf_long(CONF_ARG_MAX)) < 0)
 		size = 131072;
 	/* leave fairly generous space for the environment */
 	for(ev=envp; cp= *ev; ev++)
@@ -1049,7 +1049,8 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 	Namval_t*	np;
 	char		*s, *v;
 	int		r;
-	ptrdiff_t	n, pidsize=0;
+	ptrdiff_t	n;
+	signed_size_t	pidsize=0;
 	pid_t		pid= -1;
 	if(!sh_isstate(SH_EXEC) && nv_search(opath,sh.bltin_tree,0))
 	{
@@ -1085,7 +1086,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		stkseek(sh.stk,PATH_OFFSET);
 		sfputr(sh.stk,opath,0);
 		path = stkptr(sh.stk,PATH_OFFSET);
-		while((rlen=readlink(path,buff,PATH_MAX))>0)
+		while((rlen=(ptrdiff_t)readlink(path,buff,PATH_MAX))>0)
 		{
 			buff[rlen] = 0;
 			rlen = PATH_OFFSET;
@@ -1512,7 +1513,8 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 {
 	struct stat statb;
 	int fd;
-	ptrdiff_t n,m;
+	ssize_t n;
+	ptrdiff_t m;
 	size_t k, l;
 	char *sp,*cp,*ep;
 	stkseek(sh.stk,offset+(ptrdiff_t)pp->len);
@@ -1530,7 +1532,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 		}
 		l = (size_t)statb.st_size;
 		stkseek(sh.stk,offset+(ptrdiff_t)pp->len+(ptrdiff_t)l+2);
-		sp = stkptr(sh.stk,offset+(ptrdiff_t)pp->len);
+		sp = stkptr(sh.stk,offset+(signed_size_t)pp->len);
 		*sp++ = '/';
 		n=read(fd,cp=sp,l);
 		sp[n] = 0;
@@ -1555,7 +1557,7 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, ptrd
 			{
 				if(first)
 				{
-					char *ptr = stkptr(sh.stk,offset+(ptrdiff_t)pp->len+1);
+					char *ptr = stkptr(sh.stk,offset+(signed_size_t)pp->len+1);
 					if(ep)
 						memmove(ptr,ep,strlen(ep)+1);
 					path_addcomp(first,old,stkptr(sh.stk,offset),PATH_FPATH|PATH_BFPATH);

@@ -269,8 +269,8 @@ typedef struct _sfpool_s	Sfpool_t;
 struct _sfpool_s
 {	Sfpool_t*	next;
 	uint32_t	mode;		/* type of pool			*/
-	ptrdiff_t	s_sf;		/* size of pool array		*/
-	ptrdiff_t	n_sf;		/* number currently in pool	*/
+	signed_size_t	s_sf;		/* size of pool array		*/
+	signed_size_t	n_sf;		/* number currently in pool	*/
 	Sfio_t**	sf;		/* array of streams		*/
 	Sfio_t*		array[3];	/* start with 3			*/
 };
@@ -343,10 +343,10 @@ struct _fmt_s
 };
 
 struct _fmtpos_s
-{	Sffmt_t	ft;			/* environment			*/
-	Argv_t	argv;			/* argument value		*/
-	int	fmt;			/* original format		*/
-	ptrdiff_t need[FP_INDEX];		/* positions depending on	*/
+{	Sffmt_t		ft;		/* environment			*/
+	Argv_t		argv;		/* argument value		*/
+	int		fmt;		/* original format		*/
+	ptrdiff_t	need[FP_INDEX];	/* positions depending on	*/
 };
 
 #define LEFTP		'('
@@ -544,7 +544,7 @@ typedef struct _sfextern_s
 /* fast peek of a stream */
 #define _SFAVAIL(f,s,n)	((n) = (f)->endb - ((s) = (f)->next) )
 #define SFRPEEK(f,s,n)	(_SFAVAIL(f,s,n) > 0 ? (n) : \
-				((n) = (ssize_t)SFFILBUF(f,-1), (s) = (f)->next, (n)) )
+				((n) = (ptrdiff_t)SFFILBUF(f,-1), (s) = (f)->next, (n)) )
 #define SFWPEEK(f,s,n)	(_SFAVAIL(f,s,n) > 0 ? (n) : \
 				((n) = SFFLSBUF(f,-1), (s) = (f)->next, (n)) )
 

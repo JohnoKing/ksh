@@ -66,7 +66,7 @@ static char *erase_eos;  /* erase to end of screen */
 #define ECHOMODE	3
 #define SYSERR	-1
 
-static int keytrap(Edit_t *,char*, int, ptrdiff_t, int);
+static int keytrap(Edit_t *,char*, int, signed_size_t, int);
 
 #ifndef _POSIX_DISABLE
 #   define _POSIX_DISABLE	0
@@ -618,7 +618,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		 */
 		if(sh.winch && sh_editor_active() && sh_isstate(SH_INTERACTIVE))
 		{
-			ptrdiff_t n;
+			signed_size_t n;
 			if(!ep->e_prompt)
 			{
 				/* ed_emacsread or ed_viread was unable to put the tty in raw mode */
@@ -733,8 +733,8 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 	int c;
 #if SHOPT_MULTIBYTE
 	char *endp, *p=string;
-	ptrdiff_t size;
-	ptrdiff_t offset = ep->e_lookahead + nbyte;
+	signed_size_t size;
+	signed_size_t offset = ep->e_lookahead + nbyte;
 	*(endp = &p[nbyte]) = 0;
 	endp = &p[nbyte];
 	do
@@ -765,7 +765,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 				if(type)
 					c = -c;
 			}
-			else if((endp-p) < (ptrdiff_t)mbmax())
+			else if((endp-p) < (signed_size_t)mbmax())
 			{
 				if(errno == EILSEQ)
 					errno = 0;
@@ -1278,7 +1278,7 @@ size_t	ed_genlen(const genchar *str)
  * Execute keyboard trap on given buffer <inbuff> of given size <isize>
  * <mode> < 0 for vi insert mode
  */
-static int keytrap(Edit_t *ep,char *inbuff,int insize, ptrdiff_t bufsize, int mode)
+static int keytrap(Edit_t *ep,char *inbuff,int insize, signed_size_t bufsize, int mode)
 {
 	char *cp;
 	int savexit;

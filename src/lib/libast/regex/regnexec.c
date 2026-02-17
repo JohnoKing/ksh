@@ -139,7 +139,7 @@ typedef struct
 #define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(size_t)(i)*(v)->siz):(t*)vecseek(&(v),i))
 
 static Vector_t*
-vecopen(ptrdiff_t inc, size_t siz)
+vecopen(signed_size_t inc, size_t siz)
 {
 	Vector_t*	v;
 	Stk_t*		sp;
@@ -162,7 +162,7 @@ vecopen(ptrdiff_t inc, size_t siz)
 }
 
 static void*
-vecseek(Vector_t** p, ptrdiff_t index)
+vecseek(Vector_t** p, ssize_t index)
 {
 	Vector_t*	v = *p;
 
@@ -190,8 +190,8 @@ typedef struct
 	char		data[1];
 } Stk_frame_t;
 
-#define stknew(s,p)	((p)->offset=(off_t)stktell(s),(p)->base=stkfreeze(s,0))
-#define stkold(s,p)	stkset(s,(p)->base,(ptrdiff_t)(p)->offset)
+#define stknew(s,p)	((p)->offset=stktell(s),(p)->base=stkfreeze(s,0))
+#define stkold(s,p)	stkset(s,(p)->base,(p)->offset)
 
 #define stkframe(s)	(*((Stk_frame_t**)stktop(s)-1))
 #define stkdata(s,t)	((t*)stkframe(s)->data)
@@ -246,7 +246,7 @@ _matchpush(Env_t* env, Rex_t* rex)
 	regmatch_t*	m;
 	regmatch_t*	e;
 	regmatch_t*	s;
-	ptrdiff_t	num;
+	signed_size_t	num;
 
 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
 		num = 0;
@@ -797,7 +797,6 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
 	int		c;
 	int		d;
 	int		r;
-	ptrdiff_t	i;
 	ptrdiff_t	n;
 	ptrdiff_t	m;
 	unsigned char*	p;
@@ -810,6 +809,9 @@ parse(Env_t* env, Rex_t* rex, Rex_t* cont, unsigned char* s)
 	Rex_t*		q;
 	Rex_t		catcher;
 	Rex_t		next;
+	ssize_t		cur_save;
+	regoff_t	rf;
+	ptrdiff_t	j;
 
 	for (;;)
 	{
@@ -857,8 +859,8 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			o = &env->match[rex->lo];
 			if (o->rm_so < 0)
 				return NONE;
-			i = o->rm_eo - o->rm_so;
-			e = s + i;
+			rf = o->rm_eo - o->rm_so;
+			e = s + rf;
 			if (e > env->end)
 				return NONE;
 			t = env->beg + o->rm_so;
@@ -901,10 +903,11 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			r = NONE;
 			if (!(rex->flags & REG_MINIMAL))
 			{
+				intmax_t i;
 				for (i = 0; i < n; i++)
 					if (!settst(rex->re.charclass, s[i]))
 					{
-						n = i;
+						n = (ptrdiff_t)i;
 						break;
 					}
 				for (s += n; n-- >= m; s--)
@@ -958,6 +961,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			e = env->end;
 			if (!(rex->flags & REG_MINIMAL))
 			{
+				intmax_t i;
 				if (!(b = stkpush(env->mst, (size_t)n)))
 				{
 					env->error = REG_ESPACE;
@@ -988,6 +992,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			}
 			else
 			{
+				intmax_t i;
 				for (i = 0; i < m && s < e; i++, s = t)
 					if (!collmatch(rex, s, e, &t))
 						return r;
@@ -1037,19 +1042,19 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			n = s - env->beg;
 			r = (int)env->nsub;
 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
-			if ((i = env->best[0].rm_eo) >= 0)
+			if ((rf = env->best[0].rm_eo) >= 0)
 			{
 				if (rex->flags & REG_MINIMAL)
 				{
-					if (n > i)
+					if (n > rf)
 						return GOOD;
 				}
 				else
 				{
-					if (n < i)
+					if (n < rf)
 						return GOOD;
 				}
-				if (n == i && better(env,
+				if (n == rf && better(env,
 						     (Pos_t*)env->bestpos->vec,
 				   		     (Pos_t*)env->pos->vec,
 				   		     (Pos_t*)env->bestpos->vec+env->bestpos->cur,
@@ -1059,15 +1064,15 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			}
 			env->best[0].rm_eo = (regoff_t)n;
 			memcpy(&env->best[1], &env->match[1], (size_t)r * sizeof(regmatch_t));
-			n = env->pos->cur;
-			pos = vector(Pos_t, env->bestpos, n);
+			cur_save = env->pos->cur;
+			pos = vector(Pos_t, env->bestpos, cur_save);
 			if (!pos)
 			{
 				env->error = REG_ESPACE;
 				return BAD;
 			}
-			env->bestpos->cur = (ssize_t)n;
-			memcpy(env->bestpos->vec, env->pos->vec, (size_t)n * sizeof(Pos_t));
+			env->bestpos->cur = cur_save;
+			memcpy(env->bestpos->vec, env->pos->vec, (size_t)cur_save * sizeof(Pos_t));
 			DEBUG_TEST(0x0100,(sfprintf(sfstdout,"AHA#%04d 0x%04x %s (%z,%z)(%z,%z)(%z,%z)(%z,%z) (%z,%z)(%z,%z)\n", __LINE__, debug_flag, rexname(rex), env->best[0].rm_so, env->best[0].rm_eo, env->best[1].rm_so, env->best[1].rm_eo, env->best[2].rm_so, env->best[2].rm_eo, env->best[3].rm_so, env->best[3].rm_eo, env->match[0].rm_so, env->match[0].rm_eo, env->match[1].rm_so, env->match[1].rm_eo)),(0));
 			return GOOD;
 		}
@@ -1081,12 +1086,15 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			if (m > n)
 				return NONE;
 			if ((c = rex->explicit) >= 0 && !mbwide())
+			{
+				intmax_t i;
 				for (i = 0; i < n; i++)
 					if (s[i] == c)
 					{
-						n = i;
+						n = (ptrdiff_t)i;
 						break;
 					}
+			}
 			r = NONE;
 			if (!(rex->flags & REG_MINIMAL))
 			{
@@ -1108,6 +1116,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				}
 				else
 				{
+					intmax_t i;
 					if (!(b = stkpush(env->mst, (size_t)n)))
 					{
 						env->error = REG_ESPACE;
@@ -1154,6 +1163,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				}
 				else
 				{
+					intmax_t i;
 					e = env->end;
 					for (i = 0; s < e && i < m && *s != c; i++)
 						s += MBSIZE(s);
@@ -1347,8 +1357,8 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 		case REX_NEG:
 			if (LEADING(env, rex, s))
 				return NONE;
-			i = env->end - s;
-			n = ((i + 7) >> 3) + 1;
+			j = env->end - s;
+			n = ((j + 7) >> 3) + 1;
 			catcher.type = REX_NEG_CATCH;
 			catcher.re.neg_catch.beg = s;
 			if (!(p = stkpush(env->mst, (size_t)n)))
@@ -1360,10 +1370,10 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 			else
 			{
 				r = NONE;
-				for (; i >= 0; i--)
-					if (!bittst(p, i))
+				for (; j >= 0; j--)
+					if (!bittst(p, j))
 					{
-						switch (follow(env, rex, cont, s + i))
+						switch (follow(env, rex, cont, s + j))
 						{
 						case BAD:
 							r = BAD;
@@ -1420,6 +1430,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 			c = rex->re.onechar;
 			if (!(rex->flags & REG_MINIMAL))
 			{
+				intmax_t i;
 				if (!mbwide())
 				{
 					if (p = rex->map)
@@ -1547,6 +1558,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 				}
 				else
 				{
+					intmax_t i;
 					e = env->end;
 					if (!(rex->flags & REG_ICASE))
 					{

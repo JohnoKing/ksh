@@ -436,7 +436,6 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 	unsigned long	timeout = 0;
 	struct stat	st;
 	const char*	format = header_fmt+1;
-	ptrdiff_t	w;
 	ssize_t		z;
 	Sfio_t*		op;
 	Tail_t*		fp;
@@ -689,6 +688,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 					i = 0;
 					if ((s = sfreserve(fp->sp, z, SFIO_LOCKR)) || (z = sfvalue(fp->sp)) && (s = sfreserve(fp->sp, z, SFIO_LOCKR)) && (i = 1))
 					{
+						ptrdiff_t w;
 						z = sfvalue(fp->sp);
 						for (r = s + z; r > s && *(r - 1) != '\n'; r--);
 						if ((w = r - s) || i && (w = (ptrdiff_t)z))
@@ -699,13 +699,13 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 								sfprintf(sfstdout, format, fp->name);
 								format = header_fmt;
 							}
-							fp->cur += w;
+							fp->cur += (Sfoff_t)w;
 							sfwrite(sfstdout, s, (size_t)w);
 						}
 						else
 							w = 0;
 						sfread(fp->sp, s, (size_t)w);
-						fp->end += w;
+						fp->end += (Sfoff_t)w;
 					}
 					goto next;
 				}

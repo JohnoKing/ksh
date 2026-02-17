@@ -180,9 +180,9 @@ struct State_s				/* program state		*/
 	regmatch_t*	pos;		/* match position pointer	*/
 	size_t		posnum;		/* number of match positions	*/
 
-	ptrdiff_t	after;		/* # lines to list after match	*/
-	ptrdiff_t	before;		/* # lines to list before match	*/
-	ptrdiff_t	list;		/* list files with hits		*/
+	signed_size_t	after;		/* # lines to list after match	*/
+	signed_size_t	before;		/* # lines to list before match	*/
+	signed_size_t	list;		/* list files with hits		*/
 	regflags_t	options;	/* regex options		*/
 
 	unsigned char	any;		/* if any pattern hit		*/
@@ -677,7 +677,7 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 	case 'A':
 		if (opt_info.arg)
 		{
-			state.after = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
+			state.after = (signed_size_t)strtol(opt_info.arg, &s, 0);
 			if (*s || state.after < 0)
 			{
 	badafter:
@@ -691,7 +691,7 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 	case 'B':
 		if (opt_info.arg)
 		{
-			state.before = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
+			state.before = (signed_size_t)strtol(opt_info.arg, &s, 0);
 			if (*s || state.before < 0)
 			{
 	badbefore:
@@ -705,10 +705,10 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 	case 'C':
 		if (opt_info.arg)
 		{
-			state.before = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
+			state.before = (signed_size_t)strtol(opt_info.arg, &s, 0);
 			if (state.before < 0 || (*s && *s != ','))
 				goto badbefore;
-			state.after = (*s == ',') ? (ptrdiff_t)strtol(s + 1, &s, 0) : state.before;
+			state.after = (*s == ',') ? (signed_size_t)strtol(s + 1, &s, 0) : state.before;
 			if (*s || state.after < 0)
 				goto badafter;
 		}
@@ -719,7 +719,7 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 		state.prefix = (unsigned char)opt_info.num;
 		break;
 	case 'L':
-		state.list = (ptrdiff_t)(-opt_info.num);
+		state.list = (signed_size_t)(-opt_info.num);
 		break;
 	case 'N':
 		h = opt_info.arg;
@@ -747,7 +747,7 @@ grep(char* id, regflags_t options, int argc, char** argv, Shbltin_t* context)
 		state.options |= REG_ICASE;
 		break;
 	case 'l':
-		state.list = (ptrdiff_t)opt_info.num;
+		state.list = (signed_size_t)opt_info.num;
 		break;
 	case 'm':
 		state.label = 1;

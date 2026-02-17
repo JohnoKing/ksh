@@ -54,7 +54,7 @@
 
 typedef int (*Asoerror_f)(int, const char*);
 typedef void* (*Asoinit_f)(void*, const char*);
-typedef ptrdiff_t (*Asolock_f)(void*, ptrdiff_t, void volatile*);
+typedef signed_size_t (*Asolock_f)(void*, signed_size_t, void volatile*);
 
 typedef struct Asodisc_s
 {

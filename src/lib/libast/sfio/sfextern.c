@@ -43,7 +43,7 @@ Sfextern_t _Sfextern =
 };
 
 ptrdiff_t _Sfi = -1;		/* value for a few fast macro functions	*/
-ptrdiff_t _Sfmaxr = 0;		/* default (unlimited) max record size	*/
+signed_size_t _Sfmaxr = 0;		/* default (unlimited) max record size	*/
 
 Sfio_t	_Sfstdin  = SFNEW(NULL,-1,0,(SFIO_READ |SFIO_STATIC),NULL);
 Sfio_t	_Sfstdout = SFNEW(NULL,-1,1,(SFIO_WRITE|SFIO_STATIC),NULL);

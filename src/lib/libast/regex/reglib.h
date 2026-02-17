@@ -297,7 +297,7 @@ typedef struct Celt_s
 
 typedef struct Stk_pos_s
 {
-	off_t		offset;
+	ptrdiff_t	offset;
 	char*		base;
 } Stk_pos_t;
 
@@ -305,9 +305,9 @@ typedef struct Vector_s
 {
 	Stk_t*		stk;		/* stack pointer		*/
 	char*		vec;		/* the data			*/
-	ptrdiff_t	inc;		/* growth increment		*/
+	signed_size_t	inc;		/* growth increment		*/
 	size_t		siz;		/* element size			*/
-	ptrdiff_t	max;		/* max index			*/
+	signed_size_t	max;		/* max index			*/
 	ssize_t		cur;		/* current index -- user domain	*/
 } Vector_t;
 
@@ -365,7 +365,7 @@ typedef struct Group_s
 {
 	int		number;		/* group number			*/
 	int		last;		/* last contained group number	*/
-	ptrdiff_t	size;		/* lookbehind size		*/
+	signed_size_t	size;		/* lookbehind size		*/
 	int		back;		/* backreferenced		*/
 	regflags_t	flags;		/* group flags			*/
 	union
@@ -471,8 +471,8 @@ typedef struct Trie_node_s
 typedef struct Trie_s
 {
 	Trie_node_t**	root;
-	ptrdiff_t	min;
-	ptrdiff_t	max;
+	signed_size_t	min;
+	signed_size_t	max;
 } Trie_t;
 
 /*

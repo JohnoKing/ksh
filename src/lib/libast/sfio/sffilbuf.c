@@ -30,7 +30,7 @@
 */
 
 ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
-		  ptrdiff_t	n)	/* see above */
+		    ptrdiff_t	n)	/* see above */
 {
 	ptrdiff_t	r, ret;
 	int		first, local, rc, justseek;
@@ -82,13 +82,13 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 			f->next = f->endb = f->endr = f->data;
 
 		if(f->bits&SFIO_MMAP)
-			r = n > 0 ? n : f->size;
+			r = n > 0 ? n : (ptrdiff_t)f->size;
 		else if(!(f->flags&SFIO_STRING) )
 		{	r = f->size - (f->endb - f->data); /* available buffer */
 			if(n > 0)
 			{	if(r > n && f->extent < 0 && (f->flags&SFIO_SHARE) )
 					r = n;	/* read only as much as requested */
-				else if(justseek && n <= (ptrdiff_t)f->iosz && (ptrdiff_t)f->iosz <= f->size)
+				else if(justseek && n <= (signed_size_t)f->iosz && (signed_size_t)f->iosz <= f->size)
 					r = (ptrdiff_t)f->iosz;	/* limit buffer filling */
 			}
 		}
@@ -96,7 +96,7 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 		/* SFRD takes care of discipline read and stack popping */
 		f->mode |= rcrv;
 		f->getr = rc;
-		if((r = SFRD(f,f->endb,(size_t)r,f->disc)) >= 0)
+		if((r = (ptrdiff_t)SFRD(f,f->endb,(size_t)r,f->disc)) >= 0)
 		{	r = f->endb - f->next;
 			break;
 		}

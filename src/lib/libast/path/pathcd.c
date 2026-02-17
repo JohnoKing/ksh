@@ -62,8 +62,8 @@ pathcd(const char* path, const char* home)
 {
 	char*		p = (char*)path;
 	char*		s;
-	ptrdiff_t	n;
 	ptrdiff_t	i;
+	ptrdiff_t	n;
 	int		r;
 
 	r = 0;

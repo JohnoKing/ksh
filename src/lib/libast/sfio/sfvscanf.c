@@ -57,7 +57,7 @@ typedef struct _scan_s
 	Sfio_t		*f;			/* stream being scanned				*/
 	uchar		*d, *endd, *data;	/* local buffering system	*/
 	int		peek;			/* != 0 if unseekable/share stream		*/
-	ptrdiff_t	n_input;		/* number of input bytes processed		*/
+	signed_size_t	n_input;		/* number of input bytes processed		*/
 } Scan_t;
 
 /* ds != 0 for scanning double values */
@@ -273,7 +273,8 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 	     va_list		args)
 {
 	int		inp, shift;
-	ptrdiff_t	size, base, width, n, n_input;
+	signed_size_t	n_input;
+	ptrdiff_t	base, size, width;
 	int		fmt, flags, dot, n_assign, v;
 	char		*sp;
 
@@ -298,7 +299,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 
 	void*		value;	/* location to assign scanned value */
 	char*		t_str;
-	ptrdiff_t	n_str;
+	ptrdiff_t	n, n_str;
 
 	/* local buffering system */
 	Scan_t		scd;

@@ -30,7 +30,7 @@ fmtip4(uint32_t addr, int bits)
 {
 	char*	buf;
 	size_t	z;
-	ptrdiff_t i;
+	signed_size_t i;
 
 	buf = fmtbuf(z = 20);
 	i = sfsprintf(buf, z, "%d.%d.%d.%d", (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, (addr)&0xff);

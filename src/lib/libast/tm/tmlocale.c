@@ -188,7 +188,7 @@ word2posix(char* f, char* w, int alternate)
 	char*		r;
 	char		c;
 	char		p;
-	ptrdiff_t	n;
+	signed_size_t	n;
 
 	while (*w)
 	{
@@ -553,7 +553,7 @@ load(Lc_info_t* li)
 	char**		v;
 	char**		e;
 	unsigned char*		u;
-	ptrdiff_t		n;
+	signed_size_t		n;
 	iconv_t			cvt;
 	Sfio_t*			sp;
 	Sfio_t*			tp;
@@ -571,7 +571,7 @@ load(Lc_info_t* li)
 		tm_info.deformat = tm_info.format[TM_DEFAULT];
 	if (mcfind(NULL, NULL, LC_TIME, 0, path, sizeof(path)) && (sp = sfopen(NULL, path, "r")))
 	{
-		n = (ptrdiff_t)sfsize(sp);
+		n = (signed_size_t)sfsize(sp);
 		tp = 0;
 		if (u = (unsigned char*)sfreserve(sp, 3, 1))
 		{
@@ -580,7 +580,7 @@ load(Lc_info_t* li)
 				if (tp = sfstropen())
 				{
 					sfread(sp, u, 3);
-					n = iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
+					n = (signed_size_t)iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
 				}
 				iconv_close(cvt);
 			}

@@ -133,9 +133,9 @@ int
 ccmapid(const char* name)
 {
 	const Ccmap_t*	mp;
-	int		c;
 	const Ccmap_t*	bp;
-	ptrdiff_t	n;
+	int		c;
+	ssize_t		n;
 	ssize_t		sub[2];
 
 	bp = 0;

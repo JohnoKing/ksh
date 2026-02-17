@@ -38,8 +38,7 @@ static char* sffmtint(const char* str, ptrdiff_t* v)
 static Fmtpos_t* sffmtpos(Sfio_t* f,const char* form,va_list args,Sffmt_t* ft,int type)
 {
 	int		fmt, flags, dot;
-	ptrdiff_t	base, width, precis, v, n, argp;
-	ptrdiff_t	n_str, size = 0;
+	ptrdiff_t	n, n_str, argp, base, precis, size = 0, v, width;
 	char		*t_str, *sp;
 	int		skip, dollar, decimal, thousand;
 	Sffmt_t		savft;

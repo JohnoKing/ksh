@@ -91,7 +91,7 @@ aso_init_fcntl(void* data, const char* details)
 			if (strneq(path, "perm=", 5))
 			{
 				ptrdiff_t n;
-				if ((n = opt - (path + 5)) >= (ptrdiff_t)sizeof(tmp))
+				if ((n = opt - (path + 5)) >= (signed_size_t)sizeof(tmp))
 					n = (ptrdiff_t)sizeof(tmp) - 1;
 				memcpy(tmp, path + 5, (size_t)n);
 				tmp[n] = 0;
@@ -159,8 +159,8 @@ aso_init_fcntl(void* data, const char* details)
 	return NULL;
 }
 
-static ptrdiff_t
-aso_lock_fcntl(void* data, ptrdiff_t k, void volatile* p)
+static signed_size_t
+aso_lock_fcntl(void* data, signed_size_t k, void volatile* p)
 {
 	APL_t*		apl = (APL_t*)data;
 	struct flock	lock;
@@ -172,7 +172,7 @@ aso_lock_fcntl(void* data, ptrdiff_t k, void volatile* p)
 	else
 	{
 		lock.l_type = F_WRLCK;
-		k = HASH(p, (ptrdiff_t)apl->size) + 1;
+		k = HASH(p, (signed_size_t)apl->size) + 1;
 	}
 	lock.l_whence = SEEK_SET;
 	lock.l_start = (off_t)k - 1;

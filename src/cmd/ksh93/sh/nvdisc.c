@@ -692,7 +692,7 @@ Namfun_t *nv_clone_disc(Namfun_t *fp, int flags)
 int nv_adddisc(Namval_t *np, const char **names, Namval_t **funs)
 {
 	Nambfun_t *vp;
-	ptrdiff_t n=0;
+	signed_size_t n=0;
 	const char **av=names;
 	if(av)
 	{

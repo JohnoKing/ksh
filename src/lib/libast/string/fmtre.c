@@ -31,7 +31,7 @@
 typedef struct Stack_s
 {
 	char*		beg;
-	ptrdiff_t	len;
+	ptrdiff_t	dlen;
 	char		min;
 } Stack_t;
 
@@ -40,7 +40,7 @@ fmtre(const char* as)
 {
 	char*		s = (char*)as;
 	char		c;
-	ptrdiff_t	i;
+	signed_size_t	i;
 	char*		t;
 	Stack_t*	p;
 	char*		x;
@@ -111,7 +111,7 @@ fmtre(const char* as)
 					return NULL;
 				p->beg = s - 1;
 				s = x;
-				p->len = s - p->beg;
+				p->dlen = s - p->beg;
 				if (p->min = *s == '-')
 					s++;
 				p++;
@@ -144,14 +144,14 @@ fmtre(const char* as)
 						for (s += 3; *t = *s; t++, s++);
 						continue;
 					}
-					p->len = 0;
+					p->dlen = 0;
 					p->min = 0;
 					*t++ = *s++;
 					*t++ = '?';
 				}
 				else
 				{
-					p->len = c != '@';
+					p->dlen = c != '@';
 					if (p->min = *s == '-')
 						s++;
 					*t++ = *s++;
@@ -180,7 +180,7 @@ fmtre(const char* as)
 			if (p >= &stack[elementsof(stack)])
 				return NULL;
 			p->beg = s - 1;
-			p->len = 0;
+			p->dlen = 0;
 			p->min = 0;
 			p++;
 			*t++ = c;
@@ -190,7 +190,7 @@ fmtre(const char* as)
 				return NULL;
 			*t++ = c;
 			p--;
-			for (i = 0; i < p->len; i++)
+			for (i = 0; i < p->dlen; i++)
 				*t++ = p->beg[i];
 			if (p->min)
 				*t++ = '?';

@@ -68,13 +68,13 @@ static int sfsetlinemode(void)
 					++astsfio;
 				for(endw = astsfio; *endw && !ISSEPAR(*endw); ++endw)
 					;
-				if((endw-astsfio) > ((ptrdiff_t)sizeof(sf_line)-1) &&
+				if((endw-astsfio) > ((signed_size_t)sizeof(sf_line)-1) &&
 				   strncmp(astsfio,sf_line,sizeof(sf_line)-1) == 0)
 					modes |= SFIO_LINE;
-				else if((endw-astsfio) > ((ptrdiff_t)sizeof(sf_maxr)-1) &&
+				else if((endw-astsfio) > ((signed_size_t)sizeof(sf_maxr)-1) &&
 				   strncmp(astsfio,sf_maxr,sizeof(sf_maxr)-1) == 0)
-					_Sfmaxr = (ptrdiff_t)strtonll(astsfio+sizeof(sf_maxr)-1,NULL,NULL,0);
-				else if((endw-astsfio) > ((ptrdiff_t)sizeof(sf_wcwidth)-1) &&
+					_Sfmaxr = (signed_size_t)strtonll(astsfio+sizeof(sf_maxr)-1,NULL,NULL,0);
+				else if((endw-astsfio) > ((signed_size_t)sizeof(sf_wcwidth)-1) &&
 				   strncmp(astsfio,sf_wcwidth,sizeof(sf_wcwidth)-1) == 0)
 					modes |= SFIO_WCWIDTH;
 			}
@@ -91,7 +91,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 {
 	int		oflags, init, local;
 	unsigned short	sf_malloc;
-	ptrdiff_t	bufsize, blksz;
+	signed_size_t	bufsize, blksz;
 	Sfdisc_t*	disc;
 	struct stat	st;
 	uchar*		obuf = NULL;
@@ -107,7 +107,8 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 
 	if(size == 0 && buf)
 	{	/* special case to get buffer info */
-		_Sfi = f->val = (f->bits&SFIO_MMAP) ? (f->endb-f->data) : f->size;
+		f->val = (f->bits&SFIO_MMAP) ? (f->endb-f->data) : f->size;
+		_Sfi = (ptrdiff_t)f->val;
 		return f->data;
 	}
 
@@ -148,7 +149,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 	if((Sfio_t*)buf != f)
 		blksz = -1;
 	else /* setting alignment size only */
-	{	blksz = (ptrdiff_t)size;
+	{	blksz = (signed_size_t)size;
 
 		if(!init) /* stream already initialized */
 		{	obuf = f->data;
@@ -340,7 +341,7 @@ setbuf:
 		else if((f->flags&SFIO_READ) && !(f->bits&SFIO_BOTH) &&
 			f->extent > 0 && f->extent < (Sfoff_t)_Sfpage )
 			size = (((size_t)f->extent + SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
-		else if((ptrdiff_t)(size = (size_t)_Sfpage) < bufsize)
+		else if((signed_size_t)(size = (size_t)_Sfpage) < bufsize)
 			size = (size_t)bufsize;
 
 		buf = NULL;
@@ -395,7 +396,8 @@ setbuf:
 	}
 
 done:
-	_Sfi = f->val = obuf ? osize : 0;
+	f->val = obuf ? osize : 0;
+	_Sfi = (ptrdiff_t)f->val;
 
 	/* blksz is used for aligning disk block boundary while reading data to
 	** optimize data transfer from disk (e.g., via direct I/O). blksz can be

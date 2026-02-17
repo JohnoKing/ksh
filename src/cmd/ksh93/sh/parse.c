@@ -81,7 +81,8 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 	char *cp;
 	int eline;
 	size_t width=0;
-	ptrdiff_t n;
+	int n;
+	signed_size_t len;
 	unsigned long r=0;
 	static char atbuff[20];
 	int  justify=0;
@@ -117,7 +118,7 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 				if(isdigit(n))
 					width = 10*width + (size_t)n-'0';
 				else if(n=='L' || n=='R' || n =='Z')
-					justify = (int)n;
+					justify = n;
 				else
 					*attribute++ = (char)n;
 			}
@@ -129,11 +130,11 @@ static unsigned long writedefs(Lex_t *lexp,struct argnod *arglist, int line, int
 	while(argp)
 	{
 		if((cp=strchr(argp->argval,'='))||(cp=strchr(argp->argval,'?')))
-			n = cp-argp->argval;
+			p = (signed_size_t)(cp-argp->argval);
 		else
-			n = (ptrdiff_t)strlen(argp->argval);
+			p = (signed_size_t)strlen(argp->argval);
 		eline = sh.inlineno-(lexp->token==NL);
-		r=kiaentity(lexp,argp->argval,n,type,line,eline,parent,justify,width,atbuff);
+		r=kiaentity(lexp,argp->argval,p,type,line,eline,parent,justify,width,atbuff);
 		sfprintf(kia.tmp,"p;%..64d;v;%..64d;%d;%d;s;\n",kia.current,r,line,eline);
 		argp = argp->argnxt.ap;
 	}
@@ -2055,7 +2056,7 @@ static Shnode_t *test_primary(Lex_t *lexp)
  * return an entity checksum
  * The entity is created if it doesn't exist
  */
-unsigned long kiaentity(Lex_t *lexp,const char *name,ptrdiff_t len,int type,int first,int last,unsigned long parent, int pkind, size_t width, const char *attr)
+unsigned long kiaentity(Lex_t *lexp,const char *name,signed_size_t len,int type,int first,int last,unsigned long parent, int pkind, size_t width, const char *attr)
 {
 	Namval_t *np;
 	ptrdiff_t offset = stktell(sh.stk);
@@ -2100,7 +2101,7 @@ static void kia_add(Namval_t *np, void *data)
 int kiaclose(Lex_t *lexp)
 {
 	Sflong_t off1,off2;
-	ptrdiff_t n;
+	signed_size_t n;
 	if(kia.file)
 	{
 		unsigned long r = kiaentity(lexp,kia.scriptname,-1,'p',-1,sh.inlineno-1,0,'s',0,"");

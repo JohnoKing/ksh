@@ -29,17 +29,17 @@
 #include	"path.h"
 #include	"io.h"
 
-static ptrdiff_t p_comlist(const struct dolnod*);
-static ptrdiff_t p_arg(const struct argnod*);
-static ptrdiff_t p_comarg(const struct comnod*);
-static ptrdiff_t p_redirect(const struct ionod*);
-static ptrdiff_t p_switch(const struct regnod*);
-static ptrdiff_t p_tree(const Shnode_t*);
+static signed_size_t p_comlist(const struct dolnod*);
+static signed_size_t p_arg(const struct argnod*);
+static signed_size_t p_comarg(const struct comnod*);
+static signed_size_t p_redirect(const struct ionod*);
+static signed_size_t p_switch(const struct regnod*);
+static signed_size_t p_tree(const Shnode_t*);
 static ssize_t   p_string(const char*);
 
 static Sfio_t *outfile;
 
-ptrdiff_t sh_tdump(Sfio_t *out, const Shnode_t *t)
+signed_size_t sh_tdump(Sfio_t *out, const Shnode_t *t)
 {
 	outfile = out;
 	return p_tree(t);
@@ -48,7 +48,7 @@ ptrdiff_t sh_tdump(Sfio_t *out, const Shnode_t *t)
 /*
  * print script corresponding to shell tree <t>
  */
-static ptrdiff_t p_tree(const Shnode_t *t)
+static signed_size_t p_tree(const Shnode_t *t)
 {
 	if(!t)
 		return sfputl(outfile,-1);
@@ -135,7 +135,7 @@ static ptrdiff_t p_tree(const Shnode_t *t)
 	return -1;
 }
 
-static ptrdiff_t p_arg(const struct argnod *arg)
+static signed_size_t p_arg(const struct argnod *arg)
 {
 	size_t n;
 	struct fornod *fp;
@@ -169,7 +169,7 @@ static ptrdiff_t p_arg(const struct argnod *arg)
 	return sfputu(outfile,0);
 }
 
-static ptrdiff_t p_redirect(const struct ionod *iop)
+static signed_size_t p_redirect(const struct ionod *iop)
 {
 	while(iop)
 	{
@@ -197,7 +197,7 @@ static ptrdiff_t p_redirect(const struct ionod *iop)
 	return sfputl(outfile,-1);
 }
 
-static ptrdiff_t p_comarg(const struct comnod *com)
+static signed_size_t p_comarg(const struct comnod *com)
 {
 	p_redirect(com->comio);
 	p_arg(com->comset);
@@ -210,7 +210,7 @@ static ptrdiff_t p_comarg(const struct comnod *com)
 	return sfputu(outfile,com->comline);
 }
 
-static ptrdiff_t p_comlist(const struct dolnod *dol)
+static signed_size_t p_comlist(const struct dolnod *dol)
 {
 	char *cp, *const*argv;
 	ptrdiff_t n;
@@ -225,7 +225,7 @@ static ptrdiff_t p_comlist(const struct dolnod *dol)
 	return sfputu(outfile,0);
 }
 
-static ptrdiff_t p_switch(const struct regnod *reg)
+static signed_size_t p_switch(const struct regnod *reg)
 {
 	while(reg)
 	{

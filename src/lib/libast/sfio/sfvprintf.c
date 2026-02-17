@@ -74,7 +74,7 @@ static int chr2str(char* buf, char v)
 #define _sffmt_small	1
 #endif
 
-ptrdiff_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
+signed_size_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 		    const char*		form,		/* format to use	*/
 		    va_list		args)		/* arg list if !argf	*/
 {
@@ -83,7 +83,8 @@ ptrdiff_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 	char		*sp, *ssp, *endsp, *ep, *endep;
 	int		dot, sign, decpt;
 	unsigned int	scale;
-	ptrdiff_t	k, v, w, n, n_s, n_w, base, precis, width, q, size;
+	ptrdiff_t	base, k, n, n_s, q, precis, size, v, w, width;
+	signed_size_t	n_w;
 	Sfdouble_t	dval;
 	void*		valp;
 	char		*tls[2], **ls;	/* for %..[separ]s		*/
@@ -97,7 +98,8 @@ ptrdiff_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 	char*		oform;		/* original format string	*/
 	va_list		oargs;		/* original arg list		*/
 	Fmtpos_t*	fp;		/* arg position list		*/
-	ptrdiff_t	argp, argn;	/* arg position and number	*/
+	ptrdiff_t	argn;		/* arg number			*/
+	ptrdiff_t	argp;		/* arg position			*/
 	ptrdiff_t	nargs;		/* the argv[] index of the last seen sequential % format (% or *) */
 	ptrdiff_t	xargs;		/* highest (max) argv[] index see in an indexed format (%x$ *x$)  */
 
@@ -114,15 +116,15 @@ ptrdiff_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 #endif
 
 	/* local io system */
-	ptrdiff_t	o, n_output;
-#define SMputc(f,c)	{ if((o = SFFLSBUF(f,c)) >= 0 ) n_output += 1; \
+	signed_size_t	o, n_output;
+#define SMputc(f,c)	{ if((o = (signed_size_t)SFFLSBUF(f,c)) >= 0 ) n_output += 1; \
 			  else		{ SFBUF(f); goto done; } \
 			}
-#define SMnputc(f,c,n)	{ if((o = SFNPUTC(f,c,(size_t)(n))) > 0 ) n_output += 1; \
-			  if(o != (ptrdiff_t)(n))	{ SFBUF(f); goto done; } \
+#define SMnputc(f,c,n)	{ if((o = (signed_size_t)SFNPUTC(f,c,(size_t)(n))) > 0 ) n_output += 1; \
+			  if(o != (signed_size_t)(n))	{ SFBUF(f); goto done; } \
 			}
-#define SMwrite(f,s,n)	{ if((o = SFWRITE(f,s,(size_t)(n))) > 0 ) n_output += o; \
-			  if(o != (ptrdiff_t)(n))	{ SFBUF(f); goto done; } \
+#define SMwrite(f,s,n)	{ if((o = (signed_size_t)SFWRITE(f,s,(size_t)(n))) > 0 ) n_output += o; \
+			  if(o != (signed_size_t)(n))	{ SFBUF(f); goto done; } \
 			}
 #if _sffmt_small /* these macros are made smaller at some performance cost */
 #define SFBUF(f)
@@ -767,7 +769,7 @@ loop_fmt :
 						wsp = (wchar_t*)sp;
 						while(n < 0)
 						{
-							ptrdiff_t wd;
+							signed_size_t wd;
 							if ((wd = mbwidth(*wsp)) > 0)
 								n += wd;
 							wsp++;
@@ -779,7 +781,7 @@ loop_fmt :
 					{	SFMBCLR(&mbs);
 						osp = sp;
 						while(n < 0)
-						{	ptrdiff_t wd;
+						{	signed_size_t wd;
 							ssp = sp;
 							if ((k = mbchar(sp)) <= 0)
 							{	sp = ssp;

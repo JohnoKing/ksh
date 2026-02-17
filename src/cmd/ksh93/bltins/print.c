@@ -724,7 +724,7 @@ static const char *mapformat(Sffmt_t *fe)
 	const struct printmap *pm = Pmap;
 	while(pm->size>0)
 	{
-		if((ptrdiff_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
+		if((signed_size_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
 			return pm->map;
 		pm++;
 	}
@@ -1038,13 +1038,13 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				return -1;
 			}
 			value->s = stkptr(sh.stk,stktell(sh.stk));
-			fe->size = (ssize_t)m;
+			fe->size = (ptrdiff_t)m;
 		}
 		break;
 	case 'B':
 		if(!sh.strbuf2)
 			sh.strbuf2 = sfstropen();
-		fe->size = fmtbase64(sh.strbuf2,value->s, fe->flags&SFFMT_ALTER);
+		fe->size = (ptrdiff_t)fmtbase64(sh.strbuf2,value->s, fe->flags&SFFMT_ALTER);
 		value->s = sfstruse(sh.strbuf2);
 		fe->flags |= SFFMT_SHORT;
 		break;
@@ -1120,8 +1120,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 static ptrdiff_t reload(ptrdiff_t argn, char fmt, void* v, Sffmt_t* fe)
 {
 	struct printf*	pp = (struct printf*)fe;
-	ptrdiff_t	r;
-	ptrdiff_t	n;
+	ptrdiff_t	n, r;
 	if(fmt == 0)
 	{
 		/* Set nextarg */

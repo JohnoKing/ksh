@@ -21,7 +21,7 @@
 
 #undef sfputc
 
-ptrdiff_t sfputc(Sfio_t* f, int c)
+signed_size_t sfputc(Sfio_t* f, int c)
 {
-	return __sf_putc(f,c);
+	return (signed_size_t)__sf_putc(f,c);
 }

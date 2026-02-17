@@ -21,7 +21,7 @@
 
 #undef sfputu
 
-ptrdiff_t sfputu(Sfio_t* f, Sfulong_t u)
+signed_size_t sfputu(Sfio_t* f, Sfulong_t u)
 {
 	return __sf_putu(f,u);
 }

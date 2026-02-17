@@ -90,8 +90,8 @@ struct Namtype
 	Namchld_t	childfun;
 	char		**names;
 	size_t		dsize;
-	ptrdiff_t	strsize;
-	ptrdiff_t	numnodes;
+	signed_size_t	strsize;
+	signed_size_t	numnodes;
 	size_t		ndisc;
 	size_t		nref;
 	size_t		current;
@@ -348,7 +348,7 @@ static int fixnode(Namtype_t *dp, Namtype_t *pp, size_t i, struct Namref *nrp,in
 static Namfun_t *clone_type(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 {
 	Namtype_t		*dp, *pp=(Namtype_t*)fp;
-	ptrdiff_t		i;
+	signed_size_t		i;
 	Namval_t		*nq, *nr;
 	size_t			size = fp->dsize;
 	ptrdiff_t		offset=stktell(sh.stk);
@@ -575,7 +575,7 @@ static Namval_t *next_type(Namval_t* np, Dt_t *root,Namfun_t *fp)
 			nv_putsub(np,NULL,ARRAY_SCAN);
 		dp->current = 0;
 	}
-	else if((ptrdiff_t)++dp->current>=dp->numnodes)
+	else if((signed_size_t)++dp->current>=dp->numnodes)
 		return NULL;
 	return nv_namptr(dp->nodes,dp->current);
 }
@@ -825,7 +825,8 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 	Namval_t	*mp=nodes[0], *bp=0, *np, *nq, **mnodes=nodes;
 	size_t		nref=0,iref=0,inherit=0,nd=0;
 	size_t		size=sizeof(NV_DATA),offset=0,m,dsize=0,j,k;
-	ptrdiff_t	n, i, nnodes;
+	signed_size_t	i, nnodes;
+	ptrdiff_t	n;
 	char		*name=0, *cp, *sp, **help;
 	Namtype_t	*pp,*qp=0,*dp,*tp;
 	Dt_t		*root = nv_dict(mp);
@@ -878,7 +879,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 		if(!nv_isarray(np) && (dp=(Namtype_t*)nv_hasdisc(np, &type_disc)))
 		{
 			nnodes += dp->numnodes;
-			if((n=dp->strsize)<0)
+			if((n=(ptrdiff_t)dp->strsize)<0)
 				n = -n;
 			iref = nref += dp->nref;
 			if(np->nvname[m]=='_' && np->nvname[m+1]==0 && (bp=nv_type(np)))
@@ -923,7 +924,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 	nrp = (struct Namref*)(pp->data+offset);
 	pp->names = (char**)(nrp+iref);
 	help = &pp->names[nd];
-	pp->strsize = (ptrdiff_t)size;
+	pp->strsize = (signed_size_t)size;
 	cp = (char*)&pp->names[nd+(size_t)nnodes];
 	if(qp)
 		mnodes = sh_newof(NULL, Namval_t*, nd+1, 0);
@@ -1362,7 +1363,7 @@ int nv_settype(Namval_t* np, Namval_t *tp, int flags)
 	return 0;
 }
 
-static void write_indent(Sfio_t *out,char *str,ptrdiff_t n,size_t indent)
+static void write_indent(Sfio_t *out,char *str,signed_size_t n,size_t indent)
 {
 	int	c, first=1;
 	char	*cp = str;
@@ -1431,7 +1432,7 @@ int	sh_outtype(Sfio_t *out)
 		sh.last_table = 0;
 		cp = nv_getval(L_ARGNOD);
 		if(indent)
-			write_indent(out,cp,(ptrdiff_t)strlen(cp)-1,indent);
+			write_indent(out,cp,(signed_size_t)strlen(cp)-1,indent);
 		else
 			sfprintf(out,"%.*s",strlen(cp)-1,cp);
 		nv_unset(L_ARGNOD,NV_RDONLY);

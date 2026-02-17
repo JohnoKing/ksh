@@ -52,7 +52,8 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 		}
 		else if((rsrv = f->rsrv) && (n = -rsrv->slen) > 0)
 		{	rsrv->slen = 0;
-			_Sfi = f->val = n;
+			f->val = n;
+			_Sfi = (ptrdiff_t)f->val;
 			data = rsrv->data;
 		}
 		else
@@ -119,11 +120,11 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 		/* do a buffer refill or flush */
 		now = n;
 		if(f->mode&SFIO_WRITE)
-			(void)SFFLSBUF(f, iosz);
+			(void)SFFLSBUF(f, (ptrdiff_t)iosz);
 		else if(type == SFIO_LOCKR && f->extent < 0 && (f->flags&SFIO_SHARE) )
 		{	if(n == 0) /* peek-read only if there is no buffered data */
 			{	f->mode |= SFIO_RV;
-				(void)SFFILBUF(f, iosz );
+				(void)SFFILBUF(f, (ptrdiff_t)iosz );
 			}
 			if((n = f->endb - f->next) < sz)
 			{	if(f->mode&SFIO_PKRD)
@@ -138,7 +139,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 			if(size == 0 && type == 0)
 				f->mode |= SFIO_RV;
 
-			(void)SFFILBUF(f, iosz );
+			(void)SFFILBUF(f, (ptrdiff_t)iosz );
 		}
 
 		if((n = f->endb - f->next) <= 0)
@@ -197,7 +198,8 @@ done:	/* compute the buffer to be returned */
 		}
 	}
 
-	_Sfi = f->val = n; /* return true buffer size */
-
+	/* return true buffer size */
+	f->val = n;
+	_Sfi = (ptrdiff_t)f->val;
 	return data;
 }

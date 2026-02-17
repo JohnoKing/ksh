@@ -84,16 +84,17 @@ static int		lex_max, *lex_match;
 
 static void refvar(Lex_t *lp, int type)
 {
-	off_t off = (fcseek(0)-(type+1))-(lp->lexd.first?lp->lexd.first:fcfirst());
+	ptrdiff_t off = (fcseek(0)-(type+1))-(lp->lexd.first?lp->lexd.first:fcfirst());
 	unsigned long r;
 	if(lp->lexd.first)
 	{
 		off = (fcseek(0)-(type+1)) - lp->lexd.first;
-		r=kiaentity(lp,lp->lexd.first+kia.offset+type,off-kia.offset,'v',-1,-1,kia.current,'v',0,"");
+		r=kiaentity(lp,lp->lexd.first+kia.offset+type,(signed_size_t)(off-kia.offset),'v',-1,-1,kia.current,'v',0,"");
 	}
 	else
 	{
-		ptrdiff_t n,offset = stktell(sh.stk);
+		ptrdiff_t offset = stktell(sh.stk);
+		signed_size_t n;
 		void *savptr;
 		char *begin;
 		off = offset + (fcseek(0)-(type+1)) - fcfirst();
@@ -102,14 +103,14 @@ static void refvar(Lex_t *lp, int type)
 			/* variable starts on stack, copy remainder */
 			if(off>offset)
 				sfwrite(sh.stk,fcfirst()+type,(size_t)(off-offset));
-			n = stktell(sh.stk)-kia.offset;
+			n = (signed_size_t)(stktell(sh.stk)-kia.offset);
 			begin = stkptr(sh.stk,kia.offset);
 		}
 		else
 		{
 			/* variable in data buffer */
 			begin = fcfirst()+(type+kia.offset-offset);
-			n = off-kia.offset;
+			n = (signed_size_t)(off-kia.offset);
 		}
 		savptr = stkfreeze(sh.stk,0);
 		r=kiaentity(lp,begin,n,'v',-1,-1,kia.current,'v',0,"");
@@ -259,7 +260,7 @@ int sh_lex(Lex_t* lp)
 	int		c, mode=ST_BEGIN, wordflags=0;
 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
 	int		epatchar=0;
-	ptrdiff_t	varnametry = 0, varnamecount = 0, varnamelength = 0;
+	signed_size_t	varnametry = 0, varnamecount = 0, varnamelength = 0;
 	SETLEN(1);
 	if(lp->lexd.paren)
 	{
@@ -641,7 +642,7 @@ int sh_lex(Lex_t* lp)
 					n = stktell(sh.stk)-c;
 					stkseek(sh.stk,(ptrdiff_t)n);
 					lp->arg = ap;
-					if(n<=(ptrdiff_t)ARGVAL)
+					if(n<=(signed_size_t)ARGVAL)
 					{
 						mode = 0;
 						lp->lexd.first = 0;
@@ -1785,7 +1786,7 @@ void sh_lexskip(Lex_t *lp, char close, int copy, int state)
     ssize_t _sfwrite(Sfio_t *sp, const void *buff, size_t n)
     {
 	const char *cp = (const char*)buff, *next=cp, *ep = cp + n;
-	ptrdiff_t m=0,k;
+	signed_size_t m=0,k;
 	while(next = (const char*)memchr(next,'\r',(size_t)(ep-next)))
 		if(*++next=='\n')
 		{
@@ -1876,7 +1877,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				if(n==S_ESC)
 					c--;
-				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,(size_t)c))>0)
+				if(!lp->lexd.dolparen && (c=(ptrdiff_t)sfwrite(sp,bufp,(size_t)c))>0)
 					iop->iosize += (Sfoff_t)c;
 			}
 			if(LEN==0)
@@ -1920,7 +1921,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				if(!lp->lexd.dolparen)
 				{
 					/* write out line */
-					if((n=sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
+					if((n=(ptrdiff_t)sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
 						iop->iosize += (Sfoff_t)n;
 				}
 				/* skip over tabs */
@@ -1955,7 +1956,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					if(!lp->lexd.dolparen && (c=cp-bufp))
 					{
-						if((c=sfwrite(sp,cp=bufp,(size_t)c))>0)
+						if((c=(ptrdiff_t)sfwrite(sp,cp=bufp,(size_t)c))>0)
 							iop->iosize+=(Sfoff_t)c;
 					}
 					nsave = n;
@@ -1979,7 +1980,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					if(!lp->lexd.dolparen && (n=cp-bufp))
 					{
-						if((n=sfwrite(sp,bufp,(size_t)n))>0)
+						if((n=(ptrdiff_t)sfwrite(sp,bufp,(size_t)n))>0)
 							iop->iosize += (Sfoff_t)n;
 					}
 					sh.inlineno--;
@@ -1997,7 +1998,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 					 */
 					if(!lp->lexd.dolparen && nsave>0)
 					{
-						if((n=sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
+						if((n=(ptrdiff_t)sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
 							iop->iosize += (Sfoff_t)n;
 						bufp = fcfirst();
 					}
@@ -2030,7 +2031,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				sh.inlineno++;
 				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
 				{
-					if(n && (n=sfwrite(sp,bufp,(size_t)n))>0)
+					if(n && (n=(ptrdiff_t)sfwrite(sp,bufp,(size_t)n))>0)
 						iop->iosize += (Sfoff_t)n;
 					bufp = fcseek(0)+1;
 				}
@@ -2186,7 +2187,7 @@ static struct argnod *endword(int mode)
 	unsigned char *sp, *dp, *ep=0, *xp=0;	/* must be unsigned: pointed-to values used as index to 256-byte state table */
 	int inquote=0, inlit=0;			/* set within quoted strings */
 	int bracket=0;
-	ptrdiff_t n;
+	signed_size_t n;
 	sfputc(sh.stk,0);
 	sp =  (unsigned char*)stkptr(sh.stk,ARGVAL);
 	if(mbwide())
@@ -2273,7 +2274,7 @@ static struct argnod *endword(int mode)
 					}
 					*--dp = 0;
 					msg = ERROR_translate(0,error_info.id,0,ep);
-					n = (ptrdiff_t)strlen(msg);
+					n = (signed_size_t)strlen(msg);
 					dp = ep+n;
 					if(sp-dp <= 1)
 					{

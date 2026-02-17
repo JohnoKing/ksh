@@ -155,7 +155,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 		{
 			if (count > 0 && !(count -= n1))
 				return ret;
-			if (!(p1 = (unsigned char*)sfreserve(f1, SFIO_UNBOUND, 0)) || (c1 = sfvalue(f1)) <= 0)
+			if (!(p1 = (unsigned char*)sfreserve(f1, SFIO_UNBOUND, 0)) || (c1 = (ptrdiff_t)sfvalue(f1)) <= 0)
 			{
 				if (sferror(f1))
 				{
@@ -185,7 +185,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 		}
 		if ((c2 = e2 - p2) <= 0)
 		{
-			if (!(p2 = (unsigned char*)sfreserve(f2, SFIO_UNBOUND, 0)) || (c2 = sfvalue(f2)) <= 0)
+			if (!(p2 = (unsigned char*)sfreserve(f2, SFIO_UNBOUND, 0)) || (c2 = (ptrdiff_t)sfvalue(f2)) <= 0)
 			{
 				if (sferror(f2))
 				{

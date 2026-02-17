@@ -277,6 +277,7 @@ tst	- output{
 tst note{ generating _ast_flt\*_t types }end output{
 	#define _BYTESEX_H
 
+	#include <stdlib.h>
 	#include <string.h>
 	#include <sys/types.h>
 
@@ -320,6 +321,23 @@ tst note{ generating _ast_flt\*_t types }end output{
 		printf("#define _ast_fltmax_t		_ast_flt%zu_t\n", m);
 		if (m == sizeof(double))
 			printf("#define _ast_fltmax_double		1\n");
+		/*
+		 * Create a typedef for a signed_size_t type (because ssize_t and ptrdiff_t
+		 * are not always the same).
+		 */
+		if (sizeof(int) == sizeof(size_t))
+			printf("typedef int	signed_size_t;\n");
+	#if __STDC_VERSION__ >= 199901L
+		else if (sizeof(long long) == sizeof(size_t))
+			printf("typedef long long	signed_size_t;\n");
+	#endif
+		else if (sizeof(long) == sizeof(size_t))
+			printf("typedef long	signed_size_t;\n");
+		else
+		{
+			printf("Could not generate the type signed_size_t!\n");
+			abort();
+		}
 		return 0;
 	}
 }end fail{

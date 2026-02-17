@@ -201,13 +201,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 	char*		s;
 	char*		t;
 	MM_table_t*	p;
-	ptrdiff_t		n;
-	int			m;
-	int			r;
-	int			fd;
-	unsigned int		mask;
-	Sfio_t*			sp;
-	char			lab[MM_LABEL_1_MAX + MM_LABEL_2_MAX + 3];
+	ptrdiff_t	n;
+	int		m;
+	int		r;
+	int		fd;
+	unsigned int	mask;
+	Sfio_t*		sp;
+	char		lab[MM_LABEL_1_MAX + MM_LABEL_2_MAX + 3];
 
 	if (!mm.init)
 	{

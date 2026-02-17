@@ -407,8 +407,8 @@ errorv(const char* id, int level, va_list ap)
 	fd = (flags & ERROR_OUTPUT) ? va_arg(ap, int) : error_info.fd;
 	if (error_info.write)
 	{
-		ptrdiff_t off;
-		char*	bas;
+		ptrdiff_t	off;
+		char*		bas;
 
 		bas = stkptr(stkstd, 0);
 		if (off = stktell(stkstd))

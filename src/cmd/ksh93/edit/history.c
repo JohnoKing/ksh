@@ -155,7 +155,7 @@ static int sh_checkaudit(const char *name, char *logbuf, size_t len)
 	char	*cp, *last;
 	uid_t	id1, id2;
 	int	r=0, fd;
-	ptrdiff_t n;
+	ssize_t	n;
 	if((fd=open(name, O_RDONLY|O_cloexec)) < 0)
 		return 0;
 	if((n = read(fd, logbuf,len-1)) < 0)
@@ -321,7 +321,7 @@ retry:
 	if(hist_clean(fd) && hist_start>1 && hsize > HIST_MAX)
 	{
 #ifdef DEBUG
-		sfprintf(sfstderr,"%jd: hist_trim hsize=%td\n",(Sflong_t)sh.current_pid,(ptrdiff_t)hsize);
+		sfprintf(sfstderr,"%jd: hist_trim hsize=%jd\n",(Sflong_t)sh.current_pid,(intmax_t)hsize);
 		sfsync(sfstderr);
 #endif /* DEBUG */
 		hp = hist_trim(hp,(int)hp->histind-maxlines);
@@ -756,7 +756,7 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 #if	SHOPT_ACCTFILE
 	if(acctfd)
 	{
-		ptrdiff_t timechars;
+		signed_size_t timechars;
 		ptrdiff_t offset = stktell(sh.stk);
 		sfputr(sh.stk,buff,-1);
 		stkseek(sh.stk,stktell(sh.stk) - 1);

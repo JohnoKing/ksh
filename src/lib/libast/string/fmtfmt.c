@@ -35,7 +35,7 @@
  *	l	long
  *	p	void*
  *	s	string
- *	t	ptrdiff_t
+ *	t	signed_size_t
  *	z	size_t
  *	?	unknown
  */
@@ -54,9 +54,9 @@ fmtfmt(const char* as)
 	int		x;
 	int		t;
 	int		n;
-	ptrdiff_t	i;
-	ptrdiff_t	m;
-	ptrdiff_t	z;
+	signed_size_t	i;
+	signed_size_t	m;
+	signed_size_t	z;
 	char		formats[256];
 	unsigned int	extra[elementsof(formats)];
 
@@ -176,7 +176,7 @@ fmtfmt(const char* as)
 				i = a;
 			else
 				i++;
-			if (i < (ptrdiff_t)elementsof(formats))
+			if (i < (signed_size_t)elementsof(formats))
 			{
 				formats[i] = (char)t;
 				if (extra[i] = (unsigned)x)

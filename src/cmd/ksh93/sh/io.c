@@ -1693,7 +1693,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
 			return;
 	}
 	/* make sure table is large enough */
-	if(sh.topfd >= (ptrdiff_t)filemapsize)
+	if(sh.topfd >= (signed_size_t)filemapsize)
 	{
 		char 	*cp, *oldptr = (char*)filemap;
 		char 	*oldend = (char*)&filemap[filemapsize];
@@ -2198,8 +2198,8 @@ static int	io_prompt(Sfio_t *iop,int flag)
 		{
 			/* PS2 prompt. Save stack state to avoid corrupting command substitutions
 			 * in case we're executing a PS2.get discipline function at parse time. */
-			ptrdiff_t savestacktop  = stktell(sh.stk);
-			void      *savestackptr = stkfreeze(sh.stk,0);
+			ptrdiff_t  savestacktop  = stktell(sh.stk);
+			void       *savestackptr = stkfreeze(sh.stk,0);
 			if (cp = nv_getval(sh_scoped(PS2NOD)))
 				sfputr(sfstderr,cp,-1);
 			/* Restore the stack. (If nv_getval ran a PS2.get discipline, this may free the space cp points to.) */

@@ -91,8 +91,8 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 		goto nope;
 	{
 		char		tmp[256];
-		ptrdiff_t	i;
-		for (i = 0; i < r && i < (int)sizeof(tmp) - 1; i++)
+		signed_size_t	i;
+		for (i = 0; i < r && i < (signed_size_t)sizeof(tmp) - 1; i++)
 			tmp[i] = '0';
 		tmp[i] = 0;
 		if (ast.locale.transform(NULL, buf, 0) >= ast.locale.transform(NULL, tmp, 0))
@@ -100,10 +100,10 @@ regcollate(const char* s, char** e, char* buf, size_t size, wchar_t* wc)
 	}
 	t = (const char*)buf;
  done:
-	if (r <= (ptrdiff_t)size && (char*)t != buf)
+	if (r <= (signed_size_t)size && (char*)t != buf)
 	{
 		memcpy(buf, t, (size_t)r);
-		if (r < (ptrdiff_t)size)
+		if (r < (signed_size_t)size)
 			buf[r] = 0;
 	}
 	if (wc)

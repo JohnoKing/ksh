@@ -103,7 +103,7 @@ int _sfsetpool(Sfio_t* f)
 	Sfpool_t*	p;
 	Sfio_t**	array;
 	int		rv;
-	ptrdiff_t	n;
+	signed_size_t	n;
 
 	if(!_Sfcleanup)
 	{	_Sfcleanup = _sfcleanup;
@@ -271,7 +271,7 @@ static int _sfpmode(Sfio_t* f, int type)
 	else
 	{	/* restore read data */
 		if(p->ndata > f->size)	/* may lose data!!! */
-			p->ndata = f->size;
+			p->ndata = (ptrdiff_t)f->size;
 		if(p->ndata > 0)
 		{	memcpy(f->data,p->rdata,(size_t)p->ndata);
 			f->endb = f->data+p->ndata;

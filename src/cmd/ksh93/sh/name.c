@@ -278,7 +278,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 			if(*arg->argval==0 && arg->argchn.ap && !(arg->argflag&~(ARG_APPEND|ARG_QUOTED|ARG_MESSAGE|ARG_ARRAY)))
 			{
 				int flag = (NV_VARNAME|NV_ARRAY|NV_ASSIGN);
-				ptrdiff_t sub=0;
+				signed_size_t sub=0;
 				struct fornod *fp=(struct fornod*)arg->argchn.ap;
 				Shnode_t *tp=fp->fortre;
 				flag |= (flags&(NV_NOSCOPE|NV_STATIC|NV_FARRAY));
@@ -789,8 +789,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 				flags &= ~NV_EXPORT;
 			if(!copy && !(flags&NV_NOREF))
 			{
-				ptrdiff_t z;
-				z = sp-name;
+				ptrdiff_t z = sp-name;
 				copy = cp-name;
 				dp->nofree |= 1;
 				name = copystack(NULL, name,NULL);
@@ -925,7 +924,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 			if(isref)
 			{
 #if SHOPT_FIXEDARRAY
-				ptrdiff_t n=0;
+				signed_size_t n=0;
 				int dim;
 #endif /* SHOPT_FIXEDARRAY */
 #if NVCACHE
@@ -1132,11 +1131,11 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 							cp = (char*)name+copy;
 							sp = cp-m;
 						}
-						if((ptrdiff_t)len <= m)
+						if((signed_size_t)len <= m)
 						{
 							memcpy(sp+1,sub,len-2);
 							sp[len-1] = ']';
-							if((ptrdiff_t)len < m)
+							if((signed_size_t)len < m)
 							{
 								char *dp = sp+len;
 								while(*dp++=*cp++);
@@ -1361,7 +1360,7 @@ void nv_delete(Namval_t* np, Dt_t *root, int flags)
 Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 {
 	char			*cp=(char*)name;
-	ptrdiff_t		c;
+	signed_size_t		c;
 	Namval_t		*np=0;
 	Namfun_t		fun;
 	int			append=0;
@@ -1438,7 +1437,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 			root = sh.var_base;
 		sh.last_table = 0;
 	}
-	if(c=(ptrdiff_t)!isaletter((wchar_t)c))
+	if(c=(signed_size_t)!isaletter((wchar_t)c))
 		goto skip;
 #if NVCACHE
 	for(c=0,xp=nvcache.entries ; c < NVCACHE; xp= &nvcache.entries[++c])
@@ -1474,7 +1473,7 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 		}
 		else
 			xp->len = strlen(name);
-		c = (ptrdiff_t)roundof(xp->len+1,32U);
+		c = (signed_size_t)roundof(xp->len+1,32U);
 		if((size_t)c > xp->size)
 			xp->name = sh_realloc(xp->name, xp->size = (size_t)c);
 		memcpy(xp->name,name,xp->len);
@@ -2807,7 +2806,7 @@ Sfdouble_t nv_getnum(Namval_t *np)
  *   value to conform to <newatts>.  The <size> of left and right
  *   justified fields may be given.
  */
-void nv_newattr (Namval_t *np, unsigned newatts, ptrdiff_t size)
+void nv_newattr (Namval_t *np, unsigned newatts, signed_size_t size)
 {
 	char *sp;
 	char *cp = 0;
@@ -2850,7 +2849,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, ptrdiff_t size)
 			return;
 	}
 	oldsize = nv_size(np);
-	if((size==(ptrdiff_t)oldsize|| (n&NV_INTEGER)) && !trans && ((n^newatts)&~NV_NOCHANGE)==0)
+	if((size==(signed_size_t)oldsize|| (n&NV_INTEGER)) && !trans && ((n^newatts)&~NV_NOCHANGE)==0)
 	{
 		if(size>0)
 			np->nvsize = (size_t)size;

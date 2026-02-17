@@ -966,7 +966,7 @@ static int     setall(char **argv,int flag,Dt_t *troot,struct tdata *tp)
 					if(flag&NV_RDONLY && !tp->argnum && !(flag&(NV_INTEGER|NV_BINARY)) && !(flag&(NV_LJUST|NV_RJUST|NV_ZFILL)))
 						/* New requested attribute(s) are readonly, have a provided or defaulted size of 0, and are
 						   not a string justification nor numeric. Justified or binary strings can have a size of 0. */
-						nv_newattr(np, newflag&~NV_ASSIGN, (ptrdiff_t)np->nvsize);
+						nv_newattr(np, newflag&~NV_ASSIGN, (signed_size_t)np->nvsize);
 					else
 						nv_newattr(np, newflag&~NV_ASSIGN, tp->argnum);
 				}

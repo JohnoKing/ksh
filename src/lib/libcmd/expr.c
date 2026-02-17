@@ -183,9 +183,9 @@ static int getnode(State_t* state, Node_t *np)
 {
 	char*	sp;
 	char*	cp;
-	ptrdiff_t i;
-	ptrdiff_t j;
-	ptrdiff_t k;
+	signed_size_t i;
+	signed_size_t j;
+	signed_size_t k;
 	size_t	l;
 	int	tok;
 	char*	ep;
@@ -261,7 +261,7 @@ static int getnode(State_t* state, Node_t *np)
 					error(ERROR_exit(2), "position argument expected");
 					UNREACHABLE();
 				}
-				i = (ptrdiff_t)strtol(cp, &ep, 10);
+				i = (signed_size_t)strtol(cp, &ep, 10);
 				if (*ep || --i < 0)
 					i = -1;
 				if (!(cp = *state->arglist++))
@@ -269,10 +269,10 @@ static int getnode(State_t* state, Node_t *np)
 					error(ERROR_exit(2), "length argument expected");
 					UNREACHABLE();
 				}
-				j = (ptrdiff_t)strtol(cp, &ep, 10);
+				j = (signed_size_t)strtol(cp, &ep, 10);
 				if (*ep)
 					j = -1;
-				k = (ptrdiff_t)strlen(sp);
+				k = (signed_size_t)strlen(sp);
 				if (i < 0 || i >= k || j < 0)
 					sp = "";
 				else

@@ -24,13 +24,14 @@
 **	Written by Kiem-Phong Vo.
 */
 
-ptrdiff_t _sfputm(Sfio_t* f,	/* write a portable ulong to this stream */
+signed_size_t _sfputm(Sfio_t* f,	/* write a portable ulong to this stream */
 		Sfulong_t v,	/* the unsigned value to be written */
 		Sfulong_t m)	/* the max value of the range */
 {
 #define N_ARRAY		(2*sizeof(Sfulong_t))
-	uchar	*s, *ps;
-	ptrdiff_t n, p;
+	uchar		*s, *ps;
+	signed_size_t	n;
+	ptrdiff_t	p;
 	uchar		c[N_ARRAY];
 
 	if(!f || v > m || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
@@ -44,10 +45,10 @@ ptrdiff_t _sfputm(Sfio_t* f,	/* write a portable ulong to this stream */
 	{	v >>= SFIO_BBITS;
 		*--s = (uchar)SFBVALUE(v);
 	}
-	n = (ps-s)+1;
+	n = (signed_size_t)(ps-s)+1;
 
 	if(n > 8 || SFWPEEK(f,ps,p) < n)
-		n = SFWRITE(f,s,(size_t)n); /* write the hard way */
+		n = (signed_size_t)SFWRITE(f,s,(size_t)n); /* write the hard way */
 	else
 	{	switch(n)
 		{

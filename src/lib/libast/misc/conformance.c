@@ -38,7 +38,6 @@ initconformance(void)
 	size_t			h;
 	size_t			i;
 	size_t			j;
-	ptrdiff_t		d;
 	int			c;
 	Sfio_t*			sp;
 
@@ -50,6 +49,7 @@ initconformance(void)
 		for (i = h = 0, j = 1; i < elementsof(conf); i++)
 			if (*(m = astconf(conf[i], NULL, NULL)) && (h |= (1<<i)) || !i && (m = "ast"))
 			{
+				ptrdiff_t d;
 				t = m;
 				while ((c = *m++) && c != '.')
 				{

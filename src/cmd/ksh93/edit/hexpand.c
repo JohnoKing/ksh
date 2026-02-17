@@ -61,9 +61,9 @@ struct subst
 
 static char *parse_subst(const char *s, struct subst *sb)
 {
-	char	*cp,del;
-	ptrdiff_t off;
-	int	n = 0;
+	char		*cp,del;
+	ptrdiff_t	off;
+	int		n = 0;
 
 	/* build the strings on the stack, mainly for '&' substitution in "new" */
 	off = stktell(sh.stk);

@@ -83,7 +83,7 @@ char* _sfcvt(void*	vp,		/* pointer to value to convert	*/
 	     int*	decpt,		/* to return decimal point	*/
 	     int*	sign,		/* to return sign		*/
 	     ptrdiff_t*	len,		/* return string length		*/
-	     ptrdiff_t	format)		/* conversion format		*/
+	     ptrdiff_t format)		/* conversion format		*/
 {
 	char			*sp;
 	long			n, v;

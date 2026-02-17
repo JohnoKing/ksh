@@ -58,7 +58,7 @@ pathcanon_20100601(char* path, size_t size, int flags)
 	char*	t;
 	char*	phys;
 	char*	v;
-	ptrdiff_t dots;
+	ssize_t dots;
 	int	loop;
 	int	oerrno;
 
