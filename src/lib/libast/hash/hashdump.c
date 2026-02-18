@@ -116,7 +116,7 @@ dumptable(Hash_table_t* tab, int flags)
 	if (tab->frozen) sfprintf(sfstderr, "frozen=%u ", (unsigned int)tab->frozen);
 	dumpflags(tab->flags);
 	sfprintf(sfstderr, "\n");
-	sfprintf(sfstderr, "        size:        %td\n", tab->size);
+	sfprintf(sfstderr, "        size:        %jd\n", (intmax_t)tab->size);
 	sfprintf(sfstderr, "        buckets:     %d\n", tab->buckets);
 	sfprintf(sfstderr, "        bucketsize:  %zu\n", (size_t)tab->bucketsize * sizeof(char*));
 	sfprintf(sfstderr, "\n");

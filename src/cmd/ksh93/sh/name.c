@@ -531,7 +531,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 			skip:
 				if(sub>0)
 				{
-					sfprintf(sh.stk,"%s[%td]",prefix?nv_name(np):cp,sub);
+					sfprintf(sh.stk,"%s[%jd]",prefix?nv_name(np):cp,(intmax_t)sub);
 					sh.prefix = stkfreeze(sh.stk,1);
 					nv_putsub(np,NULL,ARRAY_ADD|ARRAY_FILL|sub);
 				}

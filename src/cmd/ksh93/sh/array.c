@@ -381,7 +381,7 @@ static Namval_t *array_find(Namval_t *np,Namarr_t *arp, int flag)
 			char *cp;
 			if(!ap->header.table)
 				ap->header.table = dtopen(&_Nvdisc,Dtoset);
-			sfprintf(sh.strbuf,"%td",ap->cur);
+			sfprintf(sh.strbuf,"%jd",(intmax_t)ap->cur);
 			cp = sfstruse(sh.strbuf);
 			mp = nv_search(cp, ap->header.table, NV_ADD);
 			mp->nvmeta = np;
@@ -1234,7 +1234,7 @@ Namval_t *nv_putsub(Namval_t *np,char *sp,long mode)
 					Namval_t *mp;
 					if(!ap->header.table)
 						ap->header.table = dtopen(&_Nvdisc,Dtoset);
-					sfprintf(sh.strbuf,"%td",ap->cur);
+					sfprintf(sh.strbuf,"%jd",(intmax_t)ap->cur);
 					cp = sfstruse(sh.strbuf);
 					mp = nv_search(cp, ap->header.table, NV_ADD);
 					mp->nvmeta = np;
@@ -1338,7 +1338,7 @@ signed_size_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 		if(out)
 		{
 			for(n=0; n < fp->dim; n++)
-				sfprintf(out,"[%td]",fp->cur[n]);
+				sfprintf(out,"[%jd]",(intmax_t)fp->cur[n]);
 		}
 		if(dim)
 			*dim = (char)fp->dim;
@@ -1347,7 +1347,7 @@ signed_size_t nv_arrfixed(Namval_t *np, Sfio_t *out, int flag, char *dim)
 	if(out)
 	{
 		for(n=0; n < fp->ndim; n++)
-			sfprintf(out,"[%td]",fp->max[n]);
+			sfprintf(out,"[%jd]",(intmax_t)fp->max[n]);
 	}
 	fp->dim = 0;
 	return fp->curi;

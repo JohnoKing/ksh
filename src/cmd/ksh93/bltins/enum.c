@@ -137,7 +137,7 @@ static int enuminfo(Opt_t* op, Sfio_t *out, const char *str, Optdisc_t *fp)
 		if(str[4]=='v')
 			sfprintf(out,"\b%s\b",ep->values[n]);
 		else
-			sfprintf(out,"\b%td\b",n);
+			sfprintf(out,"\b%jd\b",(intmax_t)n);
 	}
 	else if(strcmp(str,"case")==0)
 	{
@@ -203,7 +203,7 @@ static char* get_enum(Namval_t* np, Namfun_t *fp)
 	signed_size_t n = nv_getn(np,fp);
 	if(n < ep->nelem)
 		return (char*)ep->values[n];
-	sfsprintf(buff,sizeof(buff),"%td%c",n,0);
+	sfsprintf(buff,sizeof(buff),"%jd%c",(intmax_t)n,0);
 	return buff;
 }
 

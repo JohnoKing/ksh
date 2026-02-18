@@ -124,7 +124,7 @@ cmdopen_20120411(char** argv, int argmax, signed_size_t size, const char* argpat
 	if (size < m)
 	{
 		if (disc->errorf)
-			(*disc->errorf)(NULL, sh, 2, "size must be at least %td", m);
+			(*disc->errorf)(NULL, sh, 2, "size must be at least %jd", (intmax_t)m);
 		return NULL;
 	}
 	if ((m = x / 10) > 2048)

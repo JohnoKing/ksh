@@ -55,6 +55,7 @@ upc() {
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
+fetch src/lib/libast/features/common
 fetch src/cmd/ksh93/include/test.h
 fetch src/cmd/ksh93/include/defs.h
 fetch src/cmd/ksh93/include/shell.h
