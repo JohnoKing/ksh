@@ -1,6 +1,6 @@
-From 949279a14c63edb312e973bd7d2f4a7d0cd68e02 Mon Sep 17 00:00:00 2001
+From f0204b83320cd39e40195bc37dc97e6dad2c1eda Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 15 Feb 2026 22:51:15 -0800
+Date: Tue, 17 Feb 2026 16:59:33 -0800
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -29,21 +29,21 @@ Change in the number of warnings on Linux when compiling with clang using
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libcmd/basename.c |   8 +--
- src/lib/libcmd/cat.c      |  39 ++++++-----
- src/lib/libcmd/chgrp.c    |  59 ++++++++--------
+ src/lib/libcmd/cat.c      |  45 ++++++------
+ src/lib/libcmd/chgrp.c    |  65 +++++++++--------
  src/lib/libcmd/chmod.c    |  27 ++++----
  src/lib/libcmd/cksum.c    |  28 ++++----
- src/lib/libcmd/cmp.c      |  16 ++---
+ src/lib/libcmd/cmp.c      |  20 +++---
  src/lib/libcmd/comm.c     |  14 ++--
  src/lib/libcmd/context.c  |  33 ++++-----
  src/lib/libcmd/cp.c       |  58 ++++++++--------
- src/lib/libcmd/cut.c      | 105 ++++++++++++++--------------
+ src/lib/libcmd/cut.c      | 111 ++++++++++++++---------------
  src/lib/libcmd/date.c     |  16 ++---
  src/lib/libcmd/dirname.c  |   4 +-
  src/lib/libcmd/expr.c     |  21 +++---
  src/lib/libcmd/fds.c      |  17 ++---
  src/lib/libcmd/fmt.c      |  30 ++++----
- src/lib/libcmd/fold.c     |  22 +++---
+ src/lib/libcmd/fold.c     |  31 +++++----
  src/lib/libcmd/getconf.c  |   6 +-
  src/lib/libcmd/grep.c     |  76 +++++++++++---------
  src/lib/libcmd/id.c       |  20 +++---
@@ -58,12 +58,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/revlib.c   |  15 ++--
  src/lib/libcmd/rm.c       |  10 +--
  src/lib/libcmd/stty.c     |  66 +++++++++---------
- src/lib/libcmd/tail.c     |  40 +++++------
+ src/lib/libcmd/tail.c     |  44 ++++++------
  src/lib/libcmd/tee.c      |   6 +-
  src/lib/libcmd/uname.c    |   8 +--
- src/lib/libcmd/uniq.c     |  40 ++++++-----
- src/lib/libcmd/wclib.c    |  34 ++++-----
- 35 files changed, 523 insertions(+), 508 deletions(-)
+ src/lib/libcmd/uniq.c     |  50 ++++++++------
+ src/lib/libcmd/wclib.c    |  30 ++++----
+ 35 files changed, 545 insertions(+), 527 deletions(-)
 
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
@@ -105,7 +105,7 @@ index 9377f9bdb..c1130cb9b 100644
  }
  
 diff --git a/src/lib/libcmd/cat.c b/src/lib/libcmd/cat.c
-index ed91813c4..7eb113d91 100644
+index ed91813c4..f8c754df9 100644
 --- a/src/lib/libcmd/cat.c
 +++ b/src/lib/libcmd/cat.c
 @@ -2,7 +2,7 @@
@@ -178,8 +178,8 @@ index ed91813c4..7eb113d91 100644
 -									if ((n = end - cp + 1) >= (sizeof(tmp) - c))
 -										n = sizeof(tmp) - c - 1;
 -									memcpy(tmp + c, cp, n);
-+									if ((n = end - cp + 1) >= ((ptrdiff_t)sizeof(tmp) - c))
-+										n = (ptrdiff_t)sizeof(tmp) - c - 1;
++									if ((n = end - cp + 1) >= ((signed_size_t)sizeof(tmp) - c))
++										n = (signed_size_t)sizeof(tmp) - c - 1;
 +									memcpy(tmp + c, cp, (size_t)n);
  									if ((m = mbsize(tmp)) >= c)
  									{
@@ -202,6 +202,19 @@ index ed91813c4..7eb113d91 100644
  		}
   special:
  		switch (n)
+@@ -271,10 +272,10 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 			if (!(nxt = (unsigned char*)(*reserve)(ip, SFIO_UNBOUND, 0)))
+ 			{
+ 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
+-				states[0] = (m = sfvalue(ip)) ? T_ERROR : T_EOF;
++				states[0] = (m = (ptrdiff_t)sfvalue(ip)) ? T_ERROR : T_EOF;
+ 				last = -1;
+ 			}
+-			else if ((m = sfvalue(ip)) <= 0)
++			else if ((m = (ptrdiff_t)sfvalue(ip)) <= 0)
+ 			{
+ 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
+ 				states[0] = m ? T_ERROR : T_EOF;
 @@ -292,7 +293,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
  			{
  				if (!(n = states[c]))
@@ -238,6 +251,15 @@ index ed91813c4..7eb113d91 100644
  				sfwrite(op, (char*)meta, 3);
  			} while (states[c = *++cp] == T_EIGHTBIT && raw);
  			break;
+@@ -352,7 +353,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
+ 						*cp-- = 0;
+ 						last = -1;
+ 					}
+-					else if ((n = sfvalue(ip)) <= 0)
++					else if ((n = (ptrdiff_t)sfvalue(ip)) <= 0)
+ 					{
+ 						states[0] = n ? T_ERROR : T_EOF;
+ 						cp = end = tmp;
 @@ -531,7 +532,7 @@ b_cat(int argc, char** argv, Shbltin_t* context)
  			continue;
  		}
@@ -248,7 +270,7 @@ index ed91813c4..7eb113d91 100644
  			n = vcat(states, fp, sfstdout, reserve, flags);
  		else if (sfmove(fp, sfstdout, SFIO_UNBOUND, -1) >= 0 && sfeof(fp))
 diff --git a/src/lib/libcmd/chgrp.c b/src/lib/libcmd/chgrp.c
-index 30957f958..741f01454 100644
+index 30957f958..ec892af95 100644
 --- a/src/lib/libcmd/chgrp.c
 +++ b/src/lib/libcmd/chgrp.c
 @@ -2,7 +2,7 @@
@@ -260,15 +282,19 @@ index 30957f958..741f01454 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -140,61 +140,60 @@ static void
+@@ -139,62 +139,61 @@ extern int	lchown(const char*, uid_t, gid_t);
+ static void
  getids(char* s, char** e, Key_t* key, int options)
  {
- 	char*	t;
+-	char*	t;
 -	int	n;
 -	int	m;
-+	ptrdiff_t n;
- 	char*	z;
- 	char	buf[64];
+-	char*	z;
+-	char	buf[64];
++	char*		t;
++	ptrdiff_t	n;
++	char*		z;
++	char		buf[64];
  
  	key->uid = key->gid = -1;
  	while (isspace(*s))
@@ -281,8 +307,8 @@ index 30957f958..741f01454 100644
 -		if ((n = t++ - s) >= sizeof(buf))
 -			n = sizeof(buf) - 1;
 -		*((s = (char*)memcpy(buf, s, n)) + n) = 0;
-+		if ((n = t++ - s) >= (ptrdiff_t)sizeof(buf))
-+			n = (ptrdiff_t)sizeof(buf) - 1;
++		if ((n = t++ - s) >= (signed_size_t)sizeof(buf))
++			n = (signed_size_t)sizeof(buf) - 1;
 +		*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
  	}
  	if (options & OPT_CHOWN)
@@ -313,8 +339,8 @@ index 30957f958..741f01454 100644
 -			if ((n = t++ - s) >= sizeof(buf))
 -				n = sizeof(buf) - 1;
 -			*((s = (char*)memcpy(buf, s, n)) + n) = 0;
-+			if ((n = t++ - s) >= (ptrdiff_t)sizeof(buf))
-+				n = (ptrdiff_t)sizeof(buf) - 1;
++			if ((n = t++ - s) >= (signed_size_t)sizeof(buf))
++				n = (signed_size_t)sizeof(buf) - 1;
 +			*((s = (char*)memcpy(buf, s, (size_t)n)) + n) = 0;
  		}
  	}
@@ -598,7 +624,7 @@ index afbfcc0a1..6e95d71e3 100644
  		case 'x':
  			method = opt_info.arg;
 diff --git a/src/lib/libcmd/cmp.c b/src/lib/libcmd/cmp.c
-index 92018b05b..d37f18bc0 100644
+index 92018b05b..44fc881a4 100644
 --- a/src/lib/libcmd/cmp.c
 +++ b/src/lib/libcmd/cmp.c
 @@ -2,7 +2,7 @@
@@ -638,7 +664,16 @@ index 92018b05b..d37f18bc0 100644
  	int		ret = 0;
  	unsigned char*	last;
  
-@@ -179,7 +179,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
+@@ -155,7 +155,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
+ 		{
+ 			if (count > 0 && !(count -= n1))
+ 				return ret;
+-			if (!(p1 = (unsigned char*)sfreserve(f1, SFIO_UNBOUND, 0)) || (c1 = sfvalue(f1)) <= 0)
++			if (!(p1 = (unsigned char*)sfreserve(f1, SFIO_UNBOUND, 0)) || (c1 = (ptrdiff_t)sfvalue(f1)) <= 0)
+ 			{
+ 				if (sferror(f1))
+ 				{
+@@ -179,13 +179,13 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
  				return ret;
  			}
  			if (count > 0 && c1 > count)
@@ -647,6 +682,13 @@ index 92018b05b..d37f18bc0 100644
  			e1 = p1 + c1;
  			n1 = c1;
  		}
+ 		if ((c2 = e2 - p2) <= 0)
+ 		{
+-			if (!(p2 = (unsigned char*)sfreserve(f2, SFIO_UNBOUND, 0)) || (c2 = sfvalue(f2)) <= 0)
++			if (!(p2 = (unsigned char*)sfreserve(f2, SFIO_UNBOUND, 0)) || (c2 = (ptrdiff_t)sfvalue(f2)) <= 0)
+ 			{
+ 				if (sferror(f2))
+ 				{
 @@ -206,7 +206,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
  		pos += c1;
  		if (flags & CMP_SILENT)
@@ -733,7 +775,7 @@ index ab3d3e887..af5236fed 100644
  		if(!(cp1 = sfgetr(in1,'\n',0)))
  			return 0;
 diff --git a/src/lib/libcmd/context.c b/src/lib/libcmd/context.c
-index 10b4b2c39..f42f20827 100644
+index 10b4b2c39..707732e55 100644
 --- a/src/lib/libcmd/context.c
 +++ b/src/lib/libcmd/context.c
 @@ -2,7 +2,7 @@
@@ -795,7 +837,7 @@ index 10b4b2c39..f42f20827 100644
 -			n = (s = memchr(cp->buf, '\n', r)) ? (s - cp->buf + 1) : r;
 -			if (n > (e - t))
 +			n = (s = memchr(cp->buf, '\n', (size_t)r)) ? (size_t)(s - cp->buf + 1) : (size_t)r;
-+			if ((ptrdiff_t)n > (e - t))
++			if ((signed_size_t)n > (e - t))
  			{
  				r = t - lp->data;
 -				m = r + (s - cp->buf);
@@ -833,7 +875,7 @@ index 10b4b2c39..f42f20827 100644
  	for (j = 0; j < cp->total; j++)
  	{
 diff --git a/src/lib/libcmd/cp.c b/src/lib/libcmd/cp.c
-index 0c072ee16..107ab7b33 100644
+index 0c072ee16..3de94f045 100644
 --- a/src/lib/libcmd/cp.c
 +++ b/src/lib/libcmd/cp.c
 @@ -135,7 +135,7 @@ static const char usage_tail[] =
@@ -873,7 +915,7 @@ index 0c072ee16..107ab7b33 100644
 -	int		pathsiz;	/* state.path buffer size	*/
 +	size_t		pathsiz;	/* state.path buffer size	*/
 +	size_t		postsiz;	/* state.path post index	*/
-+	ptrdiff_t	presiz;		/* state.path pre index		*/
++	signed_size_t	presiz;		/* state.path pre index		*/
 +	size_t		suflen;		/* strlen(state.suffix)		*/
  
  
@@ -900,7 +942,7 @@ index 0c072ee16..107ab7b33 100644
  	char*		base;
  	int		n;
 -	int		len;
-+	ptrdiff_t	len;
++	signed_size_t	len;
  	int		rm = state->remove || ent->fts_info == FTS_SL;
  	int		m;
  	int		v;
@@ -913,13 +955,13 @@ index 0c072ee16..107ab7b33 100644
  	{
  		base = ent->fts_name;
 -		len = ent->fts_namelen;
-+		len = (ptrdiff_t)ent->fts_namelen;
++		len = (signed_size_t)ent->fts_namelen;
  		if (state->hierarchy)
  			state->presiz = -1;
  		else
  		{
 -			state->presiz = ent->fts_pathlen;
-+			state->presiz = (ptrdiff_t)ent->fts_pathlen;
++			state->presiz = (signed_size_t)ent->fts_pathlen;
  			while (*base == '.' && *(base + 1) == '/')
  				for (base += 2; *base == '/'; base++);
  			if (*base == '.' && !*(base + 1))
@@ -928,7 +970,7 @@ index 0c072ee16..107ab7b33 100644
  	{
  		base = ent->fts_path + state->presiz + 1;
 -		len = ent->fts_pathlen - state->presiz - 1;
-+		len = (ptrdiff_t)ent->fts_pathlen - state->presiz - 1;
++		len = (signed_size_t)ent->fts_pathlen - state->presiz - 1;
  	}
  	len++;
  	if (state->directory)
@@ -1038,7 +1080,7 @@ index 0c072ee16..107ab7b33 100644
  	if (!standard)
  	{
 diff --git a/src/lib/libcmd/cut.c b/src/lib/libcmd/cut.c
-index c5249faa5..a5bf05a2a 100644
+index c5249faa5..dc30f93c4 100644
 --- a/src/lib/libcmd/cut.c
 +++ b/src/lib/libcmd/cut.c
 @@ -2,7 +2,7 @@
@@ -1140,7 +1182,7 @@ index c5249faa5..a5bf05a2a 100644
  			{
  				error(ERROR_exit(1),"bad list for c/f option");
  				UNREACHABLE();
-@@ -260,19 +260,19 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+@@ -260,24 +260,24 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
  static void
  cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  {
@@ -1170,6 +1212,12 @@ index c5249faa5..a5bf05a2a 100644
  		else
  			bp = sfgetr(fdin, '\n', 0);
  		if (!bp && !(bp = sfgetr(fdin, 0, SFIO_LASTR)))
+ 			break;
+-		len = sfvalue(fdin);
++		len = (ptrdiff_t)sfvalue(fdin);
+ 		xx = 0;
+ 		if (!(ncol = skip  = *(lp = cut->list)))
+ 			ncol = *++lp;
 @@ -287,14 +287,14 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  			if (cut->nosplit)
  			{
@@ -1221,7 +1269,7 @@ index c5249faa5..a5bf05a2a 100644
  			else
  				sfputc(fdout, cut->ldelim.chr);
  		}
-@@ -375,13 +375,14 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+@@ -375,19 +375,20 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  	unsigned char *sp = cut->space;
  	unsigned char *cp;
  	unsigned char *wp;
@@ -1239,7 +1287,14 @@ index c5249faa5..a5bf05a2a 100644
  	wchar_t w;
  	Sfio_t *fdtmp = 0;
  	long offset = 0;
-@@ -421,25 +422,25 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+ 	unsigned char mb[8];
+ 	/* process each buffer */
+-	while ((bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) && (c = sfvalue(fdin)) > 0)
++	while ((bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) && (c = (ptrdiff_t)sfvalue(fdin)) > 0)
+ 	{
+ 		cp = bp;
+ 		ep = cp + --c;
+@@ -421,30 +422,30 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  							continue;
  						case SP_WIDE:
  							wp = --cp;
@@ -1272,6 +1327,12 @@ index c5249faa5..a5bf05a2a 100644
  											goto failed;
  									}
  									for (i = 0; i <= (ep - cp); i++)
+ 										mb[i] = cp[i];
+-									if (!(bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) || (c = sfvalue(fdin)) <= 0)
++									if (!(bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) || (c = (ptrdiff_t)sfvalue(fdin)) <= 0)
+ 										goto failed;
+ 									cp = bp;
+ 									ep = cp + --c;
 @@ -452,9 +453,9 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  										*ep = cut->eob;
  									j = i;
@@ -1414,7 +1475,7 @@ index b5316af5f..cc470cf41 100644
  }
  
 diff --git a/src/lib/libcmd/expr.c b/src/lib/libcmd/expr.c
-index 7aa301a42..0f48b4023 100644
+index 7aa301a42..473d8b0b9 100644
 --- a/src/lib/libcmd/expr.c
 +++ b/src/lib/libcmd/expr.c
 @@ -183,9 +183,10 @@ static int getnode(State_t* state, Node_t *np)
@@ -1424,9 +1485,9 @@ index 7aa301a42..0f48b4023 100644
 -	int	i;
 -	int	j;
 -	int	k;
-+	ptrdiff_t i;
-+	ptrdiff_t j;
-+	ptrdiff_t k;
++	signed_size_t i;
++	signed_size_t j;
++	signed_size_t k;
 +	size_t	l;
  	int	tok;
  	char*	ep;
@@ -1445,7 +1506,7 @@ index 7aa301a42..0f48b4023 100644
  					UNREACHABLE();
  				}
 -				i = strtol(cp, &ep, 10);
-+				i = (ptrdiff_t)strtol(cp, &ep, 10);
++				i = (signed_size_t)strtol(cp, &ep, 10);
  				if (*ep || --i < 0)
  					i = -1;
  				if (!(cp = *state->arglist++))
@@ -1454,11 +1515,11 @@ index 7aa301a42..0f48b4023 100644
  					UNREACHABLE();
  				}
 -				j = strtol(cp, &ep, 10);
-+				j = (ptrdiff_t)strtol(cp, &ep, 10);
++				j = (signed_size_t)strtol(cp, &ep, 10);
  				if (*ep)
  					j = -1;
 -				k = strlen(sp);
-+				k = (ptrdiff_t)strlen(sp);
++				k = (signed_size_t)strlen(sp);
  				if (i < 0 || i >= k || j < 0)
  					sp = "";
  				else
@@ -1663,7 +1724,7 @@ index 8125fdf94..b77296f19 100644
  			fmt.endbuf = &outbuf[opt_info.num];
  			continue;
 diff --git a/src/lib/libcmd/fold.c b/src/lib/libcmd/fold.c
-index 49d476fd0..3ebd1f822 100644
+index 49d476fd0..5c7bb9056 100644
 --- a/src/lib/libcmd/fold.c
 +++ b/src/lib/libcmd/fold.c
 @@ -2,7 +2,7 @@
@@ -1675,7 +1736,7 @@ index 49d476fd0..3ebd1f822 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -83,10 +83,11 @@ static const char usage[] =
+@@ -83,25 +83,27 @@ static const char usage[] =
  #define T_SP	5
  #define T_RET	6
  
@@ -1685,20 +1746,32 @@ index 49d476fd0..3ebd1f822 100644
  	char *cp, *first;
 -	int n, col=0, x=0;
 +	ptrdiff_t n, col=0;
++	ssize_t s;
 +	char x=0;
  	char *last_space=0;
  	cols[0] = 0;
  	for (;;)
-@@ -101,7 +102,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+ 	{
+ 		if (!(cp  = sfgetr(in,'\n',0)))
+ 		{
+-			if (!(cp = sfgetr(in,'\n',-1)) || (n = sfvalue(in)) <= 0)
++			if (!(cp = sfgetr(in,'\n',-1)) || (s = sfvalue(in)) <= 0)
+ 				break;
+-			x = cp[--n];
+-			cp[n] = '\n';
++			x = cp[--s];
++			cp[s] = '\n';
+ 		}
  		/* special case -b since no column adjustment is needed */
- 		if(cols['\b']==0 && (n=sfvalue(in))<=width)
+-		if(cols['\b']==0 && (n=sfvalue(in))<=width)
++		if(cols['\b']==0 && (s=sfvalue(in))<=width)
  		{
 -			sfwrite(out,cp,n);
-+			sfwrite(out,cp,(size_t)n);
++			sfwrite(out,cp,(size_t)s);
  			continue;
  		}
  		first = cp;
-@@ -116,7 +117,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+@@ -116,7 +118,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
  					col = last_space - first;
  				else
  					col = width-col;
@@ -1707,7 +1780,7 @@ index 49d476fd0..3ebd1f822 100644
  				first += col;
  				col = 0;
  				last_space = 0;
-@@ -141,7 +142,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+@@ -141,7 +143,7 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
  				col +=n;
  				if((cp-first) > (width-col))
  				{
@@ -1716,7 +1789,7 @@ index 49d476fd0..3ebd1f822 100644
  					sfwrite(out, cont, contsize);
  					first = cp;
  					col =  TABSIZE-1;
-@@ -159,14 +160,15 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
+@@ -159,14 +161,15 @@ static void fold(Sfio_t *in, Sfio_t *out, int width, const char *cont, size_t co
  			}
  			break;
  		}
@@ -1734,7 +1807,7 @@ index 49d476fd0..3ebd1f822 100644
  	Sfio_t *fp;
  	char *cp;
  	char *cont="\n";
-@@ -188,7 +190,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
+@@ -188,7 +191,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
  			cols['\t'] = cols[' '];
  			continue;
  		case 'c':
@@ -1743,7 +1816,7 @@ index 49d476fd0..3ebd1f822 100644
  			continue;
  		case 'd':
  			if (n = *opt_info.arg)
-@@ -200,7 +202,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
+@@ -200,7 +203,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
  				cols['\t'] = T_SP;
  			continue;
  		case 'w':
@@ -1780,7 +1853,7 @@ index f762ae7da..fd21ddca0 100644
  		error(ERROR_SYSTEM|2, "%s: exec error [%d]", native, n);
  	return n;
 diff --git a/src/lib/libcmd/grep.c b/src/lib/libcmd/grep.c
-index ff19c6b10..3fd248183 100644
+index ff19c6b10..243efe2ac 100644
 --- a/src/lib/libcmd/grep.c
 +++ b/src/lib/libcmd/grep.c
 @@ -2,7 +2,7 @@
@@ -1811,9 +1884,9 @@ index ff19c6b10..3fd248183 100644
 -	int		after;		/* # lines to list after match	*/
 -	int		before;		/* # lines to list before match	*/
 -	int		list;		/* list files with hits		*/
-+	ptrdiff_t	after;		/* # lines to list after match	*/
-+	ptrdiff_t	before;		/* # lines to list before match	*/
-+	ptrdiff_t	list;		/* list files with hits		*/
++	signed_size_t	after;		/* # lines to list after match	*/
++	signed_size_t	before;		/* # lines to list before match	*/
++	signed_size_t	list;		/* list files with hits		*/
  	regflags_t	options;	/* regex options		*/
  
  	unsigned char	any;		/* if any pattern hit		*/
@@ -1977,7 +2050,7 @@ index ff19c6b10..3fd248183 100644
  		if (opt_info.arg)
  		{
 -			state.after = (int)strtol(opt_info.arg, &s, 0);
-+			state.after = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
++			state.after = (signed_size_t)strtol(opt_info.arg, &s, 0);
  			if (*s || state.after < 0)
  			{
  	badafter:
@@ -1986,7 +2059,7 @@ index ff19c6b10..3fd248183 100644
  		if (opt_info.arg)
  		{
 -			state.before = (int)strtol(opt_info.arg, &s, 0);
-+			state.before = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
++			state.before = (signed_size_t)strtol(opt_info.arg, &s, 0);
  			if (*s || state.before < 0)
  			{
  	badbefore:
@@ -1995,11 +2068,11 @@ index ff19c6b10..3fd248183 100644
  		if (opt_info.arg)
  		{
 -			state.before = (int)strtol(opt_info.arg, &s, 0);
-+			state.before = (ptrdiff_t)strtol(opt_info.arg, &s, 0);
++			state.before = (signed_size_t)strtol(opt_info.arg, &s, 0);
  			if (state.before < 0 || (*s && *s != ','))
  				goto badbefore;
 -			state.after = (*s == ',') ? (int)strtol(s + 1, &s, 0) : state.before;
-+			state.after = (*s == ',') ? (ptrdiff_t)strtol(s + 1, &s, 0) : state.before;
++			state.after = (*s == ',') ? (signed_size_t)strtol(s + 1, &s, 0) : state.before;
  			if (*s || state.after < 0)
  				goto badafter;
  		}
@@ -2012,7 +2085,7 @@ index ff19c6b10..3fd248183 100644
  		break;
  	case 'L':
 -		state.list = -opt_info.num;
-+		state.list = (ptrdiff_t)(-opt_info.num);
++		state.list = (signed_size_t)(-opt_info.num);
  		break;
  	case 'N':
  		h = opt_info.arg;
@@ -2021,7 +2094,7 @@ index ff19c6b10..3fd248183 100644
  		break;
  	case 'l':
 -		state.list = opt_info.num;
-+		state.list = (ptrdiff_t)opt_info.num;
++		state.list = (signed_size_t)opt_info.num;
  		break;
  	case 'm':
  		state.label = 1;
@@ -2551,7 +2624,7 @@ index d73cc3809..a4df60e82 100644
  	return 0;
  }
 diff --git a/src/lib/libcmd/mkdir.c b/src/lib/libcmd/mkdir.c
-index f76b3df66..43c478161 100644
+index f76b3df66..7ccbaa8d3 100644
 --- a/src/lib/libcmd/mkdir.c
 +++ b/src/lib/libcmd/mkdir.c
 @@ -2,7 +2,7 @@
@@ -2568,7 +2641,7 @@ index f76b3df66..43c478161 100644
  {
  	char*		path;
 -	int		n;
-+	ptrdiff_t	n;
++	signed_size_t	n;
  	mode_t		mode = DIRMODE;
  	mode_t		mask = 0;
  	int		mflag = 0;
@@ -2577,7 +2650,7 @@ index f76b3df66..43c478161 100644
  
  			made = 0;
 -			n = strlen(path);
-+			n = (ptrdiff_t)strlen(path);
++			n = (signed_size_t)strlen(path);
  			while (n > 0 && path[--n] == '/');
  			path[n + 1] = 0;
  			for (part = path, n = *part; n;)
@@ -2619,7 +2692,7 @@ index 5bd83cd73..023d08279 100644
  		memcpy(dir, pfx, i);
  		dir[i] = 0;
 diff --git a/src/lib/libcmd/paste.c b/src/lib/libcmd/paste.c
-index 35a8475cd..7ca967407 100644
+index 35a8475cd..1a2a32078 100644
 --- a/src/lib/libcmd/paste.c
 +++ b/src/lib/libcmd/paste.c
 @@ -2,7 +2,7 @@
@@ -2636,11 +2709,11 @@ index 35a8475cd..7ca967407 100644
   */
  
 -static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, int dsiz, int dlen, Delim_t* mp)
-+static int paste(ptrdiff_t nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, ptrdiff_t dsiz, ptrdiff_t dlen, Delim_t* mp)
++static int paste(signed_size_t nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, signed_size_t dsiz, signed_size_t dlen, Delim_t* mp)
  {
  	const char *cp;
 -	int d, n, i, z, more=1;
-+	ptrdiff_t d, n, i, z, more=1;
++	signed_size_t d, n, i, z, more=1;
  	Sfio_t *fp;
  	do
  	{
@@ -2678,12 +2751,12 @@ index 35a8475cd..7ca967407 100644
   * Handles paste -s, for file <in> to file <out> using delimiters <delim>
   */
 -static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,int dlen,Delim_t* mp)
-+static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,ptrdiff_t dlen,Delim_t* mp)
++static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,signed_size_t dlen,Delim_t* mp)
  {
  	const char *cp;
 -	int d=0;
 -	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,sfvalue(in)-1) < 0)
-+	ptrdiff_t d=0;
++	signed_size_t d=0;
 +	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,(size_t)sfvalue(in)-1) < 0)
  		return -1;
  	while(cp=sfgetr(in, '\n',0))
@@ -2702,7 +2775,7 @@ index 35a8475cd..7ca967407 100644
  	char		*ep;
  	Delim_t		*mp;
 -	int		dlen, dsiz;
-+	ptrdiff_t	dlen, dsiz;
++	signed_size_t	dlen, dsiz;
  	char		defdelim[2];
  
  	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
@@ -2909,7 +2982,7 @@ index e79a5c4e2..208d7aa0d 100644
  			if(nleft)
  			{
 diff --git a/src/lib/libcmd/rm.c b/src/lib/libcmd/rm.c
-index e4101adbe..a62dec723 100644
+index e4101adbe..3c7a14888 100644
 --- a/src/lib/libcmd/rm.c
 +++ b/src/lib/libcmd/rm.c
 @@ -68,11 +68,11 @@ static const char usage[] =
@@ -2940,10 +3013,10 @@ index e4101adbe..a62dec723 100644
  						break;
  					}
 -					if (c <= sizeof(state->buf))
-+					if (c <= (ptrdiff_t)sizeof(state->buf))
++					if (c <= (signed_size_t)sizeof(state->buf))
  						break;
 -					c -= sizeof(state->buf);
-+					c -= (ptrdiff_t)sizeof(state->buf);
++					c -= (signed_size_t)sizeof(state->buf);
  				}
  				fsync(n);
  				ast_close(n);
@@ -3165,7 +3238,7 @@ index 83699631e..9e0da31cb 100644
  	{
  		if(Ttable[i].field==field &&  Ttable[i].type==BIT && *Ttable[i].description)
 diff --git a/src/lib/libcmd/tail.c b/src/lib/libcmd/tail.c
-index 9df44c599..89e682a83 100644
+index 9df44c599..40d733481 100644
 --- a/src/lib/libcmd/tail.c
 +++ b/src/lib/libcmd/tail.c
 @@ -2,7 +2,7 @@
@@ -3229,17 +3302,15 @@ index 9df44c599..89e682a83 100644
  	out = tmp[0] = sftmp(a);
  	tmp[1] = sftmp(a);
  	offset[0] = offset[1] = 0;
-@@ -436,8 +436,8 @@ b_tail(int argc, char** argv, Shbltin_t* context)
- 	unsigned long	timeout = 0;
+@@ -437,7 +437,6 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  	struct stat	st;
  	const char*	format = header_fmt+1;
-+	ptrdiff_t	w;
  	ssize_t		z;
 -	ssize_t		w;
  	Sfio_t*		op;
  	Tail_t*		fp;
  	Tail_t*		pp;
-@@ -567,7 +567,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+@@ -567,7 +566,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  				{
  				case 0:
  					if (r)
@@ -3248,7 +3319,7 @@ index 9df44c599..89e682a83 100644
  					break;
  				case 'c':
  					flags &= ~LINES;
-@@ -584,7 +584,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+@@ -584,7 +583,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  				default:
  					error(2, "%s: invalid suffix", t - 1);
  					if (r)
@@ -3257,7 +3328,7 @@ index 9df44c599..89e682a83 100644
  					break;
  				}
  				break;
-@@ -637,7 +637,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+@@ -637,7 +636,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  	}
  	if (flags & FOLLOW)
  	{
@@ -3266,7 +3337,7 @@ index 9df44c599..89e682a83 100644
  		{
  			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
  			UNREACHABLE();
-@@ -685,13 +685,13 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+@@ -685,13 +684,14 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  					n = 1;
  					if (timeout)
  						fp->expire = NOW + timeout;
@@ -3275,6 +3346,7 @@ index 9df44c599..89e682a83 100644
  					i = 0;
  					if ((s = sfreserve(fp->sp, z, SFIO_LOCKR)) || (z = sfvalue(fp->sp)) && (s = sfreserve(fp->sp, z, SFIO_LOCKR)) && (i = 1))
  					{
++						ptrdiff_t w;
  						z = sfvalue(fp->sp);
  						for (r = s + z; r > s && *(r - 1) != '\n'; r--);
 -						if ((w = r - s) || i && (w = z))
@@ -3282,20 +3354,24 @@ index 9df44c599..89e682a83 100644
  						{
  							if ((flags & (HEADERS|VERBOSE)) && hp != fp)
  							{
-@@ -700,11 +700,11 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+@@ -699,13 +699,13 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+ 								sfprintf(sfstdout, format, fp->name);
  								format = header_fmt;
  							}
- 							fp->cur += w;
+-							fp->cur += w;
 -							sfwrite(sfstdout, s, w);
++							fp->cur += (Sfoff_t)w;
 +							sfwrite(sfstdout, s, (size_t)w);
  						}
  						else
  							w = 0;
 -						sfread(fp->sp, s, w);
+-						fp->end += w;
 +						sfread(fp->sp, s, (size_t)w);
- 						fp->end += w;
++						fp->end += (Sfoff_t)w;
  					}
  					goto next;
+ 				}
 diff --git a/src/lib/libcmd/tee.c b/src/lib/libcmd/tee.c
 index 37b75b66d..c0683a4d1 100644
 --- a/src/lib/libcmd/tee.c
@@ -3365,7 +3441,7 @@ index f16a10608..7ac0739d9 100644
  				else
  					t = (char*)hosttype;
 diff --git a/src/lib/libcmd/uniq.c b/src/lib/libcmd/uniq.c
-index 17b1679df..70bbf8e0e 100644
+index 17b1679df..fdc92b144 100644
 --- a/src/lib/libcmd/uniq.c
 +++ b/src/lib/libcmd/uniq.c
 @@ -2,7 +2,7 @@
@@ -3377,33 +3453,45 @@ index 17b1679df..70bbf8e0e 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -79,12 +79,13 @@ static const char usage[] =
+@@ -79,22 +79,25 @@ static const char usage[] =
  
  typedef int (*Compare_f)(const char*, const char*, size_t);
  
 -static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, int mode, int* all, Compare_f compare)
-+static int uniq(Sfio_t *fdin, Sfio_t *fdout, ptrdiff_t fields, ptrdiff_t chars, ptrdiff_t width, int mode, int* all, Compare_f compare)
++static int uniq(Sfio_t *fdin, Sfio_t *fdout, signed_size_t fields, signed_size_t chars, signed_size_t width, int mode, int* all, Compare_f compare)
  {
 -	int n, f, outsize=0, mb = mbwide();
-+	ptrdiff_t n, f, outsize=0,cwidth=0,sep;
-+	int mb = mbwide();
++	signed_size_t f;
++	ptrdiff_t n, outsize=0, cwidth=0;
++	int sep, mb = mbwide();
  	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
  	char *orecp=NULL, *sbufp=0, *outbuff;
 -	int reclen,oreclen= -1,count=0,cwidth=0,sep,next;
-+	ptrdiff_t reclen,oreclen= -1,count=0,next;
++	ptrdiff_t reclen,oreclen= -1;
++	int count=0,next;
  	if(mode&C_FLAG)
  		cwidth = CWIDTH+1;
  	while(1)
-@@ -94,7 +95,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 	{
+ 		if(bufp = sfgetr(fdin,'\n',0))
+-			n = sfvalue(fdin);
++			n = (ptrdiff_t)sfvalue(fdin);
  		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
  		{
- 			n = sfvalue(fdin);
+-			n = sfvalue(fdin);
 -			bufp = memcpy(fmtbuf(n + 1), bufp, n);
++			n = (ptrdiff_t)sfvalue(fdin);
 +			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
  			bufp[n++] = '\n';
  		}
  		else
-@@ -143,7 +144,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -138,12 +141,12 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 					reclen = mp - cp;
+ 				}
+ 				else
+-					reclen = width;
++					reclen = (ptrdiff_t)width;
+ 			}
  		}
  		else
  			reclen = -2;
@@ -3412,7 +3500,7 @@ index 17b1679df..70bbf8e0e 100644
  		{
  			count++;
  			if (!all)
-@@ -169,7 +170,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -169,7 +172,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  							f = 0;
  							while(f < CWIDTH-1)
  								outp[f++] = ' ';
@@ -3421,7 +3509,7 @@ index 17b1679df..70bbf8e0e 100644
  							outp[f] = ' ';
  						}
  						else if(count<MAXCNT)
-@@ -189,9 +190,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -189,9 +192,9 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  							outsize -= (CWIDTH+1);
  							if(outp!=sbufp)
  							{
@@ -3433,7 +3521,7 @@ index 17b1679df..70bbf8e0e 100644
  								sfwrite(fdout,outp,0);
  								outp = sbufp;
  							}
-@@ -200,7 +201,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -200,7 +203,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  							sfprintf(fdout,"%4d ",count+1);
  						}
  					}
@@ -3442,7 +3530,7 @@ index 17b1679df..70bbf8e0e 100644
  						return 1;
  				}
  			}
-@@ -209,7 +210,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -209,7 +212,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  			break;
  		if(count = next)
  		{
@@ -3451,7 +3539,15 @@ index 17b1679df..70bbf8e0e 100644
  				return 1;
  			if(*all >= 0)
  				*all = 1;
-@@ -225,12 +226,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+@@ -218,19 +221,20 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
+ 		else
+ 			sep = all && *all > 0;
+ 		/* save current record */
+-		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = sfvalue(fdout)) < 0)
++		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = (ptrdiff_t)sfvalue(fdout)) < 0)
+ 			return 1;
+ 		outp = outbuff;
+ 		if(outsize < n+cwidth+sep)
  		{
  			/* no room in outp, clear lock and use side buffer */
  			sfwrite(fdout,outp,0);
@@ -3468,37 +3564,37 @@ index 17b1679df..70bbf8e0e 100644
  		if(sep)
  			outp[cwidth] = '\n';
  		oreclen = reclen;
-@@ -244,7 +246,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
+@@ -244,7 +248,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
  {
  	int mode=0;
  	char *cp;
 -	int fields=0, chars=0, width=-1;
-+	ptrdiff_t fields=0, chars=0, width=-1;
++	signed_size_t fields=0, chars=0, width=-1;
  	Sfio_t *fpin, *fpout;
  	int* all = 0;
  	int sep;
-@@ -285,15 +287,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
+@@ -285,15 +289,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
  			continue;
  		case 'f':
  			if(*opt_info.option=='-')
 -				fields = opt_info.num;
-+				fields = (ptrdiff_t)opt_info.num;
++				fields = (signed_size_t)opt_info.num;
  			else
 -				chars = opt_info.num;
-+				chars = (ptrdiff_t)opt_info.num;
++				chars = (signed_size_t)opt_info.num;
  			continue;
  		case 's':
 -			chars = opt_info.num;
-+			chars = (ptrdiff_t)opt_info.num;
++			chars = (signed_size_t)opt_info.num;
  			continue;
  		case 'w':
 -			width = opt_info.num;
-+			width = (ptrdiff_t)opt_info.num;
++			width = (signed_size_t)opt_info.num;
  			continue;
  		case ':':
  			error(2, "%s", opt_info.arg);
 diff --git a/src/lib/libcmd/wclib.c b/src/lib/libcmd/wclib.c
-index ea5996b79..12031483f 100644
+index ea5996b79..1c2c90f34 100644
 --- a/src/lib/libcmd/wclib.c
 +++ b/src/lib/libcmd/wclib.c
 @@ -2,7 +2,7 @@
@@ -3528,18 +3624,11 @@ index ea5996b79..12031483f 100644
  	}
  	return state;
  }
-@@ -164,12 +164,12 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
- 	Sfoff_t		nlines;
- 	Sfoff_t		eline = -1;
- 	Sfoff_t		longest = 0;
--	ssize_t		c;
-+	ptrdiff_t	c;
- 	unsigned char*	endbuff;
+@@ -169,7 +169,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
  	int		lasttype = WC_SP;
  	unsigned int	lastchar;
--	ssize_t		n;
+ 	ssize_t		n;
 -	ssize_t		o;
-+	ptrdiff_t	n;
 +	ptrdiff_t	o;
  	unsigned char*	buff;
  	wchar_t		x;
@@ -3552,7 +3641,7 @@ index ea5996b79..12031483f 100644
 +			if (cp >= endbuff || (n = mb2wc(x, cp, (size_t)(endbuff-cp))) < 0)
  			{
 -				if ((o = endbuff-cp) < sizeof(side))
-+				if ((o = endbuff-cp) < (ptrdiff_t)sizeof(side))
++				if ((o = endbuff-cp) < (signed_size_t)sizeof(side))
  				{
  					if (buff)
  					{
@@ -3567,7 +3656,7 @@ index ea5996b79..12031483f 100644
  					}
  					nbytes += n;
 -					if ((c = sizeof(side) - o) > n)
-+					if ((c = (ptrdiff_t)sizeof(side) - o) > n)
++					if ((c = (signed_size_t)sizeof(side) - o) > n)
  						c = n;
  					if (c)
 -						memcpy(cp, buff, c);

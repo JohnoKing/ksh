@@ -1,6 +1,6 @@
-From 4c19113ec62d2e124ea6cdbeff59734c42ad6783 Mon Sep 17 00:00:00 2001
+From dbc3b9905b2e91da449eb0ccdddc3c763e43ce0b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 15 Feb 2026 22:50:24 -0800
+Date: Tue, 17 Feb 2026 16:58:40 -0800
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -23,7 +23,7 @@ Change in the number of warnings on Linux when compiling with clang using
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/dir/dirlib.h        |   4 +-
- src/lib/libast/disc/sfdcdos.c      |  35 ++++----
+ src/lib/libast/disc/sfdcdos.c      |  37 ++++----
  src/lib/libast/disc/sfdcfilter.c   |   2 +-
  src/lib/libast/disc/sfdcmore.c     |  24 +++---
  src/lib/libast/disc/sfdcprefix.c   |  11 +--
@@ -69,7 +69,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   4 +-
  src/lib/libast/tm/tvtouch.c        |   2 +-
- 47 files changed, 338 insertions(+), 339 deletions(-)
+ 47 files changed, 339 insertions(+), 340 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index f54439cdc..e3af0c63e 100644
@@ -87,7 +87,7 @@ index f54439cdc..e3af0c63e 100644
  
  #undef	_DIRENT_H
 diff --git a/src/lib/libast/disc/sfdcdos.c b/src/lib/libast/disc/sfdcdos.c
-index 41812895d..7f026102e 100644
+index 41812895d..d055e5927 100644
 --- a/src/lib/libast/disc/sfdcdos.c
 +++ b/src/lib/libast/disc/sfdcdos.c
 @@ -2,7 +2,7 @@
@@ -124,9 +124,9 @@ index 41812895d..7f026102e 100644
 -	int		skip;
 -	void		*buff;
 +	size_t		mapsize;
-+	ptrdiff_t	skip;
++	Sfoff_t		skip;
 +	ptrdiff_t	bsize;
-+	ptrdiff_t	maptop;
++	signed_size_t	maptop;
  	char		last;
  	char		extra;
 -	int		bsize;
@@ -136,8 +136,8 @@ index 41812895d..7f026102e 100644
  {
 -	int n;
 -	if((n=dp->maptop++)>=dp->mapsize)
-+	ptrdiff_t n;
-+	if((n=dp->maptop++)>=(ptrdiff_t)dp->mapsize)
++	signed_size_t n;
++	if((n=dp->maptop++)>=(signed_size_t)dp->mapsize)
  	{
  		dp->mapsize *= 2;
  		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))
@@ -151,6 +151,15 @@ index 41812895d..7f026102e 100644
  	if(dp->extra)
  	{
  		dp->extra=0;
+@@ -133,7 +135,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
+ 		if(cp > cpmax || *cp=='\n')
+ 			break;
+ 	}
+-	dp->skip = cp-1 - (char*)buff;
++	dp->skip = (Sfoff_t)(cp-1 - (char*)buff);
+ 	/* if not \r\n in buffer, just return */
+ 	if((count = cpmax+1-cp) <=0)
+ 	{
 @@ -157,9 +159,9 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
  		}
  	}
@@ -186,7 +195,7 @@ index 41812895d..7f026102e 100644
  	struct map dummy, *mp=0;
  	Sfoff_t physical;
 -	int n,size;
-+	ptrdiff_t n;
++	ssize_t n;
 +	size_t size;
  retry:
  	switch(whence)
@@ -544,7 +553,7 @@ index 5b4eacf53..24756af92 100644
  	memset(un, 0, sizeof(*un));
  
 diff --git a/src/lib/libast/disc/sfkeyprintf.c b/src/lib/libast/disc/sfkeyprintf.c
-index 91c4d6806..5321da590 100644
+index 91c4d6806..4f957c605 100644
 --- a/src/lib/libast/disc/sfkeyprintf.c
 +++ b/src/lib/libast/disc/sfkeyprintf.c
 @@ -2,7 +2,7 @@
@@ -654,13 +663,13 @@ index 91c4d6806..5321da590 100644
 -#undef	sfkeyprintf
 -
 -int
-+ptrdiff_t
++signed_size_t
  sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
  {
 -	int		i;
 -	int		r;
 +	size_t		i;
-+	ptrdiff_t	r;
++	signed_size_t	r;
  	Fmt_t		fmt;
  
  	memset(&fmt, 0, sizeof(fmt));
@@ -835,7 +844,7 @@ index 9e7b55a5c..3be06b27d 100644
  #define REC_V_TYPE(h,o,z,l,i)	((REC_variable<<28)|((h)<<23)|((o)<<19)|(((z)-1)<<18)|((l)<<17)|((i)<<16))
  #define REC_V_RECORD(f,s)	(((f)&(((1<<16)-1)<<16))|(s))
 diff --git a/src/lib/libast/include/sfdisc.h b/src/lib/libast/include/sfdisc.h
-index 787953e5c..dcbf09efb 100644
+index 787953e5c..82619c854 100644
 --- a/src/lib/libast/include/sfdisc.h
 +++ b/src/lib/libast/include/sfdisc.h
 @@ -2,7 +2,7 @@
@@ -861,7 +870,7 @@ index 787953e5c..dcbf09efb 100644
  
 -extern int		sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
 -extern int		sfkeyprintf_20000308(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
-+extern ptrdiff_t	sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
++extern signed_size_t	sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
  
  /*
   * pure sfio read and/or write disciplines
@@ -950,7 +959,7 @@ index cf8d9c8ac..36ce85043 100644
  seed value \f3h\fP.
  If \f3n\fP is positive, \f3str\fP is a byte array of length \f3n\fP;
 diff --git a/src/lib/libast/path/pathcanon.c b/src/lib/libast/path/pathcanon.c
-index 15d20b28b..be0b5eceb 100644
+index 15d20b28b..00ef50088 100644
 --- a/src/lib/libast/path/pathcanon.c
 +++ b/src/lib/libast/path/pathcanon.c
 @@ -2,7 +2,7 @@
@@ -969,12 +978,12 @@ index 15d20b28b..be0b5eceb 100644
 -	int	dots;
  	char*	phys;
  	char*	v;
-+	ptrdiff_t dots;
++	ssize_t dots;
  	int	loop;
  	int	oerrno;
  
 diff --git a/src/lib/libast/path/pathcd.c b/src/lib/libast/path/pathcd.c
-index 662d18766..80a4efd9a 100644
+index 662d18766..c6fc2f603 100644
 --- a/src/lib/libast/path/pathcd.c
 +++ b/src/lib/libast/path/pathcd.c
 @@ -2,7 +2,7 @@
@@ -1005,8 +1014,8 @@ index 662d18766..80a4efd9a 100644
 -	int	r;
 +	char*		p = (char*)path;
 +	char*		s;
-+	ptrdiff_t	n;
 +	ptrdiff_t	i;
++	ptrdiff_t	n;
 +	int		r;
  
  	r = 0;
@@ -1073,7 +1082,7 @@ index e5a45ab82..6c09b03fc 100644
  					strcpy(path, buf);
  			}
 diff --git a/src/lib/libast/path/pathtemp.c b/src/lib/libast/path/pathtemp.c
-index 5b5c099ad..d0d8c5160 100644
+index 5b5c099ad..29d6fdd4f 100644
 --- a/src/lib/libast/path/pathtemp.c
 +++ b/src/lib/libast/path/pathtemp.c
 @@ -2,7 +2,7 @@
@@ -1093,9 +1102,9 @@ index 5b5c099ad..d0d8c5160 100644
  	int		n;
 -	int		l;
 -	int		r;
-+	ptrdiff_t	m;
-+	ptrdiff_t	l;
-+	ptrdiff_t	r;
++	signed_size_t	m;
++	signed_size_t	l;
++	signed_size_t	r;
  	int		z;
  	int		attempt;
  	Tv_t		tv;
@@ -1113,12 +1122,12 @@ index 5b5c099ad..d0d8c5160 100644
  	if (!pfx && !(pfx = tmp.pfx))
  		pfx = "ast";
 -	m = strlen(pfx);
-+	m = (ptrdiff_t)strlen(pfx);
++	m = (signed_size_t)strlen(pfx);
  	if (buf && dir && (buf == (char*)dir && (buf + strlen(buf) + 1) == (char*)pfx || buf == (char*)pfx && !*dir) && !strcmp((char*)pfx + m + 1, "XXXXX"))
  	{
  		d = (char*)dir;
 -		len = m += strlen(d) + 8;
-+		m += (ptrdiff_t)strlen(d) + 8;
++		m += (signed_size_t)strlen(d) + 8;
 +		len = (size_t)m;
  		l = 3;
  		r = 3;
@@ -1335,7 +1344,7 @@ index bf3ecd2ac..61e8ab831 100644
  	return -1;
  }
 diff --git a/src/lib/libast/tm/tmlocale.c b/src/lib/libast/tm/tmlocale.c
-index fbe1d1984..c8ac531f4 100644
+index fbe1d1984..9d9a5875d 100644
 --- a/src/lib/libast/tm/tmlocale.c
 +++ b/src/lib/libast/tm/tmlocale.c
 @@ -2,7 +2,7 @@
@@ -1367,7 +1376,7 @@ index fbe1d1984..c8ac531f4 100644
 +	char*		r;
 +	char		c;
 +	char		p;
-+	ptrdiff_t	n;
++	signed_size_t	n;
  
  	while (*w)
  	{
@@ -1400,7 +1409,7 @@ index fbe1d1984..c8ac531f4 100644
  	char**		e;
  	unsigned char*		u;
 -	ssize_t			n;
-+	ptrdiff_t		n;
++	signed_size_t		n;
  	iconv_t			cvt;
  	Sfio_t*			sp;
  	Sfio_t*			tp;
@@ -1409,7 +1418,7 @@ index fbe1d1984..c8ac531f4 100644
  	if (mcfind(NULL, NULL, LC_TIME, 0, path, sizeof(path)) && (sp = sfopen(NULL, path, "r")))
  	{
 -		n = sfsize(sp);
-+		n = (ptrdiff_t)sfsize(sp);
++		n = (signed_size_t)sfsize(sp);
  		tp = 0;
  		if (u = (unsigned char*)sfreserve(sp, 3, 1))
  		{
@@ -1418,7 +1427,7 @@ index fbe1d1984..c8ac531f4 100644
  				{
  					sfread(sp, u, 3);
 -					n = iconv_move(cvt, sp, tp, SFIO_UNBOUND, NULL);
-+					n = iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
++					n = (signed_size_t)iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
  				}
  				iconv_close(cvt);
  			}

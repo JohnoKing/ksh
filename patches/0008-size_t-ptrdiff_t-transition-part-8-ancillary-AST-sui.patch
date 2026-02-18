@@ -1,6 +1,6 @@
-From 9bca9afb744c3e3cbd3acb39067bced60298538b Mon Sep 17 00:00:00 2001
+From 964ccf34d4859253e95763fac2298a20991a7244 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 15 Feb 2026 22:52:06 -0800
+Date: Tue, 17 Feb 2026 17:00:27 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -703,7 +703,7 @@ index 6003c592c..d7f980db9 100644
 -
 -#endif
 diff --git a/src/lib/libdll/dllscan.c b/src/lib/libdll/dllscan.c
-index d4ff7b598..0c8dccb28 100644
+index d4ff7b598..e9e5d8b4b 100644
 --- a/src/lib/libdll/dllscan.c
 +++ b/src/lib/libdll/dllscan.c
 @@ -2,7 +2,7 @@
@@ -722,7 +722,7 @@ index d4ff7b598..0c8dccb28 100644
 -	int		off; \
 -	int		prelen; \
 -	int		suflen; \
-+	ptrdiff_t	off; \
++	signed_size_t	off; \
 +	size_t		prelen; \
 +	size_t		suflen; \
  	char**		lib; \
@@ -764,7 +764,7 @@ index d4ff7b598..0c8dccb28 100644
  					info.sibling[0] = info.sibbuf;
  				}
 -				if (v && vn < sizeof(info.envbuf))
-+				if (v && vn < (ptrdiff_t)sizeof(info.envbuf))
++				if (v && vn < (signed_size_t)sizeof(info.envbuf))
  				{
  					if(vn <= 0)
  						abort();

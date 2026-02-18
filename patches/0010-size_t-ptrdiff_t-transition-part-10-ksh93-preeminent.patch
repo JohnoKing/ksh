@@ -1,6 +1,6 @@
-From 2482685352f194b3f79591756b88d1e52efeda3e Mon Sep 17 00:00:00 2001
+From ee7f2c240c67ddce3f0038f26c4e379a07679378 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 15 Feb 2026 22:53:49 -0800
+Date: Tue, 17 Feb 2026 17:02:14 -0800
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -21,18 +21,18 @@ Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/bltins/alarm.c     |  4 +-
  src/cmd/ksh93/bltins/cd_pwd.c    |  2 +-
- src/cmd/ksh93/bltins/enum.c      | 26 +++++-----
+ src/cmd/ksh93/bltins/enum.c      | 26 ++++-----
  src/cmd/ksh93/bltins/getopts.c   |  8 +--
  src/cmd/ksh93/bltins/hist.c      | 10 ++--
  src/cmd/ksh93/bltins/misc.c      | 18 +++----
  src/cmd/ksh93/bltins/mkservice.c |  6 +--
- src/cmd/ksh93/bltins/read.c      | 85 +++++++++++++++++---------------
+ src/cmd/ksh93/bltins/read.c      | 91 +++++++++++++++++---------------
  src/cmd/ksh93/bltins/trap.c      | 16 +++---
- src/cmd/ksh93/bltins/typeset.c   | 34 +++++++------
+ src/cmd/ksh93/bltins/typeset.c   | 34 ++++++------
  src/cmd/ksh93/bltins/ulimit.c    | 24 ++++-----
  src/cmd/ksh93/bltins/umask.c     |  8 +--
  src/cmd/ksh93/include/builtins.h |  2 +-
- 13 files changed, 126 insertions(+), 117 deletions(-)
+ 13 files changed, 129 insertions(+), 120 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -70,7 +70,7 @@ index 940262d6c..65fb79c47 100644
  	}
  	sfputr(sfstdout,cp,'\n');
 diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
-index 37f2bdd38..cdddea14a 100644
+index 37f2bdd38..b926ae2e3 100644
 --- a/src/cmd/ksh93/bltins/enum.c
 +++ b/src/cmd/ksh93/bltins/enum.c
 @@ -2,7 +2,7 @@
@@ -88,7 +88,7 @@ index 37f2bdd38..cdddea14a 100644
  	Namfun_t	hdr;
 -	short		nelem;
 -	short		iflag;
-+	ptrdiff_t	nelem;
++	signed_size_t	nelem;
 +	char		iflag;
  	const char	*values[1];
  };
@@ -97,7 +97,7 @@ index 37f2bdd38..cdddea14a 100644
   * For range checking in arith.c
   */
 -short b_enum_nelem(Namfun_t *fp)
-+ptrdiff_t b_enum_nelem(Namfun_t *fp)
++signed_size_t b_enum_nelem(Namfun_t *fp)
  {
  	return ((struct Enum *)fp)->nelem;
  }
@@ -106,7 +106,7 @@ index 37f2bdd38..cdddea14a 100644
  	Namval_t	*np;
  	struct Enum	*ep;
 -	int		n=0;
-+	ptrdiff_t	n=0;
++	signed_size_t	n=0;
  	const char	*v;
  	NOT_USED(op);
  	np = *(Namval_t**)(fp+1);
@@ -115,7 +115,7 @@ index 37f2bdd38..cdddea14a 100644
  			sfprintf(out,"\b%s\b",ep->values[n]);
  		else
 -			sfprintf(out,"\b%d\b",n);
-+			sfprintf(out,"\b%td\b",n);
++			sfprintf(out,"\b%jd\b",(intmax_t)n);
  	}
  	else if(strcmp(str,"case")==0)
  	{
@@ -135,11 +135,11 @@ index 37f2bdd38..cdddea14a 100644
  	static char buff[6];
  	struct Enum *ep = (struct Enum*)fp;
 -	long n = nv_getn(np,fp);
-+	ptrdiff_t n = nv_getn(np,fp);
++	signed_size_t n = nv_getn(np,fp);
  	if(n < ep->nelem)
  		return (char*)ep->values[n];
 -	sfsprintf(buff,sizeof(buff),"%u%c",n,0);
-+	sfsprintf(buff,sizeof(buff),"%td%c",n,0);
++	sfsprintf(buff,sizeof(buff),"%jd%c",(intmax_t)n,0);
  	return buff;
  }
  
@@ -159,7 +159,7 @@ index 37f2bdd38..cdddea14a 100644
  		ep = sh_newof(0,struct Enum,1,sz);
  		ep->iflag = iflag;
 -		ep->nelem = n;
-+		ep->nelem = (ptrdiff_t)n;
++		ep->nelem = (signed_size_t)n;
  		cp = (char*)&ep->values[n+1];
  		nv_putsub(np, NULL, ARRAY_SCAN);
  		ep->values[n] = 0;
@@ -324,7 +324,7 @@ index 5643e7e3d..9ed3c3930 100644
  
  	for (i = 0; cp = disctab[i]; i++)
 diff --git a/src/cmd/ksh93/bltins/read.c b/src/cmd/ksh93/bltins/read.c
-index 4c7c2c0fc..093056d93 100644
+index 4c7c2c0fc..4af8b87a5 100644
 --- a/src/cmd/ksh93/bltins/read.c
 +++ b/src/cmd/ksh93/bltins/read.c
 @@ -52,11 +52,11 @@ struct read_save
@@ -482,8 +482,24 @@ index 4c7c2c0fc..093056d93 100644
  						m++;
  					if(m>0)
  						cp = (unsigned char*)buf;
-@@ -425,34 +428,34 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
- 						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
+@@ -412,47 +415,47 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 				{
+ 					f = 1;
+ 					if(cp = sfreserve(iop,c,SFIO_LOCKR))
+-						m = sfvalue(iop);
++						m = (ptrdiff_t)sfvalue(iop);
+ 					else if(flags&NN_FLAG)
+ 					{
+ 						c = size;
+-						m = (cp = sfreserve(iop,c,0)) ? sfvalue(iop) : 0;
++						m = (cp = sfreserve(iop,c,0)) ? (ptrdiff_t)sfvalue(iop) : 0;
+ 						f = 0;
+ 					}
+ 					else
+ 					{
+ 						c = sfvalue(iop);
+-						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
++						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? (ptrdiff_t)sfvalue(iop) : 0;
  					}
  				}
 -				if(m>0 && (flags&N_FLAG) && !binary && (v=memchr(cp,'\n',m)))
@@ -664,7 +680,7 @@ index fa4d6085b..e8e59c82d 100644
  	}
  	if(flag > 0)
 diff --git a/src/cmd/ksh93/bltins/typeset.c b/src/cmd/ksh93/bltins/typeset.c
-index 3e5d3c07e..07bbaafaf 100644
+index 3e5d3c07e..999a01cfd 100644
 --- a/src/cmd/ksh93/bltins/typeset.c
 +++ b/src/cmd/ksh93/bltins/typeset.c
 @@ -69,7 +69,7 @@ struct tdata
@@ -729,7 +745,7 @@ index 3e5d3c07e..07bbaafaf 100644
  						/* New requested attribute(s) are readonly, have a provided or defaulted size of 0, and are
  						   not a string justification nor numeric. Justified or binary strings can have a size of 0. */
 -						nv_newattr(np, newflag&~NV_ASSIGN, np->nvsize);
-+						nv_newattr(np, newflag&~NV_ASSIGN, (ptrdiff_t)np->nvsize);
++						nv_newattr(np, newflag&~NV_ASSIGN, (signed_size_t)np->nvsize);
  					else
  						nv_newattr(np, newflag&~NV_ASSIGN, tp->argnum);
  				}
@@ -938,7 +954,7 @@ index c6a79d12f..46300d00e 100644
  			c = strperm(cp,&cp,~flag&0777);
  			if(*cp)
 diff --git a/src/cmd/ksh93/include/builtins.h b/src/cmd/ksh93/include/builtins.h
-index f61893ec4..92387f3b0 100644
+index f61893ec4..6ca7f6cf1 100644
 --- a/src/cmd/ksh93/include/builtins.h
 +++ b/src/cmd/ksh93/include/builtins.h
 @@ -113,7 +113,7 @@ extern int b_times(int, char*[],Shbltin_t*);
@@ -946,7 +962,7 @@ index f61893ec4..92387f3b0 100644
  #endif /* SHOPT_ECHOPRINT */
  
 -extern short		b_enum_nelem(Namfun_t*);
-+extern ptrdiff_t	b_enum_nelem(Namfun_t*);
++extern signed_size_t	b_enum_nelem(Namfun_t*);
  
  extern const char	e_alrm1[];
  extern const char	e_alrm2[];

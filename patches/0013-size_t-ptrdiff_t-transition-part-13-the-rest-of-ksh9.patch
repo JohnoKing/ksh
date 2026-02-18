@@ -1,6 +1,6 @@
-From 0a48ecec9b16b753b84aa2a99500d570e88dbccf Mon Sep 17 00:00:00 2001
+From 9b4d42900977d448e9922ef9a9bb54384768715b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 15 Feb 2026 22:56:23 -0800
+Date: Tue, 17 Feb 2026 17:04:57 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -58,32 +58,32 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/args.c         |  44 ++++++-----
  src/cmd/ksh93/sh/arith.c        |  28 +++----
  src/cmd/ksh93/sh/deparse.c      |  25 ++++---
- src/cmd/ksh93/sh/expand.c       |  25 ++++---
+ src/cmd/ksh93/sh/expand.c       |  33 ++++----
  src/cmd/ksh93/sh/fault.c        |  42 +++++------
  src/cmd/ksh93/sh/io.c           | 128 ++++++++++++++++----------------
  src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         | 104 ++++++++++++++------------
+ src/cmd/ksh93/sh/path.c         | 106 ++++++++++++++------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
  src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++-------------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++++
- 23 files changed, 399 insertions(+), 336 deletions(-)
+ 23 files changed, 405 insertions(+), 340 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index cdf026ecd..406c435b4 100644
+index 47215e36c..11a3494db 100644
 --- a/NEWS
 +++ b/NEWS
 @@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
- 2026-02-15:
+ 2026-02-17:
  
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
-+2026-02-15:
++2026-02-17:
 +
- - Fixed a bug in 'ksh -n' that caused the shell to overlook many
-   obsolete options passed to set(1) and alias(1) and incorrectly
-   flag non-obsolete options as obsolete.
+ - Fixed a regression introduced on 02-02-2022 occurring on systems with
+   glibc 2.35+ that could cause the pty regression tests to crash or lockup.
+ 
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -255,7 +255,7 @@ index 6de9e2917..01d268e47 100644
  
  /* flags for joblist */
 diff --git a/src/cmd/ksh93/include/path.h b/src/cmd/ksh93/include/path.h
-index 8c4882a75..5ddf292fc 100644
+index 8c4882a75..0cb9d4f67 100644
 --- a/src/cmd/ksh93/include/path.h
 +++ b/src/cmd/ksh93/include/path.h
 @@ -2,7 +2,7 @@
@@ -282,7 +282,7 @@ index 8c4882a75..5ddf292fc 100644
 +#define PATH_CDPATH		0004U
 +#define PATH_BFPATH		0010U
 +#define PATH_SKIP		0020U
-+#define PATH_STD_DIR		0100U	/* directory is on  $(getconf PATH) */
++#define PATH_STD_DIR		0100U	/* directory is on $(getconf PATH) */
  
  #define PATH_OFFSET	2		/* path offset for path_join */
  #define MAXDEPTH	1024		/* maximum shell function recursion depth */
@@ -323,7 +323,7 @@ index 8c4882a75..5ddf292fc 100644
 +extern size_t		path_complete(const char*, const char*,struct argnod**);
  #if SHOPT_BRACEPAT
 -    extern int 		path_generate(struct argnod*,struct argnod**, int);
-+    extern ptrdiff_t	path_generate(struct argnod*,struct argnod**, int);
++    extern signed_size_t	path_generate(struct argnod*,struct argnod**, int);
  #endif /* SHOPT_BRACEPAT */
  
  #if SHOPT_DYNAMIC
@@ -550,7 +550,7 @@ index 017a4df87..2509cecd0 100644
  	sh.subshell = savesubshell;
  	job.jobcontrol = savejobcontrol;
 diff --git a/src/cmd/ksh93/sh/arith.c b/src/cmd/ksh93/sh/arith.c
-index df5e94bd3..c9acb9759 100644
+index df5e94bd3..e3be72a13 100644
 --- a/src/cmd/ksh93/sh/arith.c
 +++ b/src/cmd/ksh93/sh/arith.c
 @@ -74,9 +74,9 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
@@ -571,7 +571,7 @@ index df5e94bd3..c9acb9759 100644
  #if SHOPT_FIXEDARRAY
 -		int n,dim;
 +		int dim;
-+		ptrdiff_t n;
++		signed_size_t n;
  		dim = nv_refdimen(np);
  		n = nv_refindex(np);
  #endif /* SHOPT_FIXEDARRAY */
@@ -599,7 +599,7 @@ index df5e94bd3..c9acb9759 100644
  			{
 -				int off=stktell(sh.stk);
 -				int fsize = str- (char*)(*ptr);
-+				ptrdiff_t off=stktell(sh.stk);
++				ptrdiff_t off = stktell(sh.stk);
 +				size_t fsize = (size_t)(str- (char*)(*ptr));
  				const struct mathtab *tp;
  				c = **ptr;
@@ -650,7 +650,7 @@ index df5e94bd3..c9acb9759 100644
  				if(val[2]=='#')
  					val += 3;
 -				if((str-val)>2*sizeof(Sflong_t))
-+				if((str-val)>(2*(ptrdiff_t)sizeof(Sflong_t)))
++				if((str-val)>(2*(signed_size_t)sizeof(Sflong_t)))
  				{
  					Sfdouble_t rr;
  					rr = strtold(val,&str);
@@ -759,7 +759,7 @@ index 073081a9d..653eee16a 100644
  		sfseek(infile=sh.heredocs,iop->iooffset,SEEK_SET);
  	sfmove(infile,outfile,iop->iosize,-1);
 diff --git a/src/cmd/ksh93/sh/expand.c b/src/cmd/ksh93/sh/expand.c
-index 1a909528c..b0e0418d4 100644
+index 1a909528c..f6c5a12ec 100644
 --- a/src/cmd/ksh93/sh/expand.c
 +++ b/src/cmd/ksh93/sh/expand.c
 @@ -36,8 +36,8 @@
@@ -817,7 +817,7 @@ index 1a909528c..b0e0418d4 100644
  }
  
 -int path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
-+ptrdiff_t path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
++signed_size_t path_generate(struct argnod *todo, struct argnod **arghead, int musttrim)
  /*@
  	assume todo!=0;
  	return count satisfying count>=1;
@@ -825,7 +825,7 @@ index 1a909528c..b0e0418d4 100644
  {
  	char *cp;
 -	int brace;
-+	ptrdiff_t brace;
++	signed_size_t brace;
  	int nobracepat = 0;
  	struct argnod *ap;
  	struct argnod *top = 0;
@@ -834,16 +834,41 @@ index 1a909528c..b0e0418d4 100644
  	char *format;
  	char comma, range=0;
 -	int first = 0, last = 0, incr = 0, count = 0;
-+	ptrdiff_t first = 0, last = 0, incr = 0, count = 0;
++	signed_size_t first = 0, last = 0, incr = 0, count = 0;
  	char tmp[32], end[1];
  	todo->argchn.ap = 0;
  again:
+@@ -279,12 +280,12 @@ again:
+ 				incr = 1;
+ 				if(isdigit(*pat) || *pat=='+' || *pat=='-')
+ 				{
+-					first = strtol(pat,&endc,0);
++					first = (signed_size_t)strtol(pat,&endc,0);
+ 					if(endc==(cp-1))
+ 					{
+-						last = strtol(cp+1,&endc,0);
++						last = (signed_size_t)strtol(cp+1,&endc,0);
+ 						if(*endc=='.' && endc[1]=='.')
+-							incr = strtol(endc+2,&endc,0);
++							incr = (signed_size_t)strtol(endc+2,&endc,0);
+ 						else if(last<first)
+ 							incr = -1;
+ 						if(incr)
+@@ -330,7 +331,7 @@ again:
+ 					cp += 2;
+ 					if(*cp=='.')
+ 					{
+-						incr = strtol(cp+2,&endc,0);
++						incr = (signed_size_t)strtol(cp+2,&endc,0);
+ 						cp = endc;
+ 					}
+ 					else if(first>last)
 @@ -370,7 +371,7 @@ again:
  			{
  				apin = ap->argchn.ap;
  				if(!sh_isoption(SH_NOGLOB) || sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE))
 -					brace = path_expand(ap->argval,arghead,musttrim);
-+					brace = (ptrdiff_t)path_expand(ap->argval,arghead,musttrim);
++					brace = (signed_size_t)path_expand(ap->argval,arghead,musttrim);
  				else
  				{
  					ap->argchn.ap = *arghead;
@@ -1001,7 +1026,7 @@ index e6c4f14de..eeb269e87 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 65b1f64c8..aa7fdfe2d 100644
+index 65b1f64c8..cf024b2c9 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
@@ -1185,7 +1210,7 @@ index 65b1f64c8..aa7fdfe2d 100644
  	}
  	/* make sure table is large enough */
 -	if(sh.topfd >= filemapsize)
-+	if(sh.topfd >= (ptrdiff_t)filemapsize)
++	if(sh.topfd >= (signed_size_t)filemapsize)
  	{
  		char 	*cp, *oldptr = (char*)filemap;
  		char 	*oldend = (char*)&filemap[filemapsize];
@@ -1317,8 +1342,8 @@ index 65b1f64c8..aa7fdfe2d 100644
  			 * in case we're executing a PS2.get discipline function at parse time. */
 -			int	savestacktop = stktell(sh.stk);
 -			void	*savestackptr = stkfreeze(sh.stk,0);
-+			ptrdiff_t savestacktop  = stktell(sh.stk);
-+			void      *savestackptr = stkfreeze(sh.stk,0);
++			ptrdiff_t  savestacktop  = stktell(sh.stk);
++			void       *savestackptr = stkfreeze(sh.stk,0);
  			if (cp = nv_getval(sh_scoped(PS2NOD)))
  				sfputr(sfstderr,cp,-1);
  			/* Restore the stack. (If nv_getval ran a PS2.get discipline, this may free the space cp points to.) */
@@ -1574,7 +1599,7 @@ index 19e8a5e0d..5d5408c46 100644
  		{
  			pw->p_flag |= (P_SIGNALLED|P_STOPPED);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
-index 0cd68887e..8d38e06f6 100644
+index 0cd68887e..19d491391 100644
 --- a/src/cmd/ksh93/sh/main.c
 +++ b/src/cmd/ksh93/sh/main.c
 @@ -102,6 +102,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
@@ -1621,7 +1646,7 @@ index 0cd68887e..8d38e06f6 100644
  		return;
  	}
 -	stkseek(sh.stk,command_len+2);
-+	stkseek(sh.stk,(ptrdiff_t)command_len+2);
++	stkseek(sh.stk,(signed_size_t)command_len+2);
  	buff = stkseek(sh.stk,0);
  	if(command_len==0)
  		return;
@@ -1646,12 +1671,12 @@ index 0cd68887e..8d38e06f6 100644
  	if(mode==0)
  	{
 -		int i;
-+		ptrdiff_t i;
++		signed_size_t i;
  		buff = argv[0];
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index 164cbeafe..91be27068 100644
+index bec870a40..c68e60762 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1665,19 +1690,25 @@ index 164cbeafe..91be27068 100644
  static void		checkdup(Pathcomp_t*);
  static Pathcomp_t	*defpath(void);
  
-@@ -111,8 +111,9 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
+@@ -113,13 +113,14 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
  	char *cp, **av, **xv;
  	char **avlast= &argv[sh.xargmax], **saveargs=0;
  	char *const *ev;
 -	ssize_t size, left;
 -	int nlast=1,n,exitval=0;
-+	ptrdiff_t size, left;
++	signed_size_t size, left;
 +	size_t nlast=1,n;
 +	int exitval=0;
  	pid_t pid;
  	if(sh.xargmin < 0)
  		abort();
-@@ -157,7 +158,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
+ 	/* get env/args buffer size (may change dynamically on Linux) */
+-	if((size = astconf_long(CONF_ARG_MAX)) < 0)
++	if((size = (signed_size_t)astconf_long(CONF_ARG_MAX)) < 0)
+ 		size = 131072;
+ 	/* leave fairly generous space for the environment */
+ 	for(ev=envp; cp= *ev; ev++)
+@@ -159,7 +160,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
  		}
  		else
  		{
@@ -1686,7 +1717,7 @@ index 164cbeafe..91be27068 100644
  				argv[n++] = *xv;
  			for(xv=avlast; cp=  *xv; xv++)
  				argv[n++] = cp;
-@@ -311,7 +312,7 @@ static char *dotpaths_lib(Pathcomp_t *pp, char *path)
+@@ -313,7 +314,7 @@ static char *dotpaths_lib(Pathcomp_t *pp, char *path)
  		}
  		pcomp.len = 0;
  		if(last)
@@ -1695,7 +1726,7 @@ index 164cbeafe..91be27068 100644
  		memcpy(save, stkptr(sh.stk,PATH_OFFSET+pcomp.len),sizeof(save));
  		if(checkdotpaths(NULL,NULL,&pcomp,PATH_OFFSET))
  			return stkfreeze(sh.stk,1);
-@@ -352,7 +353,7 @@ static void checkdup(Pathcomp_t *pp)
+@@ -354,7 +355,7 @@ static void checkdup(Pathcomp_t *pp)
  	pp->flags |= flag;
  	if(((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH))
  	{
@@ -1704,7 +1735,7 @@ index 164cbeafe..91be27068 100644
  		sfputr(sh.stk,name,0);
  		checkdotpaths(first,0,pp,offset);
  		stkseek(sh.stk,offset);
-@@ -540,7 +541,8 @@ static void funload(int fno, const char *name)
+@@ -542,7 +543,8 @@ static void funload(int fno, const char *name)
  	Namval_t	*np, *np_loopdetect;
  	static Dt_t	*loopdetect_tree;
  	struct Ufunction *rp,*rpfirst;
@@ -1714,7 +1745,7 @@ index 164cbeafe..91be27068 100644
  	pname = path_fullname(stkptr(sh.stk,PATH_OFFSET));
  	if(sh.fpathdict && (rp = dtmatch(sh.fpathdict,pname)))
  	{
-@@ -741,7 +743,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -743,7 +745,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  		{
  #if SHOPT_DYNAMIC
  			Shbltin_f addr;
@@ -1723,7 +1754,7 @@ index 164cbeafe..91be27068 100644
  #endif
  			/* Handle default path-bound builtins */
  			if(*stkptr(sh.stk,PATH_OFFSET)=='/' && nv_search(stkptr(sh.stk,PATH_OFFSET),sh.bltin_tree,0))
-@@ -763,7 +765,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -765,7 +767,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  			{
  				char *fp;
  				void *dll;
@@ -1732,7 +1763,7 @@ index 164cbeafe..91be27068 100644
  				if(fp = strchr(bp, ':'))
  				{
  					*fp++ = 0;
-@@ -819,7 +821,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -821,7 +823,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  		sh.bltin_dir = 0;
  		sh_stats(STAT_PATHS);
  		f = canexecute(stkptr(sh.stk,PATH_OFFSET),isfun);
@@ -1741,7 +1772,7 @@ index 164cbeafe..91be27068 100644
  		{
  			*cp = 0;
  			if(nv_open(name,sh_subfuntree(1),NV_NOARRAY|NV_IDENT|NV_NOSCOPE))
-@@ -841,7 +843,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
+@@ -843,7 +845,7 @@ Pathcomp_t *path_absolute(const char *name, Pathcomp_t *pp, int flag)
  		}
  		else if(f>=0 && (oldpp->flags & PATH_STD_DIR))
  		{
@@ -1750,7 +1781,7 @@ index 164cbeafe..91be27068 100644
  			sfputr(sh.stk,"/bin/",-1);
  			sfputr(sh.stk,name,0);
  			np = nv_search(stkptr(sh.stk,n),sh.bltin_tree,0);
-@@ -899,7 +901,7 @@ static int canexecute(char *path, int isfun)
+@@ -901,7 +903,7 @@ static int canexecute(char *path, int isfun)
  		char *cp;
  		if(errno==ENOENT && (!(cp=strrchr(path,'.')) || strlen(cp)>4 || strchr(cp,'/')))
  		{
@@ -1759,17 +1790,18 @@ index 164cbeafe..91be27068 100644
  			stkseek(sh.stk,offset);
  			sfputr(sh.stk,".bat",0);
  			path = stkptr(sh.stk,PATH_OFFSET);
-@@ -1046,7 +1048,8 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1053,7 +1055,9 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  	char		**xp=0, *xval, *libenv = (libpath?libpath->lib:0);
  	Namval_t*	np;
  	char		*s, *v;
 -	int		r, n, pidsize=0;
 +	int		r;
-+	ptrdiff_t	n, pidsize=0;
++	ptrdiff_t	n;
++	signed_size_t	pidsize=0;
  	pid_t		pid= -1;
  	if(!sh_isstate(SH_EXEC) && nv_search(opath,sh.bltin_tree,0))
  	{
-@@ -1077,31 +1080,33 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1084,31 +1088,33 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  		/* check for symlink and use symlink name */
  		char buff[PATH_MAX+1];
  		char save[PATH_MAX+1];
@@ -1779,7 +1811,7 @@ index 164cbeafe..91be27068 100644
  		sfputr(sh.stk,opath,0);
  		path = stkptr(sh.stk,PATH_OFFSET);
 -		while((n=readlink(path,buff,PATH_MAX))>0)
-+		while((rlen=readlink(path,buff,PATH_MAX))>0)
++		while((rlen=(ptrdiff_t)readlink(path,buff,PATH_MAX))>0)
  		{
 -			buff[n] = 0;
 -			n = PATH_OFFSET;
@@ -1814,7 +1846,7 @@ index 164cbeafe..91be27068 100644
  					break;
  				}
  			}
-@@ -1113,7 +1118,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1120,7 +1126,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  	/* end of: ^^^ save original pathname */
  	if(libenv && (v = strchr(libenv,'=')))
  	{
@@ -1823,7 +1855,7 @@ index 164cbeafe..91be27068 100644
  		*v = 0;
  		np = nv_open(libenv,sh.var_tree,0);
  		*v = '=';
-@@ -1129,7 +1134,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
+@@ -1136,7 +1142,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
  		xp = envp + 1;
  		while (s = *xp++)
  		{
@@ -1832,16 +1864,7 @@ index 164cbeafe..91be27068 100644
  			{
  				xval = *--xp;
  				*xp = v;
-@@ -1285,7 +1290,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
- 		errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_exec,path);
- 		UNREACHABLE();
- 	}
--	return 0;
-+	UNREACHABLE();
- }
- 
- /*
-@@ -1451,16 +1456,17 @@ static noreturn void exscript(char *path,char *argv[])
+@@ -1451,16 +1457,17 @@ static noreturn void exscript(char *path,char *argv[])
   * add a path component to the path search list and eliminate duplicates
   * and non-existing absolute paths.
   */
@@ -1862,7 +1885,7 @@ index 164cbeafe..91be27068 100644
  		sfputc(sh.stk,0);
  		stkseek(sh.stk,offset);
  		name = (const char*)stkptr(sh.stk,offset);
-@@ -1502,12 +1508,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
+@@ -1502,12 +1509,15 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
   * This function checks for the .paths file in directory in <pp>
   * it assumes that the directory is on the stack at <offset>
   */
@@ -1872,7 +1895,8 @@ index 164cbeafe..91be27068 100644
  	struct stat statb;
 -	int k,m,n,fd;
 +	int fd;
-+	ptrdiff_t n,m;
++	ssize_t n;
++	ptrdiff_t m;
 +	size_t k, l;
  	char *sp,*cp,*ep;
 -	stkseek(sh.stk,offset+pp->len);
@@ -1880,7 +1904,7 @@ index 164cbeafe..91be27068 100644
  	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
  		stkseek(sh.stk,offset);
  	sfputr(sh.stk,"/.paths",0);
-@@ -1520,11 +1528,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1520,11 +1530,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			ast_close(fd);
  			return 0;
  		}
@@ -1889,14 +1913,14 @@ index 164cbeafe..91be27068 100644
 -		sp = stkptr(sh.stk,offset+pp->len);
 +		l = (size_t)statb.st_size;
 +		stkseek(sh.stk,offset+(ptrdiff_t)pp->len+(ptrdiff_t)l+2);
-+		sp = stkptr(sh.stk,offset+(ptrdiff_t)pp->len);
++		sp = stkptr(sh.stk,offset+(signed_size_t)pp->len);
  		*sp++ = '/';
 -		n=read(fd,cp=sp,n);
 +		n=read(fd,cp=sp,l);
  		sp[n] = 0;
  		ast_close(fd);
  		for(ep=0; n--; cp++)
-@@ -1543,17 +1551,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1543,17 +1553,17 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
  			*cp = 0;
  			m = ep ? (ep-sp) : 0;
@@ -1906,7 +1930,7 @@ index 164cbeafe..91be27068 100644
  				if(first)
  				{
 -					char *ptr = stkptr(sh.stk,offset+pp->len+1);
-+					char *ptr = stkptr(sh.stk,offset+(ptrdiff_t)pp->len+1);
++					char *ptr = stkptr(sh.stk,offset+(signed_size_t)pp->len+1);
  					if(ep)
  						memmove(ptr,ep,strlen(ep)+1);
  					path_addcomp(first,old,stkptr(sh.stk,offset),PATH_FPATH|PATH_BFPATH);
@@ -1917,7 +1941,7 @@ index 164cbeafe..91be27068 100644
  			{
  				if(pp->bbuf)
  					free(pp->bbuf);
-@@ -1561,10 +1569,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1561,10 +1571,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  			}
  			else if(m)
  			{
@@ -1931,7 +1955,7 @@ index 164cbeafe..91be27068 100644
  				strcpy(&pp->lib[k+1],ep);
  				pathcanon(&pp->lib[m],0);
  				if(!first)
-@@ -1583,11 +1591,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
+@@ -1583,11 +1593,11 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int
  }
  
  
@@ -1945,7 +1969,7 @@ index 164cbeafe..91be27068 100644
  	char *savptr = NULL;
  	if(!path && type!=PATH_PATH)
  		return first;
-@@ -1693,7 +1701,7 @@ void path_newdir(Pathcomp_t *first)
+@@ -1693,7 +1703,7 @@ void path_newdir(Pathcomp_t *first)
  		if((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH)
  		{
  			/* try to insert .paths component */
@@ -1954,7 +1978,7 @@ index 164cbeafe..91be27068 100644
  			sfputr(sh.stk,pp->name,0);
  			stkseek(sh.stk,offset);
  			next = pp->next;
-@@ -1818,7 +1826,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
+@@ -1818,7 +1828,7 @@ void path_settrackedalias(const char *name, Pathcomp_t *pp)
  		path_nextcomp(pp,name,pp);
  		sp = stkptr(sh.stk,PATH_OFFSET);
  		if(sp && lstat(sp,&statb)>=0 && S_ISLNK(statb.st_mode))
@@ -1964,7 +1988,7 @@ index 164cbeafe..91be27068 100644
  			nv_setsize(np,0);
  	}
 diff --git a/src/cmd/ksh93/sh/streval.c b/src/cmd/ksh93/sh/streval.c
-index 1e77d44f8..77e67ea84 100644
+index 1e77d44f8..cc24bcf5c 100644
 --- a/src/cmd/ksh93/sh/streval.c
 +++ b/src/cmd/ksh93/sh/streval.c
 @@ -2,7 +2,7 @@
@@ -1981,7 +2005,7 @@ index 1e77d44f8..77e67ea84 100644
  #define round(x,size)		(((x)+(size)-1)&~((size)-1))
  #define stkpush(stk,v,val,type)	((((v)->offset=round(stktell(stk),pow2size(sizeof(type)))),\
 -				stkseek(stk,(v)->offset+sizeof(type)), \
-+				stkseek(stk,(v)->offset+(ptrdiff_t)sizeof(type)), \
++				stkseek(stk,(v)->offset+(signed_size_t)sizeof(type)), \
  				*((type*)stkptr(stk,(v)->offset)) = (val)),(v)->offset)
  #define roundptr(ep,cp,type)	(((unsigned char*)(ep))+round(cp-((unsigned char*)(ep)),pow2size(sizeof(type))))
  
@@ -2008,7 +2032,7 @@ index 1e77d44f8..77e67ea84 100644
   * convert ASCII char to math expression token
   */
 -#define getop(c)	(((c) >= sizeof(strval_states))? \
-+#define getop(c)	(((c) >= ((ptrdiff_t)sizeof(strval_states)))? \
++#define getop(c)	(((c) >= ((signed_size_t)sizeof(strval_states)))? \
  				((c)=='|'?A_OR:((c)=='^'?A_XOR:((c)=='~'?A_TILDE:A_REG))):\
  				strval_states[(c)])
  
@@ -2138,7 +2162,7 @@ index 1e77d44f8..77e67ea84 100644
  	cur.errmsg.value = 0;
  	cur.errmsg.emode = emode;
 -	stkseek(sh.stk,sizeof(Arith_t));
-+	stkseek(sh.stk,(ptrdiff_t)sizeof(Arith_t));
++	stkseek(sh.stk,(signed_size_t)sizeof(Arith_t));
  	if(!expr(&cur,0) && cur.errmsg.value)
  	{
  		if(cur.errstr)
@@ -2147,7 +2171,7 @@ index 1e77d44f8..77e67ea84 100644
  	ep->fun = fun;
  	ep->emode = emode;
 -	ep->size = offset - sizeof(Arith_t);
-+	ep->size = offset - (ptrdiff_t)sizeof(Arith_t);
++	ep->size = offset - (signed_size_t)sizeof(Arith_t);
  	ep->staksize = cur.stakmaxsize+1;
  	if(last)
  		*last = (char*)(cur.nextchr);
@@ -2161,10 +2185,10 @@ index 1e77d44f8..77e67ea84 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index 482326d15..c3536f6c9 100644
+index 936e37ada..5ed4f53f5 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
-@@ -152,10 +152,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
+@@ -147,10 +147,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
   */
  static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
  {
@@ -2179,7 +2203,7 @@ index 482326d15..c3536f6c9 100644
  
  	/* scale fraction from micro to milli, centi, or deci second according to precision */
  	int n;
-@@ -175,7 +175,9 @@ static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
+@@ -170,7 +170,9 @@ static void l_time(Sfio_t *outfile, struct timeval *tv, int precision)
  
  static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
  {
@@ -2190,7 +2214,7 @@ index 482326d15..c3536f6c9 100644
  	const char	*first;
  	struct timeval	tv_cpu_sum;
  	struct timeval	*tvp;
-@@ -186,7 +188,7 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
+@@ -181,7 +183,7 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
  		c = *format;
  		if(c!='%')
  			continue;
@@ -2199,7 +2223,7 @@ index 482326d15..c3536f6c9 100644
  		c = *++format;
  		if(c=='\0')
  		{
-@@ -247,8 +249,9 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
+@@ -242,8 +244,9 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
  		else
  		{
  			/* scale fraction from micro to milli, centi, or deci second according to precision */
@@ -2211,7 +2235,7 @@ index 482326d15..c3536f6c9 100644
  			for(n = 3 + (3 - precision); n > 0; --n)
  				frac /= 10;
  			if(precision)
-@@ -259,10 +262,10 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
+@@ -254,10 +257,10 @@ static void p_time(Sfio_t *out, const char *format, struct timeval tm[3])
  		first = format+1;
  	}
  	if(format>first)
@@ -2225,7 +2249,7 @@ index 482326d15..c3536f6c9 100644
  	stkseek(sh.stk,offset);
  }
  
-@@ -419,11 +422,11 @@ static void out_string(Sfio_t *iop, const char *cp, int c, int quoted)
+@@ -414,11 +417,11 @@ static void out_string(Sfio_t *iop, const char *cp, int c, int quoted)
  {
  	if(quoted)
  	{
@@ -2239,18 +2263,18 @@ index 482326d15..c3536f6c9 100644
  			return;
  		}
  	}
-@@ -469,7 +472,9 @@ static Namfun_t level_disc_fun = { &level_disc, 1 };
+@@ -464,7 +467,9 @@ static Namfun_t level_disc_fun = { &level_disc, 1 };
  int sh_debug(const char *trap, const char *name, const char *subscript, char *const argv[], int flags)
  {
  	Namval_t		*np = SH_COMMANDNOD;
 -	int			n=4, offset=stktell(sh.stk);
-+	ptrdiff_t		n=4;
++	signed_size_t		n=4;
 +	ptrdiff_t		offset=stktell(sh.stk);
 +	int			r;
  	void			*sav = stkfreeze(sh.stk,0);
  	struct sh_scoped	*savst = stkalloc(sh.stk,sizeof(struct sh_scoped));
  	const char		*cp = "+=( ";
-@@ -488,7 +493,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
+@@ -483,7 +488,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
  			cp+=1, n-=1;
  		if(!(flags&ARG_ASSIGN))
  			n -= 2;
@@ -2259,7 +2283,7 @@ index 482326d15..c3536f6c9 100644
  	}
  	if(*argv && !(flags&ARG_RAW))
  		out_string(sh.stk, *argv++,' ', 0);
-@@ -513,7 +518,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
+@@ -508,7 +513,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
  		nv_disc(SH_LEVELNOD,&level_disc_fun,NV_FIRST);
  	nv_offattr(SH_LEVELNOD,NV_RDONLY);
  	/* run the trap */
@@ -2268,7 +2292,7 @@ index 482326d15..c3536f6c9 100644
  	nv_onattr(SH_LEVELNOD,NV_RDONLY);
  	np->nvalue = NULL;
  	sh.indebug = 0;
-@@ -526,7 +531,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
+@@ -521,7 +526,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
  		stkset(sh.stk,sav,offset);
  	else
  		stkseek(sh.stk,offset);
@@ -2277,7 +2301,7 @@ index 482326d15..c3536f6c9 100644
  }
  
  /*
-@@ -541,7 +546,7 @@ int sh_eval(Sfio_t *iop, int mode)
+@@ -536,7 +541,7 @@ int sh_eval(Sfio_t *iop, int mode)
  	struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  	static Sfio_t *io_save;
  	volatile int traceon=0, lineno=0;
@@ -2286,7 +2310,7 @@ index 482326d15..c3536f6c9 100644
  	char comsub = sh.comsub;
  	io_save = iop; /* preserve correct value across longjmp */
  	sh.binscript = 0;
-@@ -704,7 +709,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
+@@ -699,7 +704,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
  	savein = dup(0);
  	if(fd==0)
  		fd = savein;
@@ -2295,7 +2319,7 @@ index 482326d15..c3536f6c9 100644
  	ast_close(0);
  	open(e_devnull,O_RDONLY);
  	sh.offsets[0] = -1;
-@@ -1119,10 +1124,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1114,10 +1119,11 @@ int sh_exec(const Shnode_t *t, int flags)
  				/* check for builtins */
  				if(np && is_abuiltin(np))
  				{
@@ -2309,7 +2333,7 @@ index 482326d15..c3536f6c9 100644
  					struct checkpt	*buffp;
  					Shbltin_t	*bp = &sh.bltindata;
  					/* Fallback optimization for ':'/'true' and 'false' */
-@@ -1637,7 +1643,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1628,7 +1634,8 @@ int sh_exec(const Shnode_t *t, int flags)
  		    case TSETIO:
  		    {
  			pid_t	pid = 0;
@@ -2319,7 +2343,7 @@ index 482326d15..c3536f6c9 100644
  			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
  			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  			if(sh.subshell && !sh.subshare)
-@@ -1650,7 +1657,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1641,7 +1648,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				for (i = t->fork.forkio; i; i = i->ionxt)
  				{
  					unsigned f = i->iofile;
@@ -2328,7 +2352,7 @@ index 482326d15..c3536f6c9 100644
  					{
  						sh_subfork();
  						break;
-@@ -1697,7 +1704,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1688,7 +1695,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				free_list(buffp->olist);
  			if(type&FPIN)
  			{
@@ -2338,7 +2362,7 @@ index 482326d15..c3536f6c9 100644
  				job.waitall = waitall;
  				if(!(e & SH_EXITSIG))
  				{
-@@ -1736,8 +1744,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1727,8 +1735,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				if((nsig=sh.st.trapmax*sizeof(char*))>0 || sh.st.trapcom[0])
  				{
  					nsig += sizeof(char*);
@@ -2349,7 +2373,7 @@ index 482326d15..c3536f6c9 100644
  					sh.st.otrapcom = (char**)savsig;
  				}
  				/* Still act like a subshell: reseed $RANDOM and increment ${.sh.subshell} */
-@@ -1766,11 +1774,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1757,11 +1765,11 @@ int sh_exec(const Shnode_t *t, int flags)
  		    {
  			int	pvo[3];	/* old pipe for multi-stage */
  			int	pvn[3];	/* current set up pipe */
@@ -2364,7 +2388,7 @@ index 482326d15..c3536f6c9 100644
  			int	savejobid = job.curjobid;
  			int	*exitval=0,*saveexitval = job.exitval;
  			pid_t	savepgid = job.curpgid;
-@@ -1793,8 +1801,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1784,8 +1792,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				job.curpgid = 0;
  				while((tn=tn->lst.lstrit) && tn->tre.tretyp==TFIL)
  					job.waitall++;
@@ -2375,7 +2399,7 @@ index 482326d15..c3536f6c9 100644
  			}
  			else
  				job.waitall = !pipejob && (sh_isstate(SH_MONITOR) || sh_isstate(SH_TIMING));
-@@ -1953,7 +1961,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1944,7 +1952,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				if(t->tre.tretyp&COMSCAN)
  				{
  					char *val;
@@ -2384,7 +2408,7 @@ index 482326d15..c3536f6c9 100644
  					if(refresh)
  					{
  						sh_menu(sfstderr,nargs,args);
-@@ -2298,7 +2306,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2289,7 +2297,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			{
  				Dt_t *root;
  				Namval_t *oldnspace = sh.namespace;
@@ -2393,7 +2417,7 @@ index 482326d15..c3536f6c9 100644
  				int	flags=NV_NOARRAY|NV_VARNAME;
  				struct checkpt *chkp = stkalloc(sh.stk,sizeof(struct checkpt));
  				int jmpval;
-@@ -2342,7 +2350,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2333,7 +2341,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			error_info.line = t->funct.functline-sh.st.firstline;
  			if(cp || sh.prefix)
  			{
@@ -2402,7 +2426,7 @@ index 482326d15..c3536f6c9 100644
  				if(sh.prefix)
  				{
  					cp = sh.prefix;
-@@ -2353,7 +2361,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2344,7 +2352,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				}
  				else
  				{
@@ -2411,7 +2435,7 @@ index 482326d15..c3536f6c9 100644
  					sfputc(sh.stk,0);
  					npv = nv_open(stkptr(sh.stk,offset),sh.var_tree,NV_NOARRAY|NV_VARNAME);
  				}
-@@ -2449,7 +2457,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2440,7 +2448,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				rp->nspace = sh.namespace;
  				rp->fname = 0;
  				rp->argv = ac ? ac->comarg.dp->dolval + 1 : NULL;
@@ -2420,7 +2444,7 @@ index 482326d15..c3536f6c9 100644
  				rp->fdict = sh.fun_tree;
  				fp = (struct functnod*)(slp+1);
  				if(fp->functtyp==(TFUN|FAMP))
-@@ -2517,7 +2525,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2508,7 +2516,7 @@ int sh_exec(const Shnode_t *t, int flags)
  					{
  						char unop[3];
  						unop[0] = '-';
@@ -2429,7 +2453,7 @@ index 482326d15..c3536f6c9 100644
  						unop[2] = 0;
  						argv[1] = unop;
  						argv[2] = left;
-@@ -2545,7 +2553,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2536,7 +2544,7 @@ int sh_exec(const Shnode_t *t, int flags)
  						argv[5] = 0;
  						sh_debug(trap,NULL,NULL,argv,pattern);
  					}
@@ -2438,7 +2462,7 @@ index 482326d15..c3536f6c9 100644
  					if(traceon)
  					{
  						sfprintf(sfstderr,"%s %s ",sh_fmtq(left),op);
-@@ -2616,17 +2624,17 @@ int sh_run(int argn, char *argv[])
+@@ -2607,17 +2615,17 @@ int sh_run(int argn, char *argv[])
  {
  	struct dolnod	*dp;
  	struct comnod	*t = stkalloc(sh.stk,sizeof(struct comnod));
@@ -2459,7 +2483,7 @@ index 482326d15..c3536f6c9 100644
  	t->comarg.dp = dp;
  	if(!strchr(argv[0],'/'))
  		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);
-@@ -2706,16 +2714,16 @@ static void timed_out(void *handle)
+@@ -2697,16 +2705,16 @@ static void timed_out(void *handle)
   */
  pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  {
@@ -2479,7 +2503,7 @@ index 482326d15..c3536f6c9 100644
  			errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_nofork);
  			UNREACHABLE();
  		}
-@@ -2725,17 +2733,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
+@@ -2716,17 +2724,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  		{
  			if(nochild)
  				pause();
@@ -2501,7 +2525,7 @@ index 482326d15..c3536f6c9 100644
  		if(job.toclear)
  			job_clear();
  		job.waitall = waitall;
-@@ -2873,7 +2882,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2864,7 +2873,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	Namval_t	node,*mp,*np, *nref[9], **nr=nref;
  	char		*argv[2];
  	struct funenv	funenv;
@@ -2510,7 +2534,7 @@ index 482326d15..c3536f6c9 100644
  	np = (Namval_t*)fp;
  	funenv.node = np;
  	funenv.nref = nref;
-@@ -2883,7 +2892,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2874,7 +2883,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	SH_VALNOD->nvmeta = NULL;
  	SH_VALNOD->nvflag = NV_LDOUBLE|NV_NOFREE;
  	SH_VALNOD->nvalue = NULL;
@@ -2519,7 +2543,7 @@ index 482326d15..c3536f6c9 100644
  	{
  		*nr++ = mp = nv_namptr(sh.mathnodes,i);
  		mp->nvalue = arg++;
-@@ -2987,7 +2996,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
+@@ -2978,7 +2987,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
  	}
  	if(!posix_fun)
  	{
@@ -2528,7 +2552,7 @@ index 482326d15..c3536f6c9 100644
  		if(!fun)
  		{
  			if(nv_isattr(fp->node,NV_TAGGED))
-@@ -3133,7 +3142,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
+@@ -3124,7 +3133,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
  		for (isig = 0; isig < nsig; ++isig)
  			if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
  				free(sh.st.trapcom[isig]);
@@ -2537,7 +2561,7 @@ index 482326d15..c3536f6c9 100644
  		free(savsig);
  	}
  	sh.trapnote=0;
-@@ -3207,7 +3216,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
+@@ -3198,7 +3207,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
  	struct checkpt	*checkpoint;
  	int		jmpval = 0;
  	int		jmpthresh;
