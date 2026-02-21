@@ -73,7 +73,7 @@ static int  Islower(int c) { return  iswlower((wint_t)c); }
 static int  Isprint(int c) { return  iswprint((wint_t)c); }
 static int  Ispunct(int c)
 {
-#if _iswpunct_broken && CC_NATIVE == CC_ASCII
+#if _iswpunct_broken  /* workaround assumes ASCII */
 	if (c < 128)
 		return ispunct(c);
 #endif

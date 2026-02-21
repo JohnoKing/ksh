@@ -527,10 +527,6 @@ static char *fmthtml(const char *string, int flags)
 	const char *cp = string, *op;
 	int c;
 	ptrdiff_t offset = stktell(sh.stk);
-	/*
-	 * The only multibyte locale ksh currently supports is UTF-8, which is a superset of ASCII. So, if we're on an
-	 * EBCDIC system, below we attempt to convert EBCDIC to ASCII only if we're not in a multibyte locale (mbwide()).
-	 */
 	if(!(flags&SFFMT_ALTER))
 	{
 		/* Encode for HTML and XML, for main text and single- and double-quoted attributes. */
