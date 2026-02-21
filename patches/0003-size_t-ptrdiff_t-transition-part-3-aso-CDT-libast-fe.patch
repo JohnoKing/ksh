@@ -1,6 +1,6 @@
-From c4ea3285d805b5a08abfcb6c24f50c1412698e49 Mon Sep 17 00:00:00 2001
+From 4bf5ff71cac2409935537b6cc8745464a5a42697 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 17 Feb 2026 16:56:02 -0800
+Date: Sat, 21 Feb 2026 10:50:11 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93

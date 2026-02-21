@@ -1,6 +1,6 @@
-From d49c18c2152c4241a80529f2e573b2f09ff6919f Mon Sep 17 00:00:00 2001
+From 7a523f8daa884309d7a23d3edeff24ba774e3480 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 17 Feb 2026 16:54:18 -0800
+Date: Sat, 21 Feb 2026 10:39:23 -0800
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
  expansion, init and stk(3)
 
@@ -55,7 +55,7 @@ so I've decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,085 => 3,852 => 60 (progression from 54ff4ec06 => part 1 => part 13)
+4,085 => 3,852 => 60 (progression from 31cb7cca7 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on its own). The full suite of
@@ -65,18 +65,20 @@ changes to make code review less laborious (I hope).
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/test.c    |  36 +--
- src/cmd/ksh93/include/defs.h   |  10 +-
- src/cmd/ksh93/include/shell.h  |  22 +-
- src/cmd/ksh93/include/test.h   |   4 +-
- src/cmd/ksh93/sh/init.c        | 120 +++++-----
- src/cmd/ksh93/sh/macro.c       | 389 +++++++++++++++++----------------
- src/cmd/ksh93/shell.3          |   6 +-
- src/lib/libast/features/common |  48 ++--
- src/lib/libast/include/stk.h   |   7 +-
- src/lib/libast/man/stk.3       |  12 +-
- src/lib/libast/misc/stk.c      |  60 ++---
- 11 files changed, 383 insertions(+), 331 deletions(-)
+ src/cmd/ksh93/bltins/test.c     |  36 +--
+ src/cmd/ksh93/include/defs.h    |  12 +-
+ src/cmd/ksh93/include/shell.h   |  22 +-
+ src/cmd/ksh93/include/test.h    |   4 +-
+ src/cmd/ksh93/sh/init.c         | 120 +++++-----
+ src/cmd/ksh93/sh/macro.c        | 389 +++++++++++++++++---------------
+ src/cmd/ksh93/shell.3           |   6 +-
+ src/lib/libast/features/common  |  48 ++--
+ src/lib/libast/include/stk.h    |   7 +-
+ src/lib/libast/man/stk.3        |  12 +-
+ src/lib/libast/misc/error.c     |   2 +-
+ src/lib/libast/misc/stk.c       |  60 ++---
+ src/lib/libast/regex/regclass.c |   2 +-
+ 13 files changed, 386 insertions(+), 334 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
 index 2a72c225b..8b65dfc1e 100644
@@ -213,7 +215,7 @@ index 2a72c225b..8b65dfc1e 100644
  
  /*
 diff --git a/src/cmd/ksh93/include/defs.h b/src/cmd/ksh93/include/defs.h
-index f185f3345..695b49b7a 100644
+index 38c6e9468..cbeb5ef9e 100644
 --- a/src/cmd/ksh93/include/defs.h
 +++ b/src/cmd/ksh93/include/defs.h
 @@ -113,9 +113,9 @@ extern void		*sh_arithcomp(char*);
@@ -228,15 +230,17 @@ index f185f3345..695b49b7a 100644
  extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
  extern void 		*sh_macopen(void);
  extern char 		*sh_macpat(struct argnod*,int);
-@@ -126,7 +126,7 @@ extern int		sh_mathstd(const char*);
+@@ -126,8 +126,8 @@ extern int		sh_mathstd(const char*);
  extern void		sh_printopts(Shopt_t,int,Shopt_t*);
  extern int 		sh_readline(char**,volatile int,int,ssize_t,Sflong_t);
  extern Sfio_t		*sh_sfeval(char*[]);
 -extern void		sh_setmatch(const char*,int,int,int[],int);
+-extern void		sh_scope(struct argnod*, int);
 +extern void		sh_setmatch(const char*,ptrdiff_t,signed_size_t,ssize_t[],int);
- extern void             sh_scope(struct argnod*, int);
++extern void             sh_scope(struct argnod*, int);
  extern Namval_t		*sh_scoped(Namval_t*);
  extern Dt_t		*sh_subtracktree(int);
+ extern Dt_t		*sh_subfuntree(int);
 @@ -158,7 +158,7 @@ extern void		*sh_calloc(size_t nmemb, size_t size);
  extern char		*sh_strdup(const char *s);
  extern void		*sh_memdup(const void *s, size_t n);
@@ -2155,6 +2159,19 @@ index 739a0dce7..7dac70f56 100644
  \fR
  .fi
  .SH DESCRIPTION
+diff --git a/src/lib/libast/misc/error.c b/src/lib/libast/misc/error.c
+index add03d522..1fefb06a5 100644
+--- a/src/lib/libast/misc/error.c
++++ b/src/lib/libast/misc/error.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 diff --git a/src/lib/libast/misc/stk.c b/src/lib/libast/misc/stk.c
 index 7eacec2ed..4dc70f6aa 100644
 --- a/src/lib/libast/misc/stk.c
@@ -2367,6 +2384,19 @@ index 7eacec2ed..4dc70f6aa 100644
 +	sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
  	return (char*)(stream->_next = stream->_data+m);
  }
+diff --git a/src/lib/libast/regex/regclass.c b/src/lib/libast/regex/regclass.c
+index 2ed161287..24c5ffd27 100644
+--- a/src/lib/libast/regex/regclass.c
++++ b/src/lib/libast/regex/regclass.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 -- 
 2.53.0
 

@@ -1,6 +1,6 @@
-From 9b4d42900977d448e9922ef9a9bb54384768715b Mon Sep 17 00:00:00 2001
+From b4f5ebf3543c8b5124cdd3ba628bd154063a273b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 17 Feb 2026 17:04:57 -0800
+Date: Sat, 21 Feb 2026 11:44:39 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -70,20 +70,20 @@ Fixes https://github.com/ksh93/ksh/issues/592
  23 files changed, 405 insertions(+), 340 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 47215e36c..11a3494db 100644
+index 47215e36c..68c645d10 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
+ For full details, see the git log at: https://github.com/ksh93/ksh
+ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
- 2026-02-17:
- 
++2026-02-21:
++
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
-+2026-02-17:
-+
- - Fixed a regression introduced on 02-02-2022 occurring on systems with
-   glibc 2.35+ that could cause the pty regression tests to crash or lockup.
+ 2026-02-17:
  
+ - Fixed a regression introduced on 02-02-2022 occurring on systems with
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm

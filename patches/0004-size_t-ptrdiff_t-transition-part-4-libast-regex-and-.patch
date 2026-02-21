@@ -1,6 +1,6 @@
-From c4ff813e4912605af257f221119b28a2faa7e224 Mon Sep 17 00:00:00 2001
+From 94c66a9b9acdd0810b67f1a92e7426f34653615a Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 17 Feb 2026 16:56:54 -0800
+Date: Sat, 21 Feb 2026 10:55:37 -0800
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -21,7 +21,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/man/regex.3          |   2 +-
  src/lib/libast/man/swap.3           |   6 +-
  src/lib/libast/regex/regcache.c     |  41 ++---
- src/lib/libast/regex/regclass.c     |  66 ++++----
+ src/lib/libast/regex/regclass.c     |  64 ++++----
  src/lib/libast/regex/regcoll.c      |  22 +--
  src/lib/libast/regex/regcomp.c      | 230 ++++++++++++++--------------
  src/lib/libast/regex/regerror.c     |   4 +-
@@ -76,7 +76,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |  10 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 59 files changed, 710 insertions(+), 568 deletions(-)
+ 59 files changed, 709 insertions(+), 567 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -272,18 +272,9 @@ index 8b251cfc9..65576647c 100644
  		}
  		cp->keep = 1;
 diff --git a/src/lib/libast/regex/regclass.c b/src/lib/libast/regex/regclass.c
-index 04885549d..d697d316e 100644
+index 24c5ffd27..3f619dff6 100644
 --- a/src/lib/libast/regex/regclass.c
 +++ b/src/lib/libast/regex/regclass.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -62,29 +62,29 @@ _reg_iswblank(wint_t wc)
  
  #endif
@@ -307,7 +298,7 @@ index 04885549d..d697d316e 100644
 +static int  Isprint(int c) { return  iswprint((wint_t)c); }
  static int  Ispunct(int c)
  {
- #if _iswpunct_broken && CC_NATIVE == CC_ASCII
+ #if _iswpunct_broken  /* workaround assumes ASCII */
  	if (c < 128)
  		return ispunct(c);
  #endif

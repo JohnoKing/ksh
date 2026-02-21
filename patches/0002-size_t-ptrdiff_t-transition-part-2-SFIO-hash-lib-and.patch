@@ -1,6 +1,6 @@
-From 513318803e64a8f8fab77e72b9c07431c624b96e Mon Sep 17 00:00:00 2001
+From 9d61d5edb861902c35512837120a45bfd42c0f74 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 17 Feb 2026 16:55:10 -0800
+Date: Sat, 21 Feb 2026 10:44:47 -0800
 Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
 
 This is the second of the thickfold patch series, which enables ksh93
@@ -43,7 +43,7 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/print.c       | 104 ++++++++++----------
+ src/cmd/ksh93/bltins/print.c       | 102 ++++++++++----------
  src/lib/libast/features/stdio      |  18 ++--
  src/lib/libast/hash/hashalloc.c    |  17 ++--
  src/lib/libast/hash/hashdump.c     |  15 +--
@@ -169,21 +169,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/strmatch.c   |  57 ++++-------
  src/lib/libast/string/strmode.c    |  11 ++-
  src/lib/libast/string/strperm.c    |  16 ++--
- 126 files changed, 1109 insertions(+), 1022 deletions(-)
+ 126 files changed, 1108 insertions(+), 1021 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
-index 346f55960..cf491c673 100644
+index c7643a7c1..f1cc93858 100644
 --- a/src/cmd/ksh93/bltins/print.c
 +++ b/src/cmd/ksh93/bltins/print.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -53,11 +53,11 @@ union types_t
  struct printf
  {
@@ -285,10 +276,10 @@ index 346f55960..cf491c673 100644
 -	int c, offset = stktell(sh.stk);
 +	int c;
 +	ptrdiff_t offset = stktell(sh.stk);
- 	/*
- 	 * The only multibyte locale ksh currently supports is UTF-8, which is a superset of ASCII. So, if we're on an
- 	 * EBCDIC system, below we attempt to convert EBCDIC to ASCII only if we're not in a multibyte locale (mbwide()).
-@@ -550,7 +549,7 @@ static char *fmthtml(const char *string, int flags)
+ 	if(!(flags&SFFMT_ALTER))
+ 	{
+ 		/* Encode for HTML and XML, for main text and single- and double-quoted attributes. */
+@@ -546,7 +545,7 @@ static char *fmthtml(const char *string, int flags)
  			else if(c == 39)		/* ' (&apos; is not HTML) */
  				sfputr(sh.stk,"&#39;",-1);
  			else
@@ -297,7 +288,7 @@ index 346f55960..cf491c673 100644
  		}
  	}
  	else
-@@ -588,7 +587,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
+@@ -584,7 +583,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
  {
  	char			*cp;
  	Sfdouble_t		d;
@@ -306,7 +297,7 @@ index 346f55960..cf491c673 100644
  	Namval_t		*np = nv_open(string, NULL, NV_VARNAME|NV_NOADD);
  	Namarr_t		*ap;
  	static union types_t	number;
-@@ -654,7 +653,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
+@@ -650,7 +649,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
  			return (*fp->disc->writef)(np, iop, 0, fp);
  		else
  		{
@@ -316,7 +307,7 @@ index 346f55960..cf491c673 100644
  			if(nv_isarray(np))
  			{
  				nv_onattr(np,NV_RAW);
-@@ -665,8 +665,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
+@@ -661,8 +661,8 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
  				cp = np->nvalue;
  			if((size = n)==0)
  				size = strlen(cp);
@@ -327,7 +318,7 @@ index 346f55960..cf491c673 100644
  		}
  	}
  	else if(nv_isarray(np) && (ap=nv_arrayptr(np)) && array_elem(ap) && (ap->nelem&(ARRAY_UNDEF|ARRAY_SCAN)))
-@@ -674,7 +674,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
+@@ -670,7 +670,7 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
  		nv_outnode(np,iop,(alt?-1:0),0);
  		if(sfputc(iop,')') < 0)
  			exitval = 1;
@@ -336,7 +327,7 @@ index 346f55960..cf491c673 100644
  	}
  	else
  	{
-@@ -692,14 +692,15 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
+@@ -688,14 +688,15 @@ static ssize_t fmtbase64(Sfio_t *iop, char *string, int alt)
  	}
  }
  
@@ -355,7 +346,7 @@ index 346f55960..cf491c673 100644
  	}
  	for(;n > 0; n-=len)
  	{
-@@ -723,7 +724,7 @@ static const char *mapformat(Sffmt_t *fe)
+@@ -719,7 +720,7 @@ static const char *mapformat(Sffmt_t *fe)
  	const struct printmap *pm = Pmap;
  	while(pm->size>0)
  	{
@@ -364,7 +355,7 @@ index 346f55960..cf491c673 100644
  			return pm->map;
  		pm++;
  	}
-@@ -738,7 +739,8 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -734,7 +735,8 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  	Sfdouble_t	longmax = LDBL_LLONG_MAX;
  	int		format = fe->fmt;
  	int		n;
@@ -374,7 +365,7 @@ index 346f55960..cf491c673 100644
  	union types_t*	value = (union types_t*)v;
  	struct printf*	pp = (struct printf*)fe;
  	char*		argp = *pp->nextarg;
-@@ -805,7 +807,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -801,7 +803,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  		case 'T':
  			fe->fmt = 'd';
  			tm_info.flags = 0;
@@ -383,7 +374,7 @@ index 346f55960..cf491c673 100644
  			break;
  		case '.':
  			fe->fmt = 'd';
-@@ -889,7 +891,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -885,7 +887,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  			else if(fe->base >=0)
  				value->s = argp;
  			else
@@ -392,7 +383,7 @@ index 346f55960..cf491c673 100644
  			fe->flags &= ~SFFMT_LONG;
  			break;
  		case 'o':
-@@ -1012,7 +1014,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -1008,7 +1010,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  			UNREACHABLE();
  		}
  		if (format == '.')
@@ -401,7 +392,7 @@ index 346f55960..cf491c673 100644
  		if(*lastchar)
  		{
  			errormsg(SH_DICT,ERROR_warn(0),e_argtype,format);
-@@ -1028,21 +1030,21 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -1024,21 +1026,21 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  		value->c = 0;
  		break;
  	case 'b':
@@ -427,7 +418,7 @@ index 346f55960..cf491c673 100644
  		value->s = sfstruse(sh.strbuf2);
  		fe->flags |= SFFMT_SHORT;
  		break;
-@@ -1078,7 +1080,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -1074,7 +1076,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  		}
  		else
  		{
@@ -436,7 +427,7 @@ index 346f55960..cf491c673 100644
  			fe->fmt = 's';
  			fe->size = -1;
  		}
-@@ -1086,12 +1088,13 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -1082,12 +1084,13 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
  	case 'T':
  		if(fe->n_str>0)
  		{
@@ -454,7 +445,7 @@ index 346f55960..cf491c673 100644
  		fe->fmt = 's';
  		fe->size = -1;
  		break;
-@@ -1114,11 +1117,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
+@@ -1110,11 +1113,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
   * In that case, argv[0] and argv[4] are consumed and nextarg push
   * to &argv[5] argv[1..3] is ignored.
   */
@@ -468,7 +459,7 @@ index 346f55960..cf491c673 100644
  	if(fmt == 0)
  	{
  		/* Set nextarg */
-@@ -1150,11 +1152,11 @@ static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
+@@ -1146,11 +1148,11 @@ static int reload(int argn, char fmt, void* v, Sffmt_t* fe)
   * Otherwise, puts null-terminated result on stack, but doesn't freeze it
   * returns length of output.
   */
@@ -482,7 +473,7 @@ index 346f55960..cf491c673 100644
  	int chlen;
  	if(mbwide())
  	{
-@@ -1172,14 +1174,14 @@ static int fmtvecho(const char *string, struct printf *pp)
+@@ -1168,14 +1170,14 @@ static int fmtvecho(const char *string, struct printf *pp)
  			;
  	if(c==0)
  		return -1;
@@ -501,7 +492,7 @@ index 346f55960..cf491c673 100644
  			cp +=  (chlen-1);
  			continue;
  		}
-@@ -1231,8 +1233,8 @@ static int fmtvecho(const char *string, struct printf *pp)
+@@ -1227,8 +1229,8 @@ static int fmtvecho(const char *string, struct printf *pp)
  		sfputc(sh.stk,c);
  	}
  done:
@@ -1096,7 +1087,7 @@ index b0d0336ca..c489e8847 100644
  	return c & 0xffffffff;
  #else
 diff --git a/src/lib/libast/include/ast.h b/src/lib/libast/include/ast.h
-index 453a5f785..cf87add97 100644
+index 99427df9b..1cc29fd39 100644
 --- a/src/lib/libast/include/ast.h
 +++ b/src/lib/libast/include/ast.h
 @@ -156,6 +156,11 @@
@@ -1186,7 +1177,7 @@ index 453a5f785..cf87add97 100644
  extern int		pathicase(const char*);
  extern int		pathinclude(const char*);
  extern size_t		pathnative(const char*, char*, size_t);
-@@ -372,12 +375,12 @@ extern int		strexp(char*, int);
+@@ -371,12 +374,12 @@ extern int		strexp(char*, int);
  extern long		streval(const char*, char**, long(*)(const char*, char**));
  extern long		strexpr(const char*, char**, long(*)(const char*, char**, void*), void*);
  extern int		strgid(const char*);
@@ -1201,10 +1192,10 @@ index 453a5f785..cf87add97 100644
 -extern int		strmode(const char*);
 +extern signed_size_t	strmatch(const char*, const char*);
 +extern mode_t		strmode(const char*);
- extern int		strnacmp(const char*, const char*, size_t);
  extern char*		strncopy(char*, const char*, size_t);
  extern int		strnpcmp(const char*, const char*, size_t);
-@@ -392,11 +395,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
+ extern double		strntod(const char*, size_t, char**);
+@@ -390,11 +393,11 @@ extern uintmax_t	strntoull(const char*, size_t, char**, int);
  extern int		strnvcmp(const char*, const char*, size_t);
  extern int		stropt(const char*, const void*, int, int(*)(void*, const void*, int, const char*), void*);
  extern int		strpcmp(const char*, const char*);

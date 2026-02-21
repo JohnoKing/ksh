@@ -1,6 +1,6 @@
-From e36f002fd42def8661919a77d2195c5fe7cd660e Mon Sep 17 00:00:00 2001
+From 2bffb67bae737bc78677985b4b854ee1b97986a8 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 17 Feb 2026 16:57:47 -0800
+Date: Sat, 21 Feb 2026 11:01:01 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -52,7 +52,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/misc/cmdlib.h      |   9 +-
  src/lib/libast/misc/conformance.c |  17 +--
  src/lib/libast/misc/debug.c       |   4 +-
- src/lib/libast/misc/error.c       |  30 ++---
+ src/lib/libast/misc/error.c       |  28 ++---
  src/lib/libast/misc/fastfind.c    |  94 +++++++-------
  src/lib/libast/misc/findlib.h     |   6 +-
  src/lib/libast/misc/fmtrec.c      |  27 ++--
@@ -77,7 +77,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 46 files changed, 672 insertions(+), 654 deletions(-)
+ 46 files changed, 671 insertions(+), 653 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -390,7 +390,7 @@ index 850c39dce..3c190a35f 100644
  
  	g = 1;
 diff --git a/src/lib/libast/comp/iconv.c b/src/lib/libast/comp/iconv.c
-index 28de9734e..3cbc580d7 100644
+index c68eef8eb..dde57070f 100644
 --- a/src/lib/libast/comp/iconv.c
 +++ b/src/lib/libast/comp/iconv.c
 @@ -77,7 +77,7 @@ typedef struct Conv_s
@@ -415,25 +415,23 @@ index 28de9734e..3cbc580d7 100644
  			}
  		}
  		if (cp->ccode < 0)
-@@ -213,7 +213,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
+@@ -213,13 +213,13 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
  			}
  			else
  				m = "1";
 -			b += sfsprintf(b, e - b, cp->canon, m);
 +			b += sfsprintf(b, (size_t)(e - b), cp->canon, m);
  		}
- 		else if (cp->ccode == CC_NATIVE)
+ 		else if (cp->ccode == CC_ASCII)  /* assumes CC_NATIVE == CC_ASCII */
  		{
-@@ -233,7 +233,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
- 					m = (const char*)"ISO-8859-1";
- 					break;
- 				}
+ 			if ((locales[AST_LC_CTYPE]->flags & LC_default) || !locales[AST_LC_CTYPE]->charset || !(m = locales[AST_LC_CTYPE]->charset->code) || streq(m, "iso8859-1"))
+ 				m = (const char*)"ISO-8859-1";
 -			b += sfsprintf(b, e - b, "%s", m);
 +			b += sfsprintf(b, (size_t)(e - b), "%s", m);
  		}
  		*b = 0;
  #if DEBUG_TRACE
-@@ -245,7 +245,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
+@@ -231,7 +231,7 @@ if (error_info.trace < DEBUG_TRACE) sfprintf(sfstderr, "%s: debug-%d: AHA%d _ast
  	{
  		if (islower(c))
  			c = toupper(c);
@@ -442,7 +440,7 @@ index 28de9734e..3cbc580d7 100644
  	}
  	*b = 0;
  #if DEBUG_TRACE
-@@ -320,11 +320,11 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -306,11 +306,11 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		}
  		else
  			w = c;
@@ -457,7 +455,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -362,7 +362,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -348,7 +348,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			c = 1;
  			w = *f;
  		}
@@ -466,7 +464,7 @@ index 28de9734e..3cbc580d7 100644
  		{
  			e = EINVAL;
  			break;
-@@ -371,7 +371,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -357,7 +357,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			c = 1;
  #endif /* AST_NOMULTIBYTE */
  		if (!(w & ~0x7F))
@@ -475,7 +473,7 @@ index 28de9734e..3cbc580d7 100644
  		else
  		{
  			if (!(w & ~0x7FF))
-@@ -381,7 +381,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -367,7 +367,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  					e = E2BIG;
  					break;
  				}
@@ -484,7 +482,7 @@ index 28de9734e..3cbc580d7 100644
  			}
  			else if (!(w & ~0xffff))
  			{
-@@ -390,7 +390,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -376,7 +376,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  					e = E2BIG;
  					break;
  				}
@@ -493,7 +491,7 @@ index 28de9734e..3cbc580d7 100644
  				*t++ = 0x80 + ((w >> 6 ) & 0x3F);
  			}
  			else
-@@ -402,9 +402,9 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -388,9 +388,9 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		}
  		f += c;
  	}
@@ -505,7 +503,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -430,8 +430,8 @@ static int
+@@ -416,8 +416,8 @@ static int
  umeinit(void)
  {
  	const unsigned char*	s;
@@ -516,7 +514,7 @@ index 28de9734e..3cbc580d7 100644
  
  	if (!ume_d[ume_D[0]])
  	{
-@@ -482,7 +482,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -468,7 +468,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			else if ((w = ume_m[c]) == NOE)
  			{
  				s = 0;
@@ -525,7 +523,7 @@ index 28de9734e..3cbc580d7 100644
  			}
  			else if (f >= (fe - 2))
  			{
-@@ -496,7 +496,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -482,7 +482,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  				w = (w << 6) | ume_m[*f++];
  				w = (w << 6) | ume_m[*f++];
  				if (!(w & ~0xFF))
@@ -534,7 +532,7 @@ index 28de9734e..3cbc580d7 100644
  				else if (t >= (te - 1))
  				{
  					f = p;
-@@ -513,11 +513,11 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -499,11 +499,11 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		else if (c == '+')
  			s = 1;
  		else
@@ -549,7 +547,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -558,7 +558,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -544,7 +544,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			c = 1;
  			w = *f;
  		}
@@ -558,7 +556,7 @@ index 28de9734e..3cbc580d7 100644
  		{
  			e = EINVAL;
  			break;
-@@ -573,7 +573,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -559,7 +559,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  				s = 0;
  				*t++ = '-';
  			}
@@ -567,7 +565,7 @@ index 28de9734e..3cbc580d7 100644
  		}
  		else if (t >= (te - (4 + s)))
  		{
-@@ -595,9 +595,9 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -581,9 +581,9 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  	}
  	if (s)
  		*t++ = '-';
@@ -579,7 +577,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -628,7 +628,7 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -614,7 +614,7 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		w = *f++;
  		w = (w << 8) | *f++;
  		if (!(w & ~0xFF))
@@ -588,7 +586,7 @@ index 28de9734e..3cbc580d7 100644
  		else if (t >= (te - 1))
  		{
  			f -= 2;
-@@ -641,9 +641,9 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -627,9 +627,9 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			*t++ = w & 0xFF;
  		}
  	}
@@ -600,7 +598,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -681,7 +681,7 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -667,7 +667,7 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			c = 1;
  			w = *f;
  		}
@@ -609,7 +607,7 @@ index 28de9734e..3cbc580d7 100644
  		{
  			e = EINVAL;
  			break;
-@@ -693,9 +693,9 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -679,9 +679,9 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		*t++ = w & 0xFF;
  		f += c;
  	}
@@ -621,7 +619,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -726,7 +726,7 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -712,7 +712,7 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		w = *f++;
  		w = w | (*f++ << 8);
  		if (!(w & ~0xFF))
@@ -630,7 +628,7 @@ index 28de9734e..3cbc580d7 100644
  		else if (t >= (te - 1))
  		{
  			f -= 2;
-@@ -739,9 +739,9 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -725,9 +725,9 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			*t++ = w & 0xFF;
  		}
  	}
@@ -642,7 +640,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -779,7 +779,7 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -765,7 +765,7 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			c = 1;
  			w = *f;
  		}
@@ -651,7 +649,7 @@ index 28de9734e..3cbc580d7 100644
  		{
  			e = EINVAL;
  			break;
-@@ -791,9 +791,9 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -777,9 +777,9 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  		*t++ = (w >> 8) & 0xFF;
  		f += c;
  	}
@@ -663,7 +661,7 @@ index 28de9734e..3cbc580d7 100644
  	*tb = (char*)t;
  	RETURN(e, n, fn);
  }
-@@ -808,7 +808,7 @@ _ast_iconv_open(const char* t, const char* f)
+@@ -794,7 +794,7 @@ _ast_iconv_open(const char* t, const char* f)
  	Conv_t*	cc;
  	int	fc;
  	int	tc;
@@ -672,7 +670,7 @@ index 28de9734e..3cbc580d7 100644
  
  	char	fr[64];
  	char	to[64];
-@@ -936,7 +936,7 @@ _ast_iconv_close(_ast_iconv_t cd)
+@@ -922,7 +922,7 @@ _ast_iconv_close(_ast_iconv_t cd)
  {
  	Conv_t*	cc;
  	Conv_t*	oc;
@@ -681,7 +679,7 @@ index 28de9734e..3cbc580d7 100644
  	int	r = 0;
  
  	if (cd == (_ast_iconv_t)(-1))
-@@ -1018,24 +1018,24 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -1004,24 +1004,24 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  				if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
  				{
  					errno = ENOMEM;
@@ -711,7 +709,7 @@ index 28de9734e..3cbc580d7 100644
  			n -= *tn;
  			if (m = cc->to.map)
  			{
-@@ -1052,7 +1052,7 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
+@@ -1038,7 +1038,7 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
  			if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
  			{
  				errno = ENOMEM;
@@ -720,7 +718,7 @@ index 28de9734e..3cbc580d7 100644
  			}
  			if ((n = *fn) > cc->size)
  				n = cc->size;
-@@ -1101,7 +1101,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
+@@ -1087,7 +1087,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
  	char*		ts;
  	size_t*		e;
  	size_t		tn;
@@ -729,7 +727,7 @@ index 28de9734e..3cbc580d7 100644
  	int		ok;
  	Iconv_disc_t	compat;
  
-@@ -1122,7 +1122,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
+@@ -1108,7 +1108,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, Iconv_disc_
  	ok = 1;
  	while (ok && *fn > 0)
  	{
@@ -738,7 +736,7 @@ index 28de9734e..3cbc580d7 100644
  		{
  			if (!r)
  				r = -1;
-@@ -1161,7 +1161,7 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
+@@ -1147,7 +1147,7 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
  				{
  					if (!(disc->flags & ICONV_OMIT) && tn > 0)
  					{
@@ -747,7 +745,7 @@ index 28de9734e..3cbc580d7 100644
  						tn--;
  					}
  					(*fb)++;
-@@ -1176,8 +1176,8 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
+@@ -1162,8 +1162,8 @@ error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
  #if DEBUG_TRACE
  error(DEBUG_TRACE, "AHA#%d iconv_write %d", __LINE__, ts - tb);
  #endif
@@ -758,7 +756,7 @@ index 28de9734e..3cbc580d7 100644
  	}
  	if (e)
  		*e = disc->errors;
-@@ -1205,6 +1205,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+@@ -1191,6 +1191,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
  	ssize_t		r = 0;
  	int		ok = 1;
  	int		locked;
@@ -766,7 +764,7 @@ index 28de9734e..3cbc580d7 100644
  	Iconv_disc_t	compat;
  
  	/*
-@@ -1223,12 +1224,13 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+@@ -1209,12 +1210,13 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
  	fe = OK;
  	ft = 0;
  	fn = n;
@@ -784,7 +782,7 @@ index 28de9734e..3cbc580d7 100644
  			break;
  		fs = fb;
  		fn = fo;
-@@ -1239,7 +1241,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+@@ -1225,7 +1227,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
  			break;
  		}
  		ts = tb;
@@ -793,7 +791,7 @@ index 28de9734e..3cbc580d7 100644
  		while (fn > 0 && _ast_iconv(cd, &fs, &fn, &ts, &tn) == (size_t)(-1))
  		{
  			switch (errno)
-@@ -1265,7 +1267,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+@@ -1251,7 +1253,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
  				{
  					if (!(disc->flags & ICONV_OMIT) && tn > 0)
  					{
@@ -802,7 +800,7 @@ index 28de9734e..3cbc580d7 100644
  						tn--;
  					}
  					fs++;
-@@ -1277,21 +1279,21 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+@@ -1263,21 +1265,21 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
  			}
  			break;
  		}
@@ -831,7 +829,7 @@ index 28de9734e..3cbc580d7 100644
  		if (fn == fo)
  			fn++;
  	} while (ok);
-@@ -1302,7 +1304,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
+@@ -1288,7 +1290,7 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, Iconv_disc_t*
  		sfwrite(op, tb, 0);
  		if (ts > tb)
  		{
@@ -1734,18 +1732,9 @@ index 4620cf128..226359c4a 100644
  {
  	error(2, "%s:%d: debug error", file, line);
 diff --git a/src/lib/libast/misc/error.c b/src/lib/libast/misc/error.c
-index c1b90825a..1266fef6c 100644
+index 1fefb06a5..07dbb08b8 100644
 --- a/src/lib/libast/misc/error.c
 +++ b/src/lib/libast/misc/error.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -136,7 +136,7 @@ setopt(void* a, const void* p, int n, const char* v)
  					error_state.breakpoint = ERROR_PANIC;
  					break;
@@ -1788,7 +1777,7 @@ index c1b90825a..1266fef6c 100644
  			else
  				error_info.trace = 0;
  			break;
-@@ -305,7 +305,7 @@ context(Sfio_t* sp, Error_context_t* cp)
+@@ -277,7 +277,7 @@ context(Sfio_t* sp, Error_context_t* cp)
   * debugging breakpoint
   */
  
@@ -1797,7 +1786,7 @@ index c1b90825a..1266fef6c 100644
  error_break(void)
  {
  	char*	s;
-@@ -335,7 +335,7 @@ error(int level, ...)
+@@ -307,7 +307,7 @@ error(int level, ...)
  void
  errorv(const char* id, int level, va_list ap)
  {
@@ -1806,7 +1795,7 @@ index c1b90825a..1266fef6c 100644
  	int		fd;
  	int		flags;
  	char*		s;
-@@ -377,7 +377,7 @@ errorv(const char* id, int level, va_list ap)
+@@ -349,7 +349,7 @@ errorv(const char* id, int level, va_list ap)
  			catalog = 0;
  			library = 0;
  		}
@@ -1815,7 +1804,7 @@ index c1b90825a..1266fef6c 100644
  			library = 0;
  	}
  	else
-@@ -407,8 +407,8 @@ errorv(const char* id, int level, va_list ap)
+@@ -379,8 +379,8 @@ errorv(const char* id, int level, va_list ap)
  	fd = (flags & ERROR_OUTPUT) ? va_arg(ap, int) : error_info.fd;
  	if (error_info.write)
  	{
@@ -1826,7 +1815,7 @@ index c1b90825a..1266fef6c 100644
  
  		bas = stkptr(stkstd, 0);
  		if (off = stktell(stkstd))
-@@ -457,7 +457,7 @@ errorv(const char* id, int level, va_list ap)
+@@ -429,7 +429,7 @@ errorv(const char* id, int level, va_list ap)
  		}
  		if (error_info.time)
  		{
@@ -1835,7 +1824,7 @@ index c1b90825a..1266fef6c 100644
  				error_info.time = d;
  			sfprintf(stkstd, " %05lu.%05lu.%05lu ", d - error_info.time, (unsigned long)us.tms_utime, (unsigned long)us.tms_stime);
  		}
-@@ -537,7 +537,7 @@ errorv(const char* id, int level, va_list ap)
+@@ -509,7 +509,7 @@ errorv(const char* id, int level, va_list ap)
  		{
  			n = stktell(stkstd);
  			s = stkptr(stkstd, 0);
@@ -1844,7 +1833,7 @@ index c1b90825a..1266fef6c 100644
  			{
  				n -= ++t - s;
  				s = t;
-@@ -549,11 +549,11 @@ errorv(const char* id, int level, va_list ap)
+@@ -521,11 +521,11 @@ errorv(const char* id, int level, va_list ap)
  			sfsync(sfstderr);
  			if (fd == sffileno(sfstderr) && error_info.write == write)
  			{
