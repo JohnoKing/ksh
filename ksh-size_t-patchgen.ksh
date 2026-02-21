@@ -48,7 +48,10 @@ upc() {
 	git add bin src
 	bld
 	if [[ $sanity == true ]]; then
-		bin/shtests
+		bin/shtests || {
+			print 'Tests failed; waiting...'
+			read
+		}
 	fi
 }
 
