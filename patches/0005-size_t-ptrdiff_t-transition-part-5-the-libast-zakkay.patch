@@ -1,6 +1,6 @@
-From 2bffb67bae737bc78677985b4b854ee1b97986a8 Mon Sep 17 00:00:00 2001
+From 54e2283d73653a75fb2e1b48d73bca072254c91b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 21 Feb 2026 11:01:01 -0800
+Date: Wed, 25 Feb 2026 22:17:00 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -27,7 +27,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,492 => 1,985 => 60 (progression from part 4 => part 5 => part 13)
+2,489 => 1,982 => 61 (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

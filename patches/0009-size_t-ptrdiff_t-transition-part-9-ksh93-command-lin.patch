@@ -1,6 +1,6 @@
-From 20b64a68888f62ca0141074f56ff949f77c866a3 Mon Sep 17 00:00:00 2001
+From 59a348b408def8c41772f806a21710f3ebc2a541 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 21 Feb 2026 11:22:52 -0800
+Date: Wed, 25 Feb 2026 22:20:40 -0800
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -16,7 +16,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,048 => 933 => 60 (progression from part 8 => part 9 => part 13)
+1,045 => 930 => 61 (progression from part 8 => part 9 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -26,9 +26,9 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/edit/hexpand.c    | 57 +++++++++----------
  src/cmd/ksh93/edit/history.c    | 97 ++++++++++++++++++---------------
  src/cmd/ksh93/edit/vi.c         | 42 +++++++-------
- src/cmd/ksh93/include/edit.h    |  8 +--
+ src/cmd/ksh93/include/edit.h    |  6 +-
  src/cmd/ksh93/include/history.h | 15 ++---
- 8 files changed, 212 insertions(+), 197 deletions(-)
+ 8 files changed, 211 insertions(+), 196 deletions(-)
 
 diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
 index 431de2984..2f8350ffe 100644
@@ -1430,18 +1430,9 @@ index 9833e3731..771fb7a29 100644
  		if(!isspace(virtual[x]))
  #endif /* SHOPT_MULTIBYTE */
 diff --git a/src/cmd/ksh93/include/edit.h b/src/cmd/ksh93/include/edit.h
-index 6718a1d12..22acd90da 100644
+index 6ee87c069..d1191ebe9 100644
 --- a/src/cmd/ksh93/include/edit.h
 +++ b/src/cmd/ksh93/include/edit.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -112,7 +112,7 @@ typedef struct edit
  	void	*e_vi;		/* vi specific data */
  	void	*e_emacs;	/* emacs specific data */

@@ -1,6 +1,6 @@
-From eb41a14627145113ae78e99aa757775ed2a37f9d Mon Sep 17 00:00:00 2001
+From 1558ff1d05219d614a0bb21a67b49d531cc9a90c Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 21 Feb 2026 11:39:13 -0800
+Date: Wed, 25 Feb 2026 22:23:26 -0800
 Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
  subshells
 
@@ -16,7 +16,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-500 => 374 => 60 (progression from part 11 => part 12 => part 13)
+499 => 373 => 61 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

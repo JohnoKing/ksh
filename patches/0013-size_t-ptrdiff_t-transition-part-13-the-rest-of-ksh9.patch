@@ -1,6 +1,6 @@
-From b4f5ebf3543c8b5124cdd3ba628bd154063a273b Mon Sep 17 00:00:00 2001
+From 57293b658ecc47377a34b3cb53b02dab8ec310b6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 21 Feb 2026 11:44:39 -0800
+Date: Wed, 25 Feb 2026 22:24:21 -0800
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-374 => 60 (progression from part 12 => part 13)
+373 => 61 (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 I'll note that I have a patch that expands nvflags to uint64_t which helps
@@ -58,32 +58,32 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/args.c         |  44 ++++++-----
  src/cmd/ksh93/sh/arith.c        |  28 +++----
  src/cmd/ksh93/sh/deparse.c      |  25 ++++---
- src/cmd/ksh93/sh/expand.c       |  33 ++++----
+ src/cmd/ksh93/sh/expand.c       |  33 +++++----
  src/cmd/ksh93/sh/fault.c        |  42 +++++------
- src/cmd/ksh93/sh/io.c           | 128 ++++++++++++++++----------------
+ src/cmd/ksh93/sh/io.c           | 126 ++++++++++++++++----------------
  src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
  src/cmd/ksh93/sh/main.c         |  21 +++---
- src/cmd/ksh93/sh/path.c         | 106 ++++++++++++++------------
+ src/cmd/ksh93/sh/path.c         | 106 +++++++++++++++------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
  src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++-------------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++++
- 23 files changed, 405 insertions(+), 340 deletions(-)
+ 23 files changed, 404 insertions(+), 339 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 47215e36c..68c645d10 100644
+index b7d77b6db..5fb5be556 100644
 --- a/NEWS
 +++ b/NEWS
 @@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
  For full details, see the git log at: https://github.com/ksh93/ksh
  Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2026-02-21:
++2026-02-25:
 +
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2026-02-17:
+ 2026-02-24:
  
- - Fixed a regression introduced on 02-02-2022 occurring on systems with
+ - The routine that prints the menu for the 'select' loop has been made aware
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -1026,7 +1026,7 @@ index e6c4f14de..eeb269e87 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 65b1f64c8..cf024b2c9 100644
+index a320997c7..6141cbb16 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
@@ -1427,15 +1427,6 @@ index 65b1f64c8..cf024b2c9 100644
  	nrow = 2 * (sh.lines / 3) + 1;	/* number of rows before going to multi-columns */
  	for(i=argn;i >= 10;i /= 10)
  		ndigits++;
-@@ -2474,7 +2478,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
- 	i = 0;
- 	for(arg=argv; *arg;arg++)
- 	{
--		if((j=strlen(*arg)) > i)
-+		if((j=(int)strlen(*arg)) > i)
- 			i = j;
- 	}
- 	i += (ndigits+LBLSIZ);
 @@ -2490,7 +2494,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
  		nrow = 1 + (argn-1)/ncol;
  	}
@@ -2185,7 +2176,7 @@ index 1e77d44f8..cc24bcf5c 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index 936e37ada..5ed4f53f5 100644
+index 936e37ada..0f9e5c780 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
 @@ -147,10 +147,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
@@ -2458,7 +2449,7 @@ index 936e37ada..5ed4f53f5 100644
  						sh_debug(trap,NULL,NULL,argv,pattern);
  					}
 -					n = test_binop(n,left,right);
-+					n = test_binop((uint64_t)n,left,right);
++					n = test_binop((unsigned)n,left,right);
  					if(traceon)
  					{
  						sfprintf(sfstderr,"%s %s ",sh_fmtq(left),op);
