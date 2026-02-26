@@ -30,12 +30,12 @@
 #include	"FEATURE/cmds"
 #include	"FEATURE/locale"
 #include	"terminal.h"
+#include	"national.h"
 
 #define STRIP		0377
 #define LOOKAHEAD	80
 
 #if SHOPT_MULTIBYTE
-#   include	"national.h"
     typedef wchar_t genchar;
 #   define CHARSIZE	(sizeof(wchar_t)<=2?3:sizeof(wchar_t))
 #else

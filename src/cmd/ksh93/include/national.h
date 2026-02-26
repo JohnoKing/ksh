@@ -33,5 +33,6 @@
 #endif /* SHOPT_MULTIBYTE */
 
 extern ptrdiff_t sh_strchr(const char*,const char*);
+extern int sh_strwidth(const char*);
 
 #endif /* _national_h_defined */
