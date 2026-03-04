@@ -277,7 +277,6 @@ tst	- output{
 tst note{ generating _ast_flt\*_t types }end output{
 	#define _BYTESEX_H
 
-	#include <unistd.h>
 	#include <string.h>
 	#include <sys/types.h>
 

@@ -1,6 +1,6 @@
-From 0c43927bfb5241fbf0326cac3c68b30fc099e5d7 Mon Sep 17 00:00:00 2001
+From bfe7eb126d015dabbf2c0565159750abe1c9d753 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 25 Feb 2026 22:19:45 -0800
+Date: Tue, 3 Mar 2026 23:00:09 -0800
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -39,7 +39,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  14 files changed, 136 insertions(+), 186 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
-index 1caa6d3b5..d7dc8710e 100644
+index f6aaa8837..0681c5473 100644
 --- a/src/cmd/INIT/mamake.c
 +++ b/src/cmd/INIT/mamake.c
 @@ -295,13 +295,13 @@ static struct				/* program state		*/
@@ -205,7 +205,7 @@ index 1caa6d3b5..d7dc8710e 100644
  				s = use(buf);
  				if (s = status(buf, o, s, st))
  				{
-@@ -1709,7 +1709,7 @@ static void run(Rule_t *r, char *s)
+@@ -1715,7 +1715,7 @@ static void run(Rule_t *r, char *s)
  					else
  					{
  						for (i = 3; isspace(*(t + i)); i++);
@@ -214,7 +214,7 @@ index 1caa6d3b5..d7dc8710e 100644
  						for (s = t + i; *s && !isspace(*s); s++);
  						c = *s;
  						*s = 0;
-@@ -1733,7 +1733,7 @@ static void run(Rule_t *r, char *s)
+@@ -1739,7 +1739,7 @@ static void run(Rule_t *r, char *s)
  					}
  				}
  			}
@@ -223,7 +223,7 @@ index 1caa6d3b5..d7dc8710e 100644
  		s = use(buf);
  		if (tofree)
  			free(tofree);
-@@ -1812,7 +1812,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
+@@ -1818,7 +1818,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
  		pop();
  	}
  	for (h = 0, s = cc; *s; s++)
@@ -232,7 +232,7 @@ index 1caa6d3b5..d7dc8710e 100644
  	/* use the hash as the file name */
  	append(buf, state.installroot);
  	append(buf, "/lib/probe/C/mam/");
-@@ -1852,7 +1852,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1858,7 +1858,7 @@ static void attributes(Rule_t *r, char *s)
  		int	flag = 0;
  		for (; isspace(*s); s++);
  		for (t = s; *s && !isspace(*s); s++);
@@ -241,7 +241,7 @@ index 1caa6d3b5..d7dc8710e 100644
  			break;
  		switch (*t)
  		{
-@@ -1904,7 +1904,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1910,7 +1910,7 @@ static void attributes(Rule_t *r, char *s)
   * append libNAME.a to the given buffer
   */
  
@@ -250,7 +250,7 @@ index 1caa6d3b5..d7dc8710e 100644
  {
  	append(buf, "lib");
  	append(buf, name);
-@@ -1970,7 +1970,7 @@ static char *require(char *lib, int dontcare)
+@@ -1976,7 +1976,7 @@ static char *require(char *lib, int dontcare)
  					break;
  				do
  				{
@@ -259,7 +259,7 @@ index 1caa6d3b5..d7dc8710e 100644
  				} while ((c = fgetc(f)) != EOF && !isspace(c));
  				s = use(tmp);
  				if (s[0] && (s[0] != '-' || s[1]))
-@@ -2811,7 +2811,7 @@ int main(int argc, char **argv)
+@@ -2817,7 +2817,7 @@ int main(int argc, char **argv)
  		case 'j':
  			append(state.opt, " -j");
  			append(state.opt, opt_info.arg);
@@ -268,7 +268,7 @@ index 1caa6d3b5..d7dc8710e 100644
  			continue;
  		case 'k':
  			append(state.opt, " -k");
-@@ -2844,7 +2844,7 @@ int main(int argc, char **argv)
+@@ -2850,7 +2850,7 @@ int main(int argc, char **argv)
  		case 'D':
  			append(state.opt, " -D");
  			append(state.opt, opt_info.arg);
@@ -277,7 +277,7 @@ index 1caa6d3b5..d7dc8710e 100644
  			if (state.debug > 0)
  				state.debug = 0;
  			continue;
-@@ -2884,7 +2884,7 @@ int main(int argc, char **argv)
+@@ -2890,7 +2890,7 @@ int main(int argc, char **argv)
  				break;
  			}
  			for (t = s += 2; *t && *t != '='; t++);
@@ -286,7 +286,7 @@ index 1caa6d3b5..d7dc8710e 100644
  			{
  				if (*t)
  				{
-@@ -2901,7 +2901,7 @@ int main(int argc, char **argv)
+@@ -2907,7 +2907,7 @@ int main(int argc, char **argv)
  				}
  				setval(state.vars, s - 1, v);
  				if (c)
@@ -295,7 +295,7 @@ index 1caa6d3b5..d7dc8710e 100644
  				continue;
  			}
  			usage();
-@@ -3074,7 +3074,7 @@ int main(int argc, char **argv)
+@@ -3071,7 +3071,7 @@ int main(int argc, char **argv)
  				append(tmp, ".FORCE");
  				setval(state.vars, use(tmp), v);
  				drop(tmp);
@@ -703,7 +703,7 @@ index 6003c592c..d7f980db9 100644
 -
 -#endif
 diff --git a/src/lib/libdll/dllscan.c b/src/lib/libdll/dllscan.c
-index d4ff7b598..e9e5d8b4b 100644
+index d4ff7b598..450e999ec 100644
 --- a/src/lib/libdll/dllscan.c
 +++ b/src/lib/libdll/dllscan.c
 @@ -2,7 +2,7 @@
@@ -722,7 +722,7 @@ index d4ff7b598..e9e5d8b4b 100644
 -	int		off; \
 -	int		prelen; \
 -	int		suflen; \
-+	signed_size_t	off; \
++	ssize_t		off; \
 +	size_t		prelen; \
 +	size_t		suflen; \
  	char**		lib; \
@@ -764,7 +764,7 @@ index d4ff7b598..e9e5d8b4b 100644
  					info.sibling[0] = info.sibbuf;
  				}
 -				if (v && vn < sizeof(info.envbuf))
-+				if (v && vn < (signed_size_t)sizeof(info.envbuf))
++				if (v && vn < (ssize_t)sizeof(info.envbuf))
  				{
  					if(vn <= 0)
  						abort();

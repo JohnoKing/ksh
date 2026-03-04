@@ -1,6 +1,6 @@
-From ff8b7f9a7367f02e339f27d07063fe1489ee32f8 Mon Sep 17 00:00:00 2001
+From 74d1fb0b11434ec2475f0516c538f802bd9bc3ff Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 25 Feb 2026 22:16:07 -0800
+Date: Tue, 3 Mar 2026 22:56:44 -0800
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -26,7 +26,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/regex/regcomp.c      | 230 ++++++++++++++--------------
  src/lib/libast/regex/regerror.c     |   4 +-
  src/lib/libast/regex/regexec.c      |  10 +-
- src/lib/libast/regex/reglib.h       |  32 ++--
+ src/lib/libast/regex/reglib.h       |  30 ++--
  src/lib/libast/regex/regnexec.c     | 165 +++++++++++---------
  src/lib/libast/regex/regsubcomp.c   |  37 ++---
  src/lib/libast/regex/regsubexec.c   |  38 ++---
@@ -76,12 +76,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |  10 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 59 files changed, 709 insertions(+), 567 deletions(-)
+ 59 files changed, 708 insertions(+), 566 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
 diff --git a/src/lib/libast/include/swap.h b/src/lib/libast/include/swap.h
-index e7b054b41..eaf645701 100644
+index e7b054b41..c337a37c7 100644
 --- a/src/lib/libast/include/swap.h
 +++ b/src/lib/libast/include/swap.h
 @@ -2,7 +2,7 @@
@@ -110,7 +110,7 @@ index e7b054b41..eaf645701 100644
 -extern int		swapop(const void*, const void*, int);
 +extern intmax_t		swapget(int, const void*, size_t);
 +extern void*		swapput(int, void*, size_t, intmax_t);
-+extern signed_size_t	swapop(const void*, const void*, signed_size_t);
++extern ssize_t		swapop(const void*, const void*, ssize_t);
  
  #endif
 diff --git a/src/lib/libast/man/regex.3 b/src/lib/libast/man/regex.3
@@ -127,7 +127,7 @@ index ea8907f70..d1663e41b 100644
  regstat_t* regstat(const regex_t* \fIre\fP);
  
 diff --git a/src/lib/libast/man/swap.3 b/src/lib/libast/man/swap.3
-index 28db4c2bc..e404acfe0 100644
+index 28db4c2bc..ecddb99a8 100644
 --- a/src/lib/libast/man/swap.3
 +++ b/src/lib/libast/man/swap.3
 @@ -42,11 +42,11 @@ swap \- integral representation conversion routines
@@ -135,7 +135,7 @@ index 28db4c2bc..e404acfe0 100644
  .L "#include <swap.h>"
  .sp
 -.L "int swapop(const void* internal, const void* external, int width);
-+.L "signed_size_t swapop(const void* internal, const void* external, signed_size_t width);
++.L "ssize_t swapop(const void* internal, const void* external, ssize_t width);
  .br
 -.L "int_max swapget(int op, const void* from, int width);"
 +.L "intmax_t swapget(int op, const void* from, size_t width);"
@@ -146,7 +146,7 @@ index 28db4c2bc..e404acfe0 100644
  .L "void* swapmem(int op, const void* from, void* to, size_t n);"
  .SH DESCRIPTION
 diff --git a/src/lib/libast/regex/regcache.c b/src/lib/libast/regex/regcache.c
-index 8b251cfc9..65576647c 100644
+index 8b251cfc9..4ac327edc 100644
 --- a/src/lib/libast/regex/regcache.c
 +++ b/src/lib/libast/regex/regcache.c
 @@ -2,7 +2,7 @@
@@ -178,10 +178,10 @@ index 8b251cfc9..65576647c 100644
  flushcache(void)
  {
 -	int		i;
-+	signed_size_t	i;
++	ssize_t		i;
  
 -	for (i = matchstate.size; i--;)
-+	for (i = (signed_size_t)matchstate.size; i--;)
++	for (i = (ssize_t)matchstate.size; i--;)
  		if (matchstate.cache[i] && matchstate.cache[i]->keep)
  		{
  			matchstate.cache[i]->keep = 0;
@@ -230,10 +230,10 @@ index 8b251cfc9..65576647c 100644
  	 */
  
 -	for (i = 0; i < sizeof(key) && pattern[i]; i++)
-+	for (i = 0; i < (signed_size_t)sizeof(key) && pattern[i]; i++)
++	for (i = 0; i < (ssize_t)sizeof(key) && pattern[i]; i++)
  		((char*)&key)[i] = pattern[i];
 -	for (; i < sizeof(key); i++)
-+	for (; i < (signed_size_t)sizeof(key); i++)
++	for (; i < (ssize_t)sizeof(key); i++)
  		((char*)&key)[i] = 0;
  	empty = unused = -1;
  	old = 0;
@@ -259,7 +259,7 @@ index 8b251cfc9..65576647c 100644
  		}
  		strcpy(cp->pattern, pattern);
 -		while (++i < sizeof(Key_t))
-+		while (++i < (signed_size_t)sizeof(Key_t))
++		while (++i < (ssize_t)sizeof(Key_t))
  			cp->pattern[i] = 0;
  		pattern = (const char*)cp->pattern;
 -		if (i = regcomp(&cp->re, pattern, reflags))
@@ -369,7 +369,7 @@ index 24c5ffd27..3f619dff6 100644
  	for (cp = ctypes; cp; cp = cp->next)
  		if (n == cp->size && strneq(s, cp->name, n))
 diff --git a/src/lib/libast/regex/regcoll.c b/src/lib/libast/regex/regcoll.c
-index aaea43895..f76f395dd 100644
+index aaea43895..9fbdd05ad 100644
 --- a/src/lib/libast/regex/regcoll.c
 +++ b/src/lib/libast/regex/regcoll.c
 @@ -38,19 +38,19 @@
@@ -404,8 +404,8 @@ index aaea43895..f76f395dd 100644
 -		int	i;
 -		for (i = 0; i < r && i < sizeof(tmp) - 1; i++)
 +		char		tmp[256];
-+		signed_size_t	i;
-+		for (i = 0; i < r && i < (signed_size_t)sizeof(tmp) - 1; i++)
++		ssize_t		i;
++		for (i = 0; i < r && i < (ssize_t)sizeof(tmp) - 1; i++)
  			tmp[i] = '0';
  		tmp[i] = 0;
  		if (ast.locale.transform(NULL, buf, 0) >= ast.locale.transform(NULL, tmp, 0))
@@ -414,12 +414,12 @@ index aaea43895..f76f395dd 100644
  	t = (const char*)buf;
   done:
 -	if (r <= size && (char*)t != buf)
-+	if (r <= (signed_size_t)size && (char*)t != buf)
++	if (r <= (ssize_t)size && (char*)t != buf)
  	{
 -		memcpy(buf, t, r);
 -		if (r < size)
 +		memcpy(buf, t, (size_t)r);
-+		if (r < (signed_size_t)size)
++		if (r < (ssize_t)size)
  			buf[r] = 0;
  	}
  	if (wc)
@@ -432,7 +432,7 @@ index aaea43895..f76f395dd 100644
   	s--;
   nope:
 diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
-index fc6473c01..7bcff4bd4 100644
+index fc6473c01..7b8410b79 100644
 --- a/src/lib/libast/regex/regcomp.c
 +++ b/src/lib/libast/regex/regcomp.c
 @@ -23,6 +23,10 @@
@@ -904,7 +904,7 @@ index fc6473c01..7bcff4bd4 100644
  	unsigned char*	e;
  	Trie_node_t*	t;
 -	int		len;
-+	signed_size_t	len;
++	ssize_t		len;
  	unsigned char	tmp[2];
  
  	switch (f->type)
@@ -956,7 +956,7 @@ index fc6473c01..7bcff4bd4 100644
  					return NULL;
  				}
 -				if (parno < elementsof(env->paren))
-+				if (parno < (signed_size_t)elementsof(env->paren))
++				if (parno < (ssize_t)elementsof(env->paren))
  					env->paren[parno] = f;
  				f->re.group.back = 0;
  				f->re.group.number = parno;
@@ -983,7 +983,7 @@ index fc6473c01..7bcff4bd4 100644
  			goto nope;
  		}
 -		f->re.group.size = env->stats.m;
-+		f->re.group.size = (signed_size_t)env->stats.m;
++		f->re.group.size = (ssize_t)env->stats.m;
  		memset(&env->stats, 0, sizeof(env->stats));
  	}
  	switch (x)
@@ -995,9 +995,9 @@ index fc6473c01..7bcff4bd4 100644
 -	int		i;
 -	int		n = 1;
 -	int		x = 0;
-+	signed_size_t	c;
++	ssize_t		c;
 +	ptrdiff_t	n = 1;
-+	signed_size_t	x = 0;
++	ssize_t		x = 0;
 +	ptrdiff_t	j;
  	int		parno;
  	int		type;
@@ -1023,7 +1023,7 @@ index fc6473c01..7bcff4bd4 100644
  				if (env->flags & REG_ICASE)
 -					c = towupper(c);
 -				if ((&buf[sizeof(buf)] - s) < MB_CUR_MAX)
-+					c = (signed_size_t)towupper((wint_t)c);
++					c = (ssize_t)towupper((wint_t)c);
 +				if ((size_t)(&buf[sizeof(buf)] - s) < MB_CUR_MAX)
  					break;
 -				if ((n = mbconv((char*)s, c)) < 0)
@@ -1098,7 +1098,7 @@ index fc6473c01..7bcff4bd4 100644
  					return NULL;
  				}
 -				if (parno < elementsof(env->paren))
-+				if (parno < (signed_size_t)elementsof(env->paren))
++				if (parno < (ssize_t)elementsof(env->paren))
  					env->paren[parno] = f;
  				f->re.group.back = 0;
  				f->re.group.number = parno;
@@ -1107,7 +1107,7 @@ index fc6473c01..7bcff4bd4 100644
  						return NULL;
  					}
 -					if (--parno < elementsof(env->paren))
-+					if (--parno < (signed_size_t)elementsof(env->paren))
++					if (--parno < (ssize_t)elementsof(env->paren))
  						env->paren[parno] = f;
  					f->re.group.back = 0;
  					f->re.group.number = parno;
@@ -1152,10 +1152,10 @@ index fc6473c01..7bcff4bd4 100644
  	else
  	{
 -		if (!(p->env->stats.re_min = env.stats.m))
-+		if (!(p->env->stats.re_min = (signed_size_t)env.stats.m))
++		if (!(p->env->stats.re_min = (ssize_t)env.stats.m))
  			p->env->stats.re_min = -1;
 -		if (!(p->env->stats.re_max = env.stats.n))
-+		if (!(p->env->stats.re_max = (signed_size_t)env.stats.n))
++		if (!(p->env->stats.re_max = (ssize_t)env.stats.n))
  			p->env->stats.re_max = -1;
  	}
  	serialize(&env, p->env->rex, 1);
@@ -1228,7 +1228,7 @@ index 2a9280c13..3ad83b895 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/regex/reglib.h b/src/lib/libast/regex/reglib.h
-index 53b29a9af..476ef3181 100644
+index 53b29a9af..5c33f661a 100644
 --- a/src/lib/libast/regex/reglib.h
 +++ b/src/lib/libast/regex/reglib.h
 @@ -38,11 +38,15 @@
@@ -1269,25 +1269,23 @@ index 53b29a9af..476ef3181 100644
  	char*		base;
  } Stk_pos_t;
  
-@@ -305,9 +305,9 @@ typedef struct Vector_s
+@@ -305,8 +305,8 @@ typedef struct Vector_s
  {
  	Stk_t*		stk;		/* stack pointer		*/
  	char*		vec;		/* the data			*/
 -	int		inc;		/* growth increment		*/
 -	int		siz;		/* element size			*/
--	ssize_t		max;		/* max index			*/
-+	signed_size_t	inc;		/* growth increment		*/
++	ssize_t		inc;		/* growth increment		*/
 +	size_t		siz;		/* element size			*/
-+	signed_size_t	max;		/* max index			*/
+ 	ssize_t		max;		/* max index			*/
  	ssize_t		cur;		/* current index -- user domain	*/
  } Vector_t;
- 
 @@ -365,7 +365,7 @@ typedef struct Group_s
  {
  	int		number;		/* group number			*/
  	int		last;		/* last contained group number	*/
 -	int		size;		/* lookbehind size		*/
-+	signed_size_t	size;		/* lookbehind size		*/
++	ssize_t		size;		/* lookbehind size		*/
  	int		back;		/* backreferenced		*/
  	regflags_t	flags;		/* group flags			*/
  	union
@@ -1297,8 +1295,8 @@ index 53b29a9af..476ef3181 100644
  	Trie_node_t**	root;
 -	int		min;
 -	int		max;
-+	signed_size_t	min;
-+	signed_size_t	max;
++	ssize_t		min;
++	ssize_t		max;
  } Trie_t;
  
  /*
@@ -1319,7 +1317,7 @@ index 53b29a9af..476ef3181 100644
  	union
  	{
 diff --git a/src/lib/libast/regex/regnexec.c b/src/lib/libast/regex/regnexec.c
-index 8d6bbb7ef..4b0d441ac 100644
+index 8d6bbb7ef..e64401a25 100644
 --- a/src/lib/libast/regex/regnexec.c
 +++ b/src/lib/libast/regex/regnexec.c
 @@ -130,16 +130,16 @@ typedef struct
@@ -1338,7 +1336,7 @@ index 8d6bbb7ef..4b0d441ac 100644
  
  static Vector_t*
 -vecopen(int inc, int siz)
-+vecopen(signed_size_t inc, size_t siz)
++vecopen(ssize_t inc, size_t siz)
  {
  	Vector_t*	v;
  	Stk_t*		sp;
@@ -1379,7 +1377,7 @@ index 8d6bbb7ef..4b0d441ac 100644
  	regmatch_t*	e;
  	regmatch_t*	s;
 -	int		num;
-+	signed_size_t	num;
++	ssize_t		num;
  
  	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
  		num = 0;
@@ -1870,7 +1868,7 @@ index 8d6bbb7ef..4b0d441ac 100644
  		free(match);
  		return r;
 diff --git a/src/lib/libast/regex/regsubcomp.c b/src/lib/libast/regex/regsubcomp.c
-index cdb7312dd..bb2ad53a6 100644
+index cdb7312dd..1d262cd34 100644
 --- a/src/lib/libast/regex/regsubcomp.c
 +++ b/src/lib/libast/regex/regsubcomp.c
 @@ -2,7 +2,7 @@
@@ -1975,7 +1973,7 @@ index cdb7312dd..bb2ad53a6 100644
  			f = g;
  		set:
 -			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
-+			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (signed_size_t)nops)
++			if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (ssize_t)nops)
  			{
  				if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
  				{
@@ -1993,13 +1991,13 @@ index cdb7312dd..bb2ad53a6 100644
  			break;
  		}
 -		if (c > p->re_nsub)
-+		if (c > (signed_size_t)p->re_nsub)
++		if (c > (ssize_t)p->re_nsub)
  		{
  			regfree(p);
  			return fatal(disc, REG_ESUBREG, s - 1);
  		}
 -		if ((n = op - sub->re_ops) >= (nops - 2))
-+		if ((n = op - sub->re_ops) >= ((signed_size_t)nops - 2))
++		if ((n = op - sub->re_ops) >= ((ssize_t)nops - 2))
  		{
  			if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
  			{
@@ -2008,12 +2006,12 @@ index cdb7312dd..bb2ad53a6 100644
  		op->off = t - sub->re_rhs;
  	}
 -	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= nops)
-+	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (signed_size_t)nops)
++	if ((op->len = (t - sub->re_rhs) - op->off) && (n = ++op - sub->re_ops) >= (ssize_t)nops)
  	{
  		if (!(sub->re_ops = (regsubop_t*)alloc(p->env->disc, sub->re_ops, (nops *= 2) * sizeof(regsubop_t))))
  		{
 diff --git a/src/lib/libast/regex/regsubexec.c b/src/lib/libast/regex/regsubexec.c
-index 0d8c1dc5a..eb750012e 100644
+index 0d8c1dc5a..abfa915de 100644
 --- a/src/lib/libast/regex/regsubexec.c
 +++ b/src/lib/libast/regex/regsubexec.c
 @@ -2,7 +2,7 @@
@@ -2097,7 +2095,7 @@ index 0d8c1dc5a..eb750012e 100644
  	regsub_t*	b;
  	const char*	e;
 -	int		m;
-+	signed_size_t	m;
++	ssize_t		m;
  
  	if (!p->env->sub || (p->env->flags & REG_NOSUB) || !nmatch)
  		return fatal(p->env->disc, REG_BADPAT, NULL);
@@ -2581,7 +2579,7 @@ index 1a358cc4b..3a9715f08 100644
  					}
  				}
 diff --git a/src/lib/libast/string/fmtfmt.c b/src/lib/libast/string/fmtfmt.c
-index ed4e29fff..8be922510 100644
+index ed4e29fff..1cac25472 100644
 --- a/src/lib/libast/string/fmtfmt.c
 +++ b/src/lib/libast/string/fmtfmt.c
 @@ -2,7 +2,7 @@
@@ -2606,7 +2604,7 @@ index ed4e29fff..8be922510 100644
   *	p	void*
   *	s	string
 - *	t	ptrdiff_t
-+ *	t	signed_size_t
++ *	t	ssize_t
   *	z	size_t
   *	?	unknown
   */
@@ -2623,9 +2621,9 @@ index ed4e29fff..8be922510 100644
 -	int		m;
  	int		n;
 -	int		z;
-+	signed_size_t	i;
-+	signed_size_t	m;
-+	signed_size_t	z;
++	ssize_t		i;
++	ssize_t		m;
++	ssize_t		z;
  	char		formats[256];
  	unsigned int	extra[elementsof(formats)];
  
@@ -2634,7 +2632,7 @@ index ed4e29fff..8be922510 100644
  			else
  				i++;
 -			if (i < elementsof(formats))
-+			if (i < (signed_size_t)elementsof(formats))
++			if (i < (ssize_t)elementsof(formats))
  			{
 -				formats[i] = t;
 -				if (extra[i] = x)
@@ -2723,7 +2721,7 @@ index f0c761aac..01c25e641 100644
  		memcpy(buf, s, i);
  		s = buf;
 diff --git a/src/lib/libast/string/fmtint.c b/src/lib/libast/string/fmtint.c
-index f3b90e7e9..5e5e495ba 100644
+index f3b90e7e9..e359a37e1 100644
 --- a/src/lib/libast/string/fmtint.c
 +++ b/src/lib/libast/string/fmtint.c
 @@ -2,7 +2,7 @@
@@ -2749,7 +2747,7 @@ index f3b90e7e9..5e5e495ba 100644
  	uintmax_t	n,m;
 -	int		j=0,k=3*sizeof(ll);
 +	int		j=0;
-+	signed_size_t	k=3*(signed_size_t)sizeof(ll);
++	ssize_t		k=3*(ssize_t)sizeof(ll);
  	if(unsign || ll>=0)
 -		n = ll;
 +		n = (uintmax_t)ll;
@@ -2775,7 +2773,7 @@ index f3b90e7e9..5e5e495ba 100644
  	do
  	{
 diff --git a/src/lib/libast/string/fmtip4.c b/src/lib/libast/string/fmtip4.c
-index 7f59b2a4f..9c37940d6 100644
+index 7f59b2a4f..73b0b4c75 100644
 --- a/src/lib/libast/string/fmtip4.c
 +++ b/src/lib/libast/string/fmtip4.c
 @@ -2,7 +2,7 @@
@@ -2802,7 +2800,7 @@ index 7f59b2a4f..9c37940d6 100644
 -	int	z;
 -	int	i;
 +	size_t	z;
-+	signed_size_t i;
++	ssize_t	i;
  
  	buf = fmtbuf(z = 20);
  	i = sfsprintf(buf, z, "%d.%d.%d.%d", (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, (addr)&0xff);
@@ -2872,7 +2870,7 @@ index bb7383092..9758930f2 100644
  		if (S_ISBLK(st->st_mode) || S_ISCHR(st->st_mode))
  			s += sfsprintf(s, LS_W_MAX, "%8s ", fmtdev(st));
 diff --git a/src/lib/libast/string/fmtmatch.c b/src/lib/libast/string/fmtmatch.c
-index dd8b41a14..b05b498dd 100644
+index dd8b41a14..4b42bc184 100644
 --- a/src/lib/libast/string/fmtmatch.c
 +++ b/src/lib/libast/string/fmtmatch.c
 @@ -2,7 +2,7 @@
@@ -2889,7 +2887,7 @@ index dd8b41a14..b05b498dd 100644
  	int	a;
  	int	e;
 -	int	n;
-+	signed_size_t n;
++	ssize_t	n;
  	char*	buf;
  	char*	stack[32];
  
@@ -3045,7 +3043,7 @@ index 05996adad..ace98f0b8 100644
  	}
  	else
 diff --git a/src/lib/libast/string/fmtre.c b/src/lib/libast/string/fmtre.c
-index eb2e5e1f0..e31675ca8 100644
+index eb2e5e1f0..611361611 100644
 --- a/src/lib/libast/string/fmtre.c
 +++ b/src/lib/libast/string/fmtre.c
 @@ -2,7 +2,7 @@
@@ -3073,7 +3071,7 @@ index eb2e5e1f0..e31675ca8 100644
  	char*		s = (char*)as;
 -	int		c;
 +	char		c;
-+	signed_size_t	i;
++	ssize_t		i;
  	char*		t;
  	Stack_t*	p;
  	char*		x;
@@ -4158,7 +4156,7 @@ index c8f99612b..58cd43ec8 100644
  	case 0:
  		if (t != f)
 diff --git a/src/lib/libast/string/swapop.c b/src/lib/libast/string/swapop.c
-index 473f80894..aa5c301ea 100644
+index 473f80894..f659591f4 100644
 --- a/src/lib/libast/string/swapop.c
 +++ b/src/lib/libast/string/swapop.c
 @@ -2,7 +2,7 @@
@@ -4184,12 +4182,12 @@ index 473f80894..aa5c301ea 100644
  
 -int
 -swapop(const void* internal, const void* external, int size)
-+signed_size_t
-+swapop(const void* internal, const void* external, signed_size_t size)
++ssize_t
++swapop(const void* internal, const void* external, ssize_t size)
  {
  	int	op;
 -	int	z;
-+	signed_size_t z;
++	ssize_t	z;
  	char	tmp[sizeof(intmax_t)];
  
  	if ((z = size) < 0)
@@ -4197,7 +4195,7 @@ index 473f80894..aa5c301ea 100644
  	if (z <= 1)
  		return 0;
 -	if (z <= sizeof(intmax_t))
-+	if (z <= (signed_size_t)sizeof(intmax_t))
++	if (z <= (ssize_t)sizeof(intmax_t))
  		for (op = 0; op < z; op++)
 -			if (!memcmp(internal, swapmem(op, external, tmp, z), z))
 +			if (!memcmp(internal, swapmem(op, external, tmp, (size_t)z), (size_t)z))

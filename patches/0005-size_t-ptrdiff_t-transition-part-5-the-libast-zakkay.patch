@@ -1,6 +1,6 @@
-From 54e2283d73653a75fb2e1b48d73bca072254c91b Mon Sep 17 00:00:00 2001
+From d4971f1021e7b6488c2cd6d5b38360b1813abc59 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 25 Feb 2026 22:17:00 -0800
+Date: Tue, 3 Mar 2026 22:57:35 -0800
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -390,7 +390,7 @@ index 850c39dce..3c190a35f 100644
  
  	g = 1;
 diff --git a/src/lib/libast/comp/iconv.c b/src/lib/libast/comp/iconv.c
-index c68eef8eb..dde57070f 100644
+index c68eef8eb..125135291 100644
 --- a/src/lib/libast/comp/iconv.c
 +++ b/src/lib/libast/comp/iconv.c
 @@ -77,7 +77,7 @@ typedef struct Conv_s
@@ -752,7 +752,7 @@ index c68eef8eb..dde57070f 100644
 -		sfwrite(op, tb, ts - tb);
 -		r += ts - tb;
 +		sfwrite(op, tb, (size_t)(ts - tb));
-+		r += (signed_size_t)(ts - tb);
++		r += (ssize_t)(ts - tb);
  	}
  	if (e)
  		*e = disc->errors;
@@ -760,7 +760,7 @@ index c68eef8eb..dde57070f 100644
  	ssize_t		r = 0;
  	int		ok = 1;
  	int		locked;
-+	signed_size_t	m;
++	ssize_t		m;
  	Iconv_disc_t	compat;
  
  	/*
@@ -768,7 +768,7 @@ index c68eef8eb..dde57070f 100644
  	fe = OK;
  	ft = 0;
  	fn = n;
-+	m = (signed_size_t)n;
++	m = (ssize_t)n;
  	do
  	{
 -		if (n != SFIO_UNBOUND)
@@ -813,7 +813,7 @@ index c68eef8eb..dde57070f 100644
 +			sfread(ip, fb, (size_t)(fs - fb));
  		else
 -			for (i = fn; --i >= (fs - fb);)
-+			for (i = fn; (signed_size_t)(--i) >= (fs - fb);)
++			for (i = fn; (ssize_t)(--i) >= (fs - fb);)
  				sfungetc(ip, fb[i]);
 -		if (n != SFIO_UNBOUND)
 +		if (m != SFIO_UNBOUND)
@@ -1289,7 +1289,7 @@ index 8142caff8..902186016 100644
  	{
  		*av++ = cp;
 diff --git a/src/lib/libast/include/cmdarg.h b/src/lib/libast/include/cmdarg.h
-index 8ab85a048..36440c1e0 100644
+index 8ab85a048..3dbf1d638 100644
 --- a/src/lib/libast/include/cmdarg.h
 +++ b/src/lib/libast/include/cmdarg.h
 @@ -2,7 +2,7 @@
@@ -1340,11 +1340,11 @@ index 8ab85a048..36440c1e0 100644
  
  #ifndef cmdopen
 -extern Cmdarg_t*	cmdopen(char**, int, int, const char*, int);
-+extern Cmdarg_t*	cmdopen(char**, int, signed_size_t, const char*, uint32_t);
++extern Cmdarg_t*	cmdopen(char**, int, ssize_t, const char*, uint32_t);
  #endif
 -extern Cmdarg_t*	cmdopen_20110505(char**, int, int, const char*, int, Error_f);
 -extern Cmdarg_t*	cmdopen_20120411(char**, int, int, const char*, Cmddisc_t*);
-+extern Cmdarg_t*	cmdopen_20120411(char**, int, signed_size_t, const char*, Cmddisc_t*);
++extern Cmdarg_t*	cmdopen_20120411(char**, int, ssize_t, const char*, Cmddisc_t*);
  extern int		cmdflush(Cmdarg_t*);
  extern int		cmdarg(Cmdarg_t*, const char*, int);
  extern int		cmdclose(Cmdarg_t*);
@@ -1405,7 +1405,7 @@ index 247c519b5..b344e6267 100644
  #ifdef _GLOB_PRIVATE_
  	_GLOB_PRIVATE_
 diff --git a/src/lib/libast/misc/cmdarg.c b/src/lib/libast/misc/cmdarg.c
-index af70dd98a..02b973bb4 100644
+index af70dd98a..9e66f2b6f 100644
 --- a/src/lib/libast/misc/cmdarg.c
 +++ b/src/lib/libast/misc/cmdarg.c
 @@ -2,7 +2,7 @@
@@ -1422,7 +1422,7 @@ index af70dd98a..02b973bb4 100644
  
  Cmdarg_t*
 -cmdopen(char** argv, int argmax, int size, const char* argpat, int flags)
-+cmdopen(char** argv, int argmax, signed_size_t size, const char* argpat, uint32_t flags)
++cmdopen(char** argv, int argmax, ssize_t size, const char* argpat, uint32_t flags)
  {
  	Cmddisc_t	disc;
  
@@ -1450,27 +1450,27 @@ index af70dd98a..02b973bb4 100644
  
  Cmdarg_t*
 -cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_t* disc)
-+cmdopen_20120411(char** argv, int argmax, signed_size_t size, const char* argpat, Cmddisc_t* disc)
++cmdopen_20120411(char** argv, int argmax, ssize_t size, const char* argpat, Cmddisc_t* disc)
  {
  	Cmdarg_t*	cmd;
 -	int		n;
-+	signed_size_t	n;
++	ssize_t		n;
  	char**		p;
  	char*		s;
  	char*		sh;
  	char*		exe;
 -	int		c;
 -	int		m;
-+	signed_size_t	c;
-+	signed_size_t	m;
++	ssize_t		c;
++	ssize_t		m;
  	int		argc;
 -	long		x;
-+	signed_size_t	x;
++	ssize_t		x;
  
  	char**		post = 0;
  
 -	n = sizeof(char**);
-+	n = (signed_size_t)sizeof(char**);
++	n = (ssize_t)sizeof(char**);
  	if (*argv)
  	{
  		for (p = argv + 1; *p; p++)
@@ -1486,16 +1486,16 @@ index af70dd98a..02b973bb4 100644
  	for (p = environ; *p; p++)
 -		n += sizeof(char**) + strlen(*p) + 1;
 -	if ((x = astconf_long(CONF_ARG_MAX)) <= 0)
-+		n += (signed_size_t)(sizeof(char**) + strlen(*p) + 1);
-+	if ((x = (signed_size_t)astconf_long(CONF_ARG_MAX)) <= 0)
++		n += (ssize_t)(sizeof(char**) + strlen(*p) + 1);
++	if ((x = (ssize_t)astconf_long(CONF_ARG_MAX)) <= 0)
  		x = ARG_MAX;
  	if (size <= 0 || size > x)
  		size = x;
  	sh = astconf("SH", NULL, NULL);
 -	m = n + (argc + 4) * sizeof(char**) + strlen(sh) + 1;
 -	m = roundof(m, sizeof(char**));
-+	m = n + (argc + 4) * (signed_size_t)sizeof(char**) + (signed_size_t)strlen(sh) + 1;
-+	m = (signed_size_t)roundof((size_t)m, sizeof(char**));
++	m = n + (argc + 4) * (ssize_t)sizeof(char**) + (ssize_t)strlen(sh) + 1;
++	m = (ssize_t)roundof((size_t)m, sizeof(char**));
  	if (size < m)
  	{
  		if (disc->errorf)
@@ -1510,7 +1510,7 @@ index af70dd98a..02b973bb4 100644
  	n = size - n;
 -	m = ((disc->flags & CMD_INSERT) && argpat) ? (strlen(argpat) + 1) : 0;
 -	if (!(cmd = newof(0, Cmdarg_t, 1, n + m)))
-+	m = ((disc->flags & CMD_INSERT) && argpat) ? ((signed_size_t)strlen(argpat) + 1) : 0;
++	m = ((disc->flags & CMD_INSERT) && argpat) ? ((ssize_t)strlen(argpat) + 1) : 0;
 +	if (!(cmd = newof(0, Cmdarg_t, 1, (size_t)(n + m))))
  	{
  		if (disc->errorf)
@@ -1520,7 +1520,7 @@ index af70dd98a..02b973bb4 100644
  	if (!(cmd->runf = disc->runf))
  		cmd->runf = cmdrun;
 -	c = n / sizeof(char**);
-+	c = n / (signed_size_t)sizeof(char**);
++	c = n / (ssize_t)sizeof(char**);
  	if (argmax <= 0 || argmax > c)
 -		argmax = c;
 +		argmax = (int)c;
@@ -1848,7 +1848,7 @@ index 1fefb06a5..07dbb08b8 100644
  		else
  		{
 diff --git a/src/lib/libast/misc/fastfind.c b/src/lib/libast/misc/fastfind.c
-index 60b420c55..4d9ecc6e2 100644
+index 60b420c55..6d0e1f8b9 100644
 --- a/src/lib/libast/misc/fastfind.c
 +++ b/src/lib/libast/misc/fastfind.c
 @@ -111,7 +111,7 @@ static char*		findnames[] =
@@ -1875,8 +1875,8 @@ index 60b420c55..4d9ecc6e2 100644
  	char*		b;
 -	int		i;
 -	int		j;
-+	signed_size_t	i;
-+	signed_size_t	j;
++	ssize_t		i;
++	ssize_t		j;
  	char*		path;
  	int		brace = 0;
  	int		paren = 0;
@@ -1894,7 +1894,7 @@ index 60b420c55..4d9ecc6e2 100644
  			file = 0;
  		uid = geteuid();
 -		j = (findcodes[0] = (char*)file) && *file == '/' ? 1 : elementsof(findcodes);
-+		j = (findcodes[0] = (char*)file) && *file == '/' ? 1 : (signed_size_t)elementsof(findcodes);
++		j = (findcodes[0] = (char*)file) && *file == '/' ? 1 : (ssize_t)elementsof(findcodes);
  
  		/*
  		 * look for the codes file, but since it may not exist yet,
@@ -1904,7 +1904,7 @@ index 60b420c55..4d9ecc6e2 100644
  			pattern = "*";
 -		i += (j = 2 * (strlen(pattern) + 1));
 -		if (!(fp = vmnewof(vm, 0, Find_t, 1, i)))
-+		i += (j = 2 * ((signed_size_t)strlen(pattern) + 1));
++		i += (j = 2 * ((ssize_t)strlen(pattern) + 1));
 +		if (!(fp = vmnewof(vm, 0, Find_t, 1, (size_t)i)))
  		{
  			vmclose(vm);
@@ -1914,7 +1914,7 @@ index 60b420c55..4d9ecc6e2 100644
  		fp->stamp = st.st_mtime;
  		b = (s = fp->decode.temp) + 1;
 -		for (i = 0; i < elementsof(fp->decode.bigram1); i++)
-+		for (i = 0; i < (signed_size_t)elementsof(fp->decode.bigram1); i++)
++		for (i = 0; i < (ssize_t)elementsof(fp->decode.bigram1); i++)
  		{
  			if ((j = sfgetc(fp->fp)) == EOF)
  				goto invalid;
@@ -1945,7 +1945,7 @@ index 60b420c55..4d9ecc6e2 100644
  			while (j = sfgetc(fp->fp))
  			{
 -				if (j == EOF || fp->decode.count >= sizeof(fp->decode.path))
-+				if (j == EOF || fp->decode.count >= (signed_size_t)sizeof(fp->decode.path))
++				if (j == EOF || fp->decode.count >= (ssize_t)sizeof(fp->decode.path))
  					goto invalid;
 -				fp->decode.path[fp->decode.count++] = j;
 +				fp->decode.path[fp->decode.count++] = (char)j;
@@ -1960,7 +1960,7 @@ index 60b420c55..4d9ecc6e2 100644
 +				fp->decode.bigram2[i = -i] = (char)j;
  			}
 -			while (++i < elementsof(fp->decode.bigram1))
-+			while (++i < (signed_size_t)elementsof(fp->decode.bigram1))
++			while (++i < (ssize_t)elementsof(fp->decode.bigram1))
  			{
  				if ((j = sfgetc(fp->fp)) == EOF)
  					goto invalid;
@@ -1978,7 +1978,7 @@ index 60b420c55..4d9ecc6e2 100644
  					if (!(fp->dirs = vmnewof(fp->vm, 0, char*, 2 * k + 1, 0)))
  						goto drop;
 -					if (!(fp->lens = vmnewof(fp->vm, 0, int, 2 * k, 0)))
-+					if (!(fp->lens = vmnewof(fp->vm, 0, signed_size_t, 2 * k, 0)))
++					if (!(fp->lens = vmnewof(fp->vm, 0, ssize_t, 2 * k, 0)))
  						goto drop;
  					p = 0;
  					b = fp->decode.temp;
@@ -1987,7 +1987,7 @@ index 60b420c55..4d9ecc6e2 100644
  					 */
  
 -					for (i = q = 0; i < k; i++)
-+					for (i = q = 0; i < (signed_size_t)k; i++)
++					for (i = q = 0; i < (ssize_t)k; i++)
  					{
  						if (*(s = disc->dirs[i]) == '/')
  							sfsprintf(b, sizeof(fp->decode.temp) - 1, "%s", s);
@@ -2005,7 +2005,7 @@ index 60b420c55..4d9ecc6e2 100644
  					strsort(fp->dirs, q, strcasecmp);
  					for (i = 0; i < q; i++)
 -						fp->lens[i] = strlen(fp->dirs[i]);
-+						fp->lens[i] = (signed_size_t)strlen(fp->dirs[i]);
++						fp->lens[i] = (ssize_t)strlen(fp->dirs[i]);
  				}
  			}
  		}
@@ -2054,7 +2054,7 @@ index 60b420c55..4d9ecc6e2 100644
 -	int		ignorecase;
 -	int		t = 0;
 +	ptrdiff_t	n;
-+	signed_size_t	m;
++	ssize_t		m;
 +	unsigned int	ignorecase;
 +	Sfulong_t	t = 0;
  	unsigned char	w[4];
@@ -2169,7 +2169,7 @@ index 60b420c55..4d9ecc6e2 100644
  				else
  					fp->encode.code[n][m] = 0;
 diff --git a/src/lib/libast/misc/findlib.h b/src/lib/libast/misc/findlib.h
-index 44f570e82..1dffc12d2 100644
+index 44f570e82..cd6b38d05 100644
 --- a/src/lib/libast/misc/findlib.h
 +++ b/src/lib/libast/misc/findlib.h
 @@ -2,7 +2,7 @@
@@ -2186,7 +2186,7 @@ index 44f570e82..1dffc12d2 100644
  	Vmalloc_t*	vm;		\
  	char**		dirs;		\
 -	int*		lens;		\
-+	signed_size_t*	lens;		\
++	ssize_t*	lens;		\
  	Sfio_t*		fp;		\
  	Findverify_f	verifyf;	\
  	int		generate;	\
@@ -2286,7 +2286,7 @@ index cb597d25d..5e9b123c3 100644
  	}
  	return b;
 diff --git a/src/lib/libast/misc/fts.c b/src/lib/libast/misc/fts.c
-index 20f3ba8ed..20f3618fc 100644
+index 20f3ba8ed..89e0c89c9 100644
 --- a/src/lib/libast/misc/fts.c
 +++ b/src/lib/libast/misc/fts.c
 @@ -2,7 +2,7 @@
@@ -2339,7 +2339,7 @@ index 20f3ba8ed..20f3618fc 100644
  			 */
  
 -			if ((fts->baselen = f->fts_namelen) >= (fts->endbuf - fts->base) && resize(fts, fts->baselen))
-+			if ((signed_size_t)(fts->baselen = f->fts_namelen) >= fts->endbuf - fts->base && resize(fts, fts->baselen))
++			if ((ssize_t)(fts->baselen = f->fts_namelen) >= fts->endbuf - fts->base && resize(fts, fts->baselen))
  				return NULL;
  			memcpy(fts->base, f->name, fts->baselen + 1);
  			fts->name = fts->cd ? fts->path : fts->base;
@@ -2357,7 +2357,7 @@ index 20f3ba8ed..20f3618fc 100644
  				 */
  
 -				if (i >= fts->endbuf - fts->endbase)
-+				if ((signed_size_t)i >= fts->endbuf - fts->endbase)
++				if ((ssize_t)i >= fts->endbuf - fts->endbase)
  				{
  		   	   		if (resize(fts, i))
  						return NULL;
@@ -2443,7 +2443,7 @@ index 6175ed3e7..cee851822 100644
  		while (nd > 0)
  			dd[--nd]->info |= FTS_DD;
 diff --git a/src/lib/libast/misc/getcwd.c b/src/lib/libast/misc/getcwd.c
-index aa3af5cb5..cc8f673bd 100644
+index aa3af5cb5..a97f8038d 100644
 --- a/src/lib/libast/misc/getcwd.c
 +++ b/src/lib/libast/misc/getcwd.c
 @@ -2,7 +2,7 @@
@@ -2468,7 +2468,7 @@ index aa3af5cb5..cc8f673bd 100644
  {
  	struct dirlist*	next;		/* next component		*/
 -	int		index;		/* index from end of buf	*/
-+	signed_size_t	index;		/* index from end of buf	*/
++	ssize_t		index;		/* index from end of buf	*/
  };
  
  /*
@@ -2479,7 +2479,7 @@ index aa3af5cb5..cc8f673bd 100644
 -	int		n;
 -	int		x;
 +	size_t		n;
-+	signed_size_t	x;
++	ssize_t		x;
  	size_t		namlen;
  	ssize_t		extra = -1;
  	struct dirent*	entry;
@@ -2511,7 +2511,7 @@ index aa3af5cb5..cc8f673bd 100644
  			if (!(entry = readdir(dirp))) ERROR(ENOENT);
  			namlen = D_NAMLEN(entry);
 -			if ((d - dots) > (PATH_MAX - 1 - namlen))
-+			if ((d - dots) > (signed_size_t)(PATH_MAX - 1 - namlen))
++			if ((d - dots) > (ssize_t)(PATH_MAX - 1 - namlen))
  			{
  				*d = 0;
  				if (namlen >= PATH_MAX || !(dirstk = pushdir(dirstk, dots + 3, p, buf + len - 1))) ERROR(ERANGE);
@@ -2525,7 +2525,7 @@ index aa3af5cb5..cc8f673bd 100644
  			while (p > buf + len - 1 - x) *--p = *--s;
  		}
 diff --git a/src/lib/libast/misc/glob.c b/src/lib/libast/misc/glob.c
-index 98868b49d..885b7a442 100644
+index 98868b49d..73ece4a1e 100644
 --- a/src/lib/libast/misc/glob.c
 +++ b/src/lib/libast/misc/glob.c
 @@ -60,7 +60,7 @@ typedef int (*GL_stat_f)(const char*, struct stat*);
@@ -2613,7 +2613,7 @@ index 98868b49d..885b7a442 100644
 -	int		extra = 1;
 +	ptrdiff_t	optlen = 0;
 +	size_t		suflen = 0;
-+	signed_size_t	extra = 1;
++	ssize_t		extra = 1;
  	unsigned char	intr = 0;
  
  	gp->gl_rescan = 0;
@@ -2717,7 +2717,7 @@ index a8abe4989..42823da82 100644
  		else
  		{
 diff --git a/src/lib/libast/misc/optget.c b/src/lib/libast/misc/optget.c
-index 27930fedc..e4a063345 100644
+index 27930fedc..b730fe2e0 100644
 --- a/src/lib/libast/misc/optget.c
 +++ b/src/lib/libast/misc/optget.c
 @@ -2,7 +2,7 @@
@@ -2825,7 +2825,7 @@ index 27930fedc..e4a063345 100644
  		p->id = save(p->id, strlen(p->id), 0, 0, 0, 0);
  	if (s = p->catalog)
 -		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != strlen(p->id) || !strneq(s, p->id, t - s))) ? save(s, t - s, 0, 0, 0, 0) : NULL;
-+		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (signed_size_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
++		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ssize_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
  	if (!p->catalog)
  	{
  		if (opt_info.disc && opt_info.disc->catalog && (!p->id || !streq(opt_info.disc->catalog, p->id)))
@@ -2965,7 +2965,7 @@ index 27930fedc..e4a063345 100644
 +	ptrdiff_t	wl;
 +	ptrdiff_t	rm;
 +	ptrdiff_t	ts;
-+	signed_size_t	co;
++	ssize_t		co;
 +	ptrdiff_t	margin;
  	int		z;
  	int		style;
@@ -3190,7 +3190,7 @@ index 27930fedc..e4a063345 100644
  			if (cache)
  			{
 -				if (c >= 0 && c < sizeof(map) && map[c] && cache->equiv[map[c]])
-+				if (c >= 0 && c < (signed_size_t)sizeof(map) && map[c] && cache->equiv[map[c]])
++				if (c >= 0 && c < (ssize_t)sizeof(map) && map[c] && cache->equiv[map[c]])
  					c = cache->equiv[map[c]];
  				if (k = cache->flags[map[c]])
  				{
@@ -3230,8 +3230,8 @@ index 27930fedc..e4a063345 100644
 -									b = a + sizeof(opt_info.option) - 2;
 -								memcpy(&opt_info.option[1], a, b - a);
 +								x = -((int)strtol(a, &b, 0));
-+								if ((b - a) > (signed_size_t)sizeof(opt_info.option) - 2)
-+									b = a + (signed_size_t)sizeof(opt_info.option) - 2;
++								if ((b - a) > (ssize_t)sizeof(opt_info.option) - 2)
++									b = a + (ssize_t)sizeof(opt_info.option) - 2;
 +								memcpy(&opt_info.option[1], a, (size_t)(b - a));
  								opt_info.option[b - a + 1] = 0;
  							}
@@ -3263,8 +3263,8 @@ index 27930fedc..e4a063345 100644
 -								b = f + sizeof(opt_info.option) - 2;
 -							memcpy(&opt_info.option[1], f, b - f);
 +							c = -((int)strtol(++f, &b, 0));
-+							if ((b - f) > (signed_size_t)sizeof(opt_info.option) - 2)
-+								b = f + (signed_size_t)sizeof(opt_info.option) - 2;
++							if ((b - f) > (ssize_t)sizeof(opt_info.option) - 2)
++								b = f + (ssize_t)sizeof(opt_info.option) - 2;
 +							memcpy(&opt_info.option[1], f, (size_t)(b - f));
  							opt_info.option[b - f + 1] = 0;
  						}
@@ -3293,8 +3293,8 @@ index 27930fedc..e4a063345 100644
  			}
 -			if ((s - b) >= elementsof(opt_info.name))
 -				s = b + elementsof(opt_info.name) - 1;
-+			if ((s - b) >= (signed_size_t)elementsof(opt_info.name))
-+				s = b + (signed_size_t)elementsof(opt_info.name) - 1;
++			if ((s - b) >= (ssize_t)elementsof(opt_info.name))
++				s = b + (ssize_t)elementsof(opt_info.name) - 1;
  			for (;;)
  			{
  				if (b >= s)
@@ -3321,7 +3321,7 @@ index 27930fedc..e4a063345 100644
  			sfputc(mp, '-');
  		}
 -		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= strlen(s) && (s[v] == 0 || s[v] == '\n'))
-+		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (signed_size_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
++		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (ssize_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
  		{
  			s += v;
  			while (isspace(*++e));
@@ -3751,7 +3751,7 @@ index 04540f5af..4d1bc18f2 100644
  
  	/*
 diff --git a/src/lib/libast/port/astconf.c b/src/lib/libast/port/astconf.c
-index f42ed0a23..d1d275f0e 100644
+index f42ed0a23..7f1e322e6 100644
 --- a/src/lib/libast/port/astconf.c
 +++ b/src/lib/libast/port/astconf.c
 @@ -94,7 +94,7 @@ typedef struct Feature_s
@@ -3759,7 +3759,7 @@ index f42ed0a23..d1d275f0e 100644
  	char*		std;
  	char*		ast;
 -	short		length;
-+	signed_size_t	length;
++	ssize_t		length;
  	short		standard;
  	unsigned int	flags;
  	short		op;
@@ -3815,7 +3815,7 @@ index f42ed0a23..d1d275f0e 100644
  			for (v = s; *s && !isspace(*s); s++);
  			n = s - v;
 -			if ((!path || *path == *p && strlen(path) == (v - p - 1) && !memcmp(path, p, v - p - 1)) && strneq(v, value, n))
-+			if ((!path || *path == *p && (signed_size_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
++			if ((!path || *path == *p && (ssize_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
  				goto ok;
  			for (; isspace(*s); s++);
  			if (*s)
@@ -3937,7 +3937,7 @@ index f42ed0a23..d1d275f0e 100644
  		fp->name = (const char*)fp + sizeof(Feature_t);
  		strcpy((char*)fp->name, name);
 -		fp->length = n;
-+		fp->length = (signed_size_t)n;
++		fp->length = (ssize_t)n;
  		fp->std = &null[0];
  		fp->next = state.features;
  		state.features = fp;
@@ -4125,7 +4125,7 @@ index 76155a2e4..295b2b9a2 100644
  	int	v;
  
 diff --git a/src/lib/libast/port/lc.c b/src/lib/libast/port/lc.c
-index 826ae6860..cbac2598b 100644
+index 826ae6860..fc30d4138 100644
 --- a/src/lib/libast/port/lc.c
 +++ b/src/lib/libast/port/lc.c
 @@ -2,7 +2,7 @@
@@ -4176,7 +4176,7 @@ index 826ae6860..cbac2598b 100644
 -				return p - x;
 -			if (minimum && z < (p - x) && (p - x) >= minimum)
 +				return (p - x) != 0;
-+			if (minimum && z < (p - x) && (p - x) >= (signed_size_t)minimum)
++			if (minimum && z < (p - x) && (p - x) >= (ssize_t)minimum)
  				z = p - x;
  		}
  		while (*p && *p != '|')
@@ -4256,7 +4256,7 @@ index 826ae6860..cbac2598b 100644
 -	int			i;
 -	int			n;
 -	int			z;
-+	signed_size_t		i;
++	ssize_t			i;
 +	size_t			j;
 +	size_t			n;
 +	size_t			z;
@@ -4295,7 +4295,7 @@ index 826ae6860..cbac2598b 100644
  					tpb = 0;
  					for (tp = lc_territories; tp->name; tp++)
 -						if ((i = match(s, tp->name, 3, 0)) > z)
-+						if ((i = match(s, tp->name, 3, 0)) > (signed_size_t)z)
++						if ((i = match(s, tp->name, 3, 0)) > (ssize_t)z)
  						{
  							tpb = tp;
 -							if ((z = i) == n)
@@ -4368,7 +4368,7 @@ index 826ae6860..cbac2598b 100644
  			case '_':
  			case 0:
 -				i = c;
-+				i = (signed_size_t)j;
++				i = (ssize_t)j;
  				z += local[!i].size + n;
  				break;
  			}
@@ -4689,7 +4689,7 @@ index 3b5a7aa89..8ed31b6ce 100644
  	{
  		if (e)
 diff --git a/src/lib/libast/port/mnt.c b/src/lib/libast/port/mnt.c
-index 4a0886bf9..a32f4c65f 100644
+index 4a0886bf9..dfdd9fd85 100644
 --- a/src/lib/libast/port/mnt.c
 +++ b/src/lib/libast/port/mnt.c
 @@ -2,7 +2,7 @@
@@ -4726,7 +4726,7 @@ index 4a0886bf9..a32f4c65f 100644
 -	int		i;
 -	int		n;
 +	size_t		i;
-+	signed_size_t	n;
++	ssize_t		n;
  	unsigned long	flags;
  
  	if (mp->next < mp->last)

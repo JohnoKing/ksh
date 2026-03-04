@@ -1,6 +1,6 @@
-From 8de97ae3df9c12161ebb0c0756d8175396339058 Mon Sep 17 00:00:00 2001
+From 0592236018f5e19dc0ebaf87f8ae89d85407f250 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 25 Feb 2026 22:13:30 -0800
+Date: Tue, 3 Mar 2026 22:54:11 -0800
 Subject: size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro
  expansion, init and stk(3)
 
@@ -55,7 +55,7 @@ so I've decided to provide metrics as to the change in the total number
 of warnings occurring during compilation.
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-4,082 => 3,849 => 61 (progression from 0180e76e8 => part 1 => part 13)
+4,095 => 3,849 => 61 (progression from a215b8be7 => part 1 => part 13)
 
 Side note: To re-emphasize, this patch is one part of a whole
 (although it can be used on its own). The full suite of
@@ -66,20 +66,20 @@ changes to make code review less laborious (I hope).
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/bltins/test.c    |  36 +--
- src/cmd/ksh93/include/defs.h   |  12 +-
+ src/cmd/ksh93/include/defs.h   |  10 +-
  src/cmd/ksh93/include/shell.h  |  22 +-
  src/cmd/ksh93/include/test.h   |   4 +-
  src/cmd/ksh93/sh/init.c        | 120 +++++-----
- src/cmd/ksh93/sh/macro.c       | 389 +++++++++++++++++----------------
+ src/cmd/ksh93/sh/macro.c       | 385 +++++++++++++++++----------------
  src/cmd/ksh93/shell.3          |   6 +-
- src/lib/libast/features/common |  30 ++-
+ src/lib/libast/features/common |   9 +-
  src/lib/libast/include/stk.h   |   7 +-
  src/lib/libast/man/stk.3       |  12 +-
  src/lib/libast/misc/stk.c      |  60 ++---
- 11 files changed, 375 insertions(+), 323 deletions(-)
+ 11 files changed, 353 insertions(+), 318 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/test.c b/src/cmd/ksh93/bltins/test.c
-index 2a72c225b..2d22d0f8f 100644
+index 2a72c225b..eae6d6659 100644
 --- a/src/cmd/ksh93/bltins/test.c
 +++ b/src/cmd/ksh93/bltins/test.c
 @@ -86,8 +86,9 @@ static inline int posix_andor(char *arg)
@@ -89,7 +89,7 @@ index 2a72c225b..2d22d0f8f 100644
 -	int match[2*(MATCH_MAX+1)],n;
 -	int c, m=0;
 +	ssize_t match[2*(MATCH_MAX+1)],c;
-+	signed_size_t n;
++	ssize_t n;
 +	size_t m=0;
  	const char *cp=pat;
  	while(c = *cp++)
@@ -102,7 +102,7 @@ index 2a72c225b..2d22d0f8f 100644
 +	if(m > elementsof(match)/2)
  		m = elementsof(match)/2;
 -	n = strgrpmatch(str, pat, (ssize_t*)match, m, STR_GROUP|STR_MAXIMAL|STR_LEFT|STR_RIGHT|STR_INT);
-+	n = strgrpmatch(str, pat, match, (signed_size_t)m, STR_GROUP|STR_MAXIMAL|STR_LEFT|STR_RIGHT);
++	n = strgrpmatch(str, pat, match, (ssize_t)m, STR_GROUP|STR_MAXIMAL|STR_LEFT|STR_RIGHT);
  	if(m==0 && n==1)
 -		match[1] = (int)strlen(str);
 +		match[1] = (ssize_t)strlen(str);
@@ -213,7 +213,7 @@ index 2a72c225b..2d22d0f8f 100644
  
  /*
 diff --git a/src/cmd/ksh93/include/defs.h b/src/cmd/ksh93/include/defs.h
-index 38c6e9468..cbeb5ef9e 100644
+index 38c6e9468..a5554edff 100644
 --- a/src/cmd/ksh93/include/defs.h
 +++ b/src/cmd/ksh93/include/defs.h
 @@ -113,9 +113,9 @@ extern void		*sh_arithcomp(char*);
@@ -228,17 +228,15 @@ index 38c6e9468..cbeb5ef9e 100644
  extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
  extern void 		*sh_macopen(void);
  extern char 		*sh_macpat(struct argnod*,int);
-@@ -126,8 +126,8 @@ extern int		sh_mathstd(const char*);
+@@ -126,7 +126,7 @@ extern int		sh_mathstd(const char*);
  extern void		sh_printopts(Shopt_t,int,Shopt_t*);
  extern int 		sh_readline(char**,volatile int,int,ssize_t,Sflong_t);
  extern Sfio_t		*sh_sfeval(char*[]);
 -extern void		sh_setmatch(const char*,int,int,int[],int);
--extern void		sh_scope(struct argnod*, int);
-+extern void		sh_setmatch(const char*,ptrdiff_t,signed_size_t,ssize_t[],int);
-+extern void             sh_scope(struct argnod*, int);
++extern void		sh_setmatch(const char*,ptrdiff_t,ssize_t,ssize_t[],int);
+ extern void		sh_scope(struct argnod*, int);
  extern Namval_t		*sh_scoped(Namval_t*);
  extern Dt_t		*sh_subtracktree(int);
- extern Dt_t		*sh_subfuntree(int);
 @@ -158,7 +158,7 @@ extern void		*sh_calloc(size_t nmemb, size_t size);
  extern char		*sh_strdup(const char *s);
  extern void		*sh_memdup(const void *s, size_t n);
@@ -258,7 +256,7 @@ index 38c6e9468..cbeb5ef9e 100644
  #else
  #define is_option(s,x)	((s)->v[((x)&WMASK)/WBITS] & ((uint64_t)1 << ((x) % WBITS)))
 diff --git a/src/cmd/ksh93/include/shell.h b/src/cmd/ksh93/include/shell.h
-index e58ad73bf..d2f9ea88f 100644
+index e58ad73bf..963b751b9 100644
 --- a/src/cmd/ksh93/include/shell.h
 +++ b/src/cmd/ksh93/include/shell.h
 @@ -229,8 +229,8 @@ struct sh_scoped
@@ -297,8 +295,8 @@ index e58ad73bf..d2f9ea88f 100644
  	char		invoc_local;	/* set when inside of an invocation-local scope */
 -	int		xargmin;
 -	int		xargmax;
-+	signed_size_t	xargmin;
-+	signed_size_t	xargmax;
++	ssize_t		xargmin;
++	ssize_t		xargmax;
  	int		xargexit;
 -	int		save_env_n;	/* number of saved pointers to environment variables with invalid names */
 +	size_t		save_env_n;	/* number of saved pointers to environment variables with invalid names */
@@ -350,7 +348,7 @@ index a2daaf59b..a0bcfaab9 100644
  extern const char	sh_opttest[];
  extern const char	test_opchars[];
 diff --git a/src/cmd/ksh93/sh/init.c b/src/cmd/ksh93/sh/init.c
-index 67f394ac0..8711999e7 100644
+index 67f394ac0..0ed96276d 100644
 --- a/src/cmd/ksh93/sh/init.c
 +++ b/src/cmd/ksh93/sh/init.c
 @@ -165,14 +165,14 @@ struct match
@@ -370,7 +368,7 @@ index 67f394ac0..8711999e7 100644
 +	ptrdiff_t	vsize;
 +	ptrdiff_t	vlen;
 +	ssize_t		first;
-+	signed_size_t	nmatch;
++	ssize_t		nmatch;
  	int		index;
  	int		lastsub[2];
  };
@@ -424,7 +422,7 @@ index 67f394ac0..8711999e7 100644
  {
  	Namval_t	*np;
 -	int		i;
-+	signed_size_t	i;
++	ssize_t		i;
  	Namarr_t	*ap;
  	nv_disc(SH_MATCHNOD, &mp->hdr, NV_POP);
  	if(mp->nodes)
@@ -447,7 +445,7 @@ index 67f394ac0..8711999e7 100644
   * treat .sh.match as a two dimensional array
   */
 -void sh_setmatch(const char *v, int vsize, int nmatch, int match[], int index)
-+void sh_setmatch(const char *v, ptrdiff_t vsize, signed_size_t nmatch, ssize_t match[], int index)
++void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[], int index)
  {
  	Init_t		*ip = sh.init_context;
  	struct match	*mp = &ip->SH_MATCH_init;
@@ -498,7 +496,7 @@ index 67f394ac0..8711999e7 100644
 -		if(i >= mp->msize)
 -			mp->match = sh_realloc(mp->match, mp->msize = 2*i);
 +		i = (index+2*(ptrdiff_t)mp->nmatch)*(ptrdiff_t)sizeof(match[0]);
-+		if(i >= (signed_size_t)mp->msize)
++		if(i >= (ssize_t)mp->msize)
 +			mp->match = sh_realloc(mp->match, mp->msize = 2*(size_t)i);
  		if(vsize >= mp->vsize)
 -			mp->val = sh_realloc(mp->val, mp->vsize = mp->vsize ? 2 * vsize : vsize + 1);
@@ -526,7 +524,7 @@ index 67f394ac0..8711999e7 100644
  	struct match	*mp = (struct match*)fp;
 -	int		sub,sub2=0,n,i =!mp->index;
 +	int		sub,sub2=0,i=!mp->index;
-+	signed_size_t	n;
++	ssize_t		n;
  	char		*val;
  	sub = nv_aindex(SH_MATCHNOD);
  	if(sub<0)
@@ -535,7 +533,7 @@ index 67f394ac0..8711999e7 100644
  	else if(sub==mp->lastsub[i])
  		return mp->rval[i];
 -	n = mp->match[2*sub+1]-mp->match[2*sub];
-+	n = (signed_size_t)(mp->match[2*sub+1]-mp->match[2*sub]);
++	n = (ssize_t)(mp->match[2*sub+1]-mp->match[2*sub]);
  	if(n<=0)
  		return mp->match[2*sub]<0?Empty:"";
  	val = mp->val+mp->match[2*sub];
@@ -727,7 +725,7 @@ index 67f394ac0..8711999e7 100644
  			stkseek(sh.stk,off);
  			c  = mbconv(stkptr(sh.stk,off),c);
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index a90fcc548..989dea124 100644
+index a90fcc548..8baa01b69 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
 @@ -49,7 +49,7 @@
@@ -735,7 +733,7 @@ index a90fcc548..989dea124 100644
  
  #if _WINIX
 -    static int Skip;
-+    static signed_size_t Skip;
++    static ssize_t Skip;
  #endif /* _WINIX */
  
  static int	_c_;
@@ -764,7 +762,7 @@ index a90fcc548..989dea124 100644
 -static int	substring(const char*, size_t, const char*, int[], int);
 -static void	copyto(Mac_t*, int, int);
 -static void	comsubst(Mac_t*, Shnode_t*, int);
-+static signed_size_t substring(const char*, size_t, const char*, ssize_t[], regflags_t);
++static ssize_t substring(const char*, size_t, const char*, ssize_t[], regflags_t);
 +static void	copyto(Mac_t*, int, char);
 +static void	comsubst(Mac_t*, Shnode_t*, char);
  static int	varsub(Mac_t*);
@@ -830,15 +828,6 @@ index a90fcc548..989dea124 100644
  	const char	*state = sh_lexstates[ST_QUOTE];
  	char		*cp;
  	Mac_t		*mp = (Mac_t*)sh.mac_context;
-@@ -295,7 +296,7 @@ void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
- 		{
- 			do
- 			{
--				ssize_t len;
-+				signed_size_t len;
- 				switch(len = mbsize(cp))
- 				{
- 				    case -1:	/* illegal multi-byte char */
 @@ -316,8 +317,9 @@ void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
  				;
  		if(n==S_NL || n==S_QUOTE || n==S_RBRA)
@@ -903,15 +892,6 @@ index a90fcc548..989dea124 100644
  	int		paren = 0;		/* level of (parentheses) */
  	int		brace = 0;		/* level of {braces} */
  	char		oldquote = mp->quote;	/* save "double quoted" state */
-@@ -465,7 +469,7 @@ static void copyto(Mac_t *mp,int endch, int newquote)
- 	{
- 		if(mbwide())
- 		{
--			ssize_t len;
-+			signed_size_t len;
- 			do
- 			{
- 				switch(len = mbsize(cp))
 @@ -499,16 +503,16 @@ static void copyto(Mac_t *mp,int endch, int newquote)
  				/* process ANSI C escape character */
  				char *addr= --cp;
@@ -924,7 +904,7 @@ index a90fcc548..989dea124 100644
  				if(mbwide() && c > UCHAR_MAX)
  				{
 -					int		i;
-+					signed_size_t	i;
++					ssize_t		i;
  					unsigned char	mb[8];
  
 -					n = mbconv((char*)mb, c);
@@ -1094,7 +1074,7 @@ index a90fcc548..989dea124 100644
   * copy <str> to stack performing sub-expression substitutions
   */
 -static void mac_substitute(Mac_t *mp, char *cp,char *str,int subexp[],int subsize)
-+static void mac_substitute(Mac_t *mp, char *cp,char *str,ssize_t subexp[],signed_size_t subsize)
++static void mac_substitute(Mac_t *mp, char *cp,char *str,ssize_t subexp[],ssize_t subsize)
  {
 -	int	c,n;
 +	ptrdiff_t c, n = stktell(sh.stk);
@@ -1122,7 +1102,7 @@ index a90fcc548..989dea124 100644
  
  #if  SHOPT_FILESCAN
 -#define MAX_OFFSETS	 (sizeof(sh.offsets)/sizeof(sh.offsets[0]))
-+#define MAX_OFFSETS	 ((signed_size_t)(sizeof(sh.offsets)/sizeof(sh.offsets[0])))
++#define MAX_OFFSETS	 ((ssize_t)(sizeof(sh.offsets)/sizeof(sh.offsets[0])))
  #define MAX_ARGN	(32*1024)
  
  /*
@@ -1387,7 +1367,7 @@ index a90fcc548..989dea124 100644
  		if(type<=1 && np && nv_isvtree(np) && mp->pattern==1 && !mp->split)
  		{
 -			int cc=fcmbget(&LEN),peek=LEN;
-+			signed_size_t cc=fcmbget(&LEN),peek=LEN;
++			ssize_t cc=fcmbget(&LEN),peek=LEN;
  			if(type && cc=='}')
  			{
  				cc = fcmbget(&LEN);
@@ -1429,7 +1409,7 @@ index a90fcc548..989dea124 100644
  					if(type=='%' || type=='#')
  					{
 -						int d = fcmbget(&LEN);
-+						signed_size_t d = fcmbget(&LEN);
++						ssize_t d = fcmbget(&LEN);
  						fcseek(-LEN);
  						if(d=='(')
  							type = 0;
@@ -1475,10 +1455,10 @@ index a90fcc548..989dea124 100644
 -		int ofs_size = 0;
 -		int match[2*(MATCH_MAX+1)],index;
 -		int nmatch, nmatch_prev, vsize_last = 0, tsize;
-+		signed_size_t ofs_size = 0;
++		ssize_t ofs_size = 0;
 +		ssize_t match[2*(MATCH_MAX+1)];
 +		int index;
-+		signed_size_t nmatch, nmatch_prev;
++		ssize_t nmatch, nmatch_prev;
 +		ptrdiff_t vsize_last = 0;
 +		size_t tsize;
  		char *vlast = NULL, *oldv;
@@ -1642,7 +1622,7 @@ index a90fcc548..989dea124 100644
  {
  	Sfdouble_t		num;
 -	int			c;
-+	signed_size_t		c;
++	ssize_t			c;
  	char			*str;
  	Sfio_t			*sp;
  	Stk_t			*stkp = sh.stk;
@@ -1657,7 +1637,7 @@ index a90fcc548..989dea124 100644
  	int			was_verbose = sh_isstate(SH_VERBOSE);
  	int			was_interactive = sh_isstate(SH_INTERACTIVE);
 -	int			newlines,bufsize,nextnewlines;
-+	signed_size_t		newlines,nextnewlines;
++	ssize_t			newlines,nextnewlines;
 +	ssize_t			bufsize;
  	Sfoff_t			foff;
  	Namval_t		*np;
@@ -1713,7 +1693,7 @@ index a90fcc548..989dea124 100644
  		stkseek(stkp,soff);
  	}
 -	while((str=(char*)sfreserve(sp,SFIO_UNBOUND,0)) && (c=bufsize=sfvalue(sp))>0)
-+	while((str=(char*)sfreserve(sp,SFIO_UNBOUND,0)) && (c=(signed_size_t)(bufsize=sfvalue(sp)))>0)
++	while((str=(char*)sfreserve(sp,SFIO_UNBOUND,0)) && (c=(ssize_t)(bufsize=sfvalue(sp)))>0)
  	{
  #if SHOPT_CRNL
  		/* eliminate <cr> */
@@ -1819,10 +1799,10 @@ index a90fcc548..989dea124 100644
  {
  	struct argnod	*argp;
 -	int		count=0;
-+	signed_size_t	count=0;
++	ssize_t		count=0;
  	Stk_t		*stkp = sh.stk;
 -	if(stktell(stkp) > ARGVAL || split)
-+	if(stktell(stkp) > (signed_size_t)ARGVAL || split)
++	if(stktell(stkp) > (ssize_t)ARGVAL || split)
  	{
  		argp = stkfreeze(stkp,1);
  		argp->argnxt.cp = 0;
@@ -1831,7 +1811,7 @@ index a90fcc548..989dea124 100644
  			else
  #endif /* SHOPT_BRACEPAT */
 -				count = path_expand(argp->argval,mp->arghead,musttrim);
-+				count = (signed_size_t)path_expand(argp->argval,mp->arghead,musttrim);
++				count = (ssize_t)path_expand(argp->argval,mp->arghead,musttrim);
  			if(count)
  				mp->fields += count;
  			else if(split)	/* pattern is null string */
@@ -1840,14 +1820,14 @@ index a90fcc548..989dea124 100644
   * the longest substring is found when FLAG is set.
   */
 -static int substring(const char *string,size_t len,const char *pat,int match[], int flag)
-+static signed_size_t substring(const char *string,size_t len,const char *pat,ssize_t match[], regflags_t flag)
++static ssize_t substring(const char *string,size_t len,const char *pat,ssize_t match[], regflags_t flag)
  {
  	const char *sp=string;
 -	int size,nmatch,n;
 -	int smatch[2*(MATCH_MAX+1)];
 +	size_t size;
 +	ssize_t smatch[2*(MATCH_MAX+1)];
-+	signed_size_t n, nmatch;
++	ssize_t n, nmatch;
  	if(flag)
  	{
 -		if(n=strngrpmatch(sp,len,pat,(ssize_t*)smatch,elementsof(smatch)/2,STR_RIGHT|STR_MAXIMAL|STR_INT))
@@ -1882,7 +1862,7 @@ index a90fcc548..989dea124 100644
  	{
  		char *str = (char*)string;
 -		int c;
-+		signed_size_t c;
++		ssize_t c;
  		while(*str)
  		{
  			if((c=mbsize(str))<0)
@@ -1933,7 +1913,7 @@ index a90fcc548..989dea124 100644
 -		char	*str;
 -		int	n=0,offset=stktell(sh.stk);
 +		char		*str;
-+		signed_size_t	n=0;
++		ssize_t		n=0;
 +		ptrdiff_t	offset=stktell(sh.stk);
  		sfputr(sh.stk,string,-1);
  		do
@@ -1965,7 +1945,7 @@ index a1b2f39c4..ea2903974 100644
  void		*sh_parse(Sfio_t *\fIsp\fP, int \fIflags\fP);
  int 		sh_trap(const char *\fIstring\fP, int \fImode\fP);
 diff --git a/src/lib/libast/features/common b/src/lib/libast/features/common
-index b74a74133..2cb83a096 100644
+index b74a74133..4a0b52971 100644
 --- a/src/lib/libast/features/common
 +++ b/src/lib/libast/features/common
 @@ -127,7 +127,7 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
@@ -1986,12 +1966,8 @@ index b74a74133..2cb83a096 100644
  
  	static struct
  	{
-@@ -274,13 +274,14 @@ tst	- output{
- 	exit 1
- }end
- 
--tst note{ generating _ast_flt\*_t types }end output{
-+tst note{ generating _ast_flt\*_t and signed_size_t types }end output{
+@@ -277,10 +277,11 @@ tst	- output{
+ tst note{ generating _ast_flt\*_t types }end output{
  	#define _BYTESEX_H
  
 +	#include <unistd.h>
@@ -2012,35 +1988,6 @@ index b74a74133..2cb83a096 100644
  			e--; /* exclude "long double" */
  		else
  		{
-@@ -320,10 +321,27 @@ tst note{ generating _ast_flt\*_t types }end output{
- 		printf("#define _ast_fltmax_t		_ast_flt%d_t\n", m);
- 		if (m == sizeof(double))
- 			printf("#define _ast_fltmax_double		1\n");
-+		/*
-+		 * Create a typedef for a signed_size_t type (because ssize_t and ptrdiff_t
-+		 * are not always the same).
-+		 */
-+		if (sizeof(int) == sizeof(size_t))
-+			printf("typedef int	signed_size_t;\n");
-+	#if __STDC_VERSION__ >= 199901L
-+		else if (sizeof(long long) == sizeof(size_t))
-+			printf("typedef long long	signed_size_t;\n");
-+	#endif
-+		else if (sizeof(long) == sizeof(size_t))
-+			printf("typedef long	signed_size_t;\n");
-+		else
-+		{
-+			NOTE("Could not generate signed_size_t!");
-+			return 1;
-+		}
- 		return 0;
- 	}
- }end fail{
--	echo "$0: Could not generate _ast_flt*_t types. Export IFFEFLAGS=-d1 to debug." >&2
-+	echo "$0: Could not generate _ast_flt*_t or signed_size_t types. Export IFFEFLAGS=-d1 to debug." >&2
- 	exit 1
- }end
- 
 diff --git a/src/lib/libast/include/stk.h b/src/lib/libast/include/stk.h
 index a28599355..0011dcf15 100644
 --- a/src/lib/libast/include/stk.h
@@ -2099,7 +2046,7 @@ index 739a0dce7..7dac70f56 100644
  .fi
  .SH DESCRIPTION
 diff --git a/src/lib/libast/misc/stk.c b/src/lib/libast/misc/stk.c
-index 7eacec2ed..4dc70f6aa 100644
+index 7eacec2ed..4e1867d10 100644
 --- a/src/lib/libast/misc/stk.c
 +++ b/src/lib/libast/misc/stk.c
 @@ -2,7 +2,7 @@
@@ -2125,7 +2072,7 @@ index 7eacec2ed..4dc70f6aa 100644
  	char	*end;		/* address of end this frame */
  	char	**aliases;	/* address aliases */
 -	int	nalias;		/* number of aliases */
-+	signed_size_t nalias;	/* number of aliases */
++	ssize_t	nalias;	/* number of aliases */
  };
  
  struct stk
@@ -2166,7 +2113,7 @@ index 7eacec2ed..4dc70f6aa 100644
 -	int frames = 0;
 -	int n;
 +	unsigned int frames = 0;
-+	signed_size_t n;
++	ssize_t n;
  	if(!init)
 -		stkinit(offset+1);
 +		stkinit((size_t)(offset+1));
@@ -2198,7 +2145,7 @@ index 7eacec2ed..4dc70f6aa 100644
  		stkinit(n);
  	n = roundof(n,STK_ALIGN);
 -	if(stkleft(stream) <= (int)n && !stkgrow(stream,n))
-+	if(stkleft(stream) <= (signed_size_t)n && !stkgrow(stream,n))
++	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
  		return NULL;
  	old = stream->_data;
  	stream->_data = stream->_next = old+n;
@@ -2222,7 +2169,7 @@ index 7eacec2ed..4dc70f6aa 100644
  	if(extra)
  	{
 -		if(extra > (stream->_endb-stream->_next))
-+		if((signed_size_t)extra > (stream->_endb-stream->_next))
++		if((ssize_t)extra > (stream->_endb-stream->_next))
  		{
  			if (!(top = (unsigned char*)stkgrow(stream,extra)))
  				return NULL;
@@ -2253,7 +2200,7 @@ index 7eacec2ed..4dc70f6aa 100644
  	if(!init)
  		stkinit(n);
 -	if(stkleft(stream) <= n && !stkgrow(stream,n))
-+	if(stkleft(stream) <= (signed_size_t)n && !stkgrow(stream,n))
++	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
  		cp = 0;
  	else
  	{
@@ -2276,7 +2223,7 @@ index 7eacec2ed..4dc70f6aa 100644
 +	ptrdiff_t endoff;
  	char *end=0, *oldbase=0;
 -	int nn=0,add=1;
-+	signed_size_t nn=0,add=1;
++	ssize_t nn=0,add=1;
  	n += (m + sizeof(struct frame)+1);
  	if(sp->stkflags&STK_SMALL)
  		n = roundof(n,STK_FSIZE/16);

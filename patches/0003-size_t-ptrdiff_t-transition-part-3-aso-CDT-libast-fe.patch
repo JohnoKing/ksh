@@ -1,6 +1,6 @@
-From 7f1a5d5e45031d6f57f867bae378aa8b960894c6 Mon Sep 17 00:00:00 2001
+From 68b3c27e855b60bf5a60837aa6eb39922ff69c9b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 25 Feb 2026 22:15:15 -0800
+Date: Tue, 3 Mar 2026 22:55:53 -0800
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -17,40 +17,40 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libast/aso/aso-fcntl.c   | 32 +++++------
- src/lib/libast/aso/aso-sem.c     | 20 +++----
- src/lib/libast/aso/aso.c         | 98 ++++++++++++++++----------------
- src/lib/libast/aso/asorelax.c    |  5 +-
- src/lib/libast/cdt/dtclose.c     |  6 +-
- src/lib/libast/cdt/dthash.c      | 19 ++++---
- src/lib/libast/cdt/dtlist.c      |  4 +-
- src/lib/libast/cdt/dtmethod.c    |  6 +-
- src/lib/libast/cdt/dtopen.c      |  6 +-
- src/lib/libast/cdt/dtstat.c      |  7 ++-
- src/lib/libast/cdt/dtstrhash.c   |  5 +-
- src/lib/libast/cdt/dttree.c      |  5 +-
- src/lib/libast/features/align.c  | 16 +++---
- src/lib/libast/features/api      |  4 --
+ src/lib/libast/aso/aso-fcntl.c   | 28 +++++++--------
+ src/lib/libast/aso/aso-sem.c     | 16 ++++-----
+ src/lib/libast/aso/aso.c         | 62 ++++++++++++++++----------------
+ src/lib/libast/aso/asorelax.c    |  5 +--
+ src/lib/libast/cdt/dtclose.c     |  6 ++--
+ src/lib/libast/cdt/dthash.c      | 19 +++++-----
+ src/lib/libast/cdt/dtlist.c      |  4 +--
+ src/lib/libast/cdt/dtmethod.c    |  6 ++--
+ src/lib/libast/cdt/dtopen.c      |  6 ++--
+ src/lib/libast/cdt/dtstat.c      |  7 ++--
+ src/lib/libast/cdt/dtstrhash.c   |  5 +--
+ src/lib/libast/cdt/dttree.c      |  5 +--
+ src/lib/libast/features/align.c  | 16 ++++-----
+ src/lib/libast/features/api      |  4 ---
  src/lib/libast/features/aso      |  2 +-
- src/lib/libast/features/float    | 16 +++---
- src/lib/libast/features/lib      | 28 ++++-----
- src/lib/libast/features/limits.c |  8 +--
- src/lib/libast/features/mmap     |  4 +-
- src/lib/libast/features/mode.c   |  4 +-
+ src/lib/libast/features/float    | 16 ++++-----
+ src/lib/libast/features/lib      | 28 +++++++--------
+ src/lib/libast/features/limits.c |  8 ++---
+ src/lib/libast/features/mmap     |  4 +--
+ src/lib/libast/features/mode.c   |  4 +--
  src/lib/libast/features/omitted  |  2 +-
  src/lib/libast/features/sfio     |  2 +-
- src/lib/libast/features/signal.c | 10 ++--
- src/lib/libast/features/sizeof   | 10 ++--
- src/lib/libast/features/tv       | 24 ++++----
- src/lib/libast/features/tvlib    |  4 +-
+ src/lib/libast/features/signal.c | 10 +++---
+ src/lib/libast/features/sizeof   | 10 +++---
+ src/lib/libast/features/tv       | 24 ++++++-------
+ src/lib/libast/features/tvlib    |  4 +--
  src/lib/libast/features/wchar    |  2 +-
- src/lib/libast/include/aso.h     |  8 +--
- src/lib/libast/include/cdt.h     | 10 ++--
- src/lib/libast/man/aso.3         |  6 +-
- 30 files changed, 189 insertions(+), 184 deletions(-)
+ src/lib/libast/include/aso.h     |  6 ++--
+ src/lib/libast/include/cdt.h     | 10 +++---
+ src/lib/libast/man/aso.3         |  4 +--
+ 30 files changed, 165 insertions(+), 160 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
-index b4d34019e..8d4e231a7 100644
+index b4d34019e..2696fd798 100644
 --- a/src/lib/libast/aso/aso-fcntl.c
 +++ b/src/lib/libast/aso/aso-fcntl.c
 @@ -45,10 +45,9 @@ aso_init_fcntl(void* data, const char* details)
@@ -95,7 +95,7 @@ index b4d34019e..8d4e231a7 100644
 -					n = sizeof(tmp) - 1;
 -				memcpy(tmp, path + 5, n);
 +				ptrdiff_t n;
-+				if ((n = opt - (path + 5)) >= (signed_size_t)sizeof(tmp))
++				if ((n = opt - (path + 5)) >= (ssize_t)sizeof(tmp))
 +					n = (ptrdiff_t)sizeof(tmp) - 1;
 +				memcpy(tmp, path + 5, (size_t)n);
  				tmp[n] = 0;
@@ -134,23 +134,12 @@ index b4d34019e..8d4e231a7 100644
  			goto bad;
  		if (write(fd, &references, sizeof(references)) != sizeof(references))
  			goto bad;
-@@ -159,8 +159,8 @@ aso_init_fcntl(void* data, const char* details)
- 	return NULL;
- }
- 
--static ssize_t
--aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
-+static signed_size_t
-+aso_lock_fcntl(void* data, signed_size_t k, void volatile* p)
- {
- 	APL_t*		apl = (APL_t*)data;
- 	struct flock	lock;
 @@ -172,10 +172,10 @@ aso_lock_fcntl(void* data, ssize_t k, void volatile* p)
  	else
  	{
  		lock.l_type = F_WRLCK;
 -		k = HASH(p, apl->size) + 1;
-+		k = HASH(p, (signed_size_t)apl->size) + 1;
++		k = HASH(p, (ssize_t)apl->size) + 1;
  	}
  	lock.l_whence = SEEK_SET;
 -	lock.l_start = k - 1;
@@ -159,7 +148,7 @@ index b4d34019e..8d4e231a7 100644
  	return fcntl(apl->fd, F_SETLKW, &lock) < 0 ? -1 : k;
  }
 diff --git a/src/lib/libast/aso/aso-sem.c b/src/lib/libast/aso/aso-sem.c
-index ac6d5478b..d208a5b14 100644
+index ac6d5478b..608309299 100644
 --- a/src/lib/libast/aso/aso-sem.c
 +++ b/src/lib/libast/aso/aso-sem.c
 @@ -2,7 +2,7 @@
@@ -216,23 +205,12 @@ index ac6d5478b..d208a5b14 100644
  					return NULL;
  				if (ds.sem_otime)
  					break;
-@@ -165,8 +165,8 @@ aso_init_semaphore(void* data, const char* details)
- 	return apl;
- }
- 
--static ssize_t
--aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
-+static signed_size_t
-+aso_lock_semaphore(void* data, signed_size_t k, void volatile* p)
- {
- 	APL_t*		apl = (APL_t*)data;
- 	struct sembuf	sem;
 @@ -178,9 +178,9 @@ aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
  	else
  	{
  		sem.sem_op = -1;
 -		k = HASH(p, apl->size) + 1;
-+		k = HASH(p, (signed_size_t)apl->size) + 1;
++		k = HASH(p, (ssize_t)apl->size) + 1;
  	}
 -	sem.sem_num = k;
 +	sem.sem_num = (unsigned short)k;
@@ -240,7 +218,7 @@ index ac6d5478b..d208a5b14 100644
  	return semop(apl->id, &sem, 1) < 0 ? -1 : k;
  }
 diff --git a/src/lib/libast/aso/aso.c b/src/lib/libast/aso/aso.c
-index bac133110..af96b82de 100644
+index bac133110..3d07f5587 100644
 --- a/src/lib/libast/aso/aso.c
 +++ b/src/lib/libast/aso/aso.c
 @@ -2,7 +2,7 @@
@@ -252,17 +230,6 @@ index bac133110..af96b82de 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -97,8 +97,8 @@ typedef struct State_s
- 
- static unsigned int		_aso_data_signal;
- 
--static ssize_t
--_aso_lock_signal(void* data, ssize_t k, void volatile* p)
-+static signed_size_t
-+_aso_lock_signal(void* data, signed_size_t k, void volatile* p)
- {
- 	NOT_USED(data);
- 	NOT_USED(p);
 @@ -137,7 +137,7 @@ static State_t			state =
  };
  
@@ -290,20 +257,6 @@ index bac133110..af96b82de 100644
  	for (i = 0; i < elementsof(method); i++)
  		if (strncmp(name, method[i]->name, n) == 0)
  		{
-@@ -285,10 +285,10 @@ asoloop(uintmax_t rep)
-  * error checking state.lockf() call
-  */
- 
--static ssize_t
--lock(void* data, ssize_t k, void volatile* p)
-+static signed_size_t
-+lock(void* data, signed_size_t k, void volatile* p)
- {
--	ssize_t		r;
-+	signed_size_t	r;
- 
- 	if ((r = state.lockf(data, k, p)) < 0 && state.errorf)
- 		asoerror(ASO_EMETHOD, "%s method lock failed", state.meth->name, 0, 0);
 @@ -302,7 +302,7 @@ lock(void* data, ssize_t k, void volatile* p)
  uint8_t
  asoget8(uint8_t volatile* p)
@@ -322,113 +275,80 @@ index bac133110..af96b82de 100644
  
  	do
  	{
-@@ -370,8 +370,8 @@ asogetptr(void volatile* p)
- uint8_t
+@@ -371,7 +371,7 @@ uint8_t
  asoinc8(uint8_t volatile* p)
  {
--	ssize_t		k;
+ 	ssize_t		k;
 -	int		o;
-+	signed_size_t	k;
 +	uint8_t		o;
  
  #if defined(_aso_inc8)
  	if (!state.lockf)
-@@ -395,8 +395,8 @@ asoinc8(uint8_t volatile* p)
- uint16_t
+@@ -396,7 +396,7 @@ uint16_t
  asoinc16(uint16_t volatile* p)
  {
--	ssize_t		k;
+ 	ssize_t		k;
 -	int		o;
-+	signed_size_t	k;
 +	uint16_t	o;
  
  #if defined(_aso_inc16)
  	if (!state.lockf)
-@@ -420,8 +420,8 @@ asoinc16(uint16_t volatile* p)
- uint32_t
+@@ -421,7 +421,7 @@ uint32_t
  asoinc32(uint32_t volatile* p)
  {
--	ssize_t		k;
+ 	ssize_t		k;
 -	int		o;
-+	signed_size_t	k;
 +	uint32_t	o;
  
  #if defined(_aso_inc32)
  	if (!state.lockf)
-@@ -447,7 +447,7 @@ asoinc32(uint32_t volatile* p)
- uint64_t
- asoinc64(uint64_t volatile* p)
- {
--	ssize_t		k;
-+	signed_size_t	k;
- 	uint64_t	o;
- 
- #if defined(_aso_inc64)
-@@ -478,8 +478,8 @@ asoinc64(uint64_t volatile* p)
- uint8_t
+@@ -479,7 +479,7 @@ uint8_t
  asodec8(uint8_t volatile* p)
  {
--	ssize_t		k;
+ 	ssize_t		k;
 -	int		o;
-+	signed_size_t	k;
 +	uint8_t		o;
  
  #if defined(_aso_dec8)
  	if (!state.lockf)
-@@ -503,8 +503,8 @@ asodec8(uint8_t volatile* p)
- uint16_t
+@@ -504,7 +504,7 @@ uint16_t
  asodec16(uint16_t volatile* p)
  {
--	ssize_t		k;
+ 	ssize_t		k;
 -	int		o;
-+	signed_size_t	k;
 +	uint16_t	o;
  
  #if defined(_aso_dec16)
  	if (!state.lockf)
-@@ -528,8 +528,8 @@ asodec16(uint16_t volatile* p)
- uint32_t
+@@ -529,7 +529,7 @@ uint32_t
  asodec32(uint32_t volatile* p)
  {
--	ssize_t		k;
+ 	ssize_t		k;
 -	int		o;
-+	signed_size_t	k;
 +	uint32_t	o;
  
  #if defined(_aso_dec32)
  	if (!state.lockf)
-@@ -555,7 +555,7 @@ asodec32(uint32_t volatile* p)
- uint64_t
- asodec64(uint64_t volatile* p)
- {
--	ssize_t		k;
-+	signed_size_t	k;
- 	uint64_t	o;
- 
- #if defined(_aso_dec64)
-@@ -584,9 +584,9 @@ asodec64(uint64_t volatile* p)
+@@ -584,7 +584,7 @@ asodec64(uint64_t volatile* p)
   */
  
  uint8_t
 -asocas8(uint8_t volatile* p, int o, int n)
 +asocas8(uint8_t volatile* p, uint8_t o, uint8_t n)
  {
--	ssize_t		k;
-+	signed_size_t	k;
+ 	ssize_t		k;
  
- #if defined(_aso_cas8)
- 	if (!state.lockf)
 @@ -597,10 +597,10 @@ asocas8(uint8_t volatile* p, int o, int n)
  		U16_8_t		u;
  		U16_8_t		v;
  		U16_8_t*	a;
 -		int		s;
 -		int		i;
-+		signed_size_t	s;
-+		signed_size_t	i;
++		ssize_t		s;
++		ssize_t		i;
  
 -		s = (int)(integralof(p) & (sizeof(u.i) - 1));
-+		s = (signed_size_t)(integralof(p) & (sizeof(u.i) - 1));
++		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1));
  		a = (U16_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
  		for (;;)
  		{
@@ -438,11 +358,11 @@ index bac133110..af96b82de 100644
  		U32_8_t*	a;
 -		int		s;
 -		int		i;
-+		signed_size_t	s;
-+		signed_size_t	i;
++		ssize_t		s;
++		ssize_t		i;
  
 -		s = (int)(integralof(p) & (sizeof(u.i) - 1));
-+		s = (signed_size_t)(integralof(p) & (sizeof(u.i) - 1));
++		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1));
  		a = (U32_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
  		for (;;)
  		{
@@ -452,34 +372,25 @@ index bac133110..af96b82de 100644
  		U64_8_t*	a;
 -		int		s;
 -		int		i;
-+		signed_size_t	s;
-+		signed_size_t	i;
++		ssize_t		s;
++		ssize_t		i;
  
 -		s = (int)(integralof(p) & (sizeof(u.i) - 1));
-+		s = (signed_size_t)(integralof(p) & (sizeof(u.i) - 1));
++		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1));
  		a = (U64_8_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
  		for (;;)
  		{
-@@ -685,7 +685,7 @@ asocas8(uint8_t volatile* p, int o, int n)
- uint16_t
- asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
- {
--	ssize_t		k;
-+	signed_size_t	k;
- 
- #if defined(_aso_cas16)
- 	if (!state.lockf)
 @@ -696,10 +696,10 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
  		U32_16_t	u;
  		U32_16_t	v;
  		U32_16_t*	a;
 -		int		s;
 -		int		i;
-+		signed_size_t	s;
-+		signed_size_t	i;
++		ssize_t		s;
++		ssize_t		i;
  
 -		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
-+		s = (signed_size_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
++		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
  		a = (U32_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
  		for (;;)
  		{
@@ -489,55 +400,28 @@ index bac133110..af96b82de 100644
  		U64_16_t*	a;
 -		int		s;
 -		int		i;
-+		signed_size_t	s;
-+		signed_size_t	i;
++		ssize_t		s;
++		ssize_t		i;
  
 -		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 2;
-+		s = (signed_size_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
++		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1)) / 2;
  		a = (U64_16_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
  		for (;;)
  		{
-@@ -757,7 +757,7 @@ asocas16(uint16_t volatile* p, uint16_t o, uint16_t n)
- uint32_t
- asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
- {
--	ssize_t		k;
-+	signed_size_t	k;
- 
- #if defined(_aso_cas32)
- 	if (!state.lockf)
 @@ -768,10 +768,10 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
  		U64_32_t	u;
  		U64_32_t	v;
  		U64_32_t*	a;
 -		int		s;
 -		int		i;
-+		signed_size_t	s;
-+		signed_size_t	i;
++		ssize_t		s;
++		ssize_t		i;
  
 -		s = (int)(integralof(p) & (sizeof(u.i) - 1)) / 4;
-+		s = (signed_size_t)(integralof(p) & (sizeof(u.i) - 1)) / 4;
++		s = (ssize_t)(integralof(p) & (sizeof(u.i) - 1)) / 4;
  		a = (U64_32_t*)((char*)0 + (integralof(p) & ~(sizeof(u.i) - 1)));
  		for (;;)
  		{
-@@ -804,7 +804,7 @@ asocas32(uint32_t volatile* p, uint32_t o, uint32_t n)
- uint64_t
- asocas64(uint64_t volatile* p, uint64_t o, uint64_t n)
- {
--	ssize_t		k;
-+	signed_size_t	k;
- 
- #if defined(_aso_cas64)
- 	if (!state.lockf)
-@@ -828,7 +828,7 @@ asocas64(uint64_t volatile* p, uint64_t o, uint64_t n)
- void*
- asocasptr(void volatile* p, void* o, void* n)
- {
--	ssize_t		k;
-+	signed_size_t	k;
- 
- #if defined(_aso_casptr)
- 	if (!state.lockf)
 diff --git a/src/lib/libast/aso/asorelax.c b/src/lib/libast/aso/asorelax.c
 index 317a5ee75..f4a718ce5 100644
 --- a/src/lib/libast/aso/asorelax.c
@@ -1311,7 +1195,7 @@ index 64d2fcf0f..c078fa8ab 100644
  		return 1;
  	}
 diff --git a/src/lib/libast/include/aso.h b/src/lib/libast/include/aso.h
-index 9aacfc44b..9f2e392f7 100644
+index 9aacfc44b..190a87102 100644
 --- a/src/lib/libast/include/aso.h
 +++ b/src/lib/libast/include/aso.h
 @@ -2,7 +2,7 @@
@@ -1323,15 +1207,6 @@ index 9aacfc44b..9f2e392f7 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -54,7 +54,7 @@
- 
- typedef int (*Asoerror_f)(int, const char*);
- typedef void* (*Asoinit_f)(void*, const char*);
--typedef ssize_t (*Asolock_f)(void*, ssize_t, void volatile*);
-+typedef signed_size_t (*Asolock_f)(void*, signed_size_t, void volatile*);
- 
- typedef struct Asodisc_s
- {
 @@ -78,9 +78,9 @@ extern Asometh_t*		_asometh(int, void*);
  extern int			asoinit(const char*, Asometh_t*, Asodisc_t*);
  extern int			asolock(unsigned int volatile*, unsigned int, int);
@@ -1345,7 +1220,7 @@ index 9aacfc44b..9f2e392f7 100644
  extern uint8_t			asoinc8(uint8_t volatile*);
  extern uint8_t			asodec8(uint8_t volatile*);
 diff --git a/src/lib/libast/include/cdt.h b/src/lib/libast/include/cdt.h
-index f1ae3a241..4f62c53e1 100644
+index f1ae3a241..19dee24fb 100644
 --- a/src/lib/libast/include/cdt.h
 +++ b/src/lib/libast/include/cdt.h
 @@ -2,7 +2,7 @@
@@ -1364,9 +1239,9 @@ index f1ae3a241..4f62c53e1 100644
 -{	int		key;	/* where the key resides 	*/
 -	int		size;	/* key size and type		*/
 -	int		link;	/* offset to Dtlink_t field	*/
-+{	signed_size_t	key;	/* where the key resides 	*/
++{	ssize_t		key;	/* where the key resides 	*/
 +	ssize_t		size;	/* key size and type		*/
-+	signed_size_t	link;	/* offset to Dtlink_t field	*/
++	ssize_t		link;	/* offset to Dtlink_t field	*/
  	Dtmake_f	makef;	/* object constructor		*/
  	Dtfree_f	freef;	/* object destructor		*/
  	Dtcompar_f	comparf;/* to compare two objects	*/
@@ -1380,18 +1255,9 @@ index f1ae3a241..4f62c53e1 100644
  
  #define _DTHSH(dt,ky,dc) ((dc)->hashf   ? (*(dc)->hashf)((dt), (ky), (dc)) : \
 diff --git a/src/lib/libast/man/aso.3 b/src/lib/libast/man/aso.3
-index c256d6896..1e9400e1f 100644
+index c256d6896..858729859 100644
 --- a/src/lib/libast/man/aso.3
 +++ b/src/lib/libast/man/aso.3
-@@ -29,7 +29,7 @@
- .Cs
- typedef int (*Asoerror_f)(int, const char*);
- typedef void* (*Asoinit_f)(void*, const char*);
--typedef ssize_t (*Asolock_f)(void*, ssize_t, void volatile*);
-+typedef signed_size_t (*Asolock_f)(void*, signed_size_t, void volatile*);
- 
- typedef struct Asodisc_s
- {
 @@ -102,7 +102,7 @@ Asometh_t*	asometh(int, void*);
  int		asoinit(const char*, Asometh_t*, Asodisc_t*);
  int		asolock(unsigned int volatile*, unsigned int, int);

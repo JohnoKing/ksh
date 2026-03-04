@@ -1,6 +1,6 @@
-From 59a348b408def8c41772f806a21710f3ebc2a541 Mon Sep 17 00:00:00 2001
+From d4e7e61dcfde3f67863529a9f7edc332cfb509cb Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 25 Feb 2026 22:20:40 -0800
+Date: Tue, 3 Mar 2026 23:01:00 -0800
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -240,7 +240,7 @@ index 431de2984..2f8350ffe 100644
  	return 0;
  }
 diff --git a/src/cmd/ksh93/edit/edit.c b/src/cmd/ksh93/edit/edit.c
-index 159dbd5d7..95130d387 100644
+index 159dbd5d7..aa2a6e7a8 100644
 --- a/src/cmd/ksh93/edit/edit.c
 +++ b/src/cmd/ksh93/edit/edit.c
 @@ -66,7 +66,7 @@ static char *erase_eos;  /* erase to end of screen */
@@ -248,7 +248,7 @@ index 159dbd5d7..95130d387 100644
  #define SYSERR	-1
  
 -static int keytrap(Edit_t *,char*, int, int, int);
-+static int keytrap(Edit_t *,char*, int, signed_size_t, int);
++static int keytrap(Edit_t *,char*, int, ssize_t, int);
  
  #ifndef _POSIX_DISABLE
  #   define _POSIX_DISABLE	0
@@ -327,7 +327,7 @@ index 159dbd5d7..95130d387 100644
  		if(sh.winch && sh_editor_active() && sh_isstate(SH_INTERACTIVE))
  		{
 -			int	n;
-+			signed_size_t n;
++			ssize_t n;
  			if(!ep->e_prompt)
  			{
  				/* ed_emacsread or ed_viread was unable to put the tty in raw mode */
@@ -363,8 +363,8 @@ index 159dbd5d7..95130d387 100644
  #if SHOPT_MULTIBYTE
  	char *endp, *p=string;
 -	int size, offset = ep->e_lookahead + nbyte;
-+	signed_size_t size;
-+	signed_size_t offset = ep->e_lookahead + nbyte;
++	ssize_t size;
++	ssize_t offset = ep->e_lookahead + nbyte;
  	*(endp = &p[nbyte]) = 0;
  	endp = &p[nbyte];
  	do
@@ -373,7 +373,7 @@ index 159dbd5d7..95130d387 100644
  					c = -c;
  			}
 -			else if((endp-p) < mbmax())
-+			else if((endp-p) < (signed_size_t)mbmax())
++			else if((endp-p) < (ssize_t)mbmax())
  			{
  				if(errno == EILSEQ)
  					errno = 0;
@@ -516,7 +516,7 @@ index 159dbd5d7..95130d387 100644
   * <mode> < 0 for vi insert mode
   */
 -static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
-+static int keytrap(Edit_t *ep,char *inbuff,int insize, signed_size_t bufsize, int mode)
++static int keytrap(Edit_t *ep,char *inbuff,int insize, ssize_t bufsize, int mode)
  {
  	char *cp;
  	int savexit;
@@ -533,7 +533,7 @@ index 159dbd5d7..95130d387 100644
  	else
  		insize = 0;
 diff --git a/src/cmd/ksh93/edit/emacs.c b/src/cmd/ksh93/edit/emacs.c
-index 3c72f1859..b1a369c10 100644
+index 3c72f1859..3c1ee4f66 100644
 --- a/src/cmd/ksh93/edit/emacs.c
 +++ b/src/cmd/ksh93/edit/emacs.c
 @@ -2,7 +2,7 @@
@@ -640,7 +640,7 @@ index 3c72f1859..b1a369c10 100644
  				break;
  			}
 -			if ((eol - cur) >= sizeof(name))
-+			if ((eol - cur) >= (signed_size_t)sizeof(name))
++			if ((eol - cur) >= (ssize_t)sizeof(name))
  			{
  				beep();
  				return -1;
@@ -922,7 +922,7 @@ index 2b7a41e62..1f85470de 100644
  					}
  					/* loop if g modifier specified */
 diff --git a/src/cmd/ksh93/edit/history.c b/src/cmd/ksh93/edit/history.c
-index c4c2d427c..ebd59caf7 100644
+index c4c2d427c..48ebb1da2 100644
 --- a/src/cmd/ksh93/edit/history.c
 +++ b/src/cmd/ksh93/edit/history.c
 @@ -2,7 +2,7 @@
@@ -1134,7 +1134,7 @@ index c4c2d427c..ebd59caf7 100644
  	{
 -		int timechars, offset;
 -		offset = stktell(sh.stk);
-+		signed_size_t timechars;
++		ssize_t timechars;
 +		ptrdiff_t offset = stktell(sh.stk);
  		sfputr(sh.stk,buff,-1);
  		stkseek(sh.stk,stktell(sh.stk) - 1);
