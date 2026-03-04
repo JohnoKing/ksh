@@ -1915,7 +1915,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
 	unsigned char*	s;
 	unsigned char*	e;
 	Trie_node_t*	t;
-	signed_size_t	len;
+	ssize_t		len;
 	unsigned char	tmp[2];
 
 	switch (f->type)
@@ -2365,7 +2365,7 @@ grp(Cenv_t* env, int parno)
 					drop(env->disc, e);
 					return NULL;
 				}
-				if (parno < (signed_size_t)elementsof(env->paren))
+				if (parno < (ssize_t)elementsof(env->paren))
 					env->paren[parno] = f;
 				f->re.group.back = 0;
 				f->re.group.number = parno;
@@ -2551,7 +2551,7 @@ grp(Cenv_t* env, int parno)
 				env->error = REG_ECOUNT;
 			goto nope;
 		}
-		f->re.group.size = (signed_size_t)env->stats.m;
+		f->re.group.size = (ssize_t)env->stats.m;
 		memset(&env->stats, 0, sizeof(env->stats));
 	}
 	switch (x)
@@ -2576,9 +2576,9 @@ seq(Cenv_t* env)
 	Rex_t*		e;
 	Rex_t*		f;
 	Token_t		tok;
-	signed_size_t	c;
+	ssize_t		c;
 	ptrdiff_t	n = 1;
-	signed_size_t	x = 0;
+	ssize_t		x = 0;
 	ptrdiff_t	j;
 	int		parno;
 	int		type;
@@ -2605,7 +2605,7 @@ seq(Cenv_t* env)
 			{
 				c = (c == C_ESC) ? env->token.lex : mbchar(p);
 				if (env->flags & REG_ICASE)
-					c = (signed_size_t)towupper((wint_t)c);
+					c = (ssize_t)towupper((wint_t)c);
 				if ((size_t)(&buf[sizeof(buf)] - s) < MB_CUR_MAX)
 					break;
 				if ((n = mbconv((char*)s, (wchar_t)c)) < 0)
@@ -2738,7 +2738,7 @@ seq(Cenv_t* env)
 					drop(env->disc, e);
 					return NULL;
 				}
-				if (parno < (signed_size_t)elementsof(env->paren))
+				if (parno < (ssize_t)elementsof(env->paren))
 					env->paren[parno] = f;
 				f->re.group.back = 0;
 				f->re.group.number = parno;
@@ -2757,7 +2757,7 @@ seq(Cenv_t* env)
 						drop(env->disc, e);
 						return NULL;
 					}
-					if (--parno < (signed_size_t)elementsof(env->paren))
+					if (--parno < (ssize_t)elementsof(env->paren))
 						env->paren[parno] = f;
 					f->re.group.back = 0;
 					f->re.group.number = parno;
@@ -3084,9 +3084,9 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 		p->env->stats.re_min = p->env->stats.re_max = -1;
 	else
 	{
-		if (!(p->env->stats.re_min = (signed_size_t)env.stats.m))
+		if (!(p->env->stats.re_min = (ssize_t)env.stats.m))
 			p->env->stats.re_min = -1;
-		if (!(p->env->stats.re_max = (signed_size_t)env.stats.n))
+		if (!(p->env->stats.re_max = (ssize_t)env.stats.n))
 			p->env->stats.re_max = -1;
 	}
 	serialize(&env, p->env->rex, 1);

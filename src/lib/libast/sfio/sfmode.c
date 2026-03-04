@@ -103,7 +103,7 @@ int _sfsetpool(Sfio_t* f)
 	Sfpool_t*	p;
 	Sfio_t**	array;
 	int		rv;
-	signed_size_t	n;
+	ssize_t		n;
 
 	if(!_Sfcleanup)
 	{	_Sfcleanup = _sfcleanup;

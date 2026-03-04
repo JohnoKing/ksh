@@ -33,18 +33,18 @@
  * this is a workaround for 4 byte magic predicting 8 byte swap
  */
 
-signed_size_t
-swapop(const void* internal, const void* external, signed_size_t size)
+ssize_t
+swapop(const void* internal, const void* external, ssize_t size)
 {
 	int	op;
-	signed_size_t z;
+	ssize_t	z;
 	char	tmp[sizeof(intmax_t)];
 
 	if ((z = size) < 0)
 		z = -z;
 	if (z <= 1)
 		return 0;
-	if (z <= (signed_size_t)sizeof(intmax_t))
+	if (z <= (ssize_t)sizeof(intmax_t))
 		for (op = 0; op < z; op++)
 			if (!memcmp(internal, swapmem(op, external, tmp, (size_t)z), (size_t)z))
 			{

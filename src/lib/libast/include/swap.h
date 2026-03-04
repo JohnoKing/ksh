@@ -39,6 +39,6 @@
 extern void*		swapmem(int, const void*, void*, size_t);
 extern intmax_t		swapget(int, const void*, size_t);
 extern void*		swapput(int, void*, size_t, intmax_t);
-extern signed_size_t	swapop(const void*, const void*, signed_size_t);
+extern ssize_t		swapop(const void*, const void*, ssize_t);
 
 #endif

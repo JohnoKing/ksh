@@ -232,7 +232,7 @@ match(const char* s, const char* p, size_t minimum, int standard)
 			}
 			if ((!*t || *t == ',') && (!*p || *p == '|' || w))
 				return (p - x) != 0;
-			if (minimum && z < (p - x) && (p - x) >= (signed_size_t)minimum)
+			if (minimum && z < (p - x) && (p - x) >= (ssize_t)minimum)
 				z = p - x;
 		}
 		while (*p && *p != '|')
@@ -432,7 +432,7 @@ lcmake(const char* name)
 	const Lc_attribute_t*	ap;
 	Lc_attribute_list_t*	ai;
 	Lc_attribute_list_t*	al;
-	signed_size_t		i;
+	ssize_t			i;
 	size_t			j;
 	size_t			n;
 	size_t			z;
@@ -582,7 +582,7 @@ lcmake(const char* name)
 					z = 0;
 					tpb = 0;
 					for (tp = lc_territories; tp->name; tp++)
-						if ((i = match(s, tp->name, 3, 0)) > (signed_size_t)z)
+						if ((i = match(s, tp->name, 3, 0)) > (ssize_t)z)
 						{
 							tpb = tp;
 							if ((z = (size_t)i) == n)
@@ -762,7 +762,7 @@ lcmake(const char* name)
 			case '.':
 			case '_':
 			case 0:
-				i = (signed_size_t)j;
+				i = (ssize_t)j;
 				z += local[!i].size + n;
 				break;
 			}

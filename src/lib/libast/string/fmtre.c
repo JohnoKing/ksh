@@ -40,7 +40,7 @@ fmtre(const char* as)
 {
 	char*		s = (char*)as;
 	char		c;
-	signed_size_t	i;
+	ssize_t		i;
 	char*		t;
 	Stack_t*	p;
 	char*		x;

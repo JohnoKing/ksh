@@ -612,7 +612,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	const char*	nocheck = pattern;
 	ptrdiff_t	optlen = 0;
 	size_t		suflen = 0;
-	signed_size_t	extra = 1;
+	ssize_t		extra = 1;
 	unsigned char	intr = 0;
 
 	gp->gl_rescan = 0;

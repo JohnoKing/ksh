@@ -184,7 +184,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 		{
 			if (cp >= endbuff || (n = mb2wc(x, cp, (size_t)(endbuff-cp))) < 0)
 			{
-				if ((o = endbuff-cp) < (signed_size_t)sizeof(side))
+				if ((o = endbuff-cp) < (ssize_t)sizeof(side))
 				{
 					if (buff)
 					{
@@ -201,7 +201,7 @@ int wc_count(Wc_t *wp, Sfio_t *fd, const char* file)
 						break;
 					}
 					nbytes += n;
-					if ((c = (signed_size_t)sizeof(side) - o) > n)
+					if ((c = (ssize_t)sizeof(side) - o) > n)
 						c = n;
 					if (c)
 						memcpy(cp, buff, (size_t)c);

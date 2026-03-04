@@ -21,7 +21,7 @@
 
 #undef sfputd
 
-signed_size_t sfputd(Sfio_t* f, Sfdouble_t d)
+ssize_t sfputd(Sfio_t* f, Sfdouble_t d)
 {
 	return __sf_putd(f,d);
 }

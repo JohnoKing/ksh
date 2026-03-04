@@ -89,12 +89,12 @@ static void refvar(Lex_t *lp, int type)
 	if(lp->lexd.first)
 	{
 		off = (fcseek(0)-(type+1)) - lp->lexd.first;
-		r=kiaentity(lp,lp->lexd.first+kia.offset+type,(signed_size_t)(off-kia.offset),'v',-1,-1,kia.current,'v',0,"");
+		r=kiaentity(lp,lp->lexd.first+kia.offset+type,(ssize_t)(off-kia.offset),'v',-1,-1,kia.current,'v',0,"");
 	}
 	else
 	{
 		ptrdiff_t offset = stktell(sh.stk);
-		signed_size_t n;
+		ssize_t n;
 		void *savptr;
 		char *begin;
 		off = offset + (fcseek(0)-(type+1)) - fcfirst();
@@ -103,14 +103,14 @@ static void refvar(Lex_t *lp, int type)
 			/* variable starts on stack, copy remainder */
 			if(off>offset)
 				sfwrite(sh.stk,fcfirst()+type,(size_t)(off-offset));
-			n = (signed_size_t)(stktell(sh.stk)-kia.offset);
+			n = (ssize_t)(stktell(sh.stk)-kia.offset);
 			begin = stkptr(sh.stk,kia.offset);
 		}
 		else
 		{
 			/* variable in data buffer */
 			begin = fcfirst()+(type+kia.offset-offset);
-			n = (signed_size_t)(off-kia.offset);
+			n = (ssize_t)(off-kia.offset);
 		}
 		savptr = stkfreeze(sh.stk,0);
 		r=kiaentity(lp,begin,n,'v',-1,-1,kia.current,'v',0,"");
@@ -260,7 +260,7 @@ int sh_lex(Lex_t* lp)
 	int		c, mode=ST_BEGIN, wordflags=0;
 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
 	int		epatchar=0;
-	signed_size_t	varnametry = 0, varnamecount = 0, varnamelength = 0;
+	ssize_t		varnametry = 0, varnamecount = 0, varnamelength = 0;
 	SETLEN(1);
 	if(lp->lexd.paren)
 	{
@@ -642,7 +642,7 @@ int sh_lex(Lex_t* lp)
 					n = stktell(sh.stk)-c;
 					stkseek(sh.stk,(ptrdiff_t)n);
 					lp->arg = ap;
-					if(n<=(signed_size_t)ARGVAL)
+					if(n<=(ssize_t)ARGVAL)
 					{
 						mode = 0;
 						lp->lexd.first = 0;
@@ -1786,7 +1786,7 @@ void sh_lexskip(Lex_t *lp, char close, int copy, int state)
     ssize_t _sfwrite(Sfio_t *sp, const void *buff, size_t n)
     {
 	const char *cp = (const char*)buff, *next=cp, *ep = cp + n;
-	signed_size_t m=0,k;
+	ssize_t m=0,k;
 	while(next = (const char*)memchr(next,'\r',(size_t)(ep-next)))
 		if(*++next=='\n')
 		{
@@ -2187,7 +2187,7 @@ static struct argnod *endword(int mode)
 	unsigned char *sp, *dp, *ep=0, *xp=0;	/* must be unsigned: pointed-to values used as index to 256-byte state table */
 	int inquote=0, inlit=0;			/* set within quoted strings */
 	int bracket=0;
-	signed_size_t n;
+	ssize_t n;
 	sfputc(sh.stk,0);
 	sp =  (unsigned char*)stkptr(sh.stk,ARGVAL);
 	if(mbwide())
@@ -2274,7 +2274,7 @@ static struct argnod *endword(int mode)
 					}
 					*--dp = 0;
 					msg = ERROR_translate(0,error_info.id,0,ep);
-					n = (signed_size_t)strlen(msg);
+					n = (ssize_t)strlen(msg);
 					dp = ep+n;
 					if(sp-dp <= 1)
 					{

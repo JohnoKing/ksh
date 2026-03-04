@@ -30,7 +30,7 @@
 Sfio_t* sfswap(Sfio_t* f1, Sfio_t* f2)
 {
 	Sfio_t		tmp;
-	signed_size_t	f1pool, f2pool;
+	ssize_t		f1pool, f2pool;
 	int		f1flags, f2flags;
 	unsigned int	f1mode, f2mode;
 

@@ -75,7 +75,7 @@ struct Namfun
 struct Nambfun
 {
 	Namfun_t        fun;
-	signed_size_t	num;
+	ssize_t		num;
 	const char	**bnames;
 	Namval_t	*bltins[1];
 };
@@ -256,7 +256,7 @@ extern int		nv_isnull(Namval_t*);
 extern Namfun_t		*nv_isvtree(Namval_t*);
 extern Namval_t		*nv_lastdict(void);
 extern Namval_t		*nv_mkinttype(char*, size_t, int, const char*, Namdisc_t*);
-extern void 		nv_newattr(Namval_t*,unsigned,signed_size_t);
+extern void 		nv_newattr(Namval_t*,unsigned,ssize_t);
 extern void 		nv_newtype(Namval_t*);
 extern Namval_t		*nv_open(const char*,Dt_t*,int);
 extern void 		nv_putval(Namval_t*,const char*,int);

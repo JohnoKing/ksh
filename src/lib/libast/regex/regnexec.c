@@ -139,7 +139,7 @@ typedef struct
 #define vector(t,v,i)	(((i)<(v)->max)?(t*)((v)->vec+(size_t)(i)*(v)->siz):(t*)vecseek(&(v),i))
 
 static Vector_t*
-vecopen(signed_size_t inc, size_t siz)
+vecopen(ssize_t inc, size_t siz)
 {
 	Vector_t*	v;
 	Stk_t*		sp;
@@ -246,7 +246,7 @@ _matchpush(Env_t* env, Rex_t* rex)
 	regmatch_t*	m;
 	regmatch_t*	e;
 	regmatch_t*	s;
-	signed_size_t	num;
+	ssize_t		num;
 
 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
 		num = 0;

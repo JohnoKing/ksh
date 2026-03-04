@@ -205,8 +205,8 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 										*end = 0;
 									}
  mb:
-									if ((n = end - cp + 1) >= ((signed_size_t)sizeof(tmp) - c))
-										n = (signed_size_t)sizeof(tmp) - c - 1;
+									if ((n = end - cp + 1) >= ((ssize_t)sizeof(tmp) - c))
+										n = (ssize_t)sizeof(tmp) - c - 1;
 									memcpy(tmp + c, cp, (size_t)n);
 									if ((m = mbsize(tmp)) >= c)
 									{

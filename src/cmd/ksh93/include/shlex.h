@@ -70,7 +70,7 @@ typedef struct  _shlex_
 {
 	struct argnod	*arg;		/* current word */
 	struct ionod	*heredoc;	/* pending here document list */
-	signed_size_t	varnamelength;	/* length of variable name in assignment */
+	ssize_t		varnamelength;	/* length of variable name in assignment */
 	int		token;		/* current token number */
 	int		lastline;	/* last line number */
 	int		lasttok;	/* previous token number */
@@ -187,7 +187,7 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
     extern Kia_t		kia;
 
     extern int                  kiaclose(Lex_t *);
-    extern unsigned long        kiaentity(Lex_t*, const char*,signed_size_t,int,int,int,unsigned long,int,size_t,const char*);
+    extern unsigned long        kiaentity(Lex_t*, const char*,ssize_t,int,int,int,unsigned long,int,size_t,const char*);
 #endif /* SHOPT_KIA */
 
 #endif /* !NOTSYM */

@@ -58,7 +58,7 @@
 static struct State_s
 {
 	regmatch_t*	match;
-	signed_size_t	nmatch;
+	ssize_t		nmatch;
 } matchstate;
 
 /*
@@ -71,12 +71,12 @@ static struct State_s
  * including s+sub[1]
  */
 
-signed_size_t
-strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, signed_size_t n, regflags_t flags)
+ssize_t
+strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, ssize_t n, regflags_t flags)
 {
 	regex_t*	re;
 	ssize_t*	end;
-	signed_size_t	i;
+	ssize_t		i;
 	regflags_t	reflags;
 
 	/*
@@ -130,7 +130,7 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, signed_size_t
 		return 0;
 	if (!sub || n <= 0)
 		return 1;
-	i = (signed_size_t)re->re_nsub;
+	i = (ssize_t)re->re_nsub;
 	end = sub + n * 2;
 	for (n = 0; sub < end && n <= i; n++)
 	{
@@ -145,7 +145,7 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, signed_size_t
  * returns 1 for match 0 otherwise
  */
 
-signed_size_t
+ssize_t
 strmatch(const char* s, const char* p)
 {
 	return strngrpmatch(s, s ? strlen(s) : 0, p, NULL, 0, STR_MAXIMAL|STR_LEFT|STR_RIGHT);
@@ -167,8 +167,8 @@ strsubmatch(const char* s, const char* p, regflags_t flags)
 	return strngrpmatch(s, s ? strlen(s) : 0, p, match, 1, (flags ? STR_MAXIMAL : 0)|STR_LEFT) ? (char*)s + match[1] : NULL;
 }
 
-signed_size_t
-strgrpmatch(const char* b, const char* p, ssize_t* sub, signed_size_t n, regflags_t flags)
+ssize_t
+strgrpmatch(const char* b, const char* p, ssize_t* sub, ssize_t n, regflags_t flags)
 {
 	return strngrpmatch(b, b ? strlen(b) : 0, p, sub, n, flags);
 }

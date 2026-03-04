@@ -720,7 +720,7 @@ static const char *mapformat(Sffmt_t *fe)
 	const struct printmap *pm = Pmap;
 	while(pm->size>0)
 	{
-		if((signed_size_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
+		if((ssize_t)pm->size==fe->n_str && strncmp(pm->name,fe->t_str,(size_t)fe->n_str)==0)
 			return pm->map;
 		pm++;
 	}

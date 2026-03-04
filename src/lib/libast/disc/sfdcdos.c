@@ -49,15 +49,15 @@ typedef struct _dosdisc
 	size_t		mapsize;
 	Sfoff_t		skip;
 	ptrdiff_t	bsize;
-	signed_size_t	maptop;
+	ssize_t		maptop;
 	char		last;
 	char		extra;
 } Dosdisc_t;
 
 static void addmapping(Dosdisc_t *dp)
 {
-	signed_size_t n;
-	if((n=dp->maptop++)>=(signed_size_t)dp->mapsize)
+	ssize_t n;
+	if((n=dp->maptop++)>=(ssize_t)dp->mapsize)
 	{
 		dp->mapsize *= 2;
 		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))

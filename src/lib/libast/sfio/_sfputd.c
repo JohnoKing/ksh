@@ -24,10 +24,10 @@
 **	Written by Kiem-Phong Vo.
 */
 
-signed_size_t _sfputd(Sfio_t* f, Sfdouble_t v)
+ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
 {
 #define N_ARRAY		(16*sizeof(Sfdouble_t))
-	signed_size_t	n, w;
+	ssize_t		n, w;
 	uchar		*s, *ends;
 	int		exp;
 	uchar		c[N_ARRAY];
@@ -77,7 +77,7 @@ signed_size_t _sfputd(Sfio_t* f, Sfdouble_t v)
 	*ends &= ~SFIO_MORE;
 
 	/* write out coded bytes */
-	n = (signed_size_t)(ends - s + 1);
+	n = (ssize_t)(ends - s + 1);
 	w = SFWRITE(f,s,(size_t)n) == n ? w+n : -1;
 
 	SFOPEN(f,0);

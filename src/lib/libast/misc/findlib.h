@@ -102,7 +102,7 @@ typedef struct
 	Finddisc_t*	disc;		\
 	Vmalloc_t*	vm;		\
 	char**		dirs;		\
-	signed_size_t*	lens;		\
+	ssize_t*	lens;		\
 	Sfio_t*		fp;		\
 	Findverify_f	verifyf;	\
 	int		generate;	\

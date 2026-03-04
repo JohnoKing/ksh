@@ -747,7 +747,7 @@ static void fixargs(char **argv, int mode)
 		command_len = st.command_length;
 		return;
 	}
-	stkseek(sh.stk,(signed_size_t)command_len+2);
+	stkseek(sh.stk,(ssize_t)command_len+2);
 	buff = stkseek(sh.stk,0);
 	if(command_len==0)
 		return;
@@ -789,7 +789,7 @@ static void fixargs(char **argv, int mode)
 	static char *buff;
 	if(mode==0)
 	{
-		signed_size_t i;
+		ssize_t i;
 		buff = argv[0];
 		for(i=0; argv[i]; i++)
 			buffsize += strlen(argv[i]) + 1;

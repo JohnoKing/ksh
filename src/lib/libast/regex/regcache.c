@@ -58,9 +58,9 @@ static State_t	matchstate;
 static void
 flushcache(void)
 {
-	signed_size_t	i;
+	ssize_t		i;
 
-	for (i = (signed_size_t)matchstate.size; i--;)
+	for (i = (ssize_t)matchstate.size; i--;)
 		if (matchstate.cache[i] && matchstate.cache[i]->keep)
 		{
 			matchstate.cache[i]->keep = 0;
@@ -129,9 +129,9 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 	 * check if the pattern is in the cache
 	 */
 
-	for (i = 0; i < (signed_size_t)sizeof(key) && pattern[i]; i++)
+	for (i = 0; i < (ssize_t)sizeof(key) && pattern[i]; i++)
 		((char*)&key)[i] = pattern[i];
-	for (; i < (signed_size_t)sizeof(key); i++)
+	for (; i < (ssize_t)sizeof(key); i++)
 		((char*)&key)[i] = 0;
 	empty = unused = -1;
 	old = 0;
@@ -175,7 +175,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 			}
 		}
 		strcpy(cp->pattern, pattern);
-		while (++i < (signed_size_t)sizeof(Key_t))
+		while (++i < (ssize_t)sizeof(Key_t))
 			cp->pattern[i] = 0;
 		pattern = (const char*)cp->pattern;
 		if (j = regcomp(&cp->re, pattern, reflags))

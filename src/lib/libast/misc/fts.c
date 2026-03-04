@@ -896,7 +896,7 @@ fts_read(FTS* fts)
 			 * add object's name to the path
 			 */
 
-			if ((signed_size_t)(fts->baselen = f->fts_namelen) >= fts->endbuf - fts->base && resize(fts, fts->baselen))
+			if ((ssize_t)(fts->baselen = f->fts_namelen) >= fts->endbuf - fts->base && resize(fts, fts->baselen))
 				return NULL;
 			memcpy(fts->base, f->name, fts->baselen + 1);
 			fts->name = fts->cd ? fts->path : fts->base;
@@ -1027,7 +1027,7 @@ fts_read(FTS* fts)
 				 * check for space
 				 */
 
-				if ((signed_size_t)i >= fts->endbuf - fts->endbase)
+				if ((ssize_t)i >= fts->endbuf - fts->endbase)
 				{
 		   	   		if (resize(fts, i))
 						return NULL;

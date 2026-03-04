@@ -79,9 +79,9 @@ static const char usage[] =
 
 typedef int (*Compare_f)(const char*, const char*, size_t);
 
-static int uniq(Sfio_t *fdin, Sfio_t *fdout, signed_size_t fields, signed_size_t chars, signed_size_t width, int mode, int* all, Compare_f compare)
+static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssize_t width, int mode, int* all, Compare_f compare)
 {
-	signed_size_t f;
+	ssize_t f;
 	ptrdiff_t n, outsize=0, cwidth=0;
 	int sep, mb = mbwide();
 	char *cp=NULL, *ep, *mp, *bufp, *outp=NULL;
@@ -248,7 +248,7 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 {
 	int mode=0;
 	char *cp;
-	signed_size_t fields=0, chars=0, width=-1;
+	ssize_t fields=0, chars=0, width=-1;
 	Sfio_t *fpin, *fpout;
 	int* all = 0;
 	int sep;
@@ -289,15 +289,15 @@ b_uniq(int argc, char** argv, Shbltin_t* context)
 			continue;
 		case 'f':
 			if(*opt_info.option=='-')
-				fields = (signed_size_t)opt_info.num;
+				fields = (ssize_t)opt_info.num;
 			else
-				chars = (signed_size_t)opt_info.num;
+				chars = (ssize_t)opt_info.num;
 			continue;
 		case 's':
-			chars = (signed_size_t)opt_info.num;
+			chars = (ssize_t)opt_info.num;
 			continue;
 		case 'w':
-			width = (signed_size_t)opt_info.num;
+			width = (ssize_t)opt_info.num;
 			continue;
 		case ':':
 			error(2, "%s", opt_info.arg);

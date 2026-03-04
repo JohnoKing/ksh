@@ -347,8 +347,8 @@ cat{
 	#define putc(c,f)	fputc(c,f)
 	#define putchar(c)	fputc(c,stdout)
 
-	extern signed_size_t	_sffilbuf(FILE*, signed_size_t);
-	extern signed_size_t	_sfflsbuf(FILE*, signed_size_t);
+	extern ssize_t		_sffilbuf(FILE*, ssize_t);
+	extern ssize_t		_sfflsbuf(FILE*, ssize_t);
 
 	#endif
 }end

@@ -285,7 +285,7 @@ mntread(void* handle)
 {
 	Handle_t*	mp = (Handle_t*)handle;
 	size_t		i;
-	signed_size_t	n;
+	ssize_t		n;
 	unsigned long	flags;
 
 	if (mp->next < mp->last)

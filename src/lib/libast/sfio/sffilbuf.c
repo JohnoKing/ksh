@@ -88,7 +88,7 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 			if(n > 0)
 			{	if(r > n && f->extent < 0 && (f->flags&SFIO_SHARE) )
 					r = n;	/* read only as much as requested */
-				else if(justseek && n <= (signed_size_t)f->iosz && (signed_size_t)f->iosz <= f->size)
+				else if(justseek && n <= (ssize_t)f->iosz && (ssize_t)f->iosz <= f->size)
 					r = (ptrdiff_t)f->iosz;	/* limit buffer filling */
 			}
 		}

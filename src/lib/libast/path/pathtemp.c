@@ -138,9 +138,9 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	char*		x;
 	uint32_t	key;
 	int		n;
-	signed_size_t	m;
-	signed_size_t	l;
-	signed_size_t	r;
+	ssize_t		m;
+	ssize_t		l;
+	ssize_t		r;
 	int		z;
 	int		attempt;
 	Tv_t		tv;
@@ -269,11 +269,11 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 	z = 0;
 	if (!pfx && !(pfx = tmp.pfx))
 		pfx = "ast";
-	m = (signed_size_t)strlen(pfx);
+	m = (ssize_t)strlen(pfx);
 	if (buf && dir && (buf == (char*)dir && (buf + strlen(buf) + 1) == (char*)pfx || buf == (char*)pfx && !*dir) && !strcmp((char*)pfx + m + 1, "XXXXX"))
 	{
 		d = (char*)dir;
-		m += (signed_size_t)strlen(d) + 8;
+		m += (ssize_t)strlen(d) + 8;
 		len = (size_t)m;
 		l = 3;
 		r = 3;

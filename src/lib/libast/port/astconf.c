@@ -94,7 +94,7 @@ typedef struct Feature_s
 	char*		value;
 	char*		std;
 	char*		ast;
-	signed_size_t	length;
+	ssize_t		length;
 	short		standard;
 	unsigned int	flags;
 	short		op;
@@ -398,7 +398,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 			for (; isspace(*s); s++);
 			for (v = s; *s && !isspace(*s); s++);
 			n = s - v;
-			if ((!path || *path == *p && (signed_size_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
+			if ((!path || *path == *p && (ssize_t)strlen(path) == (v - p - 1) && !memcmp(path, p, (size_t)(v - p - 1))) && strneq(v, value, (size_t)n))
 				goto ok;
 			for (; isspace(*s); s++);
 			if (*s)
@@ -787,7 +787,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 		fp->op = -1;
 		fp->name = (const char*)fp + sizeof(Feature_t);
 		strcpy((char*)fp->name, name);
-		fp->length = (signed_size_t)n;
+		fp->length = (ssize_t)n;
 		fp->std = &null[0];
 		fp->next = state.features;
 		state.features = fp;

@@ -467,7 +467,7 @@ static Namfun_t level_disc_fun = { &level_disc, 1 };
 int sh_debug(const char *trap, const char *name, const char *subscript, char *const argv[], int flags)
 {
 	Namval_t		*np = SH_COMMANDNOD;
-	signed_size_t		n=4;
+	ssize_t			n=4;
 	ptrdiff_t		offset=stktell(sh.stk);
 	int			r;
 	void			*sav = stkfreeze(sh.stk,0);

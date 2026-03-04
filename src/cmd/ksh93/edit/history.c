@@ -756,7 +756,7 @@ static ssize_t hist_write(Sfio_t *iop,const void *buff,size_t insize,Sfdisc_t* h
 #if	SHOPT_ACCTFILE
 	if(acctfd)
 	{
-		signed_size_t timechars;
+		ssize_t timechars;
 		ptrdiff_t offset = stktell(sh.stk);
 		sfputr(sh.stk,buff,-1);
 		stkseek(sh.stk,stktell(sh.stk) - 1);

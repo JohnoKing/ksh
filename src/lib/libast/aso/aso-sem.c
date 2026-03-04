@@ -165,8 +165,8 @@ aso_init_semaphore(void* data, const char* details)
 	return apl;
 }
 
-static signed_size_t
-aso_lock_semaphore(void* data, signed_size_t k, void volatile* p)
+static ssize_t
+aso_lock_semaphore(void* data, ssize_t k, void volatile* p)
 {
 	APL_t*		apl = (APL_t*)data;
 	struct sembuf	sem;
@@ -178,7 +178,7 @@ aso_lock_semaphore(void* data, signed_size_t k, void volatile* p)
 	else
 	{
 		sem.sem_op = -1;
-		k = HASH(p, (signed_size_t)apl->size) + 1;
+		k = HASH(p, (ssize_t)apl->size) + 1;
 	}
 	sem.sem_num = (unsigned short)k;
 	sem.sem_flg = 0;

@@ -74,7 +74,7 @@ static int chr2str(char* buf, char v)
 #define _sffmt_small	1
 #endif
 
-signed_size_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
+ssize_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 		    const char*		form,		/* format to use	*/
 		    va_list		args)		/* arg list if !argf	*/
 {
@@ -84,7 +84,7 @@ signed_size_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 	int		dot, sign, decpt;
 	unsigned int	scale;
 	ptrdiff_t	base, k, n, n_s, q, precis, size, v, w, width;
-	signed_size_t	n_w;
+	ssize_t		n_w;
 	Sfdouble_t	dval;
 	void*		valp;
 	char		*tls[2], **ls;	/* for %..[separ]s		*/
@@ -116,15 +116,15 @@ signed_size_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 #endif
 
 	/* local io system */
-	signed_size_t	o, n_output;
-#define SMputc(f,c)	{ if((o = (signed_size_t)SFFLSBUF(f,c)) >= 0 ) n_output += 1; \
+	ssize_t		o, n_output;
+#define SMputc(f,c)	{ if((o = (ssize_t)SFFLSBUF(f,c)) >= 0 ) n_output += 1; \
 			  else		{ SFBUF(f); goto done; } \
 			}
-#define SMnputc(f,c,n)	{ if((o = (signed_size_t)SFNPUTC(f,c,(size_t)(n))) > 0 ) n_output += 1; \
-			  if(o != (signed_size_t)(n))	{ SFBUF(f); goto done; } \
+#define SMnputc(f,c,n)	{ if((o = (ssize_t)SFNPUTC(f,c,(size_t)(n))) > 0 ) n_output += 1; \
+			  if(o != (ssize_t)(n))	{ SFBUF(f); goto done; } \
 			}
-#define SMwrite(f,s,n)	{ if((o = (signed_size_t)SFWRITE(f,s,(size_t)(n))) > 0 ) n_output += o; \
-			  if(o != (signed_size_t)(n))	{ SFBUF(f); goto done; } \
+#define SMwrite(f,s,n)	{ if((o = (ssize_t)SFWRITE(f,s,(size_t)(n))) > 0 ) n_output += o; \
+			  if(o != (ssize_t)(n))	{ SFBUF(f); goto done; } \
 			}
 #if _sffmt_small /* these macros are made smaller at some performance cost */
 #define SFBUF(f)
@@ -769,7 +769,7 @@ loop_fmt :
 						wsp = (wchar_t*)sp;
 						while(n < 0)
 						{
-							signed_size_t wd;
+							ssize_t wd;
 							if ((wd = mbwidth(*wsp)) > 0)
 								n += wd;
 							wsp++;
@@ -781,7 +781,7 @@ loop_fmt :
 					{	SFMBCLR(&mbs);
 						osp = sp;
 						while(n < 0)
-						{	signed_size_t wd;
+						{	ssize_t wd;
 							ssp = sp;
 							if ((k = mbchar(sp)) <= 0)
 							{	sp = ssp;

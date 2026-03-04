@@ -24,12 +24,12 @@
 **	Written by Kiem-Phong Vo.
 */
 
-signed_size_t _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
+ssize_t _sfputu(Sfio_t*		f,	/* write a portable ulong to this stream */
 		  Sfulong_t	v)	/* the unsigned value to be written */
 {
 #define N_ARRAY		(2*sizeof(Sfulong_t))
 	uchar		*s, *ps;
-	signed_size_t	n;
+	ssize_t		n;
 	ptrdiff_t	p;
 	uchar		c[N_ARRAY];
 
@@ -42,10 +42,10 @@ signed_size_t _sfputu(Sfio_t*	f,	/* write a portable ulong to this stream */
 	*s = (uchar)SFUVALUE(v);
 	while((v >>= SFIO_UBITS) )
 		*--s = (uchar)(SFUVALUE(v) | SFIO_MORE);
-	n = (signed_size_t)(ps-s)+1;
+	n = (ssize_t)(ps-s)+1;
 
 	if(n > 8 || SFWPEEK(f,ps,p) < n)
-		n = (signed_size_t)SFWRITE(f,s,(size_t)n); /* write the hard way */
+		n = (ssize_t)SFWRITE(f,s,(size_t)n); /* write the hard way */
 	else
 	{	switch(n)
 		{

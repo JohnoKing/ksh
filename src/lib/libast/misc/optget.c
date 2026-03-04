@@ -1067,7 +1067,7 @@ init(char* s, Optpass_t* p)
 	else if (p->id == error_info.id)
 		p->id = save(p->id, strlen(p->id), 0, 0, 0, 0);
 	if (s = p->catalog)
-		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (signed_size_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
+		p->catalog = ((t = strchr(s, ']')) && (!p->id || (t - s) != (ssize_t)strlen(p->id) || !strneq(s, p->id, (size_t)(t - s)))) ? save(s, (size_t)(t - s), 0, 0, 0, 0) : NULL;
 	if (!p->catalog)
 	{
 		if (opt_info.disc && opt_info.disc->catalog && (!p->id || !streq(opt_info.disc->catalog, p->id)))
@@ -2379,7 +2379,7 @@ opthelp(const char* oopts, const char* what)
 	ptrdiff_t	wl;
 	ptrdiff_t	rm;
 	ptrdiff_t	ts;
-	signed_size_t	co;
+	ssize_t		co;
 	ptrdiff_t	margin;
 	int		z;
 	int		style;
@@ -4601,7 +4601,7 @@ optget(char** argv, const char* oopts)
 		{
 			if (cache)
 			{
-				if (c >= 0 && c < (signed_size_t)sizeof(map) && map[c] && cache->equiv[map[c]])
+				if (c >= 0 && c < (ssize_t)sizeof(map) && map[c] && cache->equiv[map[c]])
 					c = cache->equiv[map[c]];
 				if (k = cache->flags[map[c]])
 				{
@@ -4965,8 +4965,8 @@ optget(char** argv, const char* oopts)
 										a += 2;
 								}
 								x = -((int)strtol(a, &b, 0));
-								if ((b - a) > (signed_size_t)sizeof(opt_info.option) - 2)
-									b = a + (signed_size_t)sizeof(opt_info.option) - 2;
+								if ((b - a) > (ssize_t)sizeof(opt_info.option) - 2)
+									b = a + (ssize_t)sizeof(opt_info.option) - 2;
 								memcpy(&opt_info.option[1], a, (size_t)(b - a));
 								opt_info.option[b - a + 1] = 0;
 							}
@@ -5095,8 +5095,8 @@ optget(char** argv, const char* oopts)
 						if (*f == '=')
 						{
 							c = -((int)strtol(++f, &b, 0));
-							if ((b - f) > (signed_size_t)sizeof(opt_info.option) - 2)
-								b = f + (signed_size_t)sizeof(opt_info.option) - 2;
+							if ((b - f) > (ssize_t)sizeof(opt_info.option) - 2)
+								b = f + (ssize_t)sizeof(opt_info.option) - 2;
 							memcpy(&opt_info.option[1], f, (size_t)(b - f));
 							opt_info.option[b - f + 1] = 0;
 						}
@@ -5184,8 +5184,8 @@ optget(char** argv, const char* oopts)
 					num = !num;
 				v = 0;
 			}
-			if ((s - b) >= (signed_size_t)elementsof(opt_info.name))
-				s = b + (signed_size_t)elementsof(opt_info.name) - 1;
+			if ((s - b) >= (ssize_t)elementsof(opt_info.name))
+				s = b + (ssize_t)elementsof(opt_info.name) - 1;
 			for (;;)
 			{
 				if (b >= s)
@@ -5655,7 +5655,7 @@ optstr(const char* str, const char* opts)
 			sfputc(mp, '-');
 			sfputc(mp, '-');
 		}
-		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (signed_size_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
+		if (isdigit(*s) && (v = (int)strtol(s, &e, 10)) > 1 && isspace(*e) && --v <= (ssize_t)strlen(s) && (s[v] == 0 || s[v] == '\n'))
 		{
 			s += v;
 			while (isspace(*++e));

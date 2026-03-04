@@ -41,7 +41,7 @@ cmdrun(int argc, char** argv, Cmddisc_t* disc)
 }
 
 Cmdarg_t*
-cmdopen(char** argv, int argmax, signed_size_t size, const char* argpat, uint32_t flags)
+cmdopen(char** argv, int argmax, ssize_t size, const char* argpat, uint32_t flags)
 {
 	Cmddisc_t	disc;
 
@@ -79,22 +79,22 @@ static const char*	echo[] = { "echo", 0 };
  */
 
 Cmdarg_t*
-cmdopen_20120411(char** argv, int argmax, signed_size_t size, const char* argpat, Cmddisc_t* disc)
+cmdopen_20120411(char** argv, int argmax, ssize_t size, const char* argpat, Cmddisc_t* disc)
 {
 	Cmdarg_t*	cmd;
-	signed_size_t	n;
+	ssize_t		n;
 	char**		p;
 	char*		s;
 	char*		sh;
 	char*		exe;
-	signed_size_t	c;
-	signed_size_t	m;
+	ssize_t		c;
+	ssize_t		m;
 	int		argc;
-	signed_size_t	x;
+	ssize_t		x;
 
 	char**		post = 0;
 
-	n = (signed_size_t)sizeof(char**);
+	n = (ssize_t)sizeof(char**);
 	if (*argv)
 	{
 		for (p = argv + 1; *p; p++)
@@ -113,14 +113,14 @@ cmdopen_20120411(char** argv, int argmax, signed_size_t size, const char* argpat
 	else
 		argc = 0;
 	for (p = environ; *p; p++)
-		n += (signed_size_t)(sizeof(char**) + strlen(*p) + 1);
-	if ((x = (signed_size_t)astconf_long(CONF_ARG_MAX)) <= 0)
+		n += (ssize_t)(sizeof(char**) + strlen(*p) + 1);
+	if ((x = (ssize_t)astconf_long(CONF_ARG_MAX)) <= 0)
 		x = ARG_MAX;
 	if (size <= 0 || size > x)
 		size = x;
 	sh = astconf("SH", NULL, NULL);
-	m = n + (argc + 4) * (signed_size_t)sizeof(char**) + (signed_size_t)strlen(sh) + 1;
-	m = (signed_size_t)roundof((size_t)m, sizeof(char**));
+	m = n + (argc + 4) * (ssize_t)sizeof(char**) + (ssize_t)strlen(sh) + 1;
+	m = (ssize_t)roundof((size_t)m, sizeof(char**));
 	if (size < m)
 	{
 		if (disc->errorf)
@@ -132,7 +132,7 @@ cmdopen_20120411(char** argv, int argmax, signed_size_t size, const char* argpat
 	if (size > (x - m))
 		size = x - m;
 	n = size - n;
-	m = ((disc->flags & CMD_INSERT) && argpat) ? ((signed_size_t)strlen(argpat) + 1) : 0;
+	m = ((disc->flags & CMD_INSERT) && argpat) ? ((ssize_t)strlen(argpat) + 1) : 0;
 	if (!(cmd = newof(0, Cmdarg_t, 1, (size_t)(n + m))))
 	{
 		if (disc->errorf)
@@ -144,7 +144,7 @@ cmdopen_20120411(char** argv, int argmax, signed_size_t size, const char* argpat
 	cmd->errorf = disc->errorf;
 	if (!(cmd->runf = disc->runf))
 		cmd->runf = cmdrun;
-	c = n / (signed_size_t)sizeof(char**);
+	c = n / (ssize_t)sizeof(char**);
 	if (argmax <= 0 || argmax > c)
 		argmax = (int)c;
 	s = cmd->buf;

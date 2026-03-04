@@ -68,58 +68,58 @@ SFIO_IOINTR
 .Ss "OPENING/CLOSING STREAMS"
 .nf
 .ft 5
-Sfio_t*        sfnew(Sfio_t* f, void* buf, size_t size, int fd, int flags);
-Sfio_t*        sfopen(Sfio_t* f, const char* string, const char* mode);
-Sfio_t*        sfpopen(Sfio_t* f, const char* cmd, const char* mode);
-Sfio_t*        sfstropen(void);
-Sfio_t*        sftmp(size_t size);
-int            sfclose(Sfio_t* f);
-int            sfstrclose(Sfio_t* f);
+Sfio_t*    sfnew(Sfio_t* f, void* buf, size_t size, int fd, int flags);
+Sfio_t*    sfopen(Sfio_t* f, const char* string, const char* mode);
+Sfio_t*    sfpopen(Sfio_t* f, const char* cmd, const char* mode);
+Sfio_t*    sfstropen(void);
+Sfio_t*    sftmp(size_t size);
+int        sfclose(Sfio_t* f);
+int        sfstrclose(Sfio_t* f);
 .ft 1
 .fi
 .Ss "INPUT/OUTPUT OPERATIONS"
 .nf
 .ft 5
-int            sfgetc(Sfio_t* f);
-signed_size_t  sfputc(Sfio_t* f, int c);
-signed_size_t  sfnputc(Sfio_t* f, int c, size_t n);
-int            sfungetc(Sfio_t* f, int c);
+int        sfgetc(Sfio_t* f);
+ssize_t    sfputc(Sfio_t* f, int c);
+ssize_t    sfnputc(Sfio_t* f, int c, size_t n);
+int        sfungetc(Sfio_t* f, int c);
 
-Sfulong_t      sfgetm(Sfio_t* f, Sfulong_t max);
-signed_size_t  sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max);
-Sfulong_t      sfgetu(Sfio_t* f);
-signed_size_t  sfputu(Sfio_t* f, Sfulong_t v);
-Sflong_t       sfgetl(Sfio_t* f);
-signed_size_t  sfputl(Sfio_t* f, Sflong_t v);
-Sfdouble_t     sfgetd(Sfio_t* f);
-signed_size_t  sfputd(Sfio_t* f, Sfdouble_t v);
+Sfulong_t  sfgetm(Sfio_t* f, Sfulong_t max);
+ssize_t    sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max);
+Sfulong_t  sfgetu(Sfio_t* f);
+ssize_t    sfputu(Sfio_t* f, Sfulong_t v);
+Sflong_t   sfgetl(Sfio_t* f);
+ssize_t    sfputl(Sfio_t* f, Sflong_t v);
+Sfdouble_t sfgetd(Sfio_t* f);
+ssize_t    sfputd(Sfio_t* f, Sfdouble_t v);
 
-char*          sfgetr(Sfio_t* f, int rsc, int type);
-ptrdiff_t      sfputr(Sfio_t* f, const char* s, int rsc);
-Sfoff_t        sfmove(Sfio_t* fr, Sfio_t* fw, Sfoff_t n, int rsc);
+char*     sfgetr(Sfio_t* f, int rsc, int type);
+ptrdiff_t sfputr(Sfio_t* f, const char* s, int rsc);
+Sfoff_t   sfmove(Sfio_t* fr, Sfio_t* fw, Sfoff_t n, int rsc);
 
-ssize_t        sfread(Sfio_t* f, void* buf, size_t n);
-ssize_t        sfwrite(Sfio_t* f, const void* buf, size_t n);
-Sfoff_t        sfseek(Sfio_t* f, Sfoff_t offset, int type);
-void*          sfreserve(Sfio_t* f, ssize_t n, int type);
+ssize_t   sfread(Sfio_t* f, void* buf, size_t n);
+ssize_t   sfwrite(Sfio_t* f, const void* buf, size_t n);
+Sfoff_t   sfseek(Sfio_t* f, Sfoff_t offset, int type);
+void*     sfreserve(Sfio_t* f, ssize_t n, int type);
 .ft 1
 .fi
 .Ss "DATA FORMATTING"
 .nf
 .ft 5
-int            sfscanf(Sfio_t* f, const char* format, ...);
-int            sfsscanf(const char* s, const char* format, ...);
-int            sfvsscanf(const char* s, const char* format, va_list args);
-int            sfvscanf(Sfio_t* f, const char* format, va_list args);
+int       sfscanf(Sfio_t* f, const char* format, ...);
+int       sfsscanf(const char* s, const char* format, ...);
+int       sfvsscanf(const char* s, const char* format, va_list args);
+int       sfvscanf(Sfio_t* f, const char* format, va_list args);
 
-signed_size_t  sfprintf(Sfio_t* f, const char* format, ...);
-char*          sfprints(const char* format, ...);
-char*          sfvprints(const char* format, va_list args);
-signed_size_t  sfaprints(char** sp, const char* format, ...);
-signed_size_t  sfvaprints(char** sp, const char* format, va_list args);
-signed_size_t  sfsprintf(char* s, size_t n, const char* format, ...);
-signed_size_t  sfvsprintf(char* s, size_t n, const char* format, va_list args);
-signed_size_t  sfvprintf(Sfio_t* f, const char* format, va_list args);
+ssize_t   sfprintf(Sfio_t* f, const char* format, ...);
+char*     sfprints(const char* format, ...);
+char*     sfvprints(const char* format, va_list args);
+ssize_t   sfaprints(char** sp, const char* format, ...);
+ssize_t   sfvaprints(char** sp, const char* format, va_list args);
+ssize_t   sfsprintf(char* s, size_t n, const char* format, ...);
+ssize_t   sfvsprintf(char* s, size_t n, const char* format, va_list args);
+ssize_t   sfvprintf(Sfio_t* f, const char* format, va_list args);
 
 Sffmt_t;
 
@@ -590,11 +590,11 @@ but intended for string buffers opened with
 .BR sfstropen() .
 .Ss "INPUT/OUTPUT OPERATIONS"
 .Ss "  int sfgetc(Sfio_t* f)"
-.Ss "  signed_size_t sfputc(Sfio_t* f, int c)"
+.Ss "  ssize_t sfputc(Sfio_t* f, int c)"
 These functions read/write a byte from/to stream \f3f\fP.
 \f3sfgetc()\fP returns the byte read or \f3-1\fP on error.
 \f3sfputc()\fP returns \f3c\fP on success and \f3-1\fP on error.
-.Ss "  signed_size_t sfnputc(Sfio_t* f, int c, size_t n)"
+.Ss "  ssize_t sfnputc(Sfio_t* f, int c, size_t n)"
 This function attempts to write the byte \f3c\fP to \f3f\fP \f3n\fP times.
 It returns the number of bytes actually written or \f3-1\fP on failure.
 .Ss "  int sfungetc(Sfio_t* f, int c)"
@@ -608,7 +608,7 @@ buffered data will be discarded on any operation that implies
 buffer synchronization.
 \f3sfungetc()\fP returns \f3c\fP on success and \f3-1\fP on failure.
 .Ss "  Sfulong_t sfgetm(Sfio_t* f, Sfulong_t max)"
-.Ss "  signed_size_t sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max)"
+.Ss "  ssize_t sfputm(Sfio_t* f, Sfulong_t v, Sfulong_t max)"
 These functions read and write \f3Sfulong_t\fP values
 encoded in a portable format given that the values are at most \f3max\fP.
 Portability across a write architecture and a read architecture
@@ -617,7 +617,7 @@ the written value is storable in an \f3Sfulong_t\fP on the read architecture.
 \f3sfgetm()\fP returns the value read or \f3-1\fP on error.
 \f3sfputm()\fP returns the number of bytes written or \f3-1\fP on error.
 .Ss "  Sfulong_t sfgetu(Sfio_t* f)"
-.Ss "  signed_size_t sfputu(Sfio_t* f, Sfulong_t v)"
+.Ss "  ssize_t sfputu(Sfio_t* f, Sfulong_t v)"
 These functions read and write \f3Sfulong_t\fP values
 in a compact variable-length portable format.
 Portability across a write architecture and a read architecture
@@ -627,12 +627,12 @@ the written value is storable in an \f3Sfulong_t\fP on the read architecture.
 \f3sfputu()\fP returns the number of bytes written or \f3-1\fP on error.
 See also \f3sfulen()\fP.
 .Ss "  Sflong_t sfgetl(Sfio_t* f)"
-.Ss "  signed_size_t sfputl(Sfio_t* f, Sflong_t v)"
+.Ss "  ssize_t sfputl(Sfio_t* f, Sflong_t v)"
 These functions are similar to \f3sfgetu()\fP and \f3sfputu()\fP
 but for reading and writing (signed) \f3Sflong_t\fP values.
 See also \f3sfllen()\fP.
 .Ss "  Sfdouble_t sfgetd(Sfio_t* f)"
-.Ss "  signed_size_t sfputd(Sfio_t* f, Sfdouble_t v)"
+.Ss "  ssize_t sfputd(Sfio_t* f, Sfdouble_t v)"
 These functions read and write \f3Sfdouble_t\fP values.
 In this case, portability depends on the input and output architectures
 having the same floating point value representation.
@@ -1086,14 +1086,14 @@ This is useful for applications to find out
 when the format of the structure \f3Sffmt_t\fP changes.
 Note that the version number corresponds to the Sfio version number
 which is defined in the macro value \f3SFIO_VERSION\fP.
-.Ss "  signed_size_t sfprintf(Sfio_t* f, const char* format, ...);"
-.Ss "  char*         sfprints(const char* format, ...);"
-.Ss "  char*         sfvprints(const char* format, va_list args);"
-.Ss "  signed_size_t sfaprints(char** sp, const char* format, ...);"
-.Ss "  signed_size_t sfvaprints(char** sp, const char* format, va_list args);"
-.Ss "  signed_size_t sfsprintf(char* s, size_t n, const char* format, ...)"
-.Ss "  signed_size_t sfvsprintf(char* s, size_t n, const char* format, va_list args);"
-.Ss "  signed_size_t sfvprintf(Sfio_t* f, const char* format, va_list args);"
+.Ss "  ssize_t sfprintf(Sfio_t* f, const char* format, ...);"
+.Ss "  char*   sfprints(const char* format, ...);"
+.Ss "  char*   sfvprints(const char* format, va_list args);"
+.Ss "  ssize_t sfaprints(char** sp, const char* format, ...);"
+.Ss "  ssize_t sfvaprints(char** sp, const char* format, va_list args);"
+.Ss "  ssize_t sfsprintf(char* s, size_t n, const char* format, ...)"
+.Ss "  ssize_t sfvsprintf(char* s, size_t n, const char* format, va_list args);"
+.Ss "  ssize_t sfvprintf(Sfio_t* f, const char* format, va_list args);"
 These functions format output data.
 \f3sfprintf()\fP and \f3sfvprintf()\fP write to output stream \f3f\fP.
 \f3sfsprintf()\fP and \f3sfvsprintf()\fP write to buffer \f3s\fP
@@ -1203,7 +1203,7 @@ Flag \f3hh\fP addresses the byte value types, i.e.,
 \f3char\fP and \f3unsigned char\fP.
 
 Flags \f3z\fP, \f3t\fP and \f3j\fP address respectively
-the types \f3size_t\fP, \f3signed_size_t\fP and \f3Sflong_t\fP.
+the types \f3size_t\fP, \f3ptrdiff_t\fP and \f3Sflong_t\fP.
 
 Flags \f3ll\fP and \f3L\fP address respectively
 the largest integer and floating value types, i.e.,
