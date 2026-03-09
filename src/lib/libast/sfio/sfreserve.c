@@ -52,8 +52,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 		}
 		else if((rsrv = f->rsrv) && (n = -rsrv->slen) > 0)
 		{	rsrv->slen = 0;
-			f->val = n;
-			_Sfi = (ptrdiff_t)f->val;
+			_Sfi = f->val = n;
 			data = rsrv->data;
 		}
 		else
@@ -198,8 +197,7 @@ done:	/* compute the buffer to be returned */
 		}
 	}
 
-	/* return true buffer size */
-	f->val = n;
-	_Sfi = (ptrdiff_t)f->val;
+	_Sfi = f->val = n; /* return true buffer size */
+
 	return data;
 }

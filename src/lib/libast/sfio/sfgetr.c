@@ -128,8 +128,7 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 	}
 
 done:
-	f->val = un;
-	_Sfi = (ptrdiff_t)f->val;
+	_Sfi = f->val = un;
 	f->getr = 0;
 	if(found && rc != 0 && (type&SFIO_STRING) )
 	{	us[un-1] = '\0';

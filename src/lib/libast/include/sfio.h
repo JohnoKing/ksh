@@ -168,7 +168,7 @@ struct _sffmt_s
 #define SFIO_BUFSIZE	8192	/* default buffer size			*/
 #define SFIO_UNBOUND	(-1)	/* unbounded buffer size		*/
 
-extern ptrdiff_t	_Sfi;
+extern ssize_t		_Sfi;
 extern ssize_t		_Sfmaxr;
 
 /* standard in/out/err streams */

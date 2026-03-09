@@ -53,7 +53,7 @@ vswprintf(wchar_t* s, size_t n, const wchar_t* fmt, va_list args)
 
 	v = vfwprintf(&f, fmt, args);
 	*f.next = 0;
-	_Sfi = f.next - f.data;
+	_Sfi = (ssize_t)(f.next - f.data);
 	return v;
 }
 

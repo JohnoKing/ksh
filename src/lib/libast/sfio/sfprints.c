@@ -46,7 +46,7 @@ char* sfvprints(const char* form, va_list args)
 	if(rv < 0 || sfputc(f,'\0') < 0)
 		return NULL;
 
-	_Sfi = (f->next - f->data) - 1;
+	_Sfi = (ssize_t)(f->next - f->data) - 1;
 	return (char*)f->data;
 }
 

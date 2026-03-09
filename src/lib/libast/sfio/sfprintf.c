@@ -60,7 +60,7 @@ ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 
 	sfclose(f);
 
-	_Sfi = (ptrdiff_t)rv;
+	_Sfi = rv;
 
 	return rv;
 }

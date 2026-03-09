@@ -60,7 +60,7 @@ _stdgets(Sfio_t* f, char* us, ptrdiff_t n, int isgets)
 			n -= p;
 	}
 
-	if((_Sfi = is - ((uchar*)us)) <= 0)
+	if((_Sfi = (ssize_t)(is - ((uchar*)us))) <= 0)
 		us = NULL;
 	else if(isgets && is[-1] == '\n')
 	{	is[-1] = '\0';

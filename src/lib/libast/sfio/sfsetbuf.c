@@ -107,8 +107,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 
 	if(size == 0 && buf)
 	{	/* special case to get buffer info */
-		f->val = (f->bits&SFIO_MMAP) ? (f->endb-f->data) : f->size;
-		_Sfi = (ptrdiff_t)f->val;
+		_Sfi = f->val = (f->bits&SFIO_MMAP) ? (f->endb-f->data) : f->size;
 		return f->data;
 	}
 
@@ -396,8 +395,7 @@ setbuf:
 	}
 
 done:
-	f->val = obuf ? osize : 0;
-	_Sfi = (ptrdiff_t)f->val;
+	_Sfi = f->val = obuf ? osize : 0;
 
 	/* blksz is used for aligning disk block boundary while reading data to
 	** optimize data transfer from disk (e.g., via direct I/O). blksz can be
