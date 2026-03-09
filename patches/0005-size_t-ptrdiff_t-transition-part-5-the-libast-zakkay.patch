@@ -1,6 +1,6 @@
-From d4971f1021e7b6488c2cd6d5b38360b1813abc59 Mon Sep 17 00:00:00 2001
+From 068d559ce07be13d3b541df7901b9987e9997301 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 3 Mar 2026 22:57:35 -0800
+Date: Sun, 8 Mar 2026 18:08:18 -0700
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -70,14 +70,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/misc/sigcrit.c     |   2 +-
  src/lib/libast/misc/systrace.c    |   7 +-
  src/lib/libast/misc/translate.c   |  10 +-
- src/lib/libast/port/astconf.c     |  86 ++++++-------
+ src/lib/libast/port/astconf.c     | 140 ++++++++++++---------
  src/lib/libast/port/astwinsize.c  |   8 +-
  src/lib/libast/port/lc.c          |  84 ++++++-------
  src/lib/libast/port/lcgen.c       |  45 +++----
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 46 files changed, 671 insertions(+), 653 deletions(-)
+ 46 files changed, 710 insertions(+), 668 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -3751,7 +3751,7 @@ index 04540f5af..4d1bc18f2 100644
  
  	/*
 diff --git a/src/lib/libast/port/astconf.c b/src/lib/libast/port/astconf.c
-index f42ed0a23..7f1e322e6 100644
+index f42ed0a23..2a61837cb 100644
 --- a/src/lib/libast/port/astconf.c
 +++ b/src/lib/libast/port/astconf.c
 @@ -94,7 +94,7 @@ typedef struct Feature_s
@@ -3763,7 +3763,31 @@ index f42ed0a23..7f1e322e6 100644
  	short		standard;
  	unsigned int	flags;
  	short		op;
-@@ -307,7 +307,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -282,6 +282,23 @@ static State_t	state = { "getconf", "_AST_FEATURES", "CONFORMANCE = standard", "
+ 
+ static char*	feature(Feature_t*, const char*, const char*, const char*, unsigned int, Error_f);
+ 
++static char *set_fp_value(Feature_t *fp, const char *str, Error_f conferror)
++{
++	if ((fp->flags & CONF_ALLOC) && fp->value != null)
++		free(fp->value);
++	if(str == null)
++		return fp->value = null;
++	fp->value = strdup(str);
++	if (!fp->value)
++	{
++		if (conferror)
++			(*conferror)(&state, &state, 2, "set_fp_value(): out of memory");
++		fp->value = null;
++	}
++	fp->flags |= CONF_ALLOC;
++	return fp->value;
++}
++
+ /*
+  * return fmtbuf() copy of s
+  */
+@@ -307,7 +324,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  	char*		v;
  	char*		p;
  	char*		newvalue;
@@ -3772,7 +3796,7 @@ index f42ed0a23..7f1e322e6 100644
  
  #if DEBUG_astconf
  	if (fp)
-@@ -321,12 +321,12 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -321,12 +338,12 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  		char*		de;
  		char*		ve;
  
@@ -3787,7 +3811,7 @@ index f42ed0a23..7f1e322e6 100644
  		{
  			if (conferror)
  				(*conferror)(&state, &state, 2, "synthesize(): out of memory");
-@@ -371,11 +371,11 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -371,11 +388,11 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  	{
  		if (!value)
  			return NULL;
@@ -3801,7 +3825,7 @@ index f42ed0a23..7f1e322e6 100644
  	d = state.data;
  	for (;;)
  	{
-@@ -383,7 +383,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -383,7 +400,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  			d++;
  		if (!*d)
  			break;
@@ -3810,7 +3834,7 @@ index f42ed0a23..7f1e322e6 100644
  		{
  			if (!value)
  			{
-@@ -398,7 +398,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -398,7 +415,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  			for (; isspace(*s); s++);
  			for (v = s; *s && !isspace(*s); s++);
  			n = s - v;
@@ -3819,7 +3843,7 @@ index f42ed0a23..7f1e322e6 100644
  				goto ok;
  			for (; isspace(*s); s++);
  			if (*s)
-@@ -428,17 +428,17 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -428,17 +445,17 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  		value = "0";
  	if (!path || !path[0] || path[0] == '/' && !path[1])
  		path = "-";
@@ -3841,25 +3865,31 @@ index f42ed0a23..7f1e322e6 100644
  		{
  			if (conferror)
  				(*conferror)(&state, &state, 2, "synthesize(): out of memory");
-@@ -467,7 +467,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+@@ -467,19 +484,17 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
  		fp->value = 0;
  	if (n == 1 && (*value == '0' || *value == '-'))
  		n = 0;
 -	if(!(newvalue = malloc(n + 1)))
 +	if(!(newvalue = malloc((size_t)(n + 1))))
  	{
- 		if(fp->value && fp->value != null)
- 			free(fp->value);
-@@ -477,7 +477,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+-		if(fp->value && fp->value != null)
+-			free(fp->value);
+-		fp->value = null;
++		set_fp_value(fp, null, conferror);
+ 		if (conferror)
+ 			(*conferror)(&state, &state, 2, "synthesize(): out of memory");
  		return NULL;
  	}
  	/* memcpy comes before free because fp->value and value might share memory */
 -	memcpy(newvalue, value, n);
 +	memcpy(newvalue, value, (size_t)n);
  	newvalue[n] = 0;
- 	if(fp->value && fp->value != null)
+-	if(fp->value && fp->value != null)
++	if(fp->value != null)
  		free(fp->value);
-@@ -524,7 +524,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
+ 	fp->flags |= CONF_ALLOC;
+ 	return fp->value = newvalue;
+@@ -524,7 +539,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
  	default:
  		if (p = getenv("PATH"))
  		{
@@ -3868,7 +3898,7 @@ index f42ed0a23..7f1e322e6 100644
  			char*		d = p;
  			Sfio_t*		tmp;
  
-@@ -544,7 +544,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
+@@ -544,7 +559,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
  						{
  							if (r = p - d - 1)
  							{
@@ -3877,7 +3907,7 @@ index f42ed0a23..7f1e322e6 100644
  								sfputc(tmp, '/');
  								sfputr(tmp, command, 0);
  								if ((d = sfstruse(tmp)) && !eaccess(d, X_OK))
-@@ -615,8 +615,10 @@ static char*
+@@ -615,8 +630,10 @@ static char*
  format(Feature_t* fp, const char* path, const char* value, unsigned int flags, Error_f conferror)
  {
  	Feature_t*		sp;
@@ -3889,7 +3919,7 @@ index f42ed0a23..7f1e322e6 100644
  
  #if DEBUG_astconf
  	error(-6, "astconf format name=%s path=%s value=%s flags=%04x fp=%p%s", fp->name, path, value, flags, fp, state.synthesizing ? " SYNTHESIZING" : "");
-@@ -624,7 +626,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+@@ -624,18 +641,26 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  	NOT_USED(flags);
  #endif
  	if (value)
@@ -3898,21 +3928,73 @@ index f42ed0a23..7f1e322e6 100644
  	else if (fp->flags & CONF_GLOBAL)
  		return fp->value;
  	switch (fp->op)
-@@ -712,10 +714,11 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 	{
+ 
+ 	case OP_architecture:
++	   {
++		char *hostname = getenv("HOSTNAME");
+ 		if (!uname(&uts))
+-			return fp->value = uts.machine;
+-		if (!(fp->value = getenv("HOSTNAME")))
+-			fp->value = "unknown";
++		{
++			set_fp_value(fp, uts.machine, conferror);
++			return fp->value;
++		}
++		if (!hostname)
++			set_fp_value(fp, "unknown", conferror);
++		else
++			set_fp_value(fp, hostname, conferror);
+ 		break;
++	   }
+ 
+ 	case OP_conformance:
+ 		if (value && STANDARD(value))
+@@ -645,7 +670,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 		error(-6, "state.std=%d %s [%s] std=%s ast=%s value=%s", state.std, fp->name, value, fp->std, fp->ast, fp->value);
+ #endif
+ 		if (state.synthesizing && value == (char*)fp->std)
+-			fp->value = (char*)value;
++			set_fp_value(fp, value, conferror);
+ 		else if (!synthesize(fp, path, value, conferror))
+ 			initialize(fp, path, NULL, fp->std, fp->value, conferror);
+ #if DEBUG_astconf
+@@ -667,12 +692,12 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 		break;
+ 
+ 	case OP_path_attributes:
+-		fp->value = pathicase(path) > 0 ? "c" : null;
++		set_fp_value(fp, pathicase(path) > 0 ? "c" : null, conferror);
+ 		break;
+ 
+ 	case OP_path_resolve:
+ 		if (state.synthesizing && value == (char*)fp->std)
+-			fp->value = (char*)value;
++			set_fp_value(fp, value, conferror);
+ 		else if (!synthesize(fp, path, value, conferror))
+ 			initialize(fp, path, NULL, "logical", DEFAULT(OP_path_resolve), conferror);
+ 		break;
+@@ -712,11 +737,15 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  		{
  			if (state.synthesizing)
  			{
-+				size_t len;
- 				if (!(fp->flags & CONF_ALLOC))
- 					fp->value = 0;
+-				if (!(fp->flags & CONF_ALLOC))
+-					fp->value = 0;
 -				n = strlen(value);
 -				if (!(fp->value = newof(fp->value, char, n, 1)))
++				char *mayfree;
++				size_t len;
++				if (!(fp->flags & CONF_ALLOC) || fp->value == null)
++					fp->value = NULL;
++				mayfree = fp->value;
 +				len = strlen(value);
 +				if (!(fp->value = newof(fp->value, char, len, 1)))
  				{
++					free(mayfree);
  					if (conferror)
  						(*conferror)(&state, &state, 2, "%s: out of memory", value);
-@@ -724,8 +727,8 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 					fp->value = null;
+@@ -724,8 +753,8 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  				else
  				{
  					fp->flags |= CONF_ALLOC;
@@ -3923,7 +4005,16 @@ index f42ed0a23..7f1e322e6 100644
  				}
  			}
  			else
-@@ -759,7 +762,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+@@ -739,7 +768,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
+ 
+ 	default:
+ 		if (state.synthesizing && value == (char*)fp->std)
+-			fp->value = (char*)value;
++			set_fp_value(fp, value, conferror);
+ 		else
+ 			synthesize(fp, path, value, conferror);
+ 		break;
+@@ -759,7 +788,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
  static char*
  feature(Feature_t* fp, const char* name, const char* path, const char* value, unsigned int flags, Error_f conferror)
  {
@@ -3932,7 +4023,7 @@ index f42ed0a23..7f1e322e6 100644
  
  	if (value && (streq(value, "-") || streq(value, "0")))
  		value = null;
-@@ -784,7 +787,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
+@@ -784,7 +813,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
  		fp->op = -1;
  		fp->name = (const char*)fp + sizeof(Feature_t);
  		strcpy((char*)fp->name, name);
@@ -3941,7 +4032,7 @@ index f42ed0a23..7f1e322e6 100644
  		fp->std = &null[0];
  		fp->next = state.features;
  		state.features = fp;
-@@ -830,7 +833,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
+@@ -830,7 +859,7 @@ lookup(Lookup_t* look, const char* name, unsigned int flags)
  		name++;
   again:
  	for (p = prefix; p < &prefix[prefix_elements]; p++)
@@ -3950,7 +4041,7 @@ index f42ed0a23..7f1e322e6 100644
  		{
  			if (p->call < 0)
  			{
-@@ -934,7 +937,7 @@ fmtlower(const char* s)
+@@ -934,7 +963,7 @@ fmtlower(const char* s)
  	{
  		if (isupper(c))
  			c = tolower(c);
@@ -3959,7 +4050,7 @@ index f42ed0a23..7f1e322e6 100644
  	}
  	*t = 0;
  	return b;
-@@ -956,7 +959,6 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -956,7 +985,6 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  	char*		f;
  	const char*	s;
  	int		i;
@@ -3967,7 +4058,7 @@ index f42ed0a23..7f1e322e6 100644
  	int		olderrno;
  	int		drop;
  	int		defined;
-@@ -1040,7 +1042,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1040,7 +1068,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  	case CONF_confstr:
  		call = "confstr";
  #if _lib_confstr
@@ -3976,7 +4067,7 @@ index f42ed0a23..7f1e322e6 100644
  		{
  			defined = 0;
  			v = -1;
-@@ -1101,7 +1103,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1101,7 +1129,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  		{
  			if (streq(p->name, "RELEASE") && (i = open("/proc/version", O_RDONLY|O_cloexec)) >= 0)
  			{
@@ -3985,7 +4076,7 @@ index f42ed0a23..7f1e322e6 100644
  				ast_close(i);
  				if (n > 0 && buf[n - 1] == '\n')
  					n--;
-@@ -1146,7 +1148,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1146,7 +1174,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  			s = p->limit.string;
  			break;
  		}
@@ -3994,7 +4085,7 @@ index f42ed0a23..7f1e322e6 100644
  		v = -1;
  		errno = EINVAL;
  		defined = 0;
-@@ -1157,10 +1159,10 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1157,10 +1185,10 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  		if (!errno)
  		{
  			if ((p->flags & CONF_FEATURE) || !(p->flags & (CONF_LIMIT|CONF_MINMAX)))
@@ -4007,7 +4098,7 @@ index f42ed0a23..7f1e322e6 100644
  		else if (errno != EINVAL || !i)
  		{
  			if (!sp)
-@@ -1176,7 +1178,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1176,7 +1204,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  			}
  			else
  			{
@@ -4016,7 +4107,7 @@ index f42ed0a23..7f1e322e6 100644
  				flags |= CONF_ERROR;
  			}
  		}
-@@ -1310,7 +1312,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
+@@ -1310,7 +1338,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
  	if (!(listflags & ~(ASTCONF_error|ASTCONF_system)))
  		for (fp = state.features; fp; fp = fp->next)
  			if (streq(name, fp->name))
@@ -4025,7 +4116,7 @@ index f42ed0a23..7f1e322e6 100644
  	return (listflags & ASTCONF_error) ? NULL : null;
  }
  
-@@ -1336,7 +1338,7 @@ nativeconf(Proc_t** pp, const char* operand)
+@@ -1336,7 +1364,7 @@ nativeconf(Proc_t** pp, const char* operand)
  	ops[1] = 0;
  	if (*pp = procopen(_pth_getconf, cmd, environ, ops, PROC_READ))
  	{
@@ -4034,7 +4125,7 @@ index f42ed0a23..7f1e322e6 100644
  		{
  			sfdisc(sp, SFIO_POPDISC);
  			return sp;
-@@ -1371,7 +1373,7 @@ char*
+@@ -1371,7 +1399,7 @@ char*
  astgetconf(const char* name, const char* path, const char* value, int flags, Error_f conferror)
  {
  	char*		s;
@@ -4043,7 +4134,17 @@ index f42ed0a23..7f1e322e6 100644
  	Lookup_t	look;
  	Sfio_t*		tmp;
  
-@@ -1401,9 +1403,9 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1385,9 +1413,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+ 			{
+ 				Ast_confdisc_f	notify;
+ 
+-#if _HUH20000515 /* doesn't work for shell builtins */
+ 				free(state.data - state.prefix);
+-#endif
+ 				state.data = 0;
+ 				notify = state.notify;
+ 				state.notify = 0;
+@@ -1401,9 +1427,9 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  	INITIALIZE();
  	if (!path)
  		path = root;
@@ -4055,7 +4156,7 @@ index f42ed0a23..7f1e322e6 100644
  	{
  		if (value)
  		{
-@@ -1444,7 +1446,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1444,7 +1470,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  
  			strcpy(altname, name);
  			altname[n - 3] = 0;
@@ -4064,7 +4165,7 @@ index f42ed0a23..7f1e322e6 100644
  			{
  				if (value)
  				{
-@@ -1457,7 +1459,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1457,7 +1483,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  			}
  			for (s = altname; *s; s++)
  				if (isupper(*s))
@@ -4073,7 +4174,7 @@ index f42ed0a23..7f1e322e6 100644
  			if (tmp = sfstropen())
  			{
  				for (n = 0; n < elementsof(dirs); n++)
-@@ -1476,7 +1478,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
+@@ -1476,7 +1502,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
  			}
  		}
  	}
@@ -4082,7 +4183,7 @@ index f42ed0a23..7f1e322e6 100644
  		return s;
  	errno = EINVAL;
  	if (conferror && !(flags & ASTCONF_system))
-@@ -1592,7 +1594,7 @@ astconflist(Sfio_t* sp, const char* path, int flags, const char* pattern)
+@@ -1592,7 +1618,7 @@ astconflist(Sfio_t* sp, const char* path, int flags, const char* pattern)
  				for (s = f; *s && *s != '=' && *s != ':' && !isspace(*s); s++);
  				if (*s)
  					for (*s++ = 0; isspace(*s); s++);

@@ -1,6 +1,6 @@
-From cdfe327b8082cc4c8d27f236d197109b8a1ef0c0 Mon Sep 17 00:00:00 2001
+From 7584d734db006169b9577247af7eb330176b8ce6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 3 Mar 2026 23:04:29 -0800
+Date: Sun, 8 Mar 2026 18:15:15 -0700
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -51,10 +51,12 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/features/poll     |   2 +-
  src/cmd/ksh93/features/rlimits  |   1 +
  src/cmd/ksh93/include/argnod.h  |   4 +-
+ src/cmd/ksh93/include/defs.h    |   2 +-
  src/cmd/ksh93/include/jobs.h    |   8 +-
  src/cmd/ksh93/include/path.h    |  26 +++----
  src/cmd/ksh93/include/streval.h |  16 ++--
  src/cmd/ksh93/include/ulimit.h  |   6 +-
+ src/cmd/ksh93/include/version.h |   2 +-
  src/cmd/ksh93/sh/args.c         |  44 ++++++-----
  src/cmd/ksh93/sh/arith.c        |  28 +++----
  src/cmd/ksh93/sh/deparse.c      |  25 ++++---
@@ -62,22 +64,23 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/fault.c        |  42 +++++------
  src/cmd/ksh93/sh/io.c           | 126 ++++++++++++++++----------------
  src/cmd/ksh93/sh/jobs.c         |  43 ++++++-----
+ src/cmd/ksh93/sh/macro.c        |   4 +-
  src/cmd/ksh93/sh/main.c         |  21 +++---
  src/cmd/ksh93/sh/path.c         | 104 ++++++++++++++------------
  src/cmd/ksh93/sh/streval.c      |  51 ++++++-------
  src/cmd/ksh93/sh/xec.c          | 113 +++++++++++++++-------------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++++
- 23 files changed, 403 insertions(+), 338 deletions(-)
+ 26 files changed, 407 insertions(+), 342 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 09875bf71..424e51393 100644
+index 09875bf71..77e8c6ced 100644
 --- a/NEWS
 +++ b/NEWS
 @@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
  For full details, see the git log at: https://github.com/ksh93/ksh
  Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2026-03-03:
++2026-03-08:
 +
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
@@ -217,6 +220,19 @@ index 400fc91d9..16edd1a2a 100644
  	char		*iovname;
  };
  
+diff --git a/src/cmd/ksh93/include/defs.h b/src/cmd/ksh93/include/defs.h
+index 24fd89a18..a5554edff 100644
+--- a/src/cmd/ksh93/include/defs.h
++++ b/src/cmd/ksh93/include/defs.h
+@@ -113,7 +113,7 @@ extern void		*sh_arithcomp(char*);
+ extern pid_t 		sh_fork(int,int*);
+ extern pid_t		_sh_fork(pid_t, int ,int*);
+ extern void		sh_invalidate_ifs(void);
+-extern char 		*sh_mactrim(char*,int);
++extern char 		*sh_mactrim(char*,char);
+ extern int 		sh_macexpand(struct argnod*,struct argnod**,int);
+ extern int		sh_macfun(const char*,ptrdiff_t);
+ extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
 diff --git a/src/cmd/ksh93/include/jobs.h b/src/cmd/ksh93/include/jobs.h
 index 6de9e2917..01d268e47 100644
 --- a/src/cmd/ksh93/include/jobs.h
@@ -396,6 +412,19 @@ index f525cc330..3c01fb2b5 100644
  typedef struct Limit_s
  {
  	const char*	name;
+diff --git a/src/cmd/ksh93/include/version.h b/src/cmd/ksh93/include/version.h
+index 715502c93..f0ef2bd10 100644
+--- a/src/cmd/ksh93/include/version.h
++++ b/src/cmd/ksh93/include/version.h
+@@ -18,7 +18,7 @@
+ #include <ast_release.h>
+ #include "git.h"
+ 
+-#define SH_RELEASE_DATE	"2026-03-01"	/* must be in this format for $((.sh.version)) */
++#define SH_RELEASE_DATE	"2026-03-07"	/* must be in this format for $((.sh.version)) */
+ /*
+  * This comment keeps SH_RELEASE_DATE a few lines away from SH_RELEASE_SVER to avoid
+  * merge conflicts when cherry-picking dev branch commits onto a release branch.
 diff --git a/src/cmd/ksh93/sh/args.c b/src/cmd/ksh93/sh/args.c
 index 017a4df87..2509cecd0 100644
 --- a/src/cmd/ksh93/sh/args.c
@@ -1589,6 +1618,28 @@ index 19e8a5e0d..5d5408c46 100644
  		if(pw->p_exit==SH_STOPSIG)
  		{
  			pw->p_flag |= (P_SIGNALLED|P_STOPPED);
+diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
+index 3f6660417..8baa01b69 100644
+--- a/src/cmd/ksh93/sh/macro.c
++++ b/src/cmd/ksh93/sh/macro.c
+@@ -164,7 +164,7 @@ static void setup_ifs(Mac_t *mp)
+  * yields a single pathname.
+  * If <mode> negative, then expansion rules for assignment are applied.
+  */
+-char *sh_mactrim(char *str, int mode)
++char *sh_mactrim(char *str, char mode)
+ {
+ 	Mac_t	*mp = (Mac_t*)sh.mac_context;
+ 	Stk_t	*stkp = sh.stk;
+@@ -176,7 +176,7 @@ char *sh_mactrim(char *str, int mode)
+ 	mp->patfound = 0;
+ 	mp->assign = 0;
+ 	if(mode<0)
+-		mp->assign = (char)(-mode);
++		mp->assign = mode * -1;
+ 	mp->quoted = mp->lit = mp->split = mp->quote = 0;
+ 	mp->sp = 0;
+ 	setup_ifs(mp);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
 index 0cd68887e..40ada665f 100644
 --- a/src/cmd/ksh93/sh/main.c

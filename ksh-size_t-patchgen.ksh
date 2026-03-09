@@ -96,7 +96,7 @@ fetch src/lib/libast/features/stdio
 fetch src/lib/libast/man/hash.3
 fetch src/lib/libast/man/path.3
 upc
-git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib, print(1), fmt*(), strmatch()
+git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib, fmt*(), strmatch()
 
 This is the second of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space. This part of the patch series

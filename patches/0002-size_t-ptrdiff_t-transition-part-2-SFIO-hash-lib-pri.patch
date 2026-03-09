@@ -1,10 +1,11 @@
-From 9ce29c08f98f16e4e35c4be6d6ecb26d05a8d983 Mon Sep 17 00:00:00 2001
+From ff75d86a86f2dcd69ccc945ea6440d4705d0c59c Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 3 Mar 2026 22:55:01 -0800
-Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
+Date: Sun, 8 Mar 2026 18:05:45 -0700
+Subject: size_t/ptrdiff_t transition part 2: SFIO, hash lib, fmt*(), strmatch()
 
 This is the second of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
+to operate within a 64-bit address space. This part of the patch series
+includes everything affected by changes to <ast.h>.
 
 The parts of ksh93 affected by this commit are:
 - SFIO and the associated stdio wrapper. The sfvprintf and sfvscanf
