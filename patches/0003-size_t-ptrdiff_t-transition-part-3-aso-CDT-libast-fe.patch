@@ -1,6 +1,6 @@
-From 280728fb569da76787d8d638c086ffd358604519 Mon Sep 17 00:00:00 2001
+From eaa3adadf1b11afab6800eba2677e7aab459756d Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:06:36 -0700
+Date: Sun, 8 Mar 2026 18:39:50 -0700
 Subject: size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
 
 This is the third of the thickfold patch series, which enables ksh93
@@ -42,12 +42,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/features/signal.c | 10 +++---
  src/lib/libast/features/sizeof   | 10 +++---
  src/lib/libast/features/tv       | 24 ++++++-------
- src/lib/libast/features/tvlib    |  4 +--
+ src/lib/libast/features/tvlib    |  9 +++--
  src/lib/libast/features/wchar    |  2 +-
  src/lib/libast/include/aso.h     |  6 ++--
  src/lib/libast/include/cdt.h     | 10 +++---
  src/lib/libast/man/aso.3         |  4 +--
- 30 files changed, 165 insertions(+), 160 deletions(-)
+ 30 files changed, 167 insertions(+), 163 deletions(-)
 
 diff --git a/src/lib/libast/aso/aso-fcntl.c b/src/lib/libast/aso/aso-fcntl.c
 index b4d34019e..2696fd798 100644
@@ -1167,10 +1167,22 @@ index 47dd64a67..157240356 100644
  else pass{ no_stat_nsec=1 }end {
  	#define ST_ATIME_NSEC_GET(st)	0
 diff --git a/src/lib/libast/features/tvlib b/src/lib/libast/features/tvlib
-index ad604c59e..8663dde17 100644
+index ad604c59e..40a24c647 100644
 --- a/src/lib/libast/features/tvlib
 +++ b/src/lib/libast/features/tvlib
-@@ -119,8 +119,8 @@ tst	lib_poll_notimer note{ poll with no fds ignores timeout }end execute{
+@@ -67,9 +67,8 @@ tst	prefer_poll note{ is select less precise than 1 ms }end execute{
+ 				--tvAfter.tv_sec;
+ 				tvAfter.tv_usec += 1000000;
+ 			}
+-			if ((tvAfter.tv_sec == tvBefore.tv_sec) &&
+-				tvAfter.tv_usec - tvBefore.tv_usec < 1000)
+-				return -1;
++			if ((tvAfter.tv_sec == tvBefore.tv_sec) && tvAfter.tv_usec - tvBefore.tv_usec < 1000)
++				return 1;
+ 		}
+ 		return 0;
+ 	}
+@@ -119,8 +118,8 @@ tst	lib_poll_notimer note{ poll with no fds ignores timeout }end execute{
  	int
  	main(void)
  	{

@@ -1,6 +1,6 @@
-From 24881691290eea69a9defd87329ba71a03917d46 Mon Sep 17 00:00:00 2001
+From 16f625eaae208a84a149f965d28d3d0f32582224 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:07:28 -0700
+Date: Sun, 8 Mar 2026 18:40:40 -0700
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
