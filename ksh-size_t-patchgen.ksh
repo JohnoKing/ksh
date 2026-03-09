@@ -24,10 +24,14 @@ git checkout thickfold-size_t
 integer iter=12
 bld
 iter=-1
-git checkout dev
-git pull upstream dev
+git checkout a215b8be7958974902299233231611165b132114
 typeset dev_commit=${ git log --pretty=format:'%h' -n 1 --abbrev-commit ;}
 bld
+
+# Get warnings for part one
+git checkout 33e66eac603f8203bc3239b251417a02a3762946
+bld
+
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
 rm -f ksh-size_t-patchgen.ksh
@@ -57,83 +61,6 @@ upc() {
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
-
-fetch src/lib/libast/features/common
-fetch src/cmd/ksh93/include/test.h
-fetch src/cmd/ksh93/include/defs.h
-fetch src/cmd/ksh93/include/shell.h
-fetch src/cmd/ksh93/sh/macro.c
-fetch src/cmd/ksh93/sh/init.c
-fetch src/cmd/ksh93/bltins/test.c
-fetch src/lib/libast/man/stk.3
-fetch src/lib/libast/include/stk.h
-fetch src/lib/libast/misc/stk.c
-fetch src/cmd/ksh93/shell.3
-upc
-git commit -m $'size_t/ptrdiff_t transition part 1: test(1), .sh.match, macro expansion, init and stk(3)
-
-This is the first of a thirteen(!!) part patch series that enables
-ksh93 to operate within a 64-bit address space (currently dubbed
-thickfold). These changes were accomplished by fixing most (but not
-all) of the warnings that materialize during compilation when the
-following clang compiler flags are passed:
-\'-Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion\'
-
-Originally, this patch was going to take the suggested approach of
-replacing int with ssize_t. While that does work in practice, it\'s
-a bad idea because POSIX does not guarantee ssize_t will accept
-any negative value besides -1, despite its signed nature[1]:
-    > The type ssize_t shall be capable of storing values at least
-    > in the range [-1, {SSIZE_MAX}].
-As such, for correctness and portability these patches will prefer
-usage of the C89 ptrdiff_t, which is practically guaranteed to
-accept the full range of negative numbers an int can accept. In
-practice, ptrdiff_t and size_t will be of the same size, being
-both 32-bit or both 64-bit. There are edge cases where this might
-not be so, but I\'ve chosen to use ptrdiff_t despite that since
-the caveats of such edge cases aren\'t nearly as bad as that of
-a platform\'s ssize_t rejecting values lower than -1.
-[1]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/sys_types.h.html#tag_14_70
-
-In some areas ssize_t results from e.g. sfvalue() may end up being
-used with ptrdiff_t variables. This is not pedantically correct,
-but it\'s certainly better than the prior int hell status quo,
-wherein ssize_t was usually shortened to int.
-
-Conspicuous changes with noteworthiness:
-- Fixed many, many compiler warnings by adding a considerable
-  number of casts and changing the types of more than quite
-  a few variables. This is a consequence of using compiler
-  warnings as an aid for implementing 64-bit memory allocation;
-  while the warnings were useful, there were so many warnings
-  fixed in the process that it increased the patch sizes greatly.
-- Transitioned the strgrpmatch() and strngrpmatch calls to use
-  a ssize_t* pointer rather than an int* pointer.
-- For the sh_options macros/function, enforce uint64_t as the main
-  argument type to fix compiler warnings.
-- The libast stk sublibrary already uses the ssize_t/size_t types,
-  which made it rather easy to integrate proper ptrdiff_t usage.
-  In fact, stktell() has *always* returned a \'ptrdiff_t\' result.
-  The documentation in stk(3) has been incorrectly claiming
-  since < 1995 it returns \'int\', which is wrong. That error
-  has been rectified alongside the other updates to stk.
-
-The thickfold patch series was accomplished by fixing compiler warnings,
-so I\'ve decided to provide metrics as to the change in the total number
-of warnings occurring during compilation.
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[0]} ${w[1]} ${w[13]} ;}"' (progression from '"${dev_commit}"' => part 1 => part 13)
-
-Side note: To re-emphasize, this patch is one part of a whole
-(although it can be used on its own). The full suite of
-changes can be found on the thickfold-size_t branch.
-This first part has been submitted severed from the other
-changes to make code review less laborious (I hope).
-
-
-Progresses https://github.com/ksh93/ksh/issues/592'
-
 
 fetch src/lib/libast/sfio
 fetch src/lib/libast/stdio
@@ -169,10 +96,11 @@ fetch src/lib/libast/features/stdio
 fetch src/lib/libast/man/hash.3
 fetch src/lib/libast/man/path.3
 upc
-git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib and print(1)
+git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib, print(1), fmt*(), strmatch()
 
 This is the second of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
+to operate within a 64-bit address space. This part of the patch series
+includes everything affected by changes to <ast.h>.
 
 The parts of ksh93 affected by this commit are:
 - SFIO and the associated stdio wrapper. The sfvprintf and sfvscanf
