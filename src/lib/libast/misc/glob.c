@@ -38,7 +38,7 @@
  * GLOB_MAGIC is used for sanity checking. Its significant bits must not overlap with those used
  * for flags. If a new GLOB_* flag bit is added to glob.h, these must be adapted accordingly.
  */
-#define GLOB_MAGIC	0xAAA80000	/* 10101010101010000000000000000000 */
+#define GLOB_MAGIC	0xAAA80000U	/* 10101010101010000000000000000000 */
 #define GLOB_FLAGMASK	0x0007FFFF	/* 00000000000001111111111111111111 */
 
 #define MATCH_RAW	1
