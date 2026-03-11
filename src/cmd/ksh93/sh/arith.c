@@ -354,7 +354,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			if((lvalue->emode&ARITH_COMP) && dot)
 			{
 				lvalue->value = (char*)*ptr;
-				lvalue->flag =  str-lvalue->value;
+				lvalue->flag =  (short)(str-lvalue->value);
 				break;
 			}
 			*str = 0;
@@ -412,7 +412,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				else if(!(np = nv_open(*ptr,root,NV_NOREF|NV_VARNAME|dot)))
 				{
 					lvalue->value = (char*)*ptr;
-					lvalue->flag =  str-lvalue->value;
+					lvalue->flag =  (short)(str-lvalue->value);
 				}
 				if(saveptr != stkptr(sh.stk,0))
 					stkset(sh.stk,saveptr,offset);
@@ -429,7 +429,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			lvalue->flag = 0;
 			if(c=='[')
 			{
-				lvalue->flag = (str-lvalue->expr);
+				lvalue->flag = (short)(str-lvalue->expr);
 				do
 				{
 					while(c=='.')
