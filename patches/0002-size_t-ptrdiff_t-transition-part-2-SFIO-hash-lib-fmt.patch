@@ -7463,7 +7463,7 @@ index a35bb5403..98af0bcfa 100644
  		perm = 0;
  		masked = 1;
 -		mask = ~0;
-+		mask = ~0U;
++		mask = (mode_t)~0;
  	}
  	else
  		masked = 0;

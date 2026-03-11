@@ -780,7 +780,7 @@ index fc6473c01..7b8410b79 100644
  				}
  				for (i = 0; i < elementsof(cc->key); i++)
 -					cc->key[i] = ~0;
-+					cc->key[i] = ~0U;
++					cc->key[i] = (unsigned char)~0;
  				dtinsert(dt, cc);
  				LCINFO(AST_LC_COLLATE)->data = dt;
  			}
