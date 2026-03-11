@@ -394,7 +394,7 @@ int  sh_iovalidfd(int fd)
 {
 	Sfio_t		**sftable = sh.sftable;
 	int		n, **fdptrs = sh.fdptrs;
-	unsigned char	*fdstatus = sh.fdstatus;
+	uint8_t		*fdstatus = sh.fdstatus;
 	long		max;
 	if(fd<0)
 		return 0;
@@ -418,7 +418,7 @@ int  sh_iovalidfd(int fd)
 	sh.fdptrs = (int**)(&sh.sftable[n]);
 	if(max)
 		memcpy(sh.fdptrs,fdptrs,(size_t)max*sizeof(int*));
-	sh.fdstatus = (unsigned char*)(&sh.fdptrs[n]);
+	sh.fdstatus = (uint8_t*)(&sh.fdptrs[n]);
 	if(max)
 		memcpy(sh.fdstatus,fdstatus,(size_t)max);
 	if(sftable)
@@ -539,7 +539,7 @@ static int outexcept(Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
 Sfio_t *sh_iostream(int fd)
 {
 	Sfio_t *iop;
-	int status = sh_iocheckfd(fd);
+	uint8_t status = sh_iocheckfd(fd);
 	unsigned short flags = SFIO_WRITE;
 	char *bp;
 	Sfdisc_t *dp;
@@ -758,6 +758,7 @@ int sh_open(const char *path, int flags, ...)
 	Sfio_t		*sp;
 	int		fd = -1;
 	mode_t		mode;
+	uint8_t		fdmode;
 	char		*e;
 	va_list		ap;
 	va_start(ap, flags);
@@ -836,12 +837,12 @@ int sh_open(const char *path, int flags, ...)
 			fd = nfd;
 			goto ok;
 		}
-		if((mode=(mode_t)sh_iocheckfd(fd))==IOCLOSE)
+		if((fdmode=sh_iocheckfd(fd))==IOCLOSE)
 			return -1;
 		flags &= O_ACCMODE;
-		if(!(mode&IOWRITE) && ((flags==O_WRONLY) || (flags==O_RDWR)))
+		if(!(fdmode&IOWRITE) && ((flags==O_WRONLY) || (flags==O_RDWR)))
 			return -1;
-		if(!(mode&IOREAD) && ((flags==O_RDONLY) || (flags==O_RDWR)))
+		if(!(fdmode&IOREAD) && ((flags==O_RDONLY) || (flags==O_RDWR)))
 			return -1;
 		if((fd=dup(fd))<0)
 			return -1;
@@ -855,11 +856,11 @@ int sh_open(const char *path, int flags, ...)
  ok:
 	flags &= O_ACCMODE;
 	if(flags==O_WRONLY)
-		mode = IOWRITE;
+		fdmode = IOWRITE;
 	else if(flags==O_RDWR)
-		mode = (IOREAD|IOWRITE);
+		fdmode = (IOREAD|IOWRITE);
 	else
-		mode = IOREAD;
+		fdmode = IOREAD;
 	if(fd >= sh.lim.open_max)
 		sh_iovalidfd(fd);
 	if((sp = sh.sftable[fd]) && (sfset(sp,0,0) & SFIO_STRING))
@@ -876,8 +877,8 @@ int sh_open(const char *path, int flags, ...)
 		}
 	}
 	if(flags&O_cloexec)
-		mode |= IOCLEX;
-	sh.fdstatus[fd] = mode;
+		fdmode |= IOCLEX;
+	sh.fdstatus[fd] = fdmode;
 	return fd;
 }
 
@@ -925,6 +926,7 @@ int sh_iomovefd(int fdold, int minfd)
 int	sh_pipe(int pv[], int cloexec)
 {
 	int fd[2];
+	uint8_t fdcloexec = 0;
 #ifndef socketpipe
 	return sh_rpipe(pv,cloexec);
 #else
@@ -936,15 +938,16 @@ int	sh_pipe(int pv[], int cloexec)
 		UNREACHABLE();
 	}
 	if(cloexec)
-		cloexec = IOCLEX;
-#if !SOCK_CLOEXEC
-	if(pv[0]>2 && cloexec)
-		fcntl(pv[0],F_SETFD,FD_CLOEXEC);
-	if(pv[1]>2 && cloexec)
-		fcntl(pv[1],F_SETFD,FD_CLOEXEC);
-#endif
-	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD|cloexec;
-	sh.fdstatus[pv[1]] = IONOSEEK|IOWRITE|cloexec;
+		fdcloexec = IOCLEX;
+	if(SOCK_CLOEXEC==0 && cloexec)
+	{
+		if(pv[0]>2)
+			fcntl(pv[0],F_SETFD,FD_CLOEXEC);
+		if(pv[1]>2)
+			fcntl(pv[1],F_SETFD,FD_CLOEXEC);
+	}
+	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD|fdcloexec;
+	sh.fdstatus[pv[1]] = IONOSEEK|IOWRITE|fdcloexec;
 	if(pv[0]<=2)
 		pv[0] = sh_iomovefd(pv[0],3);
 	if(pv[1]<=2)
@@ -962,21 +965,22 @@ int	sh_pipe(int pv[], int cloexec)
 int	sh_rpipe(int pv[], int cloexec)
 {
 	int fd[2];
+	uint8_t fdcloexec = 0;
 	if(pipe2(fd,cloexec?O_cloexec:0)<0 || (pv[0]=fd[0])<0 || (pv[1]=fd[1])<0)
 	{
 		errormsg(SH_DICT,ERROR_system(1),e_pipe);
 		UNREACHABLE();
 	}
 	if(cloexec)
-		cloexec = IOCLEX;
+		fdcloexec = IOCLEX;
 #if !_lib_pipe2 || !O_cloexec
 	if(pv[0]>2 && cloexec)
 		fcntl(pv[0],F_SETFD,FD_CLOEXEC);
 	if(pv[1]>2 && cloexec)
 		fcntl(pv[1],F_SETFD,FD_CLOEXEC);
 #endif
-	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD|cloexec;
-	sh.fdstatus[pv[1]] = IONOSEEK|IOWRITE|cloexec;
+	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD|fdcloexec;
+	sh.fdstatus[pv[1]] = IONOSEEK|IOWRITE|fdcloexec;
 	if(pv[0]<=2)
 		pv[0] = sh_iomovefd(pv[0],3);
 	if(pv[1]<=2)
@@ -1138,7 +1142,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 	int o_mode;		/* mode flag for open */
 	static char io_op[7];	/* used for -x trace info */
 	int trunc=0, clexec=0, fn, traceon=0, dupflags;
-	int r, indx = sh.topfd, perm= -1;
+	int indx = sh.topfd, perm= -1;
 	char *tname=0, *after="", *trace = sh.st.trap[SH_DEBUGTRAP];
 	Namval_t *np=0;
 
@@ -1440,11 +1444,12 @@ int	sh_redirect(struct ionod *iop, int flag)
 			if(iof&IOLSEEK)
 			{
 				Sfio_t *sp = sh.sftable[fn];
-				r = sh.fdstatus[fn];
-				if(!(r&(IOSEEK|IONOSEEK)))
-					r = sh_iocheckfd(fn);
+				uint8_t fdstatus = sh.fdstatus[fn];
+				int r = 0;
+				if(!(fdstatus&(IOSEEK|IONOSEEK)))
+					fdstatus = sh_iocheckfd(fn);
 				sfsprintf(io_op,sizeof(io_op),"%d\0",fn);
-				if(r==IOCLOSE)
+				if(fdstatus==IOCLOSE)
 				{
 					fname = io_op;
 					message = e_file;
@@ -1452,7 +1457,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 				}
 				if(iof&IOARITH)
 				{
-					if(r&IONOSEEK)
+					if(fdstatus&IONOSEEK)
 					{
 						fname = io_op;
 						message = e_notseek;
@@ -1474,7 +1479,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 				else
 				{
 					regex_t *rp;
-					if(!(r&IOREAD))
+					if(!(fdstatus&IOREAD))
 					{
 						message = e_noread;
 						goto fail;
@@ -1502,13 +1507,14 @@ int	sh_redirect(struct ionod *iop, int flag)
 			}
 			if(!np)
 			{
+				int new_fd;
 				if(flag==0 || tname || (flag==1 && fn==1 && (sh.fdstatus[fn]&IONOSEEK) && sh.outpipepid == sh.current_pid))
 				{
 					if(fd==fn)
 					{
-						if((r=sh_fcntl(fd,dupflags,10)) > 0)
+						if((new_fd=sh_fcntl(fd,dupflags,10)) > 0)
 						{
-							fd = r;
+							fd = new_fd;
 							sh_close(fn);
 						}
 					}
@@ -1518,9 +1524,9 @@ int	sh_redirect(struct ionod *iop, int flag)
 				{
 					if(fd==fn)
 					{
-						if((r=sh_fcntl(fd,dupflags,10)) > 0)
+						if((new_fd=sh_fcntl(fd,dupflags,10)) > 0)
 						{
-							fd = r;
+							fd = new_fd;
 							sh_close(fn);
 						}
 					}
@@ -1858,7 +1864,7 @@ void	sh_iorestore(int last, int jmpval)
  */
 int sh_ioaccess(int fd,int mode)
 {
-	int flags;
+	uint8_t flags;
 	if(mode==X_OK)
 		return -1;
 	if((flags=sh_iocheckfd(fd))!=IOCLOSE)
@@ -2078,9 +2084,10 @@ static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
 /*
  * check and return the attributes for a file descriptor
  */
-int sh_iocheckfd(int fd)
+uint8_t sh_iocheckfd(int fd)
 {
-	int flags, n;
+	int flags;
+	uint8_t n;
 	if((n=sh.fdstatus[fd])&IOCLOSE)
 		return n;
 	if(!(n&(IOREAD|IOWRITE)))
@@ -2278,11 +2285,11 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
 	{
 		if(!sh.sftable[fd] && sh.fdstatus[fd]==IOCLOSE)
 		{
+			uint8_t fdstatus = (mode&SFIO_WRITE)?IOWRITE:0;
 			sh.sftable[fd] = sp;
-			flag = (mode&SFIO_WRITE)?IOWRITE:0;
 			if(mode&SFIO_READ)
-				flag |= IOREAD;
-			sh.fdstatus[fd] = flag;
+				fdstatus |= IOREAD;
+			sh.fdstatus[fd] = fdstatus;
 			sh_iostream(fd);
 		}
 		if((pp=(struct checkpt*)sh.jmplist) && pp->mode==SH_JMPCMD)
@@ -2623,7 +2630,7 @@ mode_t	sh_umask(mode_t m)
  */
 Sfio_t *sh_iogetiop(int fd, int mode)
 {
-	int n;
+	uint8_t n;
 	Sfio_t *iop=0;
 	if(mode!=SFIO_READ && mode!=SFIO_WRITE)
 	{
@@ -2675,7 +2682,7 @@ Notify_f    sh_fdnotify(Notify_f notify)
 
 Sfio_t	*sh_fd2sfio(int fd)
 {
-	int status;
+	uint8_t status;
 	Sfio_t *sp = sh.sftable[fd];
 	if(!sp  && (status = sh_iocheckfd(fd))!=IOCLOSE)
 	{

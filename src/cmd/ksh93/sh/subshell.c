@@ -68,7 +68,7 @@ static struct subshell
 	int		tmpfd;	/* saved tmp file descriptor */
 	int		pipefd;	/* read fd if pipe is created */
 	char		jobcontrol;
-	unsigned char	fdstatus;
+	uint8_t		fdstatus;
 	int		fdsaved; /* bit mask for saved file descriptors */
 	int		sig;	/* signal for $$ */
 	pid_t		bckpid;

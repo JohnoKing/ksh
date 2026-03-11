@@ -64,7 +64,8 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 	Sfdouble_t sec;
 	char *prompt;
 	const char *msg = e_file+4;
-	int r, flags=0, fd=0;
+	int ret, flags=0, fd=0;
+	uint8_t fdmode;
 	ssize_t len=0;
 	size_t q;
 	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
@@ -89,7 +90,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 		q = rp->plen;
 		goto bypass;
 	}
-	while((r = optget(argv,sh_optread))) switch(r)
+	while((ret = optget(argv,sh_optread))) switch(ret)
 	{
 	    case 'A':
 		flags |= A_FLAG;
@@ -116,7 +117,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 		break;
 	    case 'n': case 'N':
 		flags &= ((1<<D_FLAG)-1);
-		flags |= (r=='n'?N_FLAG:NN_FLAG);
+		flags |= (ret=='n'?N_FLAG:NN_FLAG);
 		len = (ssize_t)opt_info.num;
 		break;
 	    case 'r':
@@ -155,15 +156,15 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 		errormsg(SH_DICT,ERROR_usage(2), "%s", optusage(NULL));
 		UNREACHABLE();
 	}
-	if(!((r=sh.fdstatus[fd])&IOREAD)  || !(r&(IOSEEK|IONOSEEK)))
-		r = sh_iocheckfd(fd);
-	if(fd<0 || !(r&IOREAD))
+	if(!((fdmode=sh.fdstatus[fd])&IOREAD) || !(fdmode&(IOSEEK|IONOSEEK)))
+		fdmode = sh_iocheckfd(fd);
+	if(fd<0 || !(fdmode&IOREAD))
 	{
 		errormsg(SH_DICT,ERROR_system(1),msg);
 		UNREACHABLE();
 	}
 	/* look for prompt */
-	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (r&IOTTY))
+	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (fdmode&IOTTY))
 		q = strlen(prompt++);
 	else
 		q = 0;
@@ -189,14 +190,14 @@ bypass:
 	sh.timeout = 0;
 	save_prompt = sh.nextprompt;
 	sh.nextprompt = 0;
-	r=sh_readline(argv,fd,flags,len,timeout);
+	ret = sh_readline(argv,fd,flags,len,timeout);
 	sh.nextprompt = save_prompt;
-	if(r==0 && (r=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
+	if(ret==0 && (ret=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
 	{
 		if(fd == sh.cpipe[0] && errno!=EINTR)
 			sh_pclose(sh.cpipe);
 	}
-	return r;
+	return ret;
 }
 
 /*

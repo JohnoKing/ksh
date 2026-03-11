@@ -169,6 +169,7 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 {
 	Sfio_t *outfile;
 	int n, fd = 1;
+	uint8_t fdmode;
 	const char *options, *msg = e_file+4;
 	char *format = 0;
 #if !SHOPT_SCRIPTONLY
@@ -344,11 +345,11 @@ skip2:
 	if(fd < 0)
 	{
 		errno = EBADF;
-		n = 0;
+		fdmode = 0;
 	}
-	else if(!(n=sh.fdstatus[fd]))
-		n = sh_iocheckfd(fd);
-	if(!(n&IOWRITE))
+	else if(!(fdmode=sh.fdstatus[fd]))
+		fdmode = sh_iocheckfd(fd);
+	if(!(fdmode&IOWRITE))
 	{
 		/* don't print error message for stdout for compatibility */
 		if(fd==1)
@@ -358,7 +359,7 @@ skip2:
 	}
 	if(!(outfile=sh.sftable[fd]))
 	{
-		unsigned short sfflags = SFIO_WRITE|((n&IOREAD)?SFIO_READ:0);
+		unsigned short sfflags = SFIO_WRITE|((fdmode&IOREAD)?SFIO_READ:0);
 		sh_onstate(SH_NOTRACK);
 		sh.sftable[fd] = outfile = sfnew(NULL,sh.outbuff,IOBSIZE,fd,sfflags);
 		sh_offstate(SH_NOTRACK);
