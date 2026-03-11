@@ -2921,7 +2921,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, ssize_t size)
 				 * Calculate the default terminal width for -L, -R, -Z if no numeric option-argument was given.
 				 * Note: we count terminal positions, not characters (double-width adds 2, control char adds 0)
 				 */
-				size = sh_strwidth(cp);
+				size = (ssize_t)sh_strwidth(cp);
 			}
 		}
 		else if(!trans)
