@@ -685,15 +685,16 @@ ptrdiff_t sh_strchr(const char *string, const char *dp)
 /*
  * Return the number of terminal columns occupied by a string when printed.
  */
-int sh_strwidth(const char *s)
+unsigned int sh_strwidth(const char *s)
 {
-	int w = 0, c, n;
+	unsigned int w = 0;
+	int c, n;
 	while (c = mbchar(s))
 	{
 		if (c < 0)				/* invalid multibyte character: count as 1 position */
 			w++;
 		else if ((n = mbwidth(c)) > 0)		/* don't count control characters (which yield -1) */
-			w += n;
+			w += (unsigned)n;
 	}
 	return w;
 }

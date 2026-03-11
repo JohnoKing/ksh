@@ -2478,7 +2478,7 @@ void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
 	i = 0;
 	for(arg=argv; *arg;arg++)
 	{
-		if ((j = sh_strwidth(*arg)) > i)
+		if ((j = (int)sh_strwidth(*arg)) > i)
 			i = j;
 	}
 	i += (ndigits+LBLSIZ);
