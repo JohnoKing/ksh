@@ -1804,7 +1804,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					if(ld<0)
 						l = (int32_t)ld;
 					else
-						l = (uint32_t)ld;
+						l = (int32_t)((uint32_t)ld);
 				}
 				if(nv_size(np) <= 1)
 					nv_setsize(np,10);
