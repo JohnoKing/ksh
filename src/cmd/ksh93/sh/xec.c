@@ -1979,7 +1979,7 @@ int sh_exec(const Shnode_t *t, int flags)
 							goto check;
 						}
 						while(c = *cp++)
-							if(c < '0' && c > '9')
+							if(c < '0' || c > '9')
 								break;
 						if(c!=0)
 							c = nargs;
