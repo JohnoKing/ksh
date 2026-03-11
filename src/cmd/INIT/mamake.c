@@ -28,7 +28,7 @@
  * coded for portability
  */
 
-#define RELEASE_DATE "2026-03-08"
+#define RELEASE_DATE "2026-03-10"
 static char id[] = "\n@(#)$Id: mamake (ksh 93u+m) " RELEASE_DATE " $\0\n";
 
 #if _PACKAGE_ast
@@ -36,6 +36,7 @@ static char id[] = "\n@(#)$Id: mamake (ksh 93u+m) " RELEASE_DATE " $\0\n";
 #include <ast.h>
 #include <error.h>
 #include <sig.h>
+#include <wait.h>
 
 static const char usage[] =
 "[-?\n@(#)$Id: mamake (ksh 93u+m) " RELEASE_DATE " $\n]"
@@ -127,10 +128,10 @@ static const char usage[] =
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <time.h>
 
 #if !_PACKAGE_ast
+#include <sys/wait.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -162,13 +163,7 @@ static const char usage[] =
 #define CHUNK		4096
 #define KEY(a,b,c,d)	((((unsigned long)(a))<<24)|(((unsigned long)(b))<<16)|(((unsigned long)(c))<<8)|(((unsigned long)(d))))
 
-#ifdef SA_RESTART
 #define PARALLEL(r)	(state.maxjobs > 1 && state.strict >= 5 && !((r)->flags & RULE_virtual))
-#else
-/* disable parallel build on systems that can't auto-restart interrupted system calls */
-#define PARALLEL(r)	0
-#define SA_RESTART	0
-#endif
 
 #define RULE_active	0x0001		/* active target		*/
 #define RULE_dontcare	0x0002		/* ok if not found		*/
@@ -1532,18 +1527,6 @@ static int wreap_nowait(Dict_item_t *item)
 }
 
 /*
- * SIGCHLD handling (initialised in main())
- * just a dummy to make it not ignored
- */
-
-static sigset_t empty_sigmask;
-
-static void sigchld_dummy(int sig)
-{
-	assert(sig == SIGCHLD);
-}
-
-/*
  * pass shell action argv[2] to ${SHELL:-/bin/sh}
  * argv[4, 5, ...] become $1, $2, ... in the shell
  * the -c wrapper ensures that scripts are run in the selected shell
@@ -1577,7 +1560,8 @@ static int execute_v(Rule_t *r, char **argv)
 		assert(state.jobs <= state.maxjobs);
 		while (state.jobs == state.maxjobs)
 		{
-			sigsuspend(&empty_sigmask);
+			siginfo_t dummy;
+			waitid(P_ALL, 0, &dummy, WEXITED|WNOWAIT);
 			walk(state.rules, wreap_nowait);
 		}
 		/* let it run in parallel */
@@ -3103,21 +3087,6 @@ int main(int argc, char **argv)
 	{
 		recurse();
 		return state.exitstatus;
-	}
-
-	/*
-	 * set up SIGCHLD handling for parallel processing
-	 */
-
-	if (SA_RESTART && state.maxjobs > 1)
-	{
-		struct sigaction act;
-		sigemptyset(&empty_sigmask);
-		act.sa_handler = sigchld_dummy;
-		sigemptyset(&act.sa_mask);
-		sigaddset(&act.sa_mask, SIGCHLD);
-		act.sa_flags = SA_NOCLDSTOP | SA_RESTART;
-		sigaction(SIGCHLD, &act, NULL);
 	}
 
 	/*
