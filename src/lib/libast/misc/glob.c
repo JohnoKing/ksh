@@ -620,7 +620,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	gp->gl_errfn = errfn;
 	if (flags & GLOB_APPEND)
 	{
-		if ((gp->gl_flags |= GLOB_APPEND) ^ (flags|GLOB_MAGIC))
+		if ((unsigned)(gp->gl_flags |= GLOB_APPEND) ^ ((unsigned)flags|GLOB_MAGIC))
 			return GLOB_APPERR;
 		if (((gp->gl_flags & GLOB_STACK) == 0) == (gp->gl_stak == 0))
 			return GLOB_APPERR;
@@ -631,7 +631,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 	}
 	else
 	{
-		gp->gl_flags = (flags & GLOB_FLAGMASK) | GLOB_MAGIC;
+		gp->gl_flags = (signed)(((unsigned)flags & GLOB_FLAGMASK) | GLOB_MAGIC);
 		gp->re_flags = REG_SHELL|REG_NOSUB|REG_LEFT|REG_RIGHT|((flags&GLOB_AUGMENTED)?REG_AUGMENTED:0);
 		gp->gl_pathc = 0;
 		gp->gl_ignore = 0;
@@ -841,7 +841,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 void
 _ast_globfree(glob_t* gp)
 {
-	if ((gp->gl_flags & GLOB_MAGIC) == GLOB_MAGIC)
+	if (((unsigned)gp->gl_flags & GLOB_MAGIC) == GLOB_MAGIC)
 	{
 		gp->gl_flags &= ~GLOB_MAGIC;
 		if (gp->gl_stak)
