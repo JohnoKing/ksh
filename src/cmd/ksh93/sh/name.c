@@ -1750,9 +1750,9 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 						if(flags&NV_LONG)
 							ll = *((Sflong_t*)sp);
 						else if(flags&NV_SHORT)
-							ll = *((uint16_t*)sp);
+							ll = *((int16_t*)sp);
 						else
-							ll = *((uint32_t*)sp);
+							ll = *((int32_t*)sp);
 					}
 				}
 				else if(sp)
