@@ -234,6 +234,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 fetch src/cmd/ksh93/edit
 fetch src/cmd/ksh93/include/edit.h
 fetch src/cmd/ksh93/include/history.h
+fetch src/cmd/ksh93/sh/jobs.c
 upc
 git commit -m $'size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
@@ -247,6 +248,8 @@ The parts of ksh93 affected by this commit are:
   gigabytes to begin with), so I opted to liberally use int
   casts to merely fix compiler warnings.
   - Moved a FALLTHROUGH comment to fix a fallthrough warning.
+- Various fixes for jobs.c.
+  - Get rid of if/else PID botch; a single casted strtoll is fine.
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
@@ -370,8 +373,6 @@ This covers the rest of ksh93:
     underlying SFIO and POSIX functions return values of
     that type.
   - sh_sfeval(): Removed the set but not used ep->slen variable.
-- jobs.c
-  - Get rid of if/else PID botch; a single casted strtoll is fine.
 - main.c
 - path.c
   - Use the order 'noreturn void' for exscript() to fix a
