@@ -28,8 +28,10 @@ git checkout a215b8be7958974902299233231611165b132114
 typeset dev_commit=${ git log --pretty=format:'%h' -n 1 --abbrev-commit ;}
 bld
 
-# Get warnings for part one
-git checkout 33e66eac603f8203bc3239b251417a02a3762946
+# Get warnings for initial parts
+git checkout 33e66eac603f8203bc3239b251417a02a3762946  # part 1
+bld
+git checkout fefe896e35a7904088037d39dba4fae313fc33ac  # part 2
 bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
@@ -61,85 +63,6 @@ upc() {
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
-
-fetch src/lib/libast/sfio
-fetch src/lib/libast/stdio
-fetch src/lib/libast/path/pathgetlink.c
-fetch src/lib/libast/man/sfio.3
-fetch src/lib/libast/man/strmatch.3
-fetch src/lib/libast/include/sfio.h
-fetch src/lib/libast/include/ast.h
-fetch src/lib/libast/include/modex.h
-fetch src/lib/libast/include/sfio_t.h
-fetch src/lib/libast/include/sfio_s.h
-fetch src/lib/libast/man/modecanon.3
-fetch src/lib/libast/string/fmtmode.c
-fetch src/lib/libast/string/modelib.h
-fetch src/lib/libast/string/modei.c
-fetch src/lib/libast/string/modex.c
-fetch src/lib/libast/string/fmtscale.c
-fetch src/lib/libast/string/fmtmode.c
-fetch src/lib/libast/string/strmode.c
-fetch src/lib/libast/string/fmtperm.c
-fetch src/lib/libast/string/modedata.c
-fetch src/lib/libast/include/regex.h
-fetch src/lib/libast/include/hash.h
-fetch src/lib/libast/string/strperm.c
-fetch src/lib/libast/man/strperm.3
-fetch src/lib/libast/hash
-fetch src/lib/libast/string/strmatch.c
-fetch src/lib/libast/man/fmt.3
-fetch src/lib/libast/string/fmtelapsed.c
-fetch src/lib/libast/string/fmtmode.c
-fetch src/cmd/ksh93/bltins/print.c
-fetch src/lib/libast/features/stdio
-fetch src/lib/libast/man/hash.3
-fetch src/lib/libast/man/path.3
-upc
-git commit -m $'size_t/ptrdiff_t transition part 2: SFIO, hash lib, fmt*(), strmatch()
-
-This is the second of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space. This part of the patch series
-includes everything affected by changes to <ast.h>.
-
-The parts of ksh93 affected by this commit are:
-- SFIO and the associated stdio wrapper. The sfvprintf and sfvscanf
-  functions are notable for bearing the brunt of the substantial code
-  changes.
-  - Nearly all of the code is de novo, though towards the latter end
-    of development I used graphviz commits for cross-reference:
-    - https://gitlab.com/graphviz/graphviz/-/commit/6451a669
-    - https://gitlab.com/graphviz/graphviz/-/commit/153a8f87
-    - Improved multibyte handling in sfvscanf via use of
-      unsigned char*; ported from graphviz:
-      https://gitlab.com/graphviz/graphviz/-/commit/cb9b35d1
-      (I\'m aware this function is unused, but after some manual
-      testing it works well AFAICT. A bit odd that ksh93 never
-      uses it once.)
-  - sfseek(): Removed a wasteful double assignment for f->iosz.
-    This error was introduced in 2003-06-21 ksh93o+, and likely
-    would have gone unnoticed if not for the thickfold project.
-    (In practice this line was virtually always optimized out by the
-    compiler, so it was dead code.)
-- 64-bit modernization for the AST hash library.
-- Transitioned pathgetlink() to return ssize_t.
-- Updated the code in print.c for compatibility with the SFIO 64-bit
-  modernization.
-- Transitioned the strgrpmatch() family to use regflags_t to appease
-  some -Wsign-conversion warnings (the type is now located in ast.h).
-  - The now unused STR_INT flag backported from ksh93v- has been
-    removed to avoid bitrot.
-- Removed the unused nonstandard ssizeof() macro from ast.h.
-- Made the snprintf and vsnprintf wrappers standards compliant
-  with the C standard.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[1]} ${w[2]} ${w[13]} ;}"' (progression from part 1 => part 2 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
-
-
 
 fetch src/lib/libast/aso
 fetch src/lib/libast/cdt
