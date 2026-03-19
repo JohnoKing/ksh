@@ -1,6 +1,6 @@
-From d95360e093b232cda45532ae08f62ee5d030a126 Mon Sep 17 00:00:00 2001
+From bd9f8ef0fccbe72e911ab26ca8709f74ed6534c1 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:47:30 -0700
+Date: Thu, 19 Mar 2026 07:13:27 -0700
 Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
  subshells
 
@@ -16,7 +16,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-499 => 373 => 61 (progression from part 11 => part 12 => part 13)
+487 => 361 => 42 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -27,11 +27,11 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/lex.c          | 163 +++++++++++++++++---------------
  src/cmd/ksh93/sh/parse.c        |  86 +++++++++--------
  src/cmd/ksh93/sh/shcomp.c       |   2 +-
- src/cmd/ksh93/sh/subshell.c     |  14 +--
+ src/cmd/ksh93/sh/subshell.c     |  16 ++--
  src/cmd/ksh93/sh/tdump.c        |  38 ++++----
  src/cmd/ksh93/sh/timers.c       |   4 +-
  src/cmd/ksh93/sh/trestore.c     |  50 +++++-----
- 11 files changed, 220 insertions(+), 203 deletions(-)
+ 11 files changed, 221 insertions(+), 204 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/fcin.h b/src/cmd/ksh93/include/fcin.h
 index 460d27575..605be211e 100644
@@ -1106,9 +1106,18 @@ index 6016d46d4..c3eb8ca51 100644
  	else
  		out = sfstdout;
 diff --git a/src/cmd/ksh93/sh/subshell.c b/src/cmd/ksh93/sh/subshell.c
-index 6637ccf55..a06fc06dc 100644
+index d4e17c4b3..6ae7afacd 100644
 --- a/src/cmd/ksh93/sh/subshell.c
 +++ b/src/cmd/ksh93/sh/subshell.c
+@@ -68,7 +68,7 @@ static struct subshell
+ 	int		tmpfd;	/* saved tmp file descriptor */
+ 	int		pipefd;	/* read fd if pipe is created */
+ 	char		jobcontrol;
+-	unsigned char	fdstatus;
++	uint8_t		fdstatus;
+ 	int		fdsaved; /* bit mask for saved file descriptors */
+ 	int		sig;	/* signal for $$ */
+ 	pid_t		bckpid;
 @@ -316,7 +316,8 @@ static void nv_restore(struct subshell *sp)
  	struct Link	*lp, *lq;
  	Namval_t	*mp, *np;
@@ -1137,7 +1146,7 @@ index 6637ccf55..a06fc06dc 100644
  			/*
  			 * the data is, usually, modified in code like:
  			 *	tmp = buf[i]; buf[i] = sh_strdup(tmp); free(tmp);
-@@ -746,7 +747,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -743,7 +744,8 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  		{
  			if(sh.spid)
  			{
@@ -1147,7 +1156,7 @@ index 6637ccf55..a06fc06dc 100644
  				job_wait(sh.spid);
  				sh.exitval = e, sh.chldexitsig = c;
  				if(sh.pipepid==sh.spid)
-@@ -861,7 +863,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -858,7 +860,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  		n = sh.st.trapmax-savst.trapmax;
  		sh_sigreset(1);
  		if(n>0)
@@ -1156,7 +1165,7 @@ index 6637ccf55..a06fc06dc 100644
  		sh.st = savst;
  		sh.st.otrap = 0;
  		if(nsig)
-@@ -869,7 +871,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
+@@ -866,7 +868,7 @@ Sfio_t *sh_subshell(Shnode_t *t, volatile int flags, int comsub)
  			for (isig = 0; isig < nsig; ++isig)
  				if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
  					free(sh.st.trapcom[isig]);

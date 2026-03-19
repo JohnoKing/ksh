@@ -1,6 +1,6 @@
-From 16f625eaae208a84a149f965d28d3d0f32582224 Mon Sep 17 00:00:00 2001
+From 585446796911b701534290a60cae96f453b38bf7 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:40:40 -0700
+Date: Thu, 19 Mar 2026 07:07:43 -0700
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -13,7 +13,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,088 => 2,489 => 61 (progression from part 3 => part 4 => part 13)
+3,088 => 2,489 => 42 (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -33,7 +33,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/base64.c      |  45 +++---
  src/lib/libast/string/ccmap.c       |   6 +-
  src/lib/libast/string/ccmapid.c     |   6 +-
- src/lib/libast/string/chresc.c      |  13 +-
+ src/lib/libast/string/chresc.c      |  11 +-
  src/lib/libast/string/fmtbuf.c      |   4 +-
  src/lib/libast/string/fmtclock.c    |  14 +-
  src/lib/libast/string/fmtdev.c      |  16 +-
@@ -76,7 +76,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/string/tokline.c     |  10 +-
  src/lib/libast/string/tokscan.c     |   7 +-
  src/lib/libast/string/utf32toutf8.c |  18 +--
- 59 files changed, 708 insertions(+), 566 deletions(-)
+ 59 files changed, 707 insertions(+), 565 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -432,7 +432,7 @@ index aaea43895..9fbdd05ad 100644
   	s--;
   nope:
 diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
-index fc6473c01..7b8410b79 100644
+index fc6473c01..e5ddc91ef 100644
 --- a/src/lib/libast/regex/regcomp.c
 +++ b/src/lib/libast/regex/regcomp.c
 @@ -23,6 +23,10 @@
@@ -2353,18 +2353,9 @@ index c5773ca18..434ec69ba 100644
  
  	bp = 0;
 diff --git a/src/lib/libast/string/chresc.c b/src/lib/libast/string/chresc.c
-index 7d7bf97cc..46ca26ea9 100644
+index 5d05714cf..7ab121132 100644
 --- a/src/lib/libast/string/chresc.c
 +++ b/src/lib/libast/string/chresc.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -14,6 +14,7 @@
  *                  David Korn <dgk@research.att.com>                   *
  *                   Phong Vo <kpv@research.att.com>                    *
@@ -2380,7 +2371,7 @@ index 7d7bf97cc..46ca26ea9 100644
 -		return utf32;
 +		return (int)utf32;
  	/* in ASCII-only locales, only ASCII (0 - 0x7F) is valid */
- 	if (!mbwide() && utf32 > 0x7F && (ast.locale.set & AST_LC_7bit))
+ 	if (!mbwide() && (ast.locale.set & AST_LC_7bit))
  		return -1;
 @@ -53,7 +54,7 @@ utf32towc(uint32_t utf32)
  		return -1;

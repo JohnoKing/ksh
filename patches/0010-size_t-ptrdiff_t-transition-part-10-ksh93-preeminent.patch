@@ -1,6 +1,6 @@
-From 5d2a19a7dc5d71267cd69e1964400e6c7e22bae9 Mon Sep 17 00:00:00 2001
+From f6fae20362a3f89337ac40d3658d0eaebf6789d6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:45:47 -0700
+Date: Thu, 19 Mar 2026 07:12:00 -0700
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -15,24 +15,25 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-930 => 820 => 61 (progression from part 9 => part 10 => part 13)
+916 => 808 => 42 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/alarm.c     |  4 +-
- src/cmd/ksh93/bltins/cd_pwd.c    |  2 +-
- src/cmd/ksh93/bltins/enum.c      | 26 ++++-----
- src/cmd/ksh93/bltins/getopts.c   |  8 +--
- src/cmd/ksh93/bltins/hist.c      | 10 ++--
- src/cmd/ksh93/bltins/misc.c      | 18 +++----
- src/cmd/ksh93/bltins/mkservice.c |  6 +--
- src/cmd/ksh93/bltins/read.c      | 91 +++++++++++++++++---------------
- src/cmd/ksh93/bltins/trap.c      | 16 +++---
- src/cmd/ksh93/bltins/typeset.c   | 34 ++++++------
- src/cmd/ksh93/bltins/ulimit.c    | 24 ++++-----
- src/cmd/ksh93/bltins/umask.c     |  8 +--
- src/cmd/ksh93/include/builtins.h |  2 +-
- 13 files changed, 129 insertions(+), 120 deletions(-)
+ src/cmd/ksh93/bltins/alarm.c     |   4 +-
+ src/cmd/ksh93/bltins/cd_pwd.c    |   2 +-
+ src/cmd/ksh93/bltins/enum.c      |  26 +++----
+ src/cmd/ksh93/bltins/getopts.c   |   8 +--
+ src/cmd/ksh93/bltins/hist.c      |  10 +--
+ src/cmd/ksh93/bltins/misc.c      |  18 ++---
+ src/cmd/ksh93/bltins/mkservice.c |   6 +-
+ src/cmd/ksh93/bltins/print.c     |  11 +--
+ src/cmd/ksh93/bltins/read.c      | 112 ++++++++++++++++---------------
+ src/cmd/ksh93/bltins/trap.c      |  16 ++---
+ src/cmd/ksh93/bltins/typeset.c   |  34 +++++-----
+ src/cmd/ksh93/bltins/ulimit.c    |  24 +++----
+ src/cmd/ksh93/bltins/umask.c     |   8 ++-
+ src/cmd/ksh93/include/builtins.h |   2 +-
+ 14 files changed, 146 insertions(+), 135 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -323,8 +324,45 @@ index 5643e7e3d..9ed3c3930 100644
  	Namval_t*	nq;
  
  	for (i = 0; cp = disctab[i]; i++)
+diff --git a/src/cmd/ksh93/bltins/print.c b/src/cmd/ksh93/bltins/print.c
+index 6cbcc3c07..634a54617 100644
+--- a/src/cmd/ksh93/bltins/print.c
++++ b/src/cmd/ksh93/bltins/print.c
+@@ -169,6 +169,7 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
+ {
+ 	Sfio_t *outfile;
+ 	int n, fd = 1;
++	uint8_t fdmode;
+ 	const char *options, *msg = e_file+4;
+ 	char *format = 0;
+ #if !SHOPT_SCRIPTONLY
+@@ -344,11 +345,11 @@ skip2:
+ 	if(fd < 0)
+ 	{
+ 		errno = EBADF;
+-		n = 0;
++		fdmode = 0;
+ 	}
+-	else if(!(n=sh.fdstatus[fd]))
+-		n = sh_iocheckfd(fd);
+-	if(!(n&IOWRITE))
++	else if(!(fdmode=sh.fdstatus[fd]))
++		fdmode = sh_iocheckfd(fd);
++	if(!(fdmode&IOWRITE))
+ 	{
+ 		/* don't print error message for stdout for compatibility */
+ 		if(fd==1)
+@@ -358,7 +359,7 @@ skip2:
+ 	}
+ 	if(!(outfile=sh.sftable[fd]))
+ 	{
+-		unsigned short sfflags = SFIO_WRITE|((n&IOREAD)?SFIO_READ:0);
++		unsigned short sfflags = SFIO_WRITE|((fdmode&IOREAD)?SFIO_READ:0);
+ 		sh_onstate(SH_NOTRACK);
+ 		sh.sftable[fd] = outfile = sfnew(NULL,sh.outbuff,IOBSIZE,fd,sfflags);
+ 		sh_offstate(SH_NOTRACK);
 diff --git a/src/cmd/ksh93/bltins/read.c b/src/cmd/ksh93/bltins/read.c
-index 4c7c2c0fc..4af8b87a5 100644
+index 4c7c2c0fc..33d36618d 100644
 --- a/src/cmd/ksh93/bltins/read.c
 +++ b/src/cmd/ksh93/bltins/read.c
 @@ -52,11 +52,11 @@ struct read_save
@@ -342,11 +380,14 @@ index 4c7c2c0fc..4af8b87a5 100644
  };
  
  int	b_read(int argc,char *argv[], Shbltin_t *context)
-@@ -65,9 +65,11 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+@@ -64,10 +64,13 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 	Sfdouble_t sec;
  	char *prompt;
  	const char *msg = e_file+4;
- 	int r, flags=0, fd=0;
+-	int r, flags=0, fd=0;
 -	ssize_t	len=0;
++	int ret, flags=0, fd=0;
++	uint8_t fdmode;
 +	ssize_t len=0;
 +	size_t q;
  	Sflong_t timeout = sh.st.tmout && tty_check(0) ? 1000*(Sflong_t)sh.st.tmout : 0;
@@ -356,7 +397,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  	struct read_save *rp;
  	static char default_prompt[3] = {ESC,ESC};
  	rp = (struct read_save*)(context->data);
-@@ -84,7 +86,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+@@ -84,10 +87,10 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
  		fd = rp->fd;
  		argv = rp->argv;
  		prompt = rp->prompt;
@@ -364,21 +405,40 @@ index 4c7c2c0fc..4af8b87a5 100644
 +		q = rp->plen;
  		goto bypass;
  	}
- 	while((r = optget(argv,sh_optread))) switch(r)
-@@ -115,7 +117,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+-	while((r = optget(argv,sh_optread))) switch(r)
++	while((ret = optget(argv,sh_optread))) switch(ret)
+ 	{
+ 	    case 'A':
+ 		flags |= A_FLAG;
+@@ -114,8 +117,8 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 		break;
  	    case 'n': case 'N':
  		flags &= ((1<<D_FLAG)-1);
- 		flags |= (r=='n'?N_FLAG:NN_FLAG);
+-		flags |= (r=='n'?N_FLAG:NN_FLAG);
 -		len = opt_info.num;
++		flags |= (ret=='n'?N_FLAG:NN_FLAG);
 +		len = (ssize_t)opt_info.num;
  		break;
  	    case 'r':
  		flags |= R_FLAG;
-@@ -162,9 +164,9 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+@@ -153,18 +156,18 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+ 		errormsg(SH_DICT,ERROR_usage(2), "%s", optusage(NULL));
+ 		UNREACHABLE();
+ 	}
+-	if(!((r=sh.fdstatus[fd])&IOREAD)  || !(r&(IOSEEK|IONOSEEK)))
+-		r = sh_iocheckfd(fd);
+-	if(fd<0 || !(r&IOREAD))
++	if(!((fdmode=sh.fdstatus[fd])&IOREAD) || !(fdmode&(IOSEEK|IONOSEEK)))
++		fdmode = sh_iocheckfd(fd);
++	if(fd<0 || !(fdmode&IOREAD))
+ 	{
+ 		errormsg(SH_DICT,ERROR_system(1),msg);
+ 		UNREACHABLE();
  	}
  	/* look for prompt */
- 	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (r&IOTTY))
+-	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (r&IOTTY))
 -		r = strlen(prompt++);
++	if((prompt = *argv) && (prompt=strchr(prompt,'?')) && (fdmode&IOTTY))
 +		q = strlen(prompt++);
  	else
 -		r = 0;
@@ -386,7 +446,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  	if(argc==fixargs)
  	{
  		rp = sh_newof(NULL,struct read_save,1,0);
-@@ -174,15 +176,15 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
+@@ -174,27 +177,27 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
  		rp->timeout = timeout;
  		rp->argv = argv;
  		rp->prompt = prompt;
@@ -406,7 +466,22 @@ index 4c7c2c0fc..4af8b87a5 100644
  	}
  	sh.timeout = 0;
  	save_prompt = sh.nextprompt;
-@@ -229,7 +231,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+ 	sh.nextprompt = 0;
+-	r=sh_readline(argv,fd,flags,len,timeout);
++	ret = sh_readline(argv,fd,flags,len,timeout);
+ 	sh.nextprompt = save_prompt;
+-	if(r==0 && (r=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
++	if(ret==0 && (ret=(sfeof(sh.sftable[fd])||sferror(sh.sftable[fd]))))
+ 	{
+ 		if(fd == sh.cpipe[0] && errno!=EINTR)
+ 			sh_pclose(sh.cpipe);
+ 	}
+-	return r;
++	return ret;
+ }
+ 
+ /*
+@@ -229,7 +232,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  	volatile char		was_write = 0;
  	volatile char		was_share = 1;
  	volatile int		keytrap;
@@ -416,7 +491,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  	long			array_index = 0;
  	void			*timeslot=0;
  	int			delim = '\n';
-@@ -303,7 +306,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -303,7 +307,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		if(!(flags&(N_FLAG|NN_FLAG)))
  		{
  			delim = ((unsigned)flags)>>(D_FLAG+1);
@@ -425,7 +500,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  			ep->e_nttyparm.c_lflag |= ISIG;
  			tty_set(fd,TCSADRAIN,&ep->e_nttyparm);
  		}
-@@ -344,13 +347,13 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -344,13 +348,13 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		{
  			Namval_t *mp = nv_open(name,sh.var_tree,oflags|NV_NOREF);
  			if((c=(*nfp->disc->readf)(mp,iop,delim,nfp))>=0)
@@ -441,7 +516,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  	}
  	was_write = (sfset(iop,SFIO_WRITE,0)&SFIO_WRITE)!=0;
  	if(fd==0)
-@@ -362,7 +365,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -362,7 +366,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		if(jmpval)
  			goto done;
  		if(timeout)
@@ -450,7 +525,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  	}
  #if !SHOPT_SCRIPTONLY
  	if((flags&S_FLAG) && !sh.hist_ptr)
-@@ -376,9 +379,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -376,9 +380,9 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  	{
  		char buf[256],*var=buf,*cur,*end,*up,*v;
  		/* reserved buffer */
@@ -462,7 +537,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  			end = var + c;
  		}
  		else
-@@ -393,8 +396,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -393,8 +397,8 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		}
  		else
  		{
@@ -473,7 +548,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  			for (;;)
  			{
  				c = size;
-@@ -403,7 +406,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -403,7 +407,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  					cp = 0;
  					f = 0;
  					m = 0;
@@ -482,7 +557,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  						m++;
  					if(m>0)
  						cp = (unsigned char*)buf;
-@@ -412,47 +415,47 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -412,47 +416,47 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  				{
  					f = 1;
  					if(cp = sfreserve(iop,c,SFIO_LOCKR))
@@ -541,7 +616,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  					cur += c;
  					if(mbwide() && !binary)
  					{
-@@ -484,7 +487,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -484,7 +488,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  		}
  		if(timeslot)
  			sh_timerdel(timeslot);
@@ -550,7 +625,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  		{
  #if SHOPT_OPTIMIZE
  			/* only optimize this operation if the loop invariants optimizer is not being used */
-@@ -493,16 +496,16 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -493,16 +497,16 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  			int optimize = 1;
  #endif
  			if(optimize && c==size && np->nvalue && !nv_isarray(np))
@@ -571,7 +646,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  			}
  		}
  		else
-@@ -534,10 +537,10 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -534,10 +538,10 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  			cpmax--;
  #endif /* SHOPT_CRNL */
  		if(*(cpmax-1) != delim)
@@ -584,7 +659,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  #endif
  		c = sh.ifstable[*cp++];
  #if !SHOPT_MULTIBYTE
-@@ -662,7 +665,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -662,7 +666,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  				{
  #if !SHOPT_SCRIPTONLY
  					if(flags&S_FLAG)
@@ -593,7 +668,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  #endif
  					cpmax = cp + c;
  					c = sh.ifstable[*cp++];
-@@ -736,7 +739,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -736,7 +740,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  						{
  							if(val)
  							{
@@ -602,7 +677,7 @@ index 4c7c2c0fc..4af8b87a5 100644
  								use_stak = 1;
  							}
  							val = (char*)++cp;
-@@ -750,7 +753,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
+@@ -750,7 +754,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
  						{
  							if(val)
  							{

@@ -1,6 +1,6 @@
-From f75546dee930fbcc84c604e804f13d87ac709fa6 Mon Sep 17 00:00:00 2001
+From bfba537b4c5825509feacafbcfc8cb7331ef5ad6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:42:22 -0700
+Date: Thu, 19 Mar 2026 07:09:08 -0700
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -18,21 +18,21 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,982 => 1,599 => 61 (progression from part 5 => part 6 => part 13)
+1,975 => 1,592 => 42 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/lib/libast/dir/dirlib.h        |   4 +-
- src/lib/libast/disc/sfdcdos.c      |  37 +++---
+ src/lib/libast/disc/sfdcdos.c      |  37 ++++----
  src/lib/libast/disc/sfdcfilter.c   |   2 +-
- src/lib/libast/disc/sfdcmore.c     |  24 ++--
- src/lib/libast/disc/sfdcprefix.c   |  11 +-
+ src/lib/libast/disc/sfdcmore.c     |  24 +++---
+ src/lib/libast/disc/sfdcprefix.c   |  11 +--
  src/lib/libast/disc/sfdcseekable.c |  19 ++--
  src/lib/libast/disc/sfdcsubstr.c   |   9 +-
- src/lib/libast/disc/sfdcunion.c    |  17 +--
- src/lib/libast/disc/sfkeyprintf.c  |  65 +++--------
+ src/lib/libast/disc/sfdcunion.c    |  17 ++--
+ src/lib/libast/disc/sfkeyprintf.c  |  65 ++++----------
  src/lib/libast/features/tty        |   2 +-
- src/lib/libast/include/ast_std.h   |  20 ++--
+ src/lib/libast/include/ast_std.h   |  20 ++---
  src/lib/libast/include/find.h      |   4 +-
  src/lib/libast/include/hashpart.h  |   5 +-
  src/lib/libast/include/recfmt.h    |   5 +-
@@ -41,35 +41,35 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/vmalloc.h   |   7 +-
  src/lib/libast/man/cdt.3           |   4 +-
  src/lib/libast/path/pathcanon.c    |   4 +-
- src/lib/libast/path/pathcd.c       |  15 +--
+ src/lib/libast/path/pathcd.c       |  15 ++--
  src/lib/libast/path/pathfind.c     |   5 +-
  src/lib/libast/path/pathpath.c     |   4 +-
- src/lib/libast/path/pathtemp.c     |  23 ++--
+ src/lib/libast/path/pathtemp.c     |  23 ++---
  src/lib/libast/tm/tmdate.c         |   5 +-
  src/lib/libast/tm/tmfix.c          |   7 +-
  src/lib/libast/tm/tminit.c         |  14 +--
  src/lib/libast/tm/tmleap.c         |   5 +-
  src/lib/libast/tm/tmlex.c          |   7 +-
- src/lib/libast/tm/tmlocale.c       |  28 ++---
+ src/lib/libast/tm/tmlocale.c       |  28 +++---
  src/lib/libast/tm/tmpoff.c         |   5 +-
  src/lib/libast/tm/tmscan.c         |   5 +-
  src/lib/libast/tm/tmsleep.c        |   5 +-
  src/lib/libast/tm/tmtime.c         |   5 +-
- src/lib/libast/tm/tmxdate.c        | 134 +++++++++++-----------
+ src/lib/libast/tm/tmxdate.c        | 134 ++++++++++++++---------------
  src/lib/libast/tm/tmxduration.c    |   5 +-
- src/lib/libast/tm/tmxfmt.c         |  28 ++---
+ src/lib/libast/tm/tmxfmt.c         |  28 +++---
  src/lib/libast/tm/tmxleap.c        |   9 +-
- src/lib/libast/tm/tmxmake.c        |  31 ++---
+ src/lib/libast/tm/tmxmake.c        |  31 +++----
  src/lib/libast/tm/tmxscan.c        |  14 +--
  src/lib/libast/tm/tmxsettime.c     |   5 +-
  src/lib/libast/tm/tmxsleep.c       |   5 +-
- src/lib/libast/tm/tmxtime.c        |  31 ++---
+ src/lib/libast/tm/tmxtime.c        |  31 +++----
  src/lib/libast/tm/tmxtouch.c       |   9 +-
- src/lib/libast/tm/tmzone.c         |  12 +-
+ src/lib/libast/tm/tmzone.c         |  12 +--
  src/lib/libast/tm/tvgettime.c      |   5 +-
- src/lib/libast/tm/tvsleep.c        | 175 ++++++++++++++++-------------
+ src/lib/libast/tm/tvsleep.c        |   2 +-
  src/lib/libast/tm/tvtouch.c        |   2 +-
- 47 files changed, 430 insertions(+), 418 deletions(-)
+ 47 files changed, 337 insertions(+), 338 deletions(-)
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index f54439cdc..e3af0c63e 100644
@@ -2558,46 +2558,10 @@ index f6387f071..9f927697b 100644
  #else
  
 diff --git a/src/lib/libast/tm/tvsleep.c b/src/lib/libast/tm/tvsleep.c
-index 1c68f7bae..8408f8936 100644
+index 78dafb5b5..231f36248 100644
 --- a/src/lib/libast/tm/tvsleep.c
 +++ b/src/lib/libast/tm/tvsleep.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2013 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -40,8 +40,7 @@
- # endif
- #endif
- 
--#define NANOSECONDS  1000000000L
--#define MILLISECONDS 1000
-+static inline int do_sleep(const Tv_t*, Tv_t*);
- 
- /*
-  * sleep for tv
-@@ -57,11 +56,14 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
- 	/* Return immediately if asked to sleep for no duration. */
- 	if (!tv->tv_sec && !tv->tv_nsec)
- 		return 0;
--
--	{
-+	return do_sleep(tv, rv);
-+}
- 
- #if _lib_nanosleep
- 
-+static inline int
-+do_sleep(const Tv_t* tv, Tv_t* rv)
-+{
- 	/* PRECISION: nanoseconds */
- 	struct timespec	stv = { tv->tv_sec, tv->tv_nsec };
- 	struct timespec	srv;
-@@ -70,29 +72,98 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
+@@ -70,7 +70,7 @@ do_sleep(const Tv_t* tv, Tv_t* rv)
  	if ((r = nanosleep(&stv, &srv)) && errno == EINTR && rv)
  	{
  		rv->tv_sec = srv.tv_sec;
@@ -2605,219 +2569,7 @@ index 1c68f7bae..8408f8936 100644
 +		rv->tv_nsec = (uint32_t)srv.tv_nsec;
  	}
  	return r;
--
--	}
-+}
- 
- #else
- 
--	Tv_t tvBefore;
-+#define NANOSECONDS  1000000000L
-+#define MILLISECONDS 1000
-+
-+static inline int do_sleep_precision(const Tv_t*, Tv_t*);
-+
-+static inline int
-+do_sleep(const Tv_t* tv, Tv_t* rv)
-+{
-+	Tv_t	tvBefore, tvAfter;
- 
- 	tvgettime(&tvBefore);
-+	do_sleep_precision(tv, rv);
-+	tvgettime(&tvAfter);
-+
-+	/* Unfortunately, some operating systems return success for select
-+	 * or poll without having slept for the specified duration, so check
-+	 * the clock.
-+	 *
-+	 * Although time discrepancies when sleeping are inevitable, tvsleep
-+	 * can guarantee that they always lie on or after the time specified,
-+	 * which is much more useful from the point of view of predictability
-+	 * than if they could also occur before.
-+	 */
-+	if (tvAfter.tv_nsec < tvBefore.tv_nsec)
- 	{
-+		if (!tvAfter.tv_sec)
-+			return 0;
-+		--tvAfter.tv_sec;
-+		tvAfter.tv_nsec += (NANOSECONDS - tvBefore.tv_nsec);
-+	}
-+	else
-+		tvAfter.tv_nsec -= tvBefore.tv_nsec;
- 
--#if _lib_select && !_prefer_poll
-+	if (tvAfter.tv_sec < tvBefore.tv_sec)
-+		return 0;
-+	tvAfter.tv_sec -= tvBefore.tv_sec;
-+	/* tvAfter now holds the non-negative time slept */
-+
-+	tvBefore = *tv;
-+	/* Normalize the time to sleep so that ns < 10e9 */
-+	tvBefore.tv_sec  += tvBefore.tv_nsec / NANOSECONDS;
-+	tvBefore.tv_nsec %= NANOSECONDS;
-+
-+	if (tvBefore.tv_nsec < tvAfter.tv_nsec)
-+	{
-+		if (!tvBefore.tv_sec)
-+			return 0;
-+		--tvBefore.tv_sec;
-+		tvBefore.tv_nsec += (NANOSECONDS - tvAfter.tv_nsec);
-+	}
-+	else
-+		tvBefore.tv_nsec -= tvAfter.tv_nsec;
- 
-+	if (tvBefore.tv_sec < tvAfter.tv_sec)
-+		return 0;
-+	tvBefore.tv_sec -= tvAfter.tv_sec;
-+
-+	if (tvBefore.tv_sec > 0 || tvBefore.tv_nsec > 0)
-+	{
-+		if (rv)
-+			*rv = tvBefore;
-+		return -1;
-+	}
-+	return 0;
-+}
-+
-+#  if _lib_select && !_prefer_poll
-+
-+static inline int
-+do_sleep_precision(const Tv_t* tv, Tv_t* rv)
-+{
- 	/* PRECISION: microseconds */
- 	struct timeval tvSleep = { tv->tv_sec, tv->tv_nsec / 1000 };
-+
- 	if (tv->tv_nsec % 1000)
- 		++tvSleep.tv_usec;
- 	(void)select(0, NULL, NULL, NULL, &tvSleep);
-+}
-+
- 
--#elif _lib_poll
-+#  elif _lib_poll
- 
-+static inline int
-+do_sleep_precision(const Tv_t* tv, Tv_t* rv)
-+{
- 	/* PRECISION: milliseconds
- 	 *
- 	 * We can sleep for up to 24 days with a single call to poll
-@@ -113,14 +184,18 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
- 			++timeout;
- 	}
- 	(void)poll(&dummy, 0, timeout);
-+}
- 
--#else
-+#  else  /* no select or poll */
- 
-+static inline int
-+do_sleep_precision(const Tv_t* tv, Tv_t* rv)
-+{
- 	time_t		s = tv->tv_sec;
- 	uint32_t	n = tv->tv_nsec;
- 	unsigned int	t;
- 
--#if _lib_usleep
-+#    if _lib_usleep
- 
- 	if (s < (0x7fffffff / 1000000))
- 	{
-@@ -138,7 +213,7 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
- 	else
- 	{
- 
--#endif
-+#    endif /* _lib_usleep */
- 
- 		if (s += (n + 999999999L) / 1000000000L)
- 		{
-@@ -167,7 +242,7 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
- 			return 0;
- 		}
- 
--#if _lib_usleep
-+#    if _lib_usleep
- 
- 		if (t = (n + 999L) / 1000L)
- 		{
-@@ -184,72 +259,10 @@ tvsleep(const Tv_t* tv, Tv_t* rv)
- 		}
- 	}
- 
--#endif
--#endif
--
--	}
--
--/* Unfortunately, some operating systems return success for select
-- * or poll without having slept for the specified duration, so check
-- * the clock.
-- *
-- * Although time discrepancies when sleeping are inevitable, tvsleep
-- * can guarantee that they always lie on or after the time specified,
-- * which is much more useful from the point of view of predictability
-- * than if they could also occur before.
-- */
--	{
--		Tv_t tvAfter;
--
--		tvgettime(&tvAfter);
--
--		if (tvAfter.tv_nsec < tvBefore.tv_nsec)
--		{
--			if (!tvAfter.tv_sec)
--				return 0;
--			--tvAfter.tv_sec;
--			tvAfter.tv_nsec += (NANOSECONDS - tvBefore.tv_nsec);
--		}
--		else
--		{
--		    tvAfter.tv_nsec -= tvBefore.tv_nsec;
--		}
--		if (tvAfter.tv_sec < tvBefore.tv_sec)
--			return 0;
--		tvAfter.tv_sec -= tvBefore.tv_sec;
--		/* tvAfter now holds the non-negative time slept */
--
--		tvBefore = *tv;
--		/* Normalize the time to sleep so that ns < 10e9 */
--		tvBefore.tv_sec  += tvBefore.tv_nsec / NANOSECONDS;
--		tvBefore.tv_nsec %= NANOSECONDS;
--
--		if (tvBefore.tv_nsec < tvAfter.tv_nsec)
--		{
--			if (!tvBefore.tv_sec)
--				return 0;
--			--tvBefore.tv_sec;
--			tvBefore.tv_nsec += (NANOSECONDS - tvAfter.tv_nsec);
--		}
--		else
--		{
--			tvBefore.tv_nsec -= tvAfter.tv_nsec;
--		}
--		if (tvBefore.tv_sec < tvAfter.tv_sec)
--			return 0;
--		tvBefore.tv_sec -= tvAfter.tv_sec;
-+#    endif /* _lib_usleep */
- 
--		if (tvBefore.tv_sec > 0 || tvBefore.tv_nsec > 0)
--		{
--			if (rv)
--				*rv = tvBefore;
--			return -1;
--		}
--	}
--	}
--
--	return 0;
-+}
- 
--#endif
-+#  endif /*  _lib_select && !_prefer_poll */
- 
--}
-+#endif /* _lib_nanosleep */
+ }
 diff --git a/src/lib/libast/tm/tvtouch.c b/src/lib/libast/tm/tvtouch.c
 index d67fc4da8..34f24d678 100644
 --- a/src/lib/libast/tm/tvtouch.c

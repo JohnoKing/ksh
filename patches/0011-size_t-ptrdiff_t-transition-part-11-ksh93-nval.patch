@@ -1,6 +1,6 @@
-From fd7cf5b226ef03965563649b5690f8df2669aa90 Mon Sep 17 00:00:00 2001
+From 3e2fdcd4478faaa1b27368900498a09bc32ac5c5 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sun, 8 Mar 2026 18:46:38 -0700
+Date: Thu, 19 Mar 2026 07:12:44 -0700
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -35,21 +35,21 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-820 => 499 => 61 (progression from part 10 => part 11 => part 13)
+808 => 487 => 42 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/include/name.h     |  10 +-
- src/cmd/ksh93/include/national.h |   2 +-
+ src/cmd/ksh93/include/national.h |   4 +-
  src/cmd/ksh93/include/nval.h     |  32 ++--
  src/cmd/ksh93/nval.3             |  12 +-
- src/cmd/ksh93/sh/array.c         | 169 +++++++++++----------
- src/cmd/ksh93/sh/name.c          | 252 ++++++++++++++++---------------
+ src/cmd/ksh93/sh/array.c         | 169 ++++++++++----------
+ src/cmd/ksh93/sh/name.c          | 260 ++++++++++++++++---------------
  src/cmd/ksh93/sh/nvdisc.c        |  33 ++--
- src/cmd/ksh93/sh/nvtree.c        |  69 +++++----
+ src/cmd/ksh93/sh/nvtree.c        |  69 ++++----
  src/cmd/ksh93/sh/nvtype.c        | 184 +++++++++++-----------
- src/cmd/ksh93/sh/string.c        |  57 +++----
- 10 files changed, 417 insertions(+), 403 deletions(-)
+ src/cmd/ksh93/sh/string.c        |  64 ++++----
+ 10 files changed, 426 insertions(+), 411 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/name.h b/src/cmd/ksh93/include/name.h
 index ff5ce6c49..ebff38339 100644
@@ -98,7 +98,7 @@ index ff5ce6c49..ebff38339 100644
  
  extern const Namdisc_t	RESTRICTED_disc;
 diff --git a/src/cmd/ksh93/include/national.h b/src/cmd/ksh93/include/national.h
-index 1a234ce76..b1987cf42 100644
+index 1a234ce76..38f654b06 100644
 --- a/src/cmd/ksh93/include/national.h
 +++ b/src/cmd/ksh93/include/national.h
 @@ -32,7 +32,7 @@
@@ -106,8 +106,9 @@ index 1a234ce76..b1987cf42 100644
  #endif /* SHOPT_MULTIBYTE */
  
 -extern int sh_strchr(const char*,const char*);
+-extern int sh_strwidth(const char*);
 +extern ptrdiff_t sh_strchr(const char*,const char*);
- extern int sh_strwidth(const char*);
++extern size_t sh_strwidth(const char*);
  
  #endif /* _national_h_defined */
 diff --git a/src/cmd/ksh93/include/nval.h b/src/cmd/ksh93/include/nval.h
@@ -805,7 +806,7 @@ index 3d2af19dd..b910cb069 100644
  	if(nv_isarray(np))
  	{
 diff --git a/src/cmd/ksh93/sh/name.c b/src/cmd/ksh93/sh/name.c
-index 1f212101a..3460bc396 100644
+index 1f212101a..77381b663 100644
 --- a/src/cmd/ksh93/sh/name.c
 +++ b/src/cmd/ksh93/sh/name.c
 @@ -44,7 +44,7 @@ static Dtdisc_t	_Refdisc =
@@ -1302,6 +1303,18 @@ index 1f212101a..3460bc396 100644
  						else if(flags&NV_SHORT)
  							ll = *((uint16_t*)sp);
  						else
+@@ -1748,9 +1750,9 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
+ 						if(flags&NV_LONG)
+ 							ll = *((Sflong_t*)sp);
+ 						else if(flags&NV_SHORT)
+-							ll = *((uint16_t*)sp);
++							ll = *((int16_t*)sp);
+ 						else
+-							ll = *((uint32_t*)sp);
++							ll = *((int32_t*)sp);
+ 					}
+ 				}
+ 				else if(sp)
 @@ -1766,35 +1768,35 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
  				int32_t l=0;
  				if(flags&NV_INTEGER)
@@ -1346,6 +1359,15 @@ index 1f212101a..3460bc396 100644
  				}
  				else if(sp)
  				{
+@@ -1802,7 +1804,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
+ 					if(ld<0)
+ 						l = (int32_t)ld;
+ 					else
+-						l = (uint32_t)ld;
++						l = (int32_t)((uint32_t)ld);
+ 				}
+ 				if(nv_size(np) <= 1)
+ 					nv_setsize(np,10);
 @@ -1830,7 +1832,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
  	else
  	{
@@ -1558,7 +1580,13 @@ index 1f212101a..3460bc396 100644
  			strcpy(cp, sp);
  			if(sp && (mp=nv_opensub(np)))
  			{
-@@ -2922,7 +2926,7 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
+@@ -2917,12 +2921,12 @@ void nv_newattr (Namval_t *np, unsigned newatts, int size)
+ 				 * Calculate the default terminal width for -L, -R, -Z if no numeric option-argument was given.
+ 				 * Note: we count terminal positions, not characters (double-width adds 2, control char adds 0)
+ 				 */
+-				size = sh_strwidth(cp);
++				size = (ssize_t)sh_strwidth(cp);
+ 			}
  		}
  		else if(!trans)
  			nv_unset(np,NV_EXPORT);
@@ -2581,7 +2609,7 @@ index c7948d6a8..12ba96778 100644
  			sfprintf(out,"%.*s",strlen(cp)-1,cp);
  		nv_unset(L_ARGNOD,NV_RDONLY);
 diff --git a/src/cmd/ksh93/sh/string.c b/src/cmd/ksh93/sh/string.c
-index fa6028779..44e559fc8 100644
+index fa6028779..a63809dac 100644
 --- a/src/cmd/ksh93/sh/string.c
 +++ b/src/cmd/ksh93/sh/string.c
 @@ -107,7 +107,7 @@ int sh_lookopt(const char *sp, int *invert)
@@ -2806,6 +2834,26 @@ index fa6028779..44e559fc8 100644
  {
  	const char *cp;
  	if(mbwide())
+@@ -684,15 +685,16 @@ int sh_strchr(const char *string, const char *dp)
+ /*
+  * Return the number of terminal columns occupied by a string when printed.
+  */
+-int sh_strwidth(const char *s)
++size_t sh_strwidth(const char *s)
+ {
+-	int w = 0, c, n;
++	size_t w = 0;
++	int c, n;
+ 	while (c = mbchar(s))
+ 	{
+ 		if (c < 0)				/* invalid multibyte character: count as 1 position */
+ 			w++;
+ 		else if ((n = mbwidth(c)) > 0)		/* don't count control characters (which yield -1) */
+-			w += n;
++			w += (unsigned)n;
+ 	}
+ 	return w;
+ }
 -- 
 2.53.0
 
