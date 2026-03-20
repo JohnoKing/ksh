@@ -257,7 +257,8 @@ int sh_lex(Lex_t* lp)
 {
 	const char	*state;
 	ptrdiff_t	n;
-	int		c, mode=ST_BEGIN, wordflags=0;
+	int		c, mode=ST_BEGIN;
+	uint8_t		argflgs, wordflags=0;
 	int		inlevel=lp->lexd.level, assignment=0, ingrave=0;
 	int		epatchar=0;
 	ssize_t		varnametry = 0, varnamecount = 0, varnamelength = 0;
@@ -1295,13 +1296,13 @@ breakloop:
 			return c;
 		}
 		if(n==LBRACT)
-			c = 0;
+			argflgs = 0;
 		else if(n==RBRACE && lp->comsub)
 			return lp->token=(int)n;
 		else if(n=='~')
-			c = ARG_MAC;
+			argflgs = ARG_MAC;
 		else
-			c = (wordflags&ARG_EXP);
+			argflgs = (wordflags&ARG_EXP);
 		n = 1;
 	}
 	else if(n>2 && state[0]=='{' && state[n-1]=='}' && !lp->lex.intest && !lp->lex.incase && (c=='<' || c== '>'))
@@ -1313,29 +1314,29 @@ breakloop:
 			lp->arg = stkfreeze(sh.stk,1);
 			return lp->token=IOVNAME;
 		}
-		c = wordflags;
+		argflgs = wordflags;
 	}
 	else
-		c = wordflags;
+		argflgs = wordflags;
 	if(assignment || (lp->lex.intest&&!lp->lex.incase) || mode==ST_NONE)
-		c &= ~ARG_EXP;
-	if((c&ARG_EXP) && (c&ARG_QUOTED))
-		c |= ARG_MAC;
+		argflgs &= ~ARG_EXP;
+	if((argflgs&ARG_EXP) && (argflgs&ARG_QUOTED))
+		argflgs |= ARG_MAC;
 	if(mode==ST_NONE)
 	{
 		/* eliminate trailing )) */
 		stkseek(sh.stk,stktell(sh.stk)-2);
 	}
-	if(c&ARG_MESSAGE)
+	if(argflgs&ARG_MESSAGE)
 	{
 		if(sh_isoption(SH_DICTIONARY))
 			lp->arg = endword(2);
-		c |= ARG_MAC;
+		argflgs |= ARG_MAC;
 	}
-	if(c==0 || (c&(ARG_MAC|ARG_EXP|ARG_MESSAGE)))
+	if(argflgs==0 || (argflgs&(ARG_MAC|ARG_EXP|ARG_MESSAGE)))
 	{
 		lp->arg = stkfreeze(sh.stk,1);
-		lp->arg->argflag = (c?c:ARG_RAW);
+		lp->arg->argflag = (argflgs?argflgs:ARG_RAW);
 	}
 	else if(mode==ST_NONE)
 		lp->arg = endword(-1);

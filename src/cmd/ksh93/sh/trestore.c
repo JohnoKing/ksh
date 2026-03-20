@@ -185,7 +185,7 @@ static struct argnod *r_arg(void)
 			sfread(infile,ap->argval,(size_t)l);
 		ap->argval[l] = 0;
 		ap->argchn.cp = 0;
-		ap->argflag = sfgetc(infile);
+		ap->argflag = (uint8_t)sfgetc(infile);
 		ap = stkfreeze(stkp,0);
 		if(*ap->argval==0 && (ap->argflag&ARG_EXP))
 			ap->argchn.ap = (struct argnod*)r_tree();

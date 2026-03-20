@@ -743,7 +743,7 @@ static Shnode_t	*arithfor(Lex_t *lexp,Shnode_t *tf)
 	ptrdiff_t	offset;
 	struct argnod	*argp;
 	int		n;
-	int		argflag = lexp->arg->argflag;
+	uint8_t		argflag = lexp->arg->argflag;
 	Fcin_t		sav_input;
 	/* save current input */
 	fcsave(&sav_input);
@@ -1405,12 +1405,12 @@ static struct argnod *process_sub(Lex_t *lexp,int tok)
 {
 	struct argnod *argp;
 	Shnode_t *t;
-	int mode = (tok==OPROCSYM);
+	uint8_t mode = (tok==OPROCSYM);
 	t = sh_cmd(lexp,RPAREN,SH_NL);
 	argp = stkalloc(sh.stk,sizeof(struct argnod));
 	*argp->argval = 0;
 	argp->argchn.ap = (struct argnod*)makeparent(lexp,mode?TFORK|FPIN|FAMP|FPCL:TFORK|FPOU,t);
-	argp->argflag =  (ARG_EXP|mode);
+	argp->argflag = (ARG_EXP|mode);
 	return argp;
 }
 
