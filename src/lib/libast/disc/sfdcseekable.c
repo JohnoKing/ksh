@@ -35,10 +35,7 @@ typedef struct _skable_s
 	int		eof;	/* if eof has been reached */
 } Seek_t;
 
-static ssize_t skwrite(Sfio_t*		f,	/* stream involved */
-		       const void*	buf,	/* buffer to read into */
-		       size_t		n,	/* number of bytes to read */
-		       Sfdisc_t*	disc)	/* discipline */
+static ssize_t skwrite(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* disc)
 {
 	NOT_USED(f);
 	NOT_USED(buf);
