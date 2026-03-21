@@ -1,6 +1,6 @@
-From f6fae20362a3f89337ac40d3658d0eaebf6789d6 Mon Sep 17 00:00:00 2001
+From b96e0a04e4765484bc8c4e4f1ffa782abe26ef0f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Thu, 19 Mar 2026 07:12:00 -0700
+Date: Fri, 20 Mar 2026 20:24:33 -0700
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -15,7 +15,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-916 => 808 => 42 (progression from part 9 => part 10 => part 13)
+912 => 803 => 37 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -28,12 +28,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/bltins/mkservice.c |   6 +-
  src/cmd/ksh93/bltins/print.c     |  11 +--
  src/cmd/ksh93/bltins/read.c      | 112 ++++++++++++++++---------------
- src/cmd/ksh93/bltins/trap.c      |  16 ++---
+ src/cmd/ksh93/bltins/trap.c      |  18 ++---
  src/cmd/ksh93/bltins/typeset.c   |  34 +++++-----
  src/cmd/ksh93/bltins/ulimit.c    |  24 +++----
  src/cmd/ksh93/bltins/umask.c     |   8 ++-
  src/cmd/ksh93/include/builtins.h |   2 +-
- 14 files changed, 146 insertions(+), 135 deletions(-)
+ 14 files changed, 147 insertions(+), 136 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -687,11 +687,20 @@ index 4c7c2c0fc..33d36618d 100644
  							}
  							if(cp = (unsigned char*)sfgetr(iop,delim,0))
 diff --git a/src/cmd/ksh93/bltins/trap.c b/src/cmd/ksh93/bltins/trap.c
-index fa4d6085b..e8e59c82d 100644
+index a1e8d0ca7..3cf883f7c 100644
 --- a/src/cmd/ksh93/bltins/trap.c
 +++ b/src/cmd/ksh93/bltins/trap.c
-@@ -172,7 +172,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
- 				if(sh.subshell && !sh.subshare)
+@@ -165,7 +165,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
+ 			else
+ 			{
+ 				const int index = sig / 8;
+-				const uint8_t sigbit = (uint8_t)1 << sig % 8;
++				const uint8_t sigbit = (uint8_t)(1 << sig % 8);
+ 				/*
+ 				 * Trap or ignore EXIT (0) or a signal. A virtual subshell must fork
+ 				 * in order to receive signals correctly and (because other commands
+@@ -174,7 +174,7 @@ int	b_trap(int argc,char *argv[],Shbltin_t *context)
+ 				if(sig > 0 && sh.subshell && !sh.subshare)
  					sh_subfork();
  				if(sig >= sh.st.trapmax)
 -					sh.st.trapmax = sig+1;
@@ -699,7 +708,7 @@ index fa4d6085b..e8e59c82d 100644
  				arg = sh.st.trapcom[sig];
  				sh_sigtrap(sig);
  				sh.st.trapcom[sig] = (sh.sigflag[sig]&SH_SIGOFF) ? Empty : sh_strdup(action);
-@@ -353,18 +353,18 @@ int	b_suspend(int argc,char *argv[],Shbltin_t *context)
+@@ -358,18 +358,18 @@ int	b_suspend(int argc,char *argv[],Shbltin_t *context)
  static int sig_number(const char *string)
  {
  	const Shtable_t	*tp;
@@ -721,7 +730,7 @@ index fa4d6085b..e8e59c82d 100644
  		do
  		{
  			c = *string++;
-@@ -380,20 +380,20 @@ static int sig_number(const char *string)
+@@ -385,20 +385,20 @@ static int sig_number(const char *string)
  			o += 3;
  			if(isdigit(*stkptr(sh.stk,o)))
  			{
@@ -745,7 +754,7 @@ index fa4d6085b..e8e59c82d 100644
  		}
  		if((n>>SH_SIGBITS)&SH_SIGRUNTIME)
  			n = sh.sigruntime[(n&((1<<SH_SIGBITS)-1))-1];
-@@ -500,7 +500,7 @@ static void sig_list(int flag)
+@@ -505,7 +505,7 @@ static void sig_list(int flag)
  		}
  		else if(sig&SH_TRAP)
  			traps[sig&~SH_TRAP] = (char*)tp->sh_name;

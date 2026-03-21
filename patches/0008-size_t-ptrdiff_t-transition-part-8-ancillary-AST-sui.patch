@@ -1,6 +1,6 @@
-From b4f3621a1906e4c13456933b184ae4467990439e Mon Sep 17 00:00:00 2001
+From f01daf5cbdf7b8ffeeff511092a336cd4cf10a19 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Thu, 19 Mar 2026 07:10:34 -0700
+Date: Fri, 20 Mar 2026 20:23:01 -0700
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,194 => 1,038 => 42 (progression from part 7 => part 8 => part 13)
+1,190 => 1,034 => 37 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -26,7 +26,6 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/builtin/features/pty |  4 ++-
  src/cmd/builtin/pty.c        | 62 ++++++++++++++++++------------------
  src/lib/libdll/dll_lib.c     | 14 ++++----
- src/lib/libdll/dllopen.c     | 58 +--------------------------------
  src/lib/libdll/dllscan.c     | 44 ++++++++++++-------------
  src/lib/libsum/sum-ast4.c    |  4 +--
  src/lib/libsum/sum-crc.c     | 29 +++++++++--------
@@ -36,13 +35,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libsum/sum-sha1.c    |  4 +--
  src/lib/libsum/sum-sha2.c    |  2 +-
  src/lib/libsum/sumlib.c      | 14 ++++----
- 14 files changed, 136 insertions(+), 186 deletions(-)
+ 13 files changed, 135 insertions(+), 129 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
-index f5a22148f..942519b5a 100644
+index 59629bf7a..6982d51f6 100644
 --- a/src/cmd/INIT/mamake.c
 +++ b/src/cmd/INIT/mamake.c
-@@ -291,13 +291,13 @@ static struct				/* program state		*/
+@@ -292,13 +292,13 @@ static struct				/* program state		*/
  	int		force;		/* all targets out of date	*/
  	int		ignore;		/* ignore command errors	*/
  	int		indent;		/* debug indent			*/
@@ -58,7 +57,7 @@ index f5a22148f..942519b5a 100644
  
  	Stream_t	streams[4];	/* input file stream stack	*/
  	Stream_t	*sp;		/* input stream stack pointer	*/
-@@ -499,8 +499,8 @@ static char *appendn(Buf_t *buf, char *str, size_t n)
+@@ -500,8 +500,8 @@ static char *appendn(Buf_t *buf, char *str, size_t n)
  
  	if ((n + 1) >= (size_t)(buf->end - buf->nxt))
  	{
@@ -69,7 +68,7 @@ index f5a22148f..942519b5a 100644
  		if (!(buf->buf = realloc(buf->buf, m)))
  			out_of_memory();
  		buf->end = buf->buf + m;
-@@ -832,7 +832,7 @@ static void view(void)
+@@ -833,7 +833,7 @@ static void view(void)
  				zp = zp->next = vp;
  			if (!c)
  				break;
@@ -78,7 +77,7 @@ index f5a22148f..942519b5a 100644
  			s = t;
  		}
  	}
-@@ -923,7 +923,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -924,7 +924,7 @@ static void substitute(Buf_t *buf, char *s)
  			if (c == '[')
  			{
  				append(buf, b);
@@ -87,7 +86,7 @@ index f5a22148f..942519b5a 100644
  				continue;
  			}
  
-@@ -943,7 +943,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -944,7 +944,7 @@ static void substitute(Buf_t *buf, char *s)
  			if ((c == ':' || c == '=') && (state.strict >= 2 || !v || c == ':' && !*v))
  			{
  				append(buf, b);
@@ -96,7 +95,7 @@ index f5a22148f..942519b5a 100644
  				continue;
  			}
  
-@@ -954,7 +954,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -955,7 +955,7 @@ static void substitute(Buf_t *buf, char *s)
  
  			/* Un-terminate the variable name */
  
@@ -105,7 +104,7 @@ index f5a22148f..942519b5a 100644
  
  			/* Find the ending '}', dealing with nesting */
  
-@@ -978,7 +978,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -979,7 +979,7 @@ static void substitute(Buf_t *buf, char *s)
  				q = cond(t - 1);
  				if (v)
  				{
@@ -114,7 +113,7 @@ index f5a22148f..942519b5a 100644
  						v = 0;
  				}
  				else if (q == t)
-@@ -991,7 +991,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -992,7 +992,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *t;
  						*t = 0;
  						substitute(buf, q + 1);
@@ -123,7 +122,7 @@ index f5a22148f..942519b5a 100644
  					}
  				}
  				else
-@@ -1002,7 +1002,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1003,7 +1003,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *q;
  						*q = 0;
  						substitute(buf, t + 1);
@@ -132,7 +131,7 @@ index f5a22148f..942519b5a 100644
  					}
  				}
  				break;
-@@ -1023,9 +1023,9 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1024,9 +1024,9 @@ static void substitute(Buf_t *buf, char *s)
  							q++;
  						n++;
  						c = *q, *q = 0;  /* terminate for duplicate() */
@@ -144,7 +143,7 @@ index f5a22148f..942519b5a 100644
  					}
  					if (!argv)
  						break;
-@@ -1071,13 +1071,13 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1072,13 +1072,13 @@ static void substitute(Buf_t *buf, char *s)
  					q = use(scr);
  					if ((argv ? (argv[2] = q, execute_v(NULL, argv)) : execute(NULL, q)) != 0)
  						error_out("expansion script error", t);
@@ -160,7 +159,7 @@ index f5a22148f..942519b5a 100644
  					if (final_newline)
  						unadd(buf);
  					if (ferror(f) || fclose(f) == EOF)
-@@ -1101,7 +1101,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1102,7 +1102,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					substitute(buf, t);
@@ -169,7 +168,7 @@ index f5a22148f..942519b5a 100644
  					break;
  				}
  				if (c != '-')
-@@ -1162,7 +1162,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1163,7 +1163,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					append(buf, b);
@@ -178,7 +177,7 @@ index f5a22148f..942519b5a 100644
  					continue;
  				}
  				break;
-@@ -1171,7 +1171,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1172,7 +1172,7 @@ static void substitute(Buf_t *buf, char *s)
  				s++;
  		}
  		else
@@ -187,7 +186,7 @@ index f5a22148f..942519b5a 100644
  	}
  }
  
-@@ -1265,7 +1265,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1266,7 +1266,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					c = vp->dir[vp->node];
  					vp->dir[vp->node] = 0;
  					append(buf, vp->dir);
@@ -196,7 +195,7 @@ index f5a22148f..942519b5a 100644
  				}
  				else
  				{
-@@ -1273,7 +1273,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1274,7 +1274,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					append(buf, "/");
  				}
  				append(buf, file);
@@ -205,7 +204,7 @@ index f5a22148f..942519b5a 100644
  				s = use(buf);
  				if (s = status(buf, o, s, st))
  				{
-@@ -1699,7 +1699,7 @@ static void run(Rule_t *r, char *s)
+@@ -1700,7 +1700,7 @@ static void run(Rule_t *r, char *s)
  					else
  					{
  						for (i = 3; isspace(*(t + i)); i++);
@@ -214,7 +213,7 @@ index f5a22148f..942519b5a 100644
  						for (s = t + i; *s && !isspace(*s); s++);
  						c = *s;
  						*s = 0;
-@@ -1723,7 +1723,7 @@ static void run(Rule_t *r, char *s)
+@@ -1724,7 +1724,7 @@ static void run(Rule_t *r, char *s)
  					}
  				}
  			}
@@ -223,7 +222,7 @@ index f5a22148f..942519b5a 100644
  		s = use(buf);
  		if (tofree)
  			free(tofree);
-@@ -1802,7 +1802,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
+@@ -1803,7 +1803,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
  		pop();
  	}
  	for (h = 0, s = cc; *s; s++)
@@ -232,7 +231,7 @@ index f5a22148f..942519b5a 100644
  	/* use the hash as the file name */
  	append(buf, state.installroot);
  	append(buf, "/lib/probe/C/mam/");
-@@ -1842,7 +1842,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1843,7 +1843,7 @@ static void attributes(Rule_t *r, char *s)
  		int	flag = 0;
  		for (; isspace(*s); s++);
  		for (t = s; *s && !isspace(*s); s++);
@@ -241,7 +240,7 @@ index f5a22148f..942519b5a 100644
  			break;
  		switch (*t)
  		{
-@@ -1894,7 +1894,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1895,7 +1895,7 @@ static void attributes(Rule_t *r, char *s)
   * append libNAME.a to the given buffer
   */
  
@@ -250,7 +249,7 @@ index f5a22148f..942519b5a 100644
  {
  	append(buf, "lib");
  	append(buf, name);
-@@ -1960,7 +1960,7 @@ static char *require(char *lib, int dontcare)
+@@ -1961,7 +1961,7 @@ static char *require(char *lib, int dontcare)
  					break;
  				do
  				{
@@ -259,7 +258,7 @@ index f5a22148f..942519b5a 100644
  				} while ((c = fgetc(f)) != EOF && !isspace(c));
  				s = use(tmp);
  				if (s[0] && (s[0] != '-' || s[1]))
-@@ -2806,7 +2806,7 @@ int main(int argc, char **argv)
+@@ -2819,7 +2819,7 @@ int main(int argc, char **argv)
  		case 'j':
  			append(state.opt, " -j");
  			append(state.opt, opt_info.arg);
@@ -268,7 +267,7 @@ index f5a22148f..942519b5a 100644
  			continue;
  		case 'k':
  			append(state.opt, " -k");
-@@ -2839,7 +2839,7 @@ int main(int argc, char **argv)
+@@ -2852,7 +2852,7 @@ int main(int argc, char **argv)
  		case 'D':
  			append(state.opt, " -D");
  			append(state.opt, opt_info.arg);
@@ -277,7 +276,7 @@ index f5a22148f..942519b5a 100644
  			if (state.debug > 0)
  				state.debug = 0;
  			continue;
-@@ -2879,7 +2879,7 @@ int main(int argc, char **argv)
+@@ -2892,7 +2892,7 @@ int main(int argc, char **argv)
  				break;
  			}
  			for (t = s += 2; *t && *t != '='; t++);
@@ -286,7 +285,7 @@ index f5a22148f..942519b5a 100644
  			{
  				if (*t)
  				{
-@@ -2896,7 +2896,7 @@ int main(int argc, char **argv)
+@@ -2909,7 +2909,7 @@ int main(int argc, char **argv)
  				}
  				setval(state.vars, s - 1, v);
  				if (c)
@@ -295,7 +294,7 @@ index f5a22148f..942519b5a 100644
  				continue;
  			}
  			usage();
-@@ -3060,7 +3060,7 @@ int main(int argc, char **argv)
+@@ -3073,7 +3073,7 @@ int main(int argc, char **argv)
  				append(tmp, ".FORCE");
  				setval(state.vars, use(tmp), v);
  				drop(tmp);
@@ -622,86 +621,6 @@ index 172c0fb79..bac33c412 100644
  		lib->next = loaded;
  		loaded = lib;
  		errorf("dll", NULL, -1, "dll_lib: %s version %lu loaded from %s", names->name, version, lib->path);
-diff --git a/src/lib/libdll/dllopen.c b/src/lib/libdll/dllopen.c
-index 6003c592c..d7f980db9 100644
---- a/src/lib/libdll/dllopen.c
-+++ b/src/lib/libdll/dllopen.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1997-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -22,60 +22,6 @@
- 
- #include "dlllib.h"
- 
--#if 0
--
--/*
-- * dlopen() wrapper that properly initializes LIBPATH
-- * with the path of the dll to be opened
-- *
-- * 2009-04-15 -- if ld.so re-checked the env this would work ...
-- */
--
--void*
--dllopen(const char* name, int mode)
--{
--	void*		dll;
--	Dllinfo_t*	info;
--	char*		olibpath;
--	char*		path;
--	char*		oenv;
--	char*		nenv[2];
--	char*		dir;
--	char*		base;
--	int		len;
--
--	if (!environ)
--	{
--		nenv[0] = nenv[1] = 0;
--		environ = nenv;
--	}
--	info = dllinfo();
--	oenv = environ[0];
--	olibpath = getenv(info->env);
--	if (base = strrchr(name, '/'))
--	{
--		dir = (char*)name;
--		len = ++base - dir;
--	}
--	else
--	{
--		dir = "./";
--		len = 2;
--		base = (char*)name;
--	}
--	path = sfprints("%-.*s%s%c%s=%-.*s%s%s", len, dir, base, 0, info->env, len, dir, olibpath ? ":" : "", olibpath ? olibpath : "");
--	environ[0] = path + strlen(path) + 1;
--	state.error = 0;
--	dll = dlopen(path, mode);
--	if (environ == nenv)
--		environ = 0;
--	else
--		environ[0] = oenv;
--	return dll;
--}
--
--#else
--
- /*
-  * dlopen() wrapper -- waiting for prestidigitations
-  */
-@@ -86,5 +32,3 @@ dllopen(const char* name, int mode)
- 	state.error = 0;
- 	return dlopen(name, mode);
- }
--
--#endif
 diff --git a/src/lib/libdll/dllscan.c b/src/lib/libdll/dllscan.c
 index d4ff7b598..450e999ec 100644
 --- a/src/lib/libdll/dllscan.c

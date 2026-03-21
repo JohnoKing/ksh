@@ -1,6 +1,6 @@
-From 585446796911b701534290a60cae96f453b38bf7 Mon Sep 17 00:00:00 2001
+From 865ba0ab435dd5f98b3c99bfe1d89cfedeab1530 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Thu, 19 Mar 2026 07:07:43 -0700
+Date: Fri, 20 Mar 2026 20:19:58 -0700
 Subject: size_t/ptrdiff_t transition part 4: libast regex and string
  sublibraries
 
@@ -13,7 +13,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-3,088 => 2,489 => 42 (progression from part 3 => part 4 => part 13)
+3,084 => 2,485 => 37 (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

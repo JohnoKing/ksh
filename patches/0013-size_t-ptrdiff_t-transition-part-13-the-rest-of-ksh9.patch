@@ -1,6 +1,6 @@
-From ea9317b9bb2fba43a4eb2b60b062e10ebb3be0bf Mon Sep 17 00:00:00 2001
+From 5b09a685022a8e485989114eb7b0994d583008ae Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Thu, 19 Mar 2026 07:14:10 -0700
+Date: Fri, 20 Mar 2026 20:26:54 -0700
 Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -33,7 +33,7 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-361 => 42 (progression from part 12 => part 13)
+353 => 37 (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 I'll note that I have a patch that expands nvflags to uint64_t which helps
@@ -66,25 +66,25 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/main.c         |  21 ++--
  src/cmd/ksh93/sh/path.c         | 104 ++++++++-------
  src/cmd/ksh93/sh/streval.c      |  51 ++++----
- src/cmd/ksh93/sh/xec.c          | 115 +++++++++--------
+ src/cmd/ksh93/sh/xec.c          | 109 ++++++++--------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++
- 26 files changed, 446 insertions(+), 373 deletions(-)
+ 26 files changed, 443 insertions(+), 370 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index ff491c070..086546051 100644
+index 70585e0b4..d98339a91 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
- For full details, see the git log at: https://github.com/ksh93/ksh
- Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2026-03-19:
-+
+ 2026-03-20:
+ 
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2026-03-16:
- 
- - Fixed a bug in the join(1) built-in command (bound to /opt/ast/bin) that
++2026-03-20:
++
+ - Fixed a memory leak that occurred when any subshell or ksh function with
+   'function name' syntax is invoked while at least one signal or EXIT trap
+   is set in the invoking environment.
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -367,10 +367,10 @@ index 8c4882a75..54ba6dc28 100644
  
  #if SHOPT_DYNAMIC
 diff --git a/src/cmd/ksh93/include/shell.h b/src/cmd/ksh93/include/shell.h
-index 963b751b9..1e94db8e2 100644
+index 2dfede2f0..33732aed9 100644
 --- a/src/cmd/ksh93/include/shell.h
 +++ b/src/cmd/ksh93/include/shell.h
-@@ -367,7 +367,7 @@ struct Shell_s
+@@ -374,7 +374,7 @@ struct Shell_s
  	Shbltin_t	bltindata;
  	ptrdiff_t	offsets[10];
  	Sfio_t		**sftable;
@@ -2375,7 +2375,7 @@ index 1e77d44f8..1065c097c 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index 936e37ada..f006df936 100644
+index cae9e4d52..5ac138a1f 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
 @@ -147,10 +147,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
@@ -2500,7 +2500,7 @@ index 936e37ada..f006df936 100644
  	char comsub = sh.comsub;
  	io_save = iop; /* preserve correct value across longjmp */
  	sh.binscript = 0;
-@@ -699,7 +704,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
+@@ -698,7 +703,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
  	savein = dup(0);
  	if(fd==0)
  		fd = savein;
@@ -2509,7 +2509,7 @@ index 936e37ada..f006df936 100644
  	ast_close(0);
  	open(e_devnull,O_RDONLY);
  	sh.offsets[0] = -1;
-@@ -1114,10 +1119,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1113,10 +1118,11 @@ int sh_exec(const Shnode_t *t, int flags)
  				/* check for builtins */
  				if(np && is_abuiltin(np))
  				{
@@ -2523,7 +2523,7 @@ index 936e37ada..f006df936 100644
  					struct checkpt	*buffp;
  					Shbltin_t	*bp = &sh.bltindata;
  					/* Fallback optimization for ':'/'true' and 'false' */
-@@ -1628,7 +1634,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1627,7 +1633,8 @@ int sh_exec(const Shnode_t *t, int flags)
  		    case TSETIO:
  		    {
  			pid_t	pid = 0;
@@ -2533,7 +2533,7 @@ index 936e37ada..f006df936 100644
  			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
  			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  			if(sh.subshell && !sh.subshare)
-@@ -1641,7 +1648,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1640,7 +1647,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				for (i = t->fork.forkio; i; i = i->ionxt)
  				{
  					unsigned f = i->iofile;
@@ -2542,7 +2542,7 @@ index 936e37ada..f006df936 100644
  					{
  						sh_subfork();
  						break;
-@@ -1688,7 +1695,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1687,7 +1694,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				free_list(buffp->olist);
  			if(type&FPIN)
  			{
@@ -2552,18 +2552,7 @@ index 936e37ada..f006df936 100644
  				job.waitall = waitall;
  				if(!(e & SH_EXITSIG))
  				{
-@@ -1727,8 +1735,8 @@ int sh_exec(const Shnode_t *t, int flags)
- 				if((nsig=sh.st.trapmax*sizeof(char*))>0 || sh.st.trapcom[0])
- 				{
- 					nsig += sizeof(char*);
--					savsig = sh_malloc(nsig);
--					memcpy(savsig,(char*)&sh.st.trapcom[0],nsig);
-+					savsig = sh_malloc((size_t)nsig);
-+					memcpy(savsig,(char*)&sh.st.trapcom[0],(size_t)nsig);
- 					sh.st.otrapcom = (char**)savsig;
- 				}
- 				/* Still act like a subshell: reseed $RANDOM and increment ${.sh.subshell} */
-@@ -1757,11 +1765,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1755,11 +1763,11 @@ int sh_exec(const Shnode_t *t, int flags)
  		    {
  			int	pvo[3];	/* old pipe for multi-stage */
  			int	pvn[3];	/* current set up pipe */
@@ -2578,7 +2567,7 @@ index 936e37ada..f006df936 100644
  			int	savejobid = job.curjobid;
  			int	*exitval=0,*saveexitval = job.exitval;
  			pid_t	savepgid = job.curpgid;
-@@ -1784,8 +1792,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1782,8 +1790,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				job.curpgid = 0;
  				while((tn=tn->lst.lstrit) && tn->tre.tretyp==TFIL)
  					job.waitall++;
@@ -2589,7 +2578,7 @@ index 936e37ada..f006df936 100644
  			}
  			else
  				job.waitall = !pipejob && (sh_isstate(SH_MONITOR) || sh_isstate(SH_TIMING));
-@@ -1944,7 +1952,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1942,7 +1950,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				if(t->tre.tretyp&COMSCAN)
  				{
  					char *val;
@@ -2598,7 +2587,7 @@ index 936e37ada..f006df936 100644
  					if(refresh)
  					{
  						sh_menu(sfstderr,nargs,args);
-@@ -1971,7 +1979,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1969,7 +1977,7 @@ int sh_exec(const Shnode_t *t, int flags)
  							goto check;
  						}
  						while(c = *cp++)
@@ -2607,7 +2596,7 @@ index 936e37ada..f006df936 100644
  								break;
  						if(c!=0)
  							c = nargs;
-@@ -2289,7 +2297,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2287,7 +2295,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			{
  				Dt_t *root;
  				Namval_t *oldnspace = sh.namespace;
@@ -2616,7 +2605,7 @@ index 936e37ada..f006df936 100644
  				int	flags=NV_NOARRAY|NV_VARNAME;
  				struct checkpt *chkp = stkalloc(sh.stk,sizeof(struct checkpt));
  				int jmpval;
-@@ -2333,7 +2341,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2331,7 +2339,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			error_info.line = t->funct.functline-sh.st.firstline;
  			if(cp || sh.prefix)
  			{
@@ -2625,7 +2614,7 @@ index 936e37ada..f006df936 100644
  				if(sh.prefix)
  				{
  					cp = sh.prefix;
-@@ -2344,7 +2352,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2342,7 +2350,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				}
  				else
  				{
@@ -2634,7 +2623,7 @@ index 936e37ada..f006df936 100644
  					sfputc(sh.stk,0);
  					npv = nv_open(stkptr(sh.stk,offset),sh.var_tree,NV_NOARRAY|NV_VARNAME);
  				}
-@@ -2440,7 +2448,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2438,7 +2446,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				rp->nspace = sh.namespace;
  				rp->fname = 0;
  				rp->argv = ac ? ac->comarg.dp->dolval + 1 : NULL;
@@ -2643,7 +2632,7 @@ index 936e37ada..f006df936 100644
  				rp->fdict = sh.fun_tree;
  				fp = (struct functnod*)(slp+1);
  				if(fp->functtyp==(TFUN|FAMP))
-@@ -2508,7 +2516,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2506,7 +2514,7 @@ int sh_exec(const Shnode_t *t, int flags)
  					{
  						char unop[3];
  						unop[0] = '-';
@@ -2652,7 +2641,7 @@ index 936e37ada..f006df936 100644
  						unop[2] = 0;
  						argv[1] = unop;
  						argv[2] = left;
-@@ -2536,7 +2544,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2534,7 +2542,7 @@ int sh_exec(const Shnode_t *t, int flags)
  						argv[5] = 0;
  						sh_debug(trap,NULL,NULL,argv,pattern);
  					}
@@ -2661,7 +2650,7 @@ index 936e37ada..f006df936 100644
  					if(traceon)
  					{
  						sfprintf(sfstderr,"%s %s ",sh_fmtq(left),op);
-@@ -2607,17 +2615,17 @@ int sh_run(int argn, char *argv[])
+@@ -2605,17 +2613,17 @@ int sh_run(int argn, char *argv[])
  {
  	struct dolnod	*dp;
  	struct comnod	*t = stkalloc(sh.stk,sizeof(struct comnod));
@@ -2682,7 +2671,7 @@ index 936e37ada..f006df936 100644
  	t->comarg.dp = dp;
  	if(!strchr(argv[0],'/'))
  		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);
-@@ -2697,16 +2705,16 @@ static void timed_out(void *handle)
+@@ -2695,16 +2703,16 @@ static void timed_out(void *handle)
   */
  pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  {
@@ -2702,7 +2691,7 @@ index 936e37ada..f006df936 100644
  			errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_nofork);
  			UNREACHABLE();
  		}
-@@ -2716,17 +2724,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
+@@ -2714,17 +2722,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  		{
  			if(nochild)
  				pause();
@@ -2724,7 +2713,7 @@ index 936e37ada..f006df936 100644
  		if(job.toclear)
  			job_clear();
  		job.waitall = waitall;
-@@ -2864,7 +2873,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2862,7 +2871,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	Namval_t	node,*mp,*np, *nref[9], **nr=nref;
  	char		*argv[2];
  	struct funenv	funenv;
@@ -2733,7 +2722,7 @@ index 936e37ada..f006df936 100644
  	np = (Namval_t*)fp;
  	funenv.node = np;
  	funenv.nref = nref;
-@@ -2874,7 +2883,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2872,7 +2881,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	SH_VALNOD->nvmeta = NULL;
  	SH_VALNOD->nvflag = NV_LDOUBLE|NV_NOFREE;
  	SH_VALNOD->nvalue = NULL;
@@ -2742,7 +2731,7 @@ index 936e37ada..f006df936 100644
  	{
  		*nr++ = mp = nv_namptr(sh.mathnodes,i);
  		mp->nvalue = arg++;
-@@ -2978,7 +2987,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
+@@ -2976,7 +2985,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
  	}
  	if(!posix_fun)
  	{
@@ -2751,16 +2740,7 @@ index 936e37ada..f006df936 100644
  		if(!fun)
  		{
  			if(nv_isattr(fp->node,NV_TAGGED))
-@@ -3124,7 +3133,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
- 		for (isig = 0; isig < nsig; ++isig)
- 			if (sh.st.trapcom[isig] && sh.st.trapcom[isig]!=Empty)
- 				free(sh.st.trapcom[isig]);
--		memcpy((char*)&sh.st.trapcom[0],savsig,nsig*sizeof(char*));
-+		memcpy((char*)&sh.st.trapcom[0],savsig,(size_t)nsig*sizeof(char*));
- 		free(savsig);
- 	}
- 	sh.trapnote=0;
-@@ -3198,7 +3207,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
+@@ -3175,7 +3184,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
  	struct checkpt	*checkpoint;
  	int		jmpval = 0;
  	int		jmpthresh;

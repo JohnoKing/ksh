@@ -1,6 +1,6 @@
-From eadef94d240a0766ed315613b420e5c2daf6e076 Mon Sep 17 00:00:00 2001
+From 4787bc312a8638eddbcaeb0e13bbb558d7e4f4b6 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Thu, 19 Mar 2026 07:11:17 -0700
+Date: Fri, 20 Mar 2026 20:23:47 -0700
 Subject: size_t/ptrdiff_t transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,038 => 916 => 42 (progression from part 8 => part 9 => part 13)
+1,034 => 912 => 37 (progression from part 8 => part 9 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
