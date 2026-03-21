@@ -33,6 +33,8 @@ git checkout 33e66eac603f8203bc3239b251417a02a3762946  # part 1
 bld
 git checkout fefe896e35a7904088037d39dba4fae313fc33ac  # part 2
 bld
+git checkout 1c4bf2c65f3858784721e6d5944b19b4b4d00fd4  # part 3
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -64,32 +66,6 @@ upc() {
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
-
-fetch src/lib/libast/aso
-fetch src/lib/libast/cdt
-fetch src/lib/libast/features
-unfetch src/lib/libast/features/tty
-fetch src/lib/libast/include/aso.h
-fetch src/lib/libast/man/aso.3
-fetch src/lib/libast/include/cdt.h
-upc
-git commit -m 'size_t/ptrdiff_t transition part 3: aso, CDT, libast feature tests
-
-This is the third of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The libast aso library.
-- The libast CDT library.
-- The libast feature tests.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[2]} ${w[3]} ${w[13]} ;}"' (progression from part 2 => part 3 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
-
-
 fetch src/lib/libast/regex/
 fetch src/lib/libast/string/
 fetch src/lib/libast/include/regex.h
@@ -111,8 +87,6 @@ Change in the number of warnings on Linux when compiling with clang using
 '"${ printf "%'d => %'d => %'d" ${w[3]} ${w[4]} ${w[13]} ;}"' (progression from part 3 => part 4 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592'
-
-
 
 fetch src/lib/libast/comp/
 fetch src/lib/libast/misc/
