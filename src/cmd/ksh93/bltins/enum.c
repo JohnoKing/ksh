@@ -198,12 +198,12 @@ static void put_enum(Namval_t* np,const char *val,int flags,Namfun_t *fp)
 
 static char* get_enum(Namval_t* np, Namfun_t *fp)
 {
-	static char buff[6];
+	static char buff[21];
 	struct Enum *ep = (struct Enum*)fp;
-	ssize_t n = nv_getn(np,fp);
+	intmax_t n = nv_getn(np,fp);
 	if(n < ep->nelem)
 		return (char*)ep->values[n];
-	sfsprintf(buff,sizeof(buff),"%jd%c",(intmax_t)n,0);
+	sfsprintf(buff,sizeof(buff),"%jd%c",n,0);
 	return buff;
 }
 
