@@ -15,7 +15,9 @@
 *            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
-#ifndef NOTSYM
+#ifndef _SHLEX_H
+#define _SHLEX_H
+
 /*
  *	UNIX shell
  *	Written by David Korn
@@ -190,4 +192,4 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
     extern unsigned long        kiaentity(Lex_t*, const char*,ssize_t,int,int,int,unsigned long,int,size_t,const char*);
 #endif /* SHOPT_KIA */
 
-#endif /* !NOTSYM */
+#endif /* !_SHLEX_H */

@@ -781,8 +781,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, useconds_t delay, int timeout)
 {
 	int		op;
 	int		line;
-	int		n;
-	useconds_t	ud;
+	intmax_t	n;
 	char*		s;
 	char*		m;
 	char*		e;
@@ -919,11 +918,11 @@ dialogue(Sfio_t* mp, Sfio_t* lp, useconds_t delay, int timeout)
 			match(s, m, 1);
 			break;
 		case 's':
-			ud = (useconds_t)strtol(s, &e, 0);
+			n = strtoll(s, &e, 0);
 			if (*e)
 				error(2, "%s: invalid delay -- milliseconds expected", s);
-			if (ud)
-				usleep(ud * 1000);
+			if (n)
+				usleep((useconds_t)n * 1000);
 			break;
 		case 't':
 			timeout = (int)strtol(s, &e, 0);

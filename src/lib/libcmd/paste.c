@@ -218,7 +218,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
 		error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
 		UNREACHABLE();
 	}
-	dlen = dsiz = stresc(delim);
+	dlen = dsiz = (ssize_t)stresc(delim);
 	mp = 0;
 	if (mbwide())
 	{

@@ -175,7 +175,7 @@ static int	blankline(Vi_t*, int);
 static void	cursor(Vi_t*, int);
 static void	del_line(Vi_t*,int);
 static int	getcount(Vi_t*,int);
-static void	getline(Vi_t*,int);
+static void	get_line(Vi_t*,int);
 static int	getrchar(Vi_t*);
 static int	mvcursor(Vi_t*,int);
 static void	refresh(Vi_t*,int);
@@ -312,7 +312,7 @@ int ed_viread(void *context, int fd, char *shbuf, int nchar, int reedit)
 		vp->ofirst_wind = INVALID;
 		refresh(vp,INPUT);
 	}
-	getline(vp,APPEND);
+	get_line(vp,APPEND);
 	if(vp->ed->e_multiline)
 		cursor(vp, last_phys);
 	/*** add a new line if user typed unescaped \n ***/
@@ -1045,7 +1045,7 @@ static int getcount(Vi_t *vp,int c)
  *
 }*/
 
-static void getline(Vi_t* vp,int mode)
+static void get_line(Vi_t* vp,int mode)
 {
 	int	c;
 	int	tmp;
@@ -2015,7 +2015,7 @@ static int search(Vi_t* vp,int mode)
 		append(vp,mode, APPEND);
 		refresh(vp,INPUT);
 		first_virt = 1;
-		getline(vp,SEARCH);
+		get_line(vp,SEARCH);
 		first_virt = 0;
 		virtual[last_virt + 1] = '\0';	/*** make null-terminated ***/
 		vp->direction = mode=='/' ? -1 : 1;

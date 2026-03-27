@@ -28,7 +28,7 @@
  * coded for portability
  */
 
-#define RELEASE_DATE "2026-03-19"
+#define RELEASE_DATE "2026-03-26"
 static char id[] = "\n@(#)$Id: mamake (ksh 93u+m) " RELEASE_DATE " $\0\n";
 
 #if _PACKAGE_ast
@@ -160,9 +160,9 @@ static const char usage[] =
 #define unadd(b)	(--(b)->nxt)
 #define getsize(b)	((b)->nxt-(b)->buf)
 #define setsize(b,o)	((b)->nxt=(b)->buf+(o))
-#define use(b)		(*(b)->nxt=0,(b)->nxt=(b)->buf)
+#define use(b)		(((b)->nxt >= (b)->end) ? append(b, "") : NULL, *(b)->nxt = 0, (b)->nxt = (b)->buf)
 
-#define CHUNK		1024		/* buffer() growth chunk size	*/
+#define CHUNK		128		/* buffer() growth chunk size	*/
 #define KEY(a,b,c,d)	((((unsigned long)(a))<<24)|(((unsigned long)(b))<<16)|(((unsigned long)(c))<<8)|(((unsigned long)(d))))
 
 #define PARALLEL(r)	(state.maxjobs > 1 && state.strict >= 5 && !((r)->flags & RULE_virtual))
@@ -549,6 +549,53 @@ static char *duplicate(char *s)
 }
 
 /*
+ * Remove duplicates from the set of space-separated fields in the string r.
+ * Keep the last-mentioned item of each field that occurs multiple times (this
+ * is required for passing libraries to the linker in the correct order; that
+ * is, each dependency must come after all the libraries that depend on it).
+ *
+ * Returns an allocated copy of the deduplicated string, unless it's empty.
+ */
+
+static char *dedup_fields(char *r)
+{
+	Buf_t	*query = buffer(), *fields = buffer(), *scratch = buffer();
+	char	*s, sav, nodupes;
+
+	while (1)
+	{
+		/* Find start of next field */
+		for (; *r == ' '; r++);
+		if (!*r)
+			break;
+		/* Find end of next field */
+		for (s = r; *s && *s != ' '; s++);
+		/* Scan ahead for duplicates; if none found, append it to fields */
+		sav = *s, *s = '\0';
+		if (sav)
+		{	/* prepend and append spaces to avoid substring matches */
+			add(scratch, ' '), append(scratch, s + 1), add(scratch, ' ');
+			add(query, ' '), append(query, r), add(query, ' ');
+			nodupes = !strstr(use(scratch), use(query));
+		}
+		else	/* already at end: no dupes ahead */
+			nodupes = 1;
+		if (nodupes)
+			add(fields, ' '), append(fields, r);
+		*s = sav;
+		r = s;
+	}
+	r = use(fields);
+	if (*r == ' ')
+		r++;
+	r = duplicate(r);
+	drop(scratch);
+	drop(fields);
+	drop(query);
+	return r;
+}
+
+/*
  * open a new dictionary
  */
 
@@ -767,7 +814,7 @@ static void view(void)
 	{
 		char	buf[PATH_MAX + 1];
 		if (!getcwd(buf, sizeof buf))
-			error_out("cannot determine PWD", strerror(errno));
+			error_out(strerror(errno), "cannot determine PWD");
 		state.pwd = duplicate(buf);
 		vnode->value = state.pwd;
 	}
@@ -1996,11 +2043,11 @@ static char *require(char *lib, int dontcare)
 				r = "";
 			}
 		}
-		r = duplicate(r);
+		drop(tmp);
+		r = dedup_fields(r);
+		drop(buf);
 		setval(state.vars, varname, r);
 		report(-4, r, varname, NULL);
-		drop(tmp);
-		drop(buf);
 	}
 	return r;
 }
@@ -2216,7 +2263,6 @@ static void make(Rule_t *r, Makestate_t *parentstate)
 			continue;
 
 		case KEY('d','o','n','e'):
-			r->endline = state.sp->line;
 			if (parentstate)
 			{
 				/* loop block done */
@@ -2227,6 +2273,7 @@ static void make(Rule_t *r, Makestate_t *parentstate)
 			if (!*r->name)
 				error_out("done without make", NULL);
 			/* make block done */
+			r->endline = state.sp->line;
 			if (*t)
 			{	/* target is optional; use it for sanity check if present */
 				q = rule(t);

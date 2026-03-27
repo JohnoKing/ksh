@@ -16,13 +16,13 @@
 *                                                                      *
 ***********************************************************************/
 #ifndef _SHNODES_H
-#define _SHNODES_H	1
+#define _SHNODES_H
+
 /*
  *	UNIX shell
  *	Written by David Korn
  *
  */
-
 
 #include	<ast.h>
 #include	"argnod.h"
@@ -213,4 +213,4 @@ extern Sfio_t 			*sh_subshell(Shnode_t*, volatile int, char);
 extern ssize_t			sh_tdump(Sfio_t*, const Shnode_t*);
 extern Shnode_t			*sh_trestore(Sfio_t*);
 
-#endif /* _SHNODES_H */
+#endif /* !_SHNODES_H */

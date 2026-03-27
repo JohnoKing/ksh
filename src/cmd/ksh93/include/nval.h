@@ -17,7 +17,8 @@
 *                   Chase <nicetrynsa@protonmail.ch>                   *
 *                                                                      *
 ***********************************************************************/
-#ifndef NV_DEFAULT
+#ifndef _NVAL_H
+#define _NVAL_H
 /*
  * David Korn
  * AT&T Labs
@@ -281,4 +282,4 @@ extern const Namdisc_t	*nv_discfun(int);
 #define nv_size(np)		nv_setsize((np),(size_t)-1)
 #define nv_stack(np,nf)		nv_disc(np,nf,0)
 
-#endif /* NV_DEFAULT */
+#endif /* !_NVAL_H */

@@ -15,7 +15,8 @@
 *            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
-#ifndef fcgetc
+#ifndef _FCIN_H
+#define _FCIN_H
 /*
  * David Korn
  * AT&T Labs
@@ -63,4 +64,4 @@ void			fcnotify(void(*)(Sfio_t*,const char*,ptrdiff_t,void*),void*);
 
 extern Fcin_t		_Fcin;		/* used by macros */
 
-#endif /* fcgetc */
+#endif /* !_FCIN_H */

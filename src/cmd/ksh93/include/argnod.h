@@ -15,7 +15,8 @@
 *            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
-#ifndef ARG_RAW
+#ifndef _ARGNOD_H
+#define _ARGNOD_H
 /*
  *	struct to hold a word argument
  *	Written by David Korn
@@ -100,13 +101,10 @@ struct argnod
 	char		argval[4];
 };
 
-
-
 /* The following should evaluate to the offset of argval in argnod */
 #define ARGVAL		offsetof(struct argnod,argval[0])
 #define sh_argstr(ap)	((ap)->argflag&ARG_RAW?sh_fmtq((ap)->argval):(ap)->argval)
 #define ARG_SPARE 1
-
 
 /* legal argument flags */
 #define ARG_RAW		0x1	/* string needs no processing */
@@ -132,10 +130,9 @@ extern struct dolnod	*sh_argcreate(char*[]);
 extern char 		*sh_argdolminus(void*);
 extern int		sh_argopts(int,char*[]);
 
-
 extern const char	e_heading[];
 extern const char	e_subst[];
 extern const char	e_exec[];
 extern const char	e_devfdNN[];
 
-#endif /* ARG_RAW */
+#endif /* _ARGNOD_H */

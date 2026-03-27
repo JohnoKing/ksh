@@ -43,7 +43,7 @@ fmtbuf(size_t n)
 		{
 			if (n > bigsiz)
 			{
-				bigsiz = roundof(n, (size_t)(8 * 1024));
+				bigsiz = roundof(n, 8U * 1024U);
 				if (!(big = newof(big, char, bigsiz, 0)))
 					return NULL;
 			}

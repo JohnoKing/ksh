@@ -16,8 +16,9 @@
 *               K. Eugene Carlson <kvngncrlsn@gmail.com>               *
 *                                                                      *
 ***********************************************************************/
-#ifndef shell_h_defined
-#define shell_h_defined
+#ifndef _SHELL_H
+#define _SHELL_H
+
 /*
  * David Korn
  * AT&T Labs
@@ -194,12 +195,6 @@ typedef struct sh_scope
 
 #if _BLD_ksh
 
-#if NSIG
-#define KSH_NSIG	(NSIG)
-#else
-#define KSH_NSIG	128		/* no UN*X system is currently known to have more than 128 signals */
-#endif
-
 /* Private interface to shell scope. The first members must match the public interface. */
 struct sh_scoped
 {
@@ -231,7 +226,7 @@ struct sh_scoped
 	char		**otrapcom;	/* save parent EXIT and signals for v=$(trap) */
 	void		*timetrap;	/* for the 'alarm' built-in */
 	struct Ufunction *real_fun;	/* current 'function name' function */
-	uint8_t		trapnofree[(KSH_NSIG+7)/8];  /* bitmask to stop b_trap() freeing trapcom entries */
+	uint8_t		trapnofree[16];	/* bitmask to stop b_trap() freeing trapcom entries */
 };
 
 struct limits
@@ -497,7 +492,7 @@ extern Shell_t		sh;
 
 #define chdir(a)	sh_chdir(a)
 #define fchdir(a)	sh_fchdir(a)
-#ifndef defs_h_defined
+#ifndef _DEFS_H
 #   define access(a,b)	sh_access(a,b)
 #   define close(a)	sh_close(a)
 #   define exit(a)	sh_exit(a)
@@ -508,10 +503,10 @@ extern Shell_t		sh;
 #   define dup		sh_dup
 #   define open		sh_open
 #   define lseek	sh_seek
-#endif /* !defs_h_defined */
+#endif /* !_DEFS_H */
 
 #define SH_SIGSET	4
 #define SH_EXITSIG	0400	/* signal exit bit */
 #define SH_EXITMASK	(SH_EXITSIG-1)	/* normal exit status bits */
 
-#endif /* !shell_h_defined */
+#endif /* !_SHELL_H */

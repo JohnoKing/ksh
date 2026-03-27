@@ -76,12 +76,12 @@ regex_t*
 regcache(const char* pattern, regflags_t reflags, int* status)
 {
 	Cache_t*	cp;
-	long		i;
+	ssize_t		i;
 	int		j;
 	char*		s;
-	long		empty;
-	long		unused;
-	long		old;
+	ssize_t		empty;
+	ssize_t		unused;
+	ssize_t		old;
 	Key_t		key;
 
 	/*
@@ -135,7 +135,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 		((char*)&key)[i] = 0;
 	empty = unused = -1;
 	old = 0;
-	for (i = (long)matchstate.size; i--;)
+	for (i = (ssize_t)matchstate.size; i--;)
 		if (!matchstate.cache[i])
 			empty = i;
 		else if (!matchstate.cache[i]->keep)
@@ -164,7 +164,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 			cp->keep = 0;
 			regfree(&cp->re);
 		}
-		if ((i = (long)strlen(pattern) + 1) > (long)cp->size)
+		if ((i = (ssize_t)strlen(pattern) + 1) > (ssize_t)cp->size)
 		{
 			cp->size = (size_t)roundof(i, ROUND);
 			if (!(cp->pattern = newof(cp->pattern, char, cp->size, 0)))

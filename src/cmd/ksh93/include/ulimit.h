@@ -16,7 +16,8 @@
 *                                                                      *
 ***********************************************************************/
 #ifndef _ULIMIT_H
-#define _ULIMIT_H 1
+#define _ULIMIT_H
+
 /*
  * This is for the ulimit built-in command
  */
@@ -185,4 +186,4 @@ extern const int	shtab_units[];
 extern const char	e_unlimited[];
 extern const char*	e_units[];
 
-#endif /* _ULIMIT_H */
+#endif /* !_ULIMIT_H */

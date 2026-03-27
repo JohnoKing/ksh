@@ -15,7 +15,8 @@
 *            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
-#ifndef HIST_VERSION
+#ifndef _HIST_H
+#define _HIST_H
 /*
  *	Interface for history mechanism
  *	written by David Korn
@@ -92,4 +93,4 @@ extern char 		*hist_word(char*, int, int);
 
 #endif /* SHOPT_SCRIPTONLY */
 
-#endif /* HIST_VERSION */
+#endif /* !_HIST_H */

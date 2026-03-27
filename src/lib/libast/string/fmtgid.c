@@ -37,7 +37,7 @@ extern struct group*	getgrgid(gid_t);
 typedef struct Id_s
 {
 	Dtlink_t	link;
-	int		id;
+	gid_t		id;
 	char		name[1];
 } Id_t;
 
@@ -46,7 +46,7 @@ typedef struct Id_s
  */
 
 char*
-fmtgid(int gid)
+fmtgid(gid_t gid)
 {
 	Id_t*		ip;
 	char*		name;
@@ -59,7 +59,7 @@ fmtgid(int gid)
 	if (!dict)
 	{
 		disc.key = offsetof(Id_t, id);
-		disc.size = sizeof(int);
+		disc.size = sizeof(gid_t);
 		dict = dtopen(&disc, Dtset);
 	}
 	else if (ip = (Id_t*)dtmatch(dict, &gid))

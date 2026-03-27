@@ -35,6 +35,8 @@ git checkout fefe896e35a7904088037d39dba4fae313fc33ac  # part 2
 bld
 git checkout 1c4bf2c65f3858784721e6d5944b19b4b4d00fd4  # part 3
 bld
+git checkout 69aa97299350c007dbac6abee26ae38e3caa74a5  # part 4
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -65,28 +67,6 @@ upc() {
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
-
-fetch src/lib/libast/regex/
-fetch src/lib/libast/string/
-fetch src/lib/libast/include/regex.h
-fetch src/lib/libast/include/swap.h
-fetch src/lib/libast/man/swap.3
-fetch src/lib/libast/man/regex.3
-upc
-git commit -m 'size_t/ptrdiff_t transition part 4: libast regex and string sublibraries
-
-This is the fourth of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The libast string library.
-- The libast regex engine.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[3]} ${w[4]} ${w[13]} ;}"' (progression from part 3 => part 4 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast/comp/
 fetch src/lib/libast/misc/
@@ -119,7 +99,6 @@ Remarks:
   marked static to reflect actual usage.
   - typefix() was not extern, but was missing its static designation,
     so that has also been rectified.
-- Removed cmdopen_20110505() to avoid bitrot.
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
@@ -135,8 +114,7 @@ This is the sixth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
 
 The parts of ksh93 affected by this commit are:
-- The the reminder of SFIO located in the disc folder.
-  - Removed sfkeyprintf_20000308() to prevent bitrot.
+- The reminder of SFIO located in the disc folder.
 - The libast tm and tmx sublibraries.
 - The rest of the libast path sublibrary.
 - The rest of the libast headers.

@@ -16,7 +16,9 @@
 *            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
-#ifndef SEQPOINT
+#ifndef _STREVAL_H
+#define _STREVAL_H
+
 /*
  * D. G. Korn
  *
@@ -198,4 +200,5 @@ extern const struct 		mathtab shtab_math[];
 extern Sfdouble_t arith_strval(const char*,char**,Sfdouble_t(*)(const char**,struct lval*,int,Sfdouble_t),int);
 extern Arith_t *arith_compile(const char*,char**,Sfdouble_t(*)(const char**,struct lval*,int,Sfdouble_t),int);
 extern Sfdouble_t arith_exec(Arith_t*);
-#endif /* !SEQPOINT */
+
+#endif /* !_STREVAL_H */

@@ -15,7 +15,8 @@
 *            Johnothan King <johnothanking@protonmail.com>             *
 *                                                                      *
 ***********************************************************************/
-#ifndef PATH_OFFSET
+#ifndef _PATH_H
+#define _PATH_H
 
 /*
  *	UNIX shell path handling interface
@@ -60,9 +61,9 @@ typedef struct pathcomp
 	uint16_t	flags;
 } Pathcomp_t;
 
-#ifndef ARG_RAW
+#ifndef _ARGNOD_H
     struct argnod;
-#endif /* !ARG_RAW */
+#endif /* !_ARGNOD_H */
 
 /* pathname handling routines */
 extern void		path_newdir(Pathcomp_t*);
@@ -124,4 +125,4 @@ extern const char e_autoloadfrom[];
 	extern void sh_accsusp(void);
 #endif /* SHOPT_ACCT */
 
-#endif /*! PATH_OFFSET */
+#endif /* !_PATH_H */

@@ -28,7 +28,7 @@
 
 #include <ast.h>
 
-int
+ptrdiff_t
 strexp(char* s, int flags)
 {
 	char*		t;
@@ -58,7 +58,7 @@ strexp(char* s, int flags)
 	return (int)(t - b);
 }
 
-int
+ptrdiff_t
 stresc(char* s)
 {
 	return strexp(s, FMT_EXP_CHAR|FMT_EXP_LINE|FMT_EXP_WIDE);
