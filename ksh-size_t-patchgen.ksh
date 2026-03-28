@@ -293,6 +293,12 @@ to operate within a 64-bit address space.
 The parts of ksh93 affected by this commit are:
 - The lexing and parsing components in lex.c, parse.c, fcin.c
   and trestore.c.
+  - Added an assert() after stkalloc() to fix the following
+    LTO warning:
+    warning: 'memset' writing 60 bytes into a region of size 0 overflows the destination [-Wstringop-overflow=]
+      1819 |                         memset(ioq,0,sizeof(*ioq));
+           |                         ^
+    lto1: note: destination object is likely at address zero
 - Minor fixes for the virtual subshell mechanism.
 - The code underlying shcomp(1), aka sh_tdump().
 - A minor fix to a cast in sh_timeradd().
