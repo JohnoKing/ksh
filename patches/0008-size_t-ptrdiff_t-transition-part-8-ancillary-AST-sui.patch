@@ -1,6 +1,6 @@
-From f01daf5cbdf7b8ffeeff511092a336cd4cf10a19 Mon Sep 17 00:00:00 2001
+From d96bcab6f2dc6ea00dcc83ef162f47cece6801ba Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:23:01 -0700
+Date: Fri, 27 Mar 2026 17:45:31 -0700
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -24,7 +24,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/INIT/mamake.c        | 62 ++++++++++++++++++------------------
  src/cmd/builtin/features/pty |  4 ++-
- src/cmd/builtin/pty.c        | 62 ++++++++++++++++++------------------
+ src/cmd/builtin/pty.c        | 57 ++++++++++++++++-----------------
  src/lib/libdll/dll_lib.c     | 14 ++++----
  src/lib/libdll/dllscan.c     | 44 ++++++++++++-------------
  src/lib/libsum/sum-ast4.c    |  4 +--
@@ -35,10 +35,10 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libsum/sum-sha1.c    |  4 +--
  src/lib/libsum/sum-sha2.c    |  2 +-
  src/lib/libsum/sumlib.c      | 14 ++++----
- 13 files changed, 135 insertions(+), 129 deletions(-)
+ 13 files changed, 132 insertions(+), 127 deletions(-)
 
 diff --git a/src/cmd/INIT/mamake.c b/src/cmd/INIT/mamake.c
-index 59629bf7a..6982d51f6 100644
+index 693af770f..b40cca3c4 100644
 --- a/src/cmd/INIT/mamake.c
 +++ b/src/cmd/INIT/mamake.c
 @@ -292,13 +292,13 @@ static struct				/* program state		*/
@@ -68,7 +68,7 @@ index 59629bf7a..6982d51f6 100644
  		if (!(buf->buf = realloc(buf->buf, m)))
  			out_of_memory();
  		buf->end = buf->buf + m;
-@@ -833,7 +833,7 @@ static void view(void)
+@@ -880,7 +880,7 @@ static void view(void)
  				zp = zp->next = vp;
  			if (!c)
  				break;
@@ -77,7 +77,7 @@ index 59629bf7a..6982d51f6 100644
  			s = t;
  		}
  	}
-@@ -924,7 +924,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -971,7 +971,7 @@ static void substitute(Buf_t *buf, char *s)
  			if (c == '[')
  			{
  				append(buf, b);
@@ -86,7 +86,7 @@ index 59629bf7a..6982d51f6 100644
  				continue;
  			}
  
-@@ -944,7 +944,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -991,7 +991,7 @@ static void substitute(Buf_t *buf, char *s)
  			if ((c == ':' || c == '=') && (state.strict >= 2 || !v || c == ':' && !*v))
  			{
  				append(buf, b);
@@ -95,7 +95,7 @@ index 59629bf7a..6982d51f6 100644
  				continue;
  			}
  
-@@ -955,7 +955,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1002,7 +1002,7 @@ static void substitute(Buf_t *buf, char *s)
  
  			/* Un-terminate the variable name */
  
@@ -104,7 +104,7 @@ index 59629bf7a..6982d51f6 100644
  
  			/* Find the ending '}', dealing with nesting */
  
-@@ -979,7 +979,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1026,7 +1026,7 @@ static void substitute(Buf_t *buf, char *s)
  				q = cond(t - 1);
  				if (v)
  				{
@@ -113,7 +113,7 @@ index 59629bf7a..6982d51f6 100644
  						v = 0;
  				}
  				else if (q == t)
-@@ -992,7 +992,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1039,7 +1039,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *t;
  						*t = 0;
  						substitute(buf, q + 1);
@@ -122,7 +122,7 @@ index 59629bf7a..6982d51f6 100644
  					}
  				}
  				else
-@@ -1003,7 +1003,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1050,7 +1050,7 @@ static void substitute(Buf_t *buf, char *s)
  						c = *q;
  						*q = 0;
  						substitute(buf, t + 1);
@@ -131,7 +131,7 @@ index 59629bf7a..6982d51f6 100644
  					}
  				}
  				break;
-@@ -1024,9 +1024,9 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1071,9 +1071,9 @@ static void substitute(Buf_t *buf, char *s)
  							q++;
  						n++;
  						c = *q, *q = 0;  /* terminate for duplicate() */
@@ -143,7 +143,7 @@ index 59629bf7a..6982d51f6 100644
  					}
  					if (!argv)
  						break;
-@@ -1072,13 +1072,13 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1119,13 +1119,13 @@ static void substitute(Buf_t *buf, char *s)
  					q = use(scr);
  					if ((argv ? (argv[2] = q, execute_v(NULL, argv)) : execute(NULL, q)) != 0)
  						error_out("expansion script error", t);
@@ -159,7 +159,7 @@ index 59629bf7a..6982d51f6 100644
  					if (final_newline)
  						unadd(buf);
  					if (ferror(f) || fclose(f) == EOF)
-@@ -1102,7 +1102,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1149,7 +1149,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					substitute(buf, t);
@@ -168,7 +168,7 @@ index 59629bf7a..6982d51f6 100644
  					break;
  				}
  				if (c != '-')
-@@ -1163,7 +1163,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1210,7 +1210,7 @@ static void substitute(Buf_t *buf, char *s)
  					c = *s;
  					*s = 0;
  					append(buf, b);
@@ -177,7 +177,7 @@ index 59629bf7a..6982d51f6 100644
  					continue;
  				}
  				break;
-@@ -1172,7 +1172,7 @@ static void substitute(Buf_t *buf, char *s)
+@@ -1219,7 +1219,7 @@ static void substitute(Buf_t *buf, char *s)
  				s++;
  		}
  		else
@@ -186,7 +186,7 @@ index 59629bf7a..6982d51f6 100644
  	}
  }
  
-@@ -1266,7 +1266,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1313,7 +1313,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					c = vp->dir[vp->node];
  					vp->dir[vp->node] = 0;
  					append(buf, vp->dir);
@@ -195,7 +195,7 @@ index 59629bf7a..6982d51f6 100644
  				}
  				else
  				{
-@@ -1274,7 +1274,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
+@@ -1321,7 +1321,7 @@ static char *find(Buf_t *buf, char *file, struct stat *st)
  					append(buf, "/");
  				}
  				append(buf, file);
@@ -204,7 +204,7 @@ index 59629bf7a..6982d51f6 100644
  				s = use(buf);
  				if (s = status(buf, o, s, st))
  				{
-@@ -1700,7 +1700,7 @@ static void run(Rule_t *r, char *s)
+@@ -1747,7 +1747,7 @@ static void run(Rule_t *r, char *s)
  					else
  					{
  						for (i = 3; isspace(*(t + i)); i++);
@@ -213,7 +213,7 @@ index 59629bf7a..6982d51f6 100644
  						for (s = t + i; *s && !isspace(*s); s++);
  						c = *s;
  						*s = 0;
-@@ -1724,7 +1724,7 @@ static void run(Rule_t *r, char *s)
+@@ -1771,7 +1771,7 @@ static void run(Rule_t *r, char *s)
  					}
  				}
  			}
@@ -222,7 +222,7 @@ index 59629bf7a..6982d51f6 100644
  		s = use(buf);
  		if (tofree)
  			free(tofree);
-@@ -1803,7 +1803,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
+@@ -1850,7 +1850,7 @@ static void probe(Rule_t *r, Makestate_t *stp)
  		pop();
  	}
  	for (h = 0, s = cc; *s; s++)
@@ -231,7 +231,7 @@ index 59629bf7a..6982d51f6 100644
  	/* use the hash as the file name */
  	append(buf, state.installroot);
  	append(buf, "/lib/probe/C/mam/");
-@@ -1843,7 +1843,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1890,7 +1890,7 @@ static void attributes(Rule_t *r, char *s)
  		int	flag = 0;
  		for (; isspace(*s); s++);
  		for (t = s; *s && !isspace(*s); s++);
@@ -240,7 +240,7 @@ index 59629bf7a..6982d51f6 100644
  			break;
  		switch (*t)
  		{
-@@ -1895,7 +1895,7 @@ static void attributes(Rule_t *r, char *s)
+@@ -1942,7 +1942,7 @@ static void attributes(Rule_t *r, char *s)
   * append libNAME.a to the given buffer
   */
  
@@ -249,7 +249,7 @@ index 59629bf7a..6982d51f6 100644
  {
  	append(buf, "lib");
  	append(buf, name);
-@@ -1961,7 +1961,7 @@ static char *require(char *lib, int dontcare)
+@@ -2008,7 +2008,7 @@ static char *require(char *lib, int dontcare)
  					break;
  				do
  				{
@@ -258,7 +258,7 @@ index 59629bf7a..6982d51f6 100644
  				} while ((c = fgetc(f)) != EOF && !isspace(c));
  				s = use(tmp);
  				if (s[0] && (s[0] != '-' || s[1]))
-@@ -2819,7 +2819,7 @@ int main(int argc, char **argv)
+@@ -2866,7 +2866,7 @@ int main(int argc, char **argv)
  		case 'j':
  			append(state.opt, " -j");
  			append(state.opt, opt_info.arg);
@@ -267,7 +267,7 @@ index 59629bf7a..6982d51f6 100644
  			continue;
  		case 'k':
  			append(state.opt, " -k");
-@@ -2852,7 +2852,7 @@ int main(int argc, char **argv)
+@@ -2899,7 +2899,7 @@ int main(int argc, char **argv)
  		case 'D':
  			append(state.opt, " -D");
  			append(state.opt, opt_info.arg);
@@ -276,7 +276,7 @@ index 59629bf7a..6982d51f6 100644
  			if (state.debug > 0)
  				state.debug = 0;
  			continue;
-@@ -2892,7 +2892,7 @@ int main(int argc, char **argv)
+@@ -2939,7 +2939,7 @@ int main(int argc, char **argv)
  				break;
  			}
  			for (t = s += 2; *t && *t != '='; t++);
@@ -285,7 +285,7 @@ index 59629bf7a..6982d51f6 100644
  			{
  				if (*t)
  				{
-@@ -2909,7 +2909,7 @@ int main(int argc, char **argv)
+@@ -2956,7 +2956,7 @@ int main(int argc, char **argv)
  				}
  				setval(state.vars, s - 1, v);
  				if (c)
@@ -294,7 +294,7 @@ index 59629bf7a..6982d51f6 100644
  				continue;
  			}
  			usage();
-@@ -3073,7 +3073,7 @@ int main(int argc, char **argv)
+@@ -3120,7 +3120,7 @@ int main(int argc, char **argv)
  				append(tmp, ".FORCE");
  				setval(state.vars, use(tmp), v);
  				drop(tmp);
@@ -326,7 +326,7 @@ index 73a44e473..335f0d650 100644
  		static char*	pty[] = { "/dev/ptyp0000", "/dev/ptym/ptyp0", "/dev/ptyp0" };
  	#if _lib_ptsname
 diff --git a/src/cmd/builtin/pty.c b/src/cmd/builtin/pty.c
-index a417b49f2..5b95f7bf0 100644
+index 4e93cdc20..461c47435 100644
 --- a/src/cmd/builtin/pty.c
 +++ b/src/cmd/builtin/pty.c
 @@ -254,13 +254,13 @@ mkpty(int* master, int* minion)
@@ -464,7 +464,7 @@ index a417b49f2..5b95f7bf0 100644
  		bp->cursor = 0;
  	}
  	for (t = 0, n = 0; *s; s++)
-@@ -778,11 +777,12 @@ struct Cond_s
+@@ -778,7 +777,7 @@ struct Cond_s
  };
  
  static int
@@ -473,12 +473,7 @@ index a417b49f2..5b95f7bf0 100644
  {
  	int		op;
  	int		line;
- 	int		n;
-+	useconds_t	ud;
- 	char*		s;
- 	char*		m;
- 	char*		e;
-@@ -829,7 +829,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+@@ -829,7 +828,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
  			if (master->prompt && !masterline(mp, lp, master->prompt, 0, timeout, master))
  				goto done;
  			if (delay)
@@ -487,7 +482,7 @@ index a417b49f2..5b95f7bf0 100644
  			if (op == 'w')
  				error(-1, "w \"%s\\r\"", s);
  			else
-@@ -842,10 +842,10 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
+@@ -842,10 +841,10 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
  				goto done;
  			}
  			if (delay)
@@ -500,22 +495,16 @@ index a417b49f2..5b95f7bf0 100644
  			if (*e)
  				error(2, "%s: invalid delay -- milliseconds expected", s);
  			break;
-@@ -919,11 +919,11 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
- 			match(s, m, 1);
- 			break;
- 		case 's':
--			n = (int)strtol(s, &e, 0);
-+			ud = (useconds_t)strtol(s, &e, 0);
+@@ -923,7 +922,7 @@ dialogue(Sfio_t* mp, Sfio_t* lp, int delay, int timeout)
  			if (*e)
  				error(2, "%s: invalid delay -- milliseconds expected", s);
--			if (n)
+ 			if (n)
 -				usleep((unsigned long)n * 1000);
-+			if (ud)
-+				usleep(ud * 1000);
++				usleep((useconds_t)n * 1000);
  			break;
  		case 't':
  			timeout = (int)strtol(s, &e, 0);
-@@ -1018,13 +1018,13 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1018,13 +1017,13 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  	Sfio_t*		lp;
  	char		buf[64];
  
@@ -531,7 +520,7 @@ index a417b49f2..5b95f7bf0 100644
  
  	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
  	for (;;)
-@@ -1054,7 +1054,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1054,7 +1053,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  			stty = opt_info.arg;
  			continue;
  		case 'w':
@@ -540,7 +529,7 @@ index a417b49f2..5b95f7bf0 100644
  			continue;
  		case ':':
  			break;
-@@ -1076,7 +1076,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1076,7 +1075,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  		error(ERROR_system(1), "unable to create pty");
  		UNREACHABLE();
  	}
@@ -549,7 +538,7 @@ index a417b49f2..5b95f7bf0 100644
  	{
  		error(ERROR_system(1), "cannot open master stream");
  		UNREACHABLE();
-@@ -1088,7 +1088,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
+@@ -1088,7 +1087,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
  		for (s = stty; *s; s++)
  			if (isspace(*s))
  				n++;

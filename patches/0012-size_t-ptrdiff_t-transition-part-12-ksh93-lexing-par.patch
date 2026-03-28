@@ -1,6 +1,6 @@
-From b914f3ff4725b3042b2e8fac585a95498dbefd7a Mon Sep 17 00:00:00 2001
+From 44d9c596203634ae2dbd93168bf6af2fa0144f55 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:26:07 -0700
+Date: Fri, 27 Mar 2026 17:48:21 -0700
 Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
  subshells
 
@@ -20,9 +20,9 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/include/fcin.h    |  17 +--
- src/cmd/ksh93/include/shlex.h   |  18 +--
- src/cmd/ksh93/include/shnodes.h |   6 +-
+ src/cmd/ksh93/include/fcin.h    |  15 +--
+ src/cmd/ksh93/include/shlex.h   |  16 +--
+ src/cmd/ksh93/include/shnodes.h |   4 +-
  src/cmd/ksh93/sh/fcin.c         |  25 +++--
  src/cmd/ksh93/sh/lex.c          | 188 +++++++++++++++++---------------
  src/cmd/ksh93/sh/parse.c        |  92 ++++++++--------
@@ -31,21 +31,12 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/tdump.c        |  38 +++----
  src/cmd/ksh93/sh/timers.c       |   4 +-
  src/cmd/ksh93/sh/trestore.c     |  52 ++++-----
- 11 files changed, 236 insertions(+), 218 deletions(-)
+ 11 files changed, 233 insertions(+), 215 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/fcin.h b/src/cmd/ksh93/include/fcin.h
-index 460d27575..605be211e 100644
+index ce325bbcc..22a7e7117 100644
 --- a/src/cmd/ksh93/include/fcin.h
 +++ b/src/cmd/ksh93/include/fcin.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -12,6 +12,7 @@
  *                                                                      *
  *                  David Korn <dgk@research.att.com>                   *
@@ -53,8 +44,8 @@ index 460d27575..605be211e 100644
 +*            Johnothan King <johnothanking@protonmail.com>             *
  *                                                                      *
  ***********************************************************************/
- #ifndef fcgetc
-@@ -33,9 +34,9 @@ typedef struct _fcin
+ #ifndef _FCIN_H
+@@ -34,9 +35,9 @@ typedef struct _fcin
  	unsigned char	*fcptr;		/* pointer to next input char */
  	unsigned char	fcchar;		/* saved character */
  	short		fclen;		/* last multibyte char len */
@@ -66,7 +57,7 @@ index 460d27575..605be211e 100644
  } Fcin_t;
  
  #if SHOPT_MULTIBYTE
-@@ -45,9 +46,9 @@ typedef struct _fcin
+@@ -46,9 +47,9 @@ typedef struct _fcin
  #   define fcmbget(x)	(fcget())
  #endif
  #define fcfile()	(_Fcin._fcfile)
@@ -79,7 +70,7 @@ index 460d27575..605be211e 100644
  #define fcseek(n)	((char*)(_Fcin.fcptr+=(n)))
  #define fcfirst()	((char*)_Fcin.fcbuff)
  #define fclast()	((char*)_Fcin.fclast)
-@@ -56,9 +57,9 @@ typedef struct _fcin
+@@ -57,9 +58,9 @@ typedef struct _fcin
  #define fcsave(x)	(*(x) = _Fcin)
  #define fcrestore(x)	(_Fcin = *(x))
  extern int		fcfill(void);
@@ -92,19 +83,10 @@ index 460d27575..605be211e 100644
  extern Fcin_t		_Fcin;		/* used by macros */
  
 diff --git a/src/cmd/ksh93/include/shlex.h b/src/cmd/ksh93/include/shlex.h
-index 0894a732f..34e61c777 100644
+index 8c0dd6b10..f2ecaee0a 100644
 --- a/src/cmd/ksh93/include/shlex.h
 +++ b/src/cmd/ksh93/include/shlex.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -70,21 +70,21 @@ typedef struct  _shlex_
+@@ -72,21 +72,21 @@ typedef struct  _shlex_
  {
  	struct argnod	*arg;		/* current word */
  	struct ionod	*heredoc;	/* pending here document list */
@@ -130,7 +112,7 @@ index 0894a732f..34e61c777 100644
  	/* The following two struct members are considered private to lex.c */
  	struct _shlex_pvt_lexdata_  lexd;
  	struct _shlex_pvt_lexstate_  lex;
-@@ -166,20 +166,20 @@ typedef struct  _shlex_
+@@ -168,20 +168,20 @@ typedef struct  _shlex_
  extern int		sh_lex(Lex_t*);
  extern Shnode_t		*sh_dolparen(Lex_t*);
  extern Lex_t		*sh_lexopen(Lex_t*, int);
@@ -154,7 +136,7 @@ index 0894a732f..34e61c777 100644
  	char		*scriptname;	/* name of script file */
  	Dt_t		*entity_tree;	/* for entity IDs */
      } Kia_t;
-@@ -187,7 +187,7 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
+@@ -189,7 +189,7 @@ extern noreturn void 	sh_syntax(Lex_t*, int);
      extern Kia_t		kia;
  
      extern int                  kiaclose(Lex_t *);
@@ -162,20 +144,11 @@ index 0894a732f..34e61c777 100644
 +    extern unsigned long        kiaentity(Lex_t*, const char*,ssize_t,int,int,int,unsigned long,int,size_t,const char*);
  #endif /* SHOPT_KIA */
  
- #endif /* !NOTSYM */
+ #endif /* !_SHLEX_H */
 diff --git a/src/cmd/ksh93/include/shnodes.h b/src/cmd/ksh93/include/shnodes.h
-index 59236e1b6..59e9915d7 100644
+index 510d1c165..2b0829af8 100644
 --- a/src/cmd/ksh93/include/shnodes.h
 +++ b/src/cmd/ksh93/include/shnodes.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -209,8 +209,8 @@ union Shnode_u
  
  extern void			sh_freeup(void);
@@ -186,7 +159,7 @@ index 59236e1b6..59e9915d7 100644
 +extern ssize_t			sh_tdump(Sfio_t*, const Shnode_t*);
  extern Shnode_t			*sh_trestore(Sfio_t*);
  
- #endif /* _SHNODES_H */
+ #endif /* !_SHNODES_H */
 diff --git a/src/cmd/ksh93/sh/fcin.c b/src/cmd/ksh93/sh/fcin.c
 index 2badaa5b0..5fc2984c7 100644
 --- a/src/cmd/ksh93/sh/fcin.c

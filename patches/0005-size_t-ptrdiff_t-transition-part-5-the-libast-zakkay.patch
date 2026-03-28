@@ -1,6 +1,6 @@
-From 8a5c40c0e84e918cf01ed39ba6ec99a95bafa32d Mon Sep 17 00:00:00 2001
+From 596943d554335b182ad45ae5fb1d12d8c5d2d843 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:20:44 -0700
+Date: Fri, 27 Mar 2026 17:43:24 -0700
 Subject: size_t/ptrdiff_t transition part 5: the libast zakkaya
 
 This is the fifth of the thickfold patch series, which enables ksh93
@@ -23,11 +23,10 @@ Remarks:
   marked static to reflect actual usage.
   - typefix() was not extern, but was missing its static designation,
     so that has also been rectified.
-- Removed cmdopen_20110505() to avoid bitrot.
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-2,485 => 1,971 => 37 (progression from part 4 => part 5 => part 13)
+2,450 => 1,946 => 37 (progression from part 4 => part 5 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -35,7 +34,6 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/comp/assert.c      |   5 +-
  src/lib/libast/comp/conf.sh       |   4 +-
  src/lib/libast/comp/eaccess.c     |   4 +-
- src/lib/libast/comp/fmtmsglib.c   |  41 ++++---
  src/lib/libast/comp/fnmatch.c     |  22 ++--
  src/lib/libast/comp/frexp.c       |   5 +-
  src/lib/libast/comp/frexpl.c      |   5 +-
@@ -45,11 +43,9 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/comp/omitted.c     |   4 +-
  src/lib/libast/comp/setlocale.c   |  71 ++++++-----
  src/lib/libast/comp/strftime.c    |   5 +-
- src/lib/libast/comp/wordexp.c     |  22 ++--
- src/lib/libast/include/cmdarg.h   |  33 +++--
+ src/lib/libast/comp/wordexp.c     |  20 +--
  src/lib/libast/include/debug.h    |   4 +-
  src/lib/libast/include/glob.h     |   8 +-
- src/lib/libast/misc/cmdarg.c      |  70 +++++------
  src/lib/libast/misc/cmdlib.h      |   9 +-
  src/lib/libast/misc/conformance.c |  17 +--
  src/lib/libast/misc/debug.c       |   4 +-
@@ -78,7 +74,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/port/mc.c          |  44 +++----
  src/lib/libast/port/mnt.c         |  16 +--
  src/lib/libast/std/assert.h       |   5 +-
- 47 files changed, 678 insertions(+), 658 deletions(-)
+ 44 files changed, 611 insertions(+), 579 deletions(-)
 
 diff --git a/src/lib/libast/comp/arc4random.c b/src/lib/libast/comp/arc4random.c
 index 642a8c31a..2975fc044 100644
@@ -158,133 +154,6 @@ index 8a919c6df..63af3b2ab 100644
  				ngroups = -1;
  			else
  				ngroups = getgroups(ngroups, groups);
-diff --git a/src/lib/libast/comp/fmtmsglib.c b/src/lib/libast/comp/fmtmsglib.c
-index aab7247d2..c43fbe56e 100644
---- a/src/lib/libast/comp/fmtmsglib.c
-+++ b/src/lib/libast/comp/fmtmsglib.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-@@ -91,7 +92,7 @@ _mm_severity(void)
- 	{
- 		char*		s;
- 		MM_table_t*	p;
--		int		n;
-+		size_t		n;
- 		int		c;
- 		char*			e;
- 		MM_table_t*		q;
-@@ -134,8 +135,8 @@ _mm_severity(void)
- 			if (n)
- 			{
- 				for (p = (MM_table_t*)mm_severity_init; p->name; p++);
--				n += p - (MM_table_t*)mm_severity_init + 1;
--				if (severity = newof(0, MM_table_t, n, s - e))
-+				n += (size_t)(p - (MM_table_t*)mm_severity_init + 1);
-+				if (severity = newof(0, MM_table_t, n, (size_t)(s - e)))
- 				{
- 					s = (char*)severity + n * sizeof(MM_table_t);
- 					strcpy(s, e);
-@@ -155,7 +156,7 @@ _mm_severity(void)
- 							{
- 							case 0:
- 								*(s - 1) = 0;
--								p->value = strtol(s, NULL, 0);
-+								p->value = (unsigned int)strtoul(s, NULL, 0);
- 								break;
- 							case 1:
- 								p->display = s;
-@@ -182,7 +183,7 @@ _mm_severity(void)
- }
- 
- static char*
--display(const MM_table_t* tab, int value, int mask)
-+display(const MM_table_t* tab, unsigned int value, int mask)
- {
- 	while (tab->name)
- 	{
-@@ -200,13 +201,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
- 	char*		s;
- 	char*		t;
- 	MM_table_t*	p;
--	int			n;
--	int			m;
--	int			r;
--	int			fd;
--	unsigned int		mask;
--	Sfio_t*			sp;
--	char			lab[MM_LABEL_1_MAX + MM_LABEL_2_MAX + 3];
-+	ptrdiff_t	n;
-+	int		m;
-+	int		r;
-+	int		fd;
-+	unsigned int	mask;
-+	Sfio_t*		sp;
-+	char		lab[MM_LABEL_1_MAX + MM_LABEL_2_MAX + 3];
- 
- 	if (!mm.init)
- 	{
-@@ -244,13 +245,13 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
- 				n = MM_LABEL_1_MAX;
- 			sfprintf(sp, "%*.*s:", n, n, s);
- 			s = ++t;
--			if ((n = strlen(t)) > MM_LABEL_2_MAX)
-+			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_2_MAX)
- 				n = MM_LABEL_2_MAX;
- 			sfprintf(sp, "%*.*s", n, n, s);
- 		}
- 		else
- 		{
--			if ((n = strlen(t)) > MM_LABEL_1_MAX)
-+			if ((n = (ptrdiff_t)strlen(t)) > MM_LABEL_1_MAX)
- 				n = MM_LABEL_1_MAX;
- 			sfprintf(sp, "%*.*s", n, n, s);
- 		}
-@@ -287,7 +288,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
- 		else break;
- 		if ((mask & MM_label) && label)
- 			sfprintf(sp, "%s: ", lab);
--		if ((mask & MM_severity) && (s = display(mm_severity, severity, 0)))
-+		if ((mask & MM_severity) && (s = display(mm_severity, (unsigned)severity, 0)))
- 			sfprintf(sp, "%s: ", s);
- 		n = sfstrtell(sp);
- 		if ((mask & MM_text) && text)
-@@ -311,17 +312,17 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
- 			if (mask & (MM_class|MM_source|MM_status))
- 			{
- 				sfputc(sp, ' ');
--				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, m, 1)))
-+				if ((mask & MM_source) && (m = classification & (MM_APPL|MM_UTIL|MM_OPSYS)) && (s = display(mm_class, (unsigned)m, 1)))
- 					sfprintf(sp, " %s", s);
--				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, m, 1)))
-+				if ((mask & MM_class) && (m = classification & (MM_HARD|MM_SOFT|MM_FIRM)) && (s = display(mm_class, (unsigned)m, 1)))
- 					sfprintf(sp, " %s", s);
--				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, m, 1)))
-+				if ((mask & MM_status) && (m = classification & (MM_RECOVER|MM_NRECOV)) && (s = display(mm_class, (unsigned)m, 1)))
- 					sfprintf(sp, " %s", s);
- 			}
- 			sfputc(sp, '\n');
- 		}
- 		n = sfstrtell(sp);
--		if (!(s = sfstruse(sp)) || write(fd, s, n) != n)
-+		if (!(s = sfstruse(sp)) || write(fd, s, (size_t)n) != n)
- 			r |= c;
- 	}
- 	sfstrclose(sp);
 diff --git a/src/lib/libast/comp/fnmatch.c b/src/lib/libast/comp/fnmatch.c
 index 7e423478d..0c2b3164b 100644
 --- a/src/lib/libast/comp/fnmatch.c
@@ -1225,18 +1094,9 @@ index 6fba37b7f..dceef146e 100644
  
  #endif
 diff --git a/src/lib/libast/comp/wordexp.c b/src/lib/libast/comp/wordexp.c
-index 8142caff8..902186016 100644
+index fdcbddb64..4d8d5d42c 100644
 --- a/src/lib/libast/comp/wordexp.c
 +++ b/src/lib/libast/comp/wordexp.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -38,11 +38,11 @@ struct list
  static int	sh_unquote(char* string)
  {
@@ -1250,7 +1110,7 @@ index 8142caff8..902186016 100644
 +		return (int)(sp-string);
  	if((dp=sp) > string && sp[-1]=='$')
  	{
- 		int n=stresc(sp+1);
+ 		ptrdiff_t n=stresc(sp+1);
 @@ -56,7 +56,7 @@ static int	sh_unquote(char* string)
  			*dp++ = c;
  	}
@@ -1304,66 +1164,6 @@ index 8142caff8..902186016 100644
  	while(ac-- > 0)
  	{
  		*av++ = cp;
-diff --git a/src/lib/libast/include/cmdarg.h b/src/lib/libast/include/cmdarg.h
-index 8ab85a048..3dbf1d638 100644
---- a/src/lib/libast/include/cmdarg.h
-+++ b/src/lib/libast/include/cmdarg.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -31,20 +31,20 @@
- 
- #define CMD_VERSION	20120411L
- 
--#define CMD_CHECKED	(1<<9)		/* cmdopen() argv[0] ok		*/
--#define CMD_EMPTY	(1<<0)		/* run once, even if no args	*/
--#define CMD_EXACT	(1<<1)		/* last command must have argmax*/
--#define CMD_EXIT	(1<<11)		/* fatal error_info.exit()	*/
--#define CMD_IGNORE	(1<<2)		/* ignore EXIT_QUIT exit	*/
--#define CMD_INSERT	(1<<3)		/* argpat for insertion		*/
--#define CMD_MINIMUM	(1<<4)		/* argmax is a minimum		*/
--#define CMD_NEWLINE	(1<<5)		/* echo separator is newline	*/
--#define CMD_POST	(1<<6)		/* argpat is post arg position	*/
--#define CMD_QUERY	(1<<7)		/* trace and query each command	*/
--#define CMD_SILENT	(1<<10)		/* no error messages		*/
--#define CMD_TRACE	(1<<8)		/* trace each command		*/
-+#define CMD_CHECKED	(1U<<9)		/* cmdopen() argv[0] ok		*/
-+#define CMD_EMPTY	(1U<<0)		/* run once, even if no args	*/
-+#define CMD_EXACT	(1U<<1)		/* last command must have argmax*/
-+#define CMD_EXIT	(1U<<11)	/* fatal error_info.exit()	*/
-+#define CMD_IGNORE	(1U<<2)		/* ignore EXIT_QUIT exit	*/
-+#define CMD_INSERT	(1U<<3)		/* argpat for insertion		*/
-+#define CMD_MINIMUM	(1U<<4)		/* argmax is a minimum		*/
-+#define CMD_NEWLINE	(1U<<5)		/* echo separator is newline	*/
-+#define CMD_POST	(1U<<6)		/* argpat is post arg position	*/
-+#define CMD_QUERY	(1U<<7)		/* trace and query each command	*/
-+#define CMD_SILENT	(1U<<10)	/* no error messages		*/
-+#define CMD_TRACE	(1U<<8)		/* trace each command		*/
- 
--#define CMD_USER	(1<<12)
-+#define CMD_USER	(1U<<12)
- 
- #define CMDDISC(d,f,e)	(memset(d,0,sizeof(*(d))),(d)->version=CMD_VERSION,(d)->flags=(f),(d)->errorf=(e))
- 
-@@ -72,10 +72,9 @@ typedef struct Cmdarg_s			/* cmdopen() handle		*/
- } Cmdarg_t;
- 
- #ifndef cmdopen
--extern Cmdarg_t*	cmdopen(char**, int, int, const char*, int);
-+extern Cmdarg_t*	cmdopen(char**, int, ssize_t, const char*, uint32_t);
- #endif
--extern Cmdarg_t*	cmdopen_20110505(char**, int, int, const char*, int, Error_f);
--extern Cmdarg_t*	cmdopen_20120411(char**, int, int, const char*, Cmddisc_t*);
-+extern Cmdarg_t*	cmdopen_20120411(char**, int, ssize_t, const char*, Cmddisc_t*);
- extern int		cmdflush(Cmdarg_t*);
- extern int		cmdarg(Cmdarg_t*, const char*, int);
- extern int		cmdclose(Cmdarg_t*);
 diff --git a/src/lib/libast/include/debug.h b/src/lib/libast/include/debug.h
 index 01fdbee63..f4d8794a4 100644
 --- a/src/lib/libast/include/debug.h
@@ -1420,210 +1220,6 @@ index 247c519b5..b344e6267 100644
  
  #ifdef _GLOB_PRIVATE_
  	_GLOB_PRIVATE_
-diff --git a/src/lib/libast/misc/cmdarg.c b/src/lib/libast/misc/cmdarg.c
-index af70dd98a..9e66f2b6f 100644
---- a/src/lib/libast/misc/cmdarg.c
-+++ b/src/lib/libast/misc/cmdarg.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -41,7 +41,7 @@ cmdrun(int argc, char** argv, Cmddisc_t* disc)
- }
- 
- Cmdarg_t*
--cmdopen(char** argv, int argmax, int size, const char* argpat, int flags)
-+cmdopen(char** argv, int argmax, ssize_t size, const char* argpat, uint32_t flags)
- {
- 	Cmddisc_t	disc;
- 
-@@ -72,18 +72,6 @@ cmdopen(char** argv, int argmax, int size, const char* argpat, int flags)
- 
- static const char*	echo[] = { "echo", 0 };
- 
--Cmdarg_t*
--cmdopen_20110505(char** argv, int argmax, int size, const char* argpat, int flags, Error_f errorf)
--{
--	Cmddisc_t	disc;
--
--	memset(&disc, 0, sizeof(disc));
--	disc.version = CMD_VERSION;
--	disc.flags = flags;
--	disc.errorf = errorf;
--	return cmdopen_20120411(argv, argmax, size, argpat, &disc);
--}
--
- /*
-  * open a cmdarg stream
-  * initialize the command for execution
-@@ -91,22 +79,22 @@ cmdopen_20110505(char** argv, int argmax, int size, const char* argpat, int flag
-  */
- 
- Cmdarg_t*
--cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_t* disc)
-+cmdopen_20120411(char** argv, int argmax, ssize_t size, const char* argpat, Cmddisc_t* disc)
- {
- 	Cmdarg_t*	cmd;
--	int		n;
-+	ssize_t		n;
- 	char**		p;
- 	char*		s;
- 	char*		sh;
- 	char*		exe;
--	int		c;
--	int		m;
-+	ssize_t		c;
-+	ssize_t		m;
- 	int		argc;
--	long		x;
-+	ssize_t		x;
- 
- 	char**		post = 0;
- 
--	n = sizeof(char**);
-+	n = (ssize_t)sizeof(char**);
- 	if (*argv)
- 	{
- 		for (p = argv + 1; *p; p++)
-@@ -120,23 +108,23 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
- 			else
- 				n += strlen(*p) + 1;
- 		}
--		argc = p - argv;
-+		argc = (int)(p - argv);
- 	}
- 	else
- 		argc = 0;
- 	for (p = environ; *p; p++)
--		n += sizeof(char**) + strlen(*p) + 1;
--	if ((x = astconf_long(CONF_ARG_MAX)) <= 0)
-+		n += (ssize_t)(sizeof(char**) + strlen(*p) + 1);
-+	if ((x = (ssize_t)astconf_long(CONF_ARG_MAX)) <= 0)
- 		x = ARG_MAX;
- 	if (size <= 0 || size > x)
- 		size = x;
- 	sh = astconf("SH", NULL, NULL);
--	m = n + (argc + 4) * sizeof(char**) + strlen(sh) + 1;
--	m = roundof(m, sizeof(char**));
-+	m = n + (argc + 4) * (ssize_t)sizeof(char**) + (ssize_t)strlen(sh) + 1;
-+	m = (ssize_t)roundof((size_t)m, sizeof(char**));
- 	if (size < m)
- 	{
- 		if (disc->errorf)
--			(*disc->errorf)(NULL, sh, 2, "size must be at least %d", m);
-+			(*disc->errorf)(NULL, sh, 2, "size must be at least %jd", (intmax_t)m);
- 		return NULL;
- 	}
- 	if ((m = x / 10) > 2048)
-@@ -144,8 +132,8 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
- 	if (size > (x - m))
- 		size = x - m;
- 	n = size - n;
--	m = ((disc->flags & CMD_INSERT) && argpat) ? (strlen(argpat) + 1) : 0;
--	if (!(cmd = newof(0, Cmdarg_t, 1, n + m)))
-+	m = ((disc->flags & CMD_INSERT) && argpat) ? ((ssize_t)strlen(argpat) + 1) : 0;
-+	if (!(cmd = newof(0, Cmdarg_t, 1, (size_t)(n + m))))
- 	{
- 		if (disc->errorf)
- 			(*disc->errorf)(NULL, sh, ERROR_SYSTEM|2, "out of memory");
-@@ -156,9 +144,9 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
- 	cmd->errorf = disc->errorf;
- 	if (!(cmd->runf = disc->runf))
- 		cmd->runf = cmdrun;
--	c = n / sizeof(char**);
-+	c = n / (ssize_t)sizeof(char**);
- 	if (argmax <= 0 || argmax > c)
--		argmax = c;
-+		argmax = (int)c;
- 	s = cmd->buf;
- 	if (!(exe = argv[0]))
- 	{
-@@ -172,13 +160,13 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
- 	}
- 	else if (!(disc->flags & CMD_CHECKED))
- 	{
--		if (!pathpath(exe, NULL, PATH_REGULAR|PATH_EXECUTE, s, n + m))
-+		if (!pathpath(exe, NULL, PATH_REGULAR|PATH_EXECUTE, s, (size_t)(n + m)))
- 		{
--			n = EXIT_NOTFOUND;
-+			int ret = EXIT_NOTFOUND;
- 			if (cmd->errorf)
- 				(*cmd->errorf)(NULL, cmd, ERROR_SYSTEM|2, "%s: command not found", exe);
- 			if (disc->flags & CMD_EXIT)
--				(*error_info.exit)(n);
-+				(*error_info.exit)(ret);
- 			free(cmd);
- 			return NULL;
- 		}
-@@ -188,10 +176,10 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
- 	if (m)
- 	{
- 		cmd->insert = strcpy(s, argpat);
--		cmd->insertlen = m - 1;
-+		cmd->insertlen = (size_t)m - 1;
- 		s += m;
- 	}
--	s += sizeof(char**) - (s - cmd->buf) % sizeof(char**);
-+	s += sizeof(char**) - (size_t)(s - cmd->buf) % sizeof(char**);
- 	p = (char**)s;
- 	n -= strlen(*p++ = sh) + 1;
- 	cmd->argv = p;
-@@ -207,7 +195,7 @@ cmdopen_20120411(char** argv, int argmax, int size, const char* argpat, Cmddisc_
- 		c = *cmd->insert;
- 		while (s = *argv)
- 		{
--			while ((s = strchr(s, c)) && strncmp(cmd->insert, s, cmd->insertlen))
-+			while ((s = strchr(s, (int)c)) && strncmp(cmd->insert, s, cmd->insertlen))
- 				s++;
- 			*p++ = s ? *argv : NULL;
- 			argv++;
-@@ -243,7 +231,7 @@ cmdflush(Cmdarg_t* cmd)
- 			(*cmd->errorf)(NULL, cmd, 2, "%d arg command would be too long", cmd->argcount);
- 		return -1;
- 	}
--	cmd->total.args += cmd->argcount;
-+	cmd->total.args += (size_t)cmd->argcount;
- 	cmd->total.commands++;
- 	cmd->argcount = 0;
- 	if (p = cmd->postarg)
-@@ -258,7 +246,7 @@ cmdflush(Cmdarg_t* cmd)
- 		char*	t;
- 		char*	u;
- 		int	c;
--		int	m;
-+		size_t	m;
- 
- 		a = cmd->firstarg[0];
- 		b = (char*)&cmd->nextarg[1];
-@@ -273,12 +261,12 @@ cmdflush(Cmdarg_t* cmd)
- 				{
- 					if (!(u = strchr(t, c)))
- 					{
--						b += sfsprintf(b, e - b, "%s", t);
-+						b += sfsprintf(b, (size_t)(e - b), "%s", t);
- 						break;
- 					}
- 					if (!strncmp(s, u, m))
- 					{
--						b += sfsprintf(b, e - b, "%-.*s%s", u - t, t, a);
-+						b += sfsprintf(b, (size_t)(e - b), "%-.*s%s", u - t, t, a);
- 						t = u + m;
- 					}
- 					else if (b >= e)
-@@ -375,7 +363,7 @@ cmdarg(Cmdarg_t* cmd, const char* file, int len)
- 			}
- 		}
- 		*cmd->nextarg++ = cmd->nextstr;
--		memcpy(cmd->nextstr, file, len);
-+		memcpy(cmd->nextstr, file, (size_t)len);
- 		cmd->nextstr[len] = 0;
- 		cmd->argcount++;
- 		if (cmd->argcount >= cmd->argmax && (i = cmdflush(cmd)) > r)
 diff --git a/src/lib/libast/misc/cmdlib.h b/src/lib/libast/misc/cmdlib.h
 index 405e829fa..70e8d81c1 100644
 --- a/src/lib/libast/misc/cmdlib.h

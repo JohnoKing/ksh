@@ -1,6 +1,6 @@
-From 9de61cd4a079e4d57a91faf7bf210de5d7ab5865 Mon Sep 17 00:00:00 2001
+From 0bbda5fca4b646a37cbd6e3d41196e169e871824 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:25:20 -0700
+Date: Fri, 27 Mar 2026 17:47:38 -0700
 Subject: size_t/ptrdiff_t transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -41,7 +41,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/include/name.h     |  10 +-
  src/cmd/ksh93/include/national.h |   4 +-
- src/cmd/ksh93/include/nval.h     |  32 ++--
+ src/cmd/ksh93/include/nval.h     |  30 ++--
  src/cmd/ksh93/nval.3             |  12 +-
  src/cmd/ksh93/sh/array.c         | 169 ++++++++++----------
  src/cmd/ksh93/sh/name.c          | 260 ++++++++++++++++---------------
@@ -49,13 +49,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/nvtree.c        |  69 ++++----
  src/cmd/ksh93/sh/nvtype.c        | 184 +++++++++++-----------
  src/cmd/ksh93/sh/string.c        |  64 ++++----
- 10 files changed, 426 insertions(+), 411 deletions(-)
+ 10 files changed, 425 insertions(+), 410 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/name.h b/src/cmd/ksh93/include/name.h
-index ff5ce6c49..ebff38339 100644
+index 0a70f460f..95e3f4e1b 100644
 --- a/src/cmd/ksh93/include/name.h
 +++ b/src/cmd/ksh93/include/name.h
-@@ -58,7 +58,7 @@ struct Namref
+@@ -57,7 +57,7 @@ struct Namref
  	Dt_t		*root;
  	char		*sub;
  #if SHOPT_FIXEDARRAY
@@ -64,7 +64,7 @@ index ff5ce6c49..ebff38339 100644
  	char		dim;
  #endif /* SHOPT_FIXEDARRAY */
  };
-@@ -142,12 +142,12 @@ struct Ufunction
+@@ -141,12 +141,12 @@ struct Ufunction
  #define array_elem(ap)	((ap)->nelem&ARRAY_MASK)
  #define array_assoc(ap)	((ap)->fun)
  
@@ -79,7 +79,7 @@ index ff5ce6c49..ebff38339 100644
  extern int		nv_atypeindex(Namval_t*, const char*);
  extern void		nv_setlist(struct argnod*, int, Namval_t*);
  #if SHOPT_OPTIMIZE
-@@ -161,7 +161,7 @@ extern void		nv_setlist(struct argnod*, int, Namval_t*);
+@@ -160,7 +160,7 @@ extern void		nv_setlist(struct argnod*, int, Namval_t*);
  #   define nv_setoptimize(argaddr)	/* no-op */
  #   define nv_getoptimize()		NULL
  #endif /* SHOPT_OPTIMIZE */
@@ -88,7 +88,7 @@ index ff5ce6c49..ebff38339 100644
  extern void 		nv_unref(Namval_t*);
  extern int		nv_hasget(Namval_t*);
  extern void		clone_all_disc(Namval_t*, Namval_t*, int);
-@@ -186,7 +186,7 @@ extern int		nv_istable(Namval_t*);
+@@ -185,7 +185,7 @@ extern int		nv_istable(Namval_t*);
  extern size_t		nv_datasize(Namval_t*, size_t*);
  extern Namfun_t		*nv_mapchar(Namval_t*, const char*);
  #if SHOPT_FIXEDARRAY
@@ -98,7 +98,7 @@ index ff5ce6c49..ebff38339 100644
  
  extern const Namdisc_t	RESTRICTED_disc;
 diff --git a/src/cmd/ksh93/include/national.h b/src/cmd/ksh93/include/national.h
-index 1a234ce76..38f654b06 100644
+index b9d793775..20e353a9a 100644
 --- a/src/cmd/ksh93/include/national.h
 +++ b/src/cmd/ksh93/include/national.h
 @@ -32,7 +32,7 @@
@@ -110,21 +110,12 @@ index 1a234ce76..38f654b06 100644
 +extern ptrdiff_t sh_strchr(const char*,const char*);
 +extern size_t sh_strwidth(const char*);
  
- #endif /* _national_h_defined */
+ #endif /* !_NATIONAL_H */
 diff --git a/src/cmd/ksh93/include/nval.h b/src/cmd/ksh93/include/nval.h
-index 8d6e939b0..ae123de83 100644
+index 0381c2b60..6eecc7c06 100644
 --- a/src/cmd/ksh93/include/nval.h
 +++ b/src/cmd/ksh93/include/nval.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -66,7 +66,7 @@ struct Namfun
+@@ -67,7 +67,7 @@ struct Namfun
  	const Namdisc_t	*disc;
  	char		nofree;
  	unsigned int	subshell;
@@ -133,7 +124,7 @@ index 8d6e939b0..ae123de83 100644
  	Namfun_t	*next;
  	char		*last;
  	Namval_t	*type;
-@@ -75,7 +75,7 @@ struct Namfun
+@@ -76,7 +76,7 @@ struct Namfun
  struct Nambfun
  {
  	Namfun_t        fun;
@@ -142,7 +133,7 @@ index 8d6e939b0..ae123de83 100644
  	const char	**bnames;
  	Namval_t	*bltins[1];
  };
-@@ -107,28 +107,18 @@ struct Namval
+@@ -108,28 +108,18 @@ struct Namval
  {
  	Dtlink_t	nvlink;		/* space for cdt links */
  	char		*nvname;	/* pointer to name of the node */
@@ -176,7 +167,7 @@ index 8d6e939b0..ae123de83 100644
  
  /* The following attributes are for internal use */
  #define NV_NOFREE	0x200	/* don't free the space when releasing value */
-@@ -266,7 +256,7 @@ extern int		nv_isnull(Namval_t*);
+@@ -267,7 +257,7 @@ extern int		nv_isnull(Namval_t*);
  extern Namfun_t		*nv_isvtree(Namval_t*);
  extern Namval_t		*nv_lastdict(void);
  extern Namval_t		*nv_mkinttype(char*, size_t, int, const char*, Namdisc_t*);
@@ -185,7 +176,7 @@ index 8d6e939b0..ae123de83 100644
  extern void 		nv_newtype(Namval_t*);
  extern Namval_t		*nv_open(const char*,Dt_t*,int);
  extern void 		nv_putval(Namval_t*,const char*,int);
-@@ -279,7 +269,7 @@ extern void		nv_setref(Namval_t*, Dt_t*,int);
+@@ -280,7 +270,7 @@ extern void		nv_setref(Namval_t*, Dt_t*,int);
  extern int		nv_settype(Namval_t*, Namval_t*, int);
  extern void 		nv_setvec(Namval_t*,int,int,char*[]);
  extern void		nv_setvtree(Namval_t*);
@@ -194,7 +185,7 @@ index 8d6e939b0..ae123de83 100644
  extern Namfun_t		*nv_disc(Namval_t*,Namfun_t*,int);
  extern void 		nv_unset(Namval_t*,int);
  extern Namval_t		*nv_search(const char *, Dt_t*, int);
-@@ -288,7 +278,7 @@ extern Namval_t		*nv_type(Namval_t*);
+@@ -289,7 +279,7 @@ extern Namval_t		*nv_type(Namval_t*);
  extern void		nv_addtype(Namval_t*,const char*, Optdisc_t*, size_t);
  extern const Namdisc_t	*nv_discfun(int);
  
@@ -202,7 +193,7 @@ index 8d6e939b0..ae123de83 100644
 +#define nv_size(np)		nv_setsize((np),(size_t)-1)
  #define nv_stack(np,nf)		nv_disc(np,nf,0)
  
- #endif /* NV_DEFAULT */
+ #endif /* !_NVAL_H */
 diff --git a/src/cmd/ksh93/nval.3 b/src/cmd/ksh93/nval.3
 index 2cbdbcd78..5152ee701 100644
 --- a/src/cmd/ksh93/nval.3

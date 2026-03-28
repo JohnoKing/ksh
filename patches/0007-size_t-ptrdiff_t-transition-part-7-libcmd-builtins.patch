@@ -1,6 +1,6 @@
-From 3ba4e2eef514ed77c1d67237054e092fda14e211 Mon Sep 17 00:00:00 2001
+From c5ade81dc324e7e20c9cc38075e95ef5103c3edb Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:22:15 -0700
+Date: Fri, 27 Mar 2026 17:44:48 -0700
 Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -24,7 +24,7 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,588 => 1,190 => 37 (progression from part 6 => part 7 => part 13)
+1,580 => 1,190 => 37 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -32,26 +32,25 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/cat.c      |  45 ++++++------
  src/lib/libcmd/chgrp.c    |  65 +++++++++---------
  src/lib/libcmd/chmod.c    |  27 ++++----
- src/lib/libcmd/cksum.c    |  28 ++++----
+ src/lib/libcmd/cksum.c    |  40 +++++------
  src/lib/libcmd/cmp.c      |  20 +++---
  src/lib/libcmd/comm.c     |  14 ++--
  src/lib/libcmd/context.c  |  33 ++++-----
- src/lib/libcmd/cp.c       |  58 ++++++++--------
+ src/lib/libcmd/cp.c       |  52 +++++++-------
  src/lib/libcmd/cut.c      | 111 +++++++++++++++---------------
  src/lib/libcmd/date.c     |  16 ++---
  src/lib/libcmd/dirname.c  |   4 +-
  src/lib/libcmd/expr.c     |  21 +++---
  src/lib/libcmd/fds.c      |  17 ++---
  src/lib/libcmd/fmt.c      |  30 ++++----
- src/lib/libcmd/fold.c     |  31 +++++----
+ src/lib/libcmd/fold.c     |  27 ++++----
  src/lib/libcmd/getconf.c  |   6 +-
  src/lib/libcmd/grep.c     |  76 ++++++++++++---------
  src/lib/libcmd/id.c       |  20 +++---
  src/lib/libcmd/join.c     | 140 +++++++++++++++++++-------------------
- src/lib/libcmd/logname.c  |   4 +-
+ src/lib/libcmd/logname.c  |   2 +-
  src/lib/libcmd/mkdir.c    |  10 +--
  src/lib/libcmd/mktemp.c   |   4 +-
- src/lib/libcmd/paste.c    |  30 ++++----
  src/lib/libcmd/pathchk.c  |   6 +-
  src/lib/libcmd/rev.c      |  12 ++--
  src/lib/libcmd/rev.h      |   5 +-
@@ -63,7 +62,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libcmd/uname.c    |   8 +--
  src/lib/libcmd/uniq.c     |  50 +++++++-------
  src/lib/libcmd/wclib.c    |  30 ++++----
- 35 files changed, 544 insertions(+), 526 deletions(-)
+ 34 files changed, 529 insertions(+), 511 deletions(-)
 
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
@@ -509,7 +508,7 @@ index 49343b46b..5c26c20e9 100644
  	int		chlink = 0;
  	struct stat	st;
 diff --git a/src/lib/libcmd/cksum.c b/src/lib/libcmd/cksum.c
-index afbfcc0a1..6e95d71e3 100644
+index afbfcc0a1..bca79dabb 100644
 --- a/src/lib/libcmd/cksum.c
 +++ b/src/lib/libcmd/cksum.c
 @@ -203,7 +203,7 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
@@ -542,17 +541,6 @@ index afbfcc0a1..6e95d71e3 100644
  	if (sfvalue(ip))
  		error(ERROR_SYSTEM|2, "%s: read error", file);
  	sumdone(state->sum);
-@@ -237,8 +237,8 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
- 				else
- 					sfprintf(sfstdout, " %04o %s %s",
- 						modex(st->st_mode & S_IPERM),
--						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid(st->st_uid) : "-",
--						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid(st->st_gid) : "-");
-+						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid((int)st->st_uid) : "-",
-+						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid((int)st->st_gid) : "-");
- 			}
- 			if (ip != sfstdin)
- 				sfprintf(op, " %s", file);
 @@ -258,7 +258,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
  	char*		e;
  	char*		file;
@@ -571,7 +559,7 @@ index afbfcc0a1..6e95d71e3 100644
  		{
  			mode = modei(mode);
  			if (t = strchr(++e, ' '))
-@@ -326,7 +326,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+@@ -326,43 +326,43 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
  				}
  				else
  				{
@@ -580,16 +568,22 @@ index afbfcc0a1..6e95d71e3 100644
  						uid = -1;
  					else if (!state->permissions)
  					{
-@@ -335,7 +335,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 						if (state->silent)
+ 							error_info.errors++;
  						else
- 							error(2, "%s: UID should be %s", file, fmtuid(uid));
+-							error(2, "%s: UID should be %s", file, fmtuid(uid));
++							error(2, "%s: UID should be %s", file, fmtuid((uid_t)uid));
  					}
 -					if (gid < 0 || gid == st.st_gid)
 +					if (gid < 0 || gid == (int)st.st_gid)
  						gid = -1;
  					else if (!state->permissions)
  					{
-@@ -346,7 +346,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
+ 						if (state->silent)
+ 							error_info.errors++;
+ 						else
+-							error(2, "%s: GID should be %s", file, fmtgid(gid));
++							error(2, "%s: GID should be %s", file, fmtgid((gid_t)gid));
  					}
  					if (state->permissions && (uid >= 0 || gid >= 0))
  					{
@@ -597,7 +591,29 @@ index afbfcc0a1..6e95d71e3 100644
 +						if (chown(file, (uid_t)uid, (uid_t)gid) < 0)
  						{
  							if (uid < 0)
- 								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid(gid));
+-								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid(gid));
++								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid((gid_t)gid));
+ 							else if (gid < 0)
+-								error(ERROR_SYSTEM|2, "%s: cannot change user to %s", file, fmtuid(uid));
++								error(ERROR_SYSTEM|2, "%s: cannot change user to %s", file, fmtuid((uid_t)uid));
+ 							else
+-								error(ERROR_SYSTEM|2, "%s: cannot change user to %s and group to %s", file, fmtuid(uid), fmtgid(gid));
++								error(ERROR_SYSTEM|2, "%s: cannot change user to %s and group to %s", file, fmtuid((uid_t)uid), fmtgid((gid_t)gid));
+ 						}
+ 						else
+ 						{
+ 							if (uid < 0)
+-								error(1, "%s: changed group to %s", file, fmtgid(gid));
++								error(1, "%s: changed group to %s", file, fmtgid((gid_t)gid));
+ 							else if (gid < 0)
+-								error(1, "%s: changed user to %s", file, fmtuid(uid));
++								error(1, "%s: changed user to %s", file, fmtuid((uid_t)uid));
+ 							else
+-								error(1, "%s: changed user to %s and group to %s", file, fmtuid(uid), fmtgid(gid));
++								error(1, "%s: changed user to %s and group to %s", file, fmtuid((uid_t)uid), fmtgid((gid_t)gid));
+ 						}
+ 					}
+ 					if ((st.st_mode & S_IPERM) ^ mode)
 @@ -472,7 +472,7 @@ b_cksum(int argc, char** argv, Shbltin_t* context)
  			state.text = 0;
  			continue;
@@ -875,7 +891,7 @@ index 10b4b2c39..223c32fa8 100644
  	for (j = 0; j < cp->total; j++)
  	{
 diff --git a/src/lib/libcmd/cp.c b/src/lib/libcmd/cp.c
-index 0c072ee16..c6024c298 100644
+index 0c072ee16..1aee4a96c 100644
 --- a/src/lib/libcmd/cp.c
 +++ b/src/lib/libcmd/cp.c
 @@ -135,7 +135,7 @@ static const char usage_tail[] =
@@ -920,23 +936,6 @@ index 0c072ee16..c6024c298 100644
  
  
  	char*		path;		/* to pathname buffer		*/
-@@ -210,13 +210,13 @@ preserve(State_t* state, const char* path, struct stat* ns, struct stat* os)
- 			switch (n)
- 			{
- 			case 01:
--				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid(os->st_gid));
-+				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid((int)os->st_gid));
- 				break;
- 			case 02:
--				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid(os->st_uid));
-+				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid((int)os->st_uid));
- 				break;
- 			case 03:
--				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid(os->st_uid), fmtgid(os->st_gid));
-+				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid((int)os->st_uid), fmtgid((int)os->st_gid));
- 				break;
- 			}
- 	}
 @@ -231,10 +231,11 @@ visit(State_t* state, FTSENT* ent)
  {
  	char*		base;
@@ -1724,18 +1723,9 @@ index 8125fdf94..b77296f19 100644
  			fmt.endbuf = &outbuf[opt_info.num];
  			continue;
 diff --git a/src/lib/libcmd/fold.c b/src/lib/libcmd/fold.c
-index 49d476fd0..5c7bb9056 100644
+index c7f0b2975..a1863fee0 100644
 --- a/src/lib/libcmd/fold.c
 +++ b/src/lib/libcmd/fold.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -83,25 +83,27 @@ static const char usage[] =
  #define T_SP	5
  #define T_RET	6
@@ -1807,16 +1797,7 @@ index 49d476fd0..5c7bb9056 100644
  	Sfio_t *fp;
  	char *cp;
  	char *cont="\n";
-@@ -188,7 +191,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
- 			cols['\t'] = cols[' '];
- 			continue;
- 		case 'c':
--			contsize = stresc(cont = strdup(opt_info.arg));
-+			contsize = (size_t)stresc(cont = strdup(opt_info.arg));
- 			continue;
- 		case 'd':
- 			if (n = *opt_info.arg)
-@@ -200,7 +203,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
+@@ -205,7 +208,7 @@ b_fold(int argc, char** argv, Shbltin_t* context)
  				cols['\t'] = T_SP;
  			continue;
  		case 'w':
@@ -2593,7 +2574,7 @@ index f98b99cb8..52df9b038 100644
  	jp->outfile = sfstdout;
  	if (!jp->outlist)
 diff --git a/src/lib/libcmd/logname.c b/src/lib/libcmd/logname.c
-index d73cc3809..a4df60e82 100644
+index d73cc3809..b191c1ced 100644
 --- a/src/lib/libcmd/logname.c
 +++ b/src/lib/libcmd/logname.c
 @@ -2,7 +2,7 @@
@@ -2605,15 +2586,6 @@ index d73cc3809..a4df60e82 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -72,7 +72,7 @@ b_logname(int argc, char** argv, Shbltin_t* context)
- 		UNREACHABLE();
- 	}
- 	if (!(logname = getlogin()))
--		logname = fmtuid(getuid());
-+		logname = fmtuid((int)getuid());
- 	sfputr(sfstdout, logname, '\n');
- 	return 0;
- }
 diff --git a/src/lib/libcmd/mkdir.c b/src/lib/libcmd/mkdir.c
 index f76b3df66..5226309b7 100644
 --- a/src/lib/libcmd/mkdir.c
@@ -2682,121 +2654,6 @@ index 5bd83cd73..023d08279 100644
  		dir = fmtbuf(i);
  		memcpy(dir, pfx, i);
  		dir[i] = 0;
-diff --git a/src/lib/libcmd/paste.c b/src/lib/libcmd/paste.c
-index 35a8475cd..01d4354df 100644
---- a/src/lib/libcmd/paste.c
-+++ b/src/lib/libcmd/paste.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1992-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -79,10 +79,10 @@ typedef struct Delim_s
-  * to <out>
-  */
- 
--static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, int dsiz, int dlen, Delim_t* mp)
-+static int paste(ssize_t nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, ssize_t dsiz, ssize_t dlen, Delim_t* mp)
- {
- 	const char *cp;
--	int d, n, i, z, more=1;
-+	ssize_t d, n, i, z, more=1;
- 	Sfio_t *fp;
- 	do
- 	{
-@@ -98,11 +98,11 @@ static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, i
- 					else if(!more) /* first stream with output */
- 					{
- 						if(dsiz == 1)
--							sfnputc(out, *delim, n);
-+							sfnputc(out, *delim, (size_t)n);
- 						else if(dlen>0)
- 						{
- 							for(d=n; d>dlen; d-=dlen)
--								sfwrite(out,delim,dsiz);
-+								sfwrite(out,delim,(size_t)dsiz);
- 							if(d)
- 							{
- 								if(mp)
-@@ -110,12 +110,12 @@ static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, i
- 										z += mp[i].len;
- 								else
- 									z = d;
--								sfwrite(out,delim,z);
-+								sfwrite(out,delim,(size_t)z);
- 							}
- 						}
- 						more = n+1;
- 					}
--					if(sfwrite(out,cp,sfvalue(fp)-((n+1)<nstream)) < 0)
-+					if(sfwrite(out,cp,(size_t)(sfvalue(fp)-((n+1)<nstream))) < 0)
- 						return -1;
- 				}
- 				else
-@@ -142,11 +142,11 @@ static int paste(int nstream,Sfio_t* streams[],Sfio_t *out, const char *delim, i
- /*
-  * Handles paste -s, for file <in> to file <out> using delimiters <delim>
-  */
--static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,int dlen,Delim_t* mp)
-+static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,ssize_t dlen,Delim_t* mp)
- {
- 	const char *cp;
--	int d=0;
--	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,sfvalue(in)-1) < 0)
-+	ssize_t d=0;
-+	if((cp = sfgetr(in,'\n',0)) && sfwrite(out,cp,(size_t)sfvalue(in)-1) < 0)
- 		return -1;
- 	while(cp=sfgetr(in, '\n',0))
- 	{
-@@ -161,7 +161,7 @@ static int spaste(Sfio_t *in,Sfio_t* out,const char *delim,int dlen,Delim_t* mp)
- 				sfputc(out,c);
- 			d++;
- 		}
--		if(sfwrite(out,cp,sfvalue(in)-1) < 0)
-+		if(sfwrite(out,cp,(size_t)sfvalue(in)-1) < 0)
- 			return -1;
- 	}
- 	sfputc(out,'\n');
-@@ -176,7 +176,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
- 	char 		*cp, *delim;
- 	char		*ep;
- 	Delim_t		*mp;
--	int		dlen, dsiz;
-+	ssize_t		dlen, dsiz;
- 	char		defdelim[2];
- 
- 	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
-@@ -232,7 +232,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
- 		}
- 		if(dlen < dsiz)
- 		{
--			if (!(mp = newof(0, Delim_t, dlen, 0)))
-+			if (!(mp = newof(0, Delim_t, (size_t)dlen, 0)))
- 			{
- 				free(delim);
- 				error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
-@@ -244,7 +244,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
- 			{
- 				mp[dlen].chr = cp;
- 				mbchar(cp);
--				mp[dlen].len = cp - mp[dlen].chr;
-+				mp[dlen].len = (size_t)(cp - mp[dlen].chr);
- 				dlen++;
- 			}
- 		}
-@@ -258,7 +258,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
- 		n = 1;
- 	if(!sflag)
- 	{
--		if (!(streams = stkalloc(stkstd,n*sizeof(Sfio_t*))))
-+		if (!(streams = stkalloc(stkstd,(size_t)n*sizeof(Sfio_t*))))
- 		{
- 			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
- 			UNREACHABLE();
 diff --git a/src/lib/libcmd/pathchk.c b/src/lib/libcmd/pathchk.c
 index 90a394367..2153f21e8 100644
 --- a/src/lib/libcmd/pathchk.c

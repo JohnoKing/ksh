@@ -1,6 +1,6 @@
-From b96e0a04e4765484bc8c4e4f1ffa782abe26ef0f Mon Sep 17 00:00:00 2001
+From 190d53e361e0a5a7b888cda3f3199a58649efc5e Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:24:33 -0700
+Date: Fri, 27 Mar 2026 17:46:56 -0700
 Subject: size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin
  commands
 
@@ -21,7 +21,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
 ---
  src/cmd/ksh93/bltins/alarm.c     |   4 +-
  src/cmd/ksh93/bltins/cd_pwd.c    |   2 +-
- src/cmd/ksh93/bltins/enum.c      |  26 +++----
+ src/cmd/ksh93/bltins/enum.c      |  28 ++++----
  src/cmd/ksh93/bltins/getopts.c   |   8 +--
  src/cmd/ksh93/bltins/hist.c      |  10 +--
  src/cmd/ksh93/bltins/misc.c      |  18 ++---
@@ -33,7 +33,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/bltins/ulimit.c    |  24 +++----
  src/cmd/ksh93/bltins/umask.c     |   8 ++-
  src/cmd/ksh93/include/builtins.h |   2 +-
- 14 files changed, 147 insertions(+), 136 deletions(-)
+ 14 files changed, 148 insertions(+), 137 deletions(-)
 
 diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
 index 399b3c24d..eb8226144 100644
@@ -71,7 +71,7 @@ index 940262d6c..65fb79c47 100644
  	}
  	sfputr(sfstdout,cp,'\n');
 diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
-index 37f2bdd38..f18c4492d 100644
+index 37f2bdd38..670862477 100644
 --- a/src/cmd/ksh93/bltins/enum.c
 +++ b/src/cmd/ksh93/bltins/enum.c
 @@ -2,7 +2,7 @@
@@ -131,16 +131,19 @@ index 37f2bdd38..f18c4492d 100644
  	return &ep->hdr;
  }
  
-@@ -200,10 +200,10 @@ static char* get_enum(Namval_t* np, Namfun_t *fp)
+@@ -198,12 +198,12 @@ static void put_enum(Namval_t* np,const char *val,int flags,Namfun_t *fp)
+ 
+ static char* get_enum(Namval_t* np, Namfun_t *fp)
  {
- 	static char buff[6];
+-	static char buff[6];
++	static char buff[21];
  	struct Enum *ep = (struct Enum*)fp;
 -	long n = nv_getn(np,fp);
-+	ssize_t n = nv_getn(np,fp);
++	long long n = nv_getn(np,fp);
  	if(n < ep->nelem)
  		return (char*)ep->values[n];
 -	sfsprintf(buff,sizeof(buff),"%u%c",n,0);
-+	sfsprintf(buff,sizeof(buff),"%jd%c",(intmax_t)n,0);
++	sfsprintf(buff,sizeof(buff),"%lld%c",n,0);
  	return buff;
  }
  
@@ -1038,7 +1041,7 @@ index c6a79d12f..46300d00e 100644
  			c = strperm(cp,&cp,~flag&0777);
  			if(*cp)
 diff --git a/src/cmd/ksh93/include/builtins.h b/src/cmd/ksh93/include/builtins.h
-index f61893ec4..c8ed22169 100644
+index bc1b14a0d..e0e331d86 100644
 --- a/src/cmd/ksh93/include/builtins.h
 +++ b/src/cmd/ksh93/include/builtins.h
 @@ -113,7 +113,7 @@ extern int b_times(int, char*[],Shbltin_t*);

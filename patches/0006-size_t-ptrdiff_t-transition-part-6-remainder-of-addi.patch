@@ -1,6 +1,6 @@
-From 2ac0107e1afda566feab89d1255fde43fc712597 Mon Sep 17 00:00:00 2001
+From 2bb21bab411067a9d9f01860fbcab4b79f4eaeda Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 20 Mar 2026 20:21:29 -0700
+Date: Fri, 27 Mar 2026 17:44:06 -0700
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -8,8 +8,7 @@ This is the sixth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
 
 The parts of ksh93 affected by this commit are:
-- The the reminder of SFIO located in the disc folder.
-  - Removed sfkeyprintf_20000308() to prevent bitrot.
+- The reminder of SFIO located in the disc folder.
 - The libast tm and tmx sublibraries.
 - The rest of the libast path sublibrary.
 - The rest of the libast headers.
@@ -18,7 +17,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,971 => 1,588 => 37 (progression from part 5 => part 6 => part 13)
+1,946 => 1,580 => 37 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -30,13 +29,11 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/disc/sfdcseekable.c |  17 ++--
  src/lib/libast/disc/sfdcsubstr.c   |   9 +-
  src/lib/libast/disc/sfdcunion.c    |  17 ++--
- src/lib/libast/disc/sfkeyprintf.c  |  65 ++++----------
  src/lib/libast/features/tty        |   2 +-
  src/lib/libast/include/ast_std.h   |  20 ++---
  src/lib/libast/include/find.h      |   4 +-
  src/lib/libast/include/hashpart.h  |   5 +-
  src/lib/libast/include/recfmt.h    |   5 +-
- src/lib/libast/include/sfdisc.h    |   6 +-
  src/lib/libast/include/tm.h        |   5 +-
  src/lib/libast/include/vmalloc.h   |   7 +-
  src/lib/libast/man/cdt.3           |   4 +-
@@ -45,6 +42,14 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/path/pathfind.c     |   5 +-
  src/lib/libast/path/pathpath.c     |   4 +-
  src/lib/libast/path/pathtemp.c     |  23 ++---
+ src/lib/libast/regex/regcomp.c     |   4 +
+ src/lib/libast/string/fmtfmt.c     |   2 +-
+ src/lib/libast/string/fmtgid.c     |   2 +-
+ src/lib/libast/string/fmtls.c      |   3 +-
+ src/lib/libast/string/fmttv.c      |  41 +++++++++
+ src/lib/libast/string/fmtuid.c     |   2 +-
+ src/lib/libast/string/fmtversion.c |  50 +++++++++++
+ src/lib/libast/string/stresc.c     |   2 +-
  src/lib/libast/tm/tmdate.c         |   5 +-
  src/lib/libast/tm/tmfix.c          |   7 +-
  src/lib/libast/tm/tminit.c         |  14 +--
@@ -69,7 +74,9 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   2 +-
  src/lib/libast/tm/tvtouch.c        |   2 +-
- 47 files changed, 336 insertions(+), 337 deletions(-)
+ 53 files changed, 417 insertions(+), 291 deletions(-)
+ create mode 100644 src/lib/libast/string/fmttv.c
+ create mode 100644 src/lib/libast/string/fmtversion.c
 
 diff --git a/src/lib/libast/dir/dirlib.h b/src/lib/libast/dir/dirlib.h
 index f54439cdc..e3af0c63e 100644
@@ -543,161 +550,6 @@ index 5b4eacf53..24756af92 100644
  		return -1;
  	memset(un, 0, sizeof(*un));
  
-diff --git a/src/lib/libast/disc/sfkeyprintf.c b/src/lib/libast/disc/sfkeyprintf.c
-index 91c4d6806..d8e10db46 100644
---- a/src/lib/libast/disc/sfkeyprintf.c
-+++ b/src/lib/libast/disc/sfkeyprintf.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- 
-@@ -83,7 +84,7 @@ getfield(Field_t* f, int restore)
- 	if (f->first)
- 		f->first = 0;
- 	else if (restore)
--		*s = f->delimiter;
-+		*s = (char)f->delimiter;
- 	b = ++s;
- 	lp = rp = n = 0;
- 	for (;;)
-@@ -150,9 +151,9 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
- 
- 	NOT_USED(sp);
- 	fp->level++;
--	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf(fp->fmt.n_str + 1)))
-+	if (fp->fmt.t_str && fp->fmt.n_str > 0 && (v = fmtbuf((size_t)(fp->fmt.n_str + 1))))
- 	{
--		memcpy(v, fp->fmt.t_str, fp->fmt.n_str);
-+		memcpy(v, fp->fmt.t_str, (size_t)fp->fmt.n_str);
- 		v[fp->fmt.n_str] = 0;
- 		b = v;
- 		for (;;)
-@@ -190,7 +191,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
- 						x = FMT_case;
- 					else if (streq(a, "edit"))
- 						x = FMT_edit;
--					*(a + 4) = d;
-+					*(a + 4) = (char)d;
- 					if (x)
- 						a = 0;
- 				}
-@@ -203,7 +204,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
- 		h = (*fp->lookup)(fp->handle, &fp->fmt, a, &s, &n);
- 		fp->fmt.t_str = t;
- 		if (i)
--			*v++ = i;
-+			*v++ = (char)i;
- 	}
- 	else
- 	{
-@@ -214,7 +215,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
- 	switch (fp->fmt.fmt)
- 	{
- 	case 'c':
--		value->c = s ? *s : n;
-+		value->c = s ? *s : (char)n;
- 		break;
- 	case 'd':
- 	case 'i':
-@@ -262,20 +263,20 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
- 
- 						fmt = *fp;
- 						fmt.fmt.form = v;
--						for (h = 0; h < elementsof(fmt.tmp); h++)
-+						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
- 							fmt.tmp[h] = 0;
- 						if (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
- 							s = "";
--						*(v - 1) = d;
-+						*(v - 1) = (char)d;
- 						if (f.delimiter)
--							*f.next = d;
--						for (h = 0; h < elementsof(fmt.tmp); h++)
-+							*f.next = (char)d;
-+						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
- 							if (fmt.tmp[h])
- 								sfclose(fmt.tmp[h]);
- 						h = 1;
- 						break;
- 					}
--					*(v - 1) = d;
-+					*(v - 1) = (char)d;
- 				}
- 				break;
- 			case FMT_edit:
-@@ -317,7 +318,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
- 		value->s = "\n";
- 		break;
- 	case '.':
--		value->i = n;
-+		value->i = (int)n;
- 		break;
- 	default:
- 		if ((!fp->convert || !(value->s = (*fp->convert)(fp->handle, &fp->fmt, a, s, n))) && (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%%%c", fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp->tmp[0]))))
-@@ -332,13 +333,11 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
-  * this is the original interface
-  */
- 
--#undef	sfkeyprintf
--
--int
-+ssize_t
- sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
- {
--	int		i;
--	int		r;
-+	size_t		i;
-+	ssize_t		r;
- 	Fmt_t		fmt;
- 
- 	memset(&fmt, 0, sizeof(fmt));
-@@ -357,33 +356,3 @@ sfkeyprintf(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup
- 			regfree(fmt.re[i]);
- 	return r;
- }
--
--#undef	_AST_API_H
--
--#include <ast_api.h>
--
--/*
-- * Sffmt_t* callback args
-- */
--
--int
--sfkeyprintf_20000308(Sfio_t* sp, void* handle, const char* format, Sf_key_lookup_t lookup, Sf_key_convert_t convert)
--{
--	int		i;
--	int		r;
--	Fmt_t		fmt;
--
--	memset(&fmt, 0, sizeof(fmt));
--	fmt.version = 20030909;
--	fmt.fmt.version = SFIO_VERSION;
--	fmt.fmt.form = (char*)format;
--	fmt.fmt.extf = getfmt;
--	fmt.handle = handle;
--	fmt.lookup = lookup;
--	fmt.convert = convert;
--	r = sfprintf(sp, "%!", &fmt) - fmt.invisible;
--	for (i = 0; i < elementsof(fmt.tmp); i++)
--		if (fmt.tmp[i])
--			sfclose(fmt.tmp[i]);
--	return r;
--}
 diff --git a/src/lib/libast/features/tty b/src/lib/libast/features/tty
 index 7096a1284..d4c8680b4 100644
 --- a/src/lib/libast/features/tty
@@ -834,37 +686,6 @@ index 9e7b55a5c..3be06b27d 100644
  
  #define REC_V_TYPE(h,o,z,l,i)	((REC_variable<<28)|((h)<<23)|((o)<<19)|(((z)-1)<<18)|((l)<<17)|((i)<<16))
  #define REC_V_RECORD(f,s)	(((f)&(((1<<16)-1)<<16))|(s))
-diff --git a/src/lib/libast/include/sfdisc.h b/src/lib/libast/include/sfdisc.h
-index 787953e5c..06bcb7e62 100644
---- a/src/lib/libast/include/sfdisc.h
-+++ b/src/lib/libast/include/sfdisc.h
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2022 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-@@ -14,6 +14,7 @@
- *                  David Korn <dgk@research.att.com>                   *
- *                   Phong Vo <kpv@research.att.com>                    *
- *                  Martijn Dekker <martijn@inlv.org>                   *
-+*            Johnothan King <johnothanking@protonmail.com>             *
- *                                                                      *
- ***********************************************************************/
- /*
-@@ -38,8 +39,7 @@
- typedef int (*Sf_key_lookup_t)(void*, Sffmt_t*, const char*, char**, Sflong_t*);
- typedef char* (*Sf_key_convert_t)(void*, Sffmt_t*, const char*, char*, Sflong_t);
- 
--extern int		sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
--extern int		sfkeyprintf_20000308(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
-+extern ssize_t		sfkeyprintf(Sfio_t*, void*, const char*, Sf_key_lookup_t, Sf_key_convert_t);
- 
- /*
-  * pure sfio read and/or write disciplines
 diff --git a/src/lib/libast/include/tm.h b/src/lib/libast/include/tm.h
 index 2ed18bb81..eb05bf516 100644
 --- a/src/lib/libast/include/tm.h
@@ -1151,6 +972,197 @@ index 5b5c099ad..7eacc6577 100644
  
  			/*
  			 * get a quasi-random coefficient
+diff --git a/src/lib/libast/regex/regcomp.c b/src/lib/libast/regex/regcomp.c
+index cadc981d0..e5ddc91ef 100644
+--- a/src/lib/libast/regex/regcomp.c
++++ b/src/lib/libast/regex/regcomp.c
+@@ -23,6 +23,10 @@
+  * POSIX regex compiler
+  */
+ 
++#if __clang__
++#pragma clang diagnostic ignored "-Wconstant-conversion"
++#endif
++
+ #include "reglib.h"
+ #include "lclib.h"
+ 
+diff --git a/src/lib/libast/string/fmtfmt.c b/src/lib/libast/string/fmtfmt.c
+index 066b799cd..1cac25472 100644
+--- a/src/lib/libast/string/fmtfmt.c
++++ b/src/lib/libast/string/fmtfmt.c
+@@ -35,7 +35,7 @@
+  *	l	long
+  *	p	void*
+  *	s	string
+- *	t	ptrdiff_t
++ *	t	ssize_t
+  *	z	size_t
+  *	?	unknown
+  */
+diff --git a/src/lib/libast/string/fmtgid.c b/src/lib/libast/string/fmtgid.c
+index e125f7ac5..5319af147 100644
+--- a/src/lib/libast/string/fmtgid.c
++++ b/src/lib/libast/string/fmtgid.c
+@@ -64,7 +64,7 @@ fmtgid(gid_t gid)
+ 	}
+ 	else if (ip = (Id_t*)dtmatch(dict, &gid))
+ 		return ip->name;
+-	if (gr = getgrgid(gid))
++	if (gr = getgrgid((gid_t)gid))
+ 	{
+ 		name = gr->gr_name;
+ #if _WINIX
+diff --git a/src/lib/libast/string/fmtls.c b/src/lib/libast/string/fmtls.c
+index bb7383092..c54d20fab 100644
+--- a/src/lib/libast/string/fmtls.c
++++ b/src/lib/libast/string/fmtls.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+@@ -14,6 +14,7 @@
+ *                  David Korn <dgk@research.att.com>                   *
+ *                   Phong Vo <kpv@research.att.com>                    *
+ *                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
+ *                                                                      *
+ ***********************************************************************/
+ /*
+diff --git a/src/lib/libast/string/fmttv.c b/src/lib/libast/string/fmttv.c
+new file mode 100644
+index 000000000..1c2534572
+--- /dev/null
++++ b/src/lib/libast/string/fmttv.c
+@@ -0,0 +1,41 @@
++/***********************************************************************
++*                                                                      *
++*               This software is part of the ast package               *
++*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
++*                      and is licensed under the                       *
++*                 Eclipse Public License, Version 2.0                  *
++*                                                                      *
++*                A copy of the License is available at                 *
++*      https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html      *
++*         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
++*                                                                      *
++*                 Glenn Fowler <gsf@research.att.com>                  *
++*                  David Korn <dgk@research.att.com>                   *
++*                   Phong Vo <kpv@research.att.com>                    *
++*                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
++*                                                                      *
++***********************************************************************/
++
++#include <tv.h>
++#include <tm.h>
++
++/*
++ * Tv_t fmttime()
++ */
++
++char*
++fmttv(const char* fmt, Tv_t* tv)
++{
++	char*	s;
++	char*	t;
++	size_t	n;
++
++	s = fmttime(fmt, (time_t)tv->tv_sec);
++	if (!tv->tv_nsec || tv->tv_nsec == TV_NSEC_IGNORE)
++		return s;
++	t = fmtbuf(n = strlen(s) + 11);
++	sfsprintf(t, n, "%s.%09lu", s, (unsigned long)tv->tv_nsec);
++	return t;
++}
+diff --git a/src/lib/libast/string/fmtuid.c b/src/lib/libast/string/fmtuid.c
+index 5787286ef..6baa85963 100644
+--- a/src/lib/libast/string/fmtuid.c
++++ b/src/lib/libast/string/fmtuid.c
+@@ -64,7 +64,7 @@ fmtuid(uid_t uid)
+ 	}
+ 	else if (ip = (Id_t*)dtmatch(dict, &uid))
+ 		return ip->name;
+-	if (pw = getpwuid(uid))
++	if (pw = getpwuid((uid_t)uid))
+ 	{
+ 		name = pw->pw_name;
+ #if _WINIX
+diff --git a/src/lib/libast/string/fmtversion.c b/src/lib/libast/string/fmtversion.c
+new file mode 100644
+index 000000000..74055953b
+--- /dev/null
++++ b/src/lib/libast/string/fmtversion.c
+@@ -0,0 +1,50 @@
++/***********************************************************************
++*                                                                      *
++*               This software is part of the ast package               *
++*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
++*                      and is licensed under the                       *
++*                 Eclipse Public License, Version 2.0                  *
++*                                                                      *
++*                A copy of the License is available at                 *
++*      https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html      *
++*         (with md5 checksum 84283fa8859daf213bdda5a9f8d1be1d)         *
++*                                                                      *
++*                 Glenn Fowler <gsf@research.att.com>                  *
++*                  David Korn <dgk@research.att.com>                   *
++*                   Phong Vo <kpv@research.att.com>                    *
++*                  Martijn Dekker <martijn@inlv.org>                   *
++*            Johnothan King <johnothanking@protonmail.com>             *
++*                                                                      *
++***********************************************************************/
++/*
++ * Glenn Fowler
++ * AT&T Bell Laboratories
++ *
++ * return formatted <magicid.h> version string
++ */
++
++#include <ast.h>
++
++char*
++fmtversion(unsigned long v)
++{
++	char*	cur;
++	char*	end;
++	char*	buf;
++	int	n;
++
++	buf = cur = fmtbuf(n = 18);
++	end = cur + n;
++	if (v >= 19700101L && v <= 29991231L)
++		sfsprintf(cur, (size_t)(end - cur), "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
++	else
++	{
++		if (n = (v >> 24) & 0xff)
++			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
++		if (n = (v >> 16) & 0xff)
++			cur += sfsprintf(cur, (size_t)(end - cur), "%d.", n);
++		sfsprintf(cur, (size_t)(end - cur), "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
++	}
++	return buf;
++}
+diff --git a/src/lib/libast/string/stresc.c b/src/lib/libast/string/stresc.c
+index ebeb5f10c..a459d0b87 100644
+--- a/src/lib/libast/string/stresc.c
++++ b/src/lib/libast/string/stresc.c
+@@ -55,7 +55,7 @@ strexp(char* s, int flags)
+ 		*t++ = (char)c;
+ 	}
+ 	*t = 0;
+-	return t - b;
++	return (int)(t - b);
+ }
+ 
+ ptrdiff_t
 diff --git a/src/lib/libast/tm/tmdate.c b/src/lib/libast/tm/tmdate.c
 index 831ffa642..38fcf4cff 100644
 --- a/src/lib/libast/tm/tmdate.c
