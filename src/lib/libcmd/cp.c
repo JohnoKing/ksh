@@ -210,13 +210,13 @@ preserve(State_t* state, const char* path, struct stat* ns, struct stat* os)
 			switch (n)
 			{
 			case 01:
-				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid((int)os->st_gid));
+				error(ERROR_SYSTEM|2, "%s: cannot reset group to %s", path, fmtgid(os->st_gid));
 				break;
 			case 02:
-				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid((int)os->st_uid));
+				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s", path, fmtuid(os->st_uid));
 				break;
 			case 03:
-				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid((int)os->st_uid), fmtgid((int)os->st_gid));
+				error(ERROR_SYSTEM|2, "%s: cannot reset owner to %s and group to %s", path, fmtuid(os->st_uid), fmtgid(os->st_gid));
 				break;
 			}
 	}

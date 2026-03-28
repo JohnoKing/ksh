@@ -72,7 +72,7 @@ b_logname(int argc, char** argv, Shbltin_t* context)
 		UNREACHABLE();
 	}
 	if (!(logname = getlogin()))
-		logname = fmtuid((int)getuid());
+		logname = fmtuid(getuid());
 	sfputr(sfstdout, logname, '\n');
 	return 0;
 }

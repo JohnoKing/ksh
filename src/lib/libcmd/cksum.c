@@ -237,8 +237,8 @@ pr(State_t* state, Sfio_t* op, Sfio_t* ip, char* file, int perm, struct stat* st
 				else
 					sfprintf(sfstdout, " %04o %s %s",
 						modex(st->st_mode & S_IPERM),
-						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid((int)st->st_uid) : "-",
-						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid((int)st->st_gid) : "-");
+						(st->st_uid != state->uid && ((st->st_mode & S_ISUID) || (st->st_mode & S_IRUSR) && !(st->st_mode & (S_IRGRP|S_IROTH)) || (st->st_mode & S_IXUSR) && !(st->st_mode & (S_IXGRP|S_IXOTH)))) ? fmtuid(st->st_uid) : "-",
+						(st->st_gid != state->gid && ((st->st_mode & S_ISGID) || (st->st_mode & S_IRGRP) && !(st->st_mode & S_IROTH) || (st->st_mode & S_IXGRP) && !(st->st_mode & S_IXOTH))) ? fmtgid(st->st_gid) : "-");
 			}
 			if (ip != sfstdin)
 				sfprintf(op, " %s", file);
@@ -333,7 +333,7 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 						if (state->silent)
 							error_info.errors++;
 						else
-							error(2, "%s: UID should be %s", file, fmtuid(uid));
+							error(2, "%s: UID should be %s", file, fmtuid((uid_t)uid));
 					}
 					if (gid < 0 || gid == (int)st.st_gid)
 						gid = -1;
@@ -342,27 +342,27 @@ verify(State_t* state, char* s, char* check, Sfio_t* rp)
 						if (state->silent)
 							error_info.errors++;
 						else
-							error(2, "%s: GID should be %s", file, fmtgid(gid));
+							error(2, "%s: GID should be %s", file, fmtgid((gid_t)gid));
 					}
 					if (state->permissions && (uid >= 0 || gid >= 0))
 					{
 						if (chown(file, (uid_t)uid, (uid_t)gid) < 0)
 						{
 							if (uid < 0)
-								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid(gid));
+								error(ERROR_SYSTEM|2, "%s: cannot change group to %s", file, fmtgid((gid_t)gid));
 							else if (gid < 0)
-								error(ERROR_SYSTEM|2, "%s: cannot change user to %s", file, fmtuid(uid));
+								error(ERROR_SYSTEM|2, "%s: cannot change user to %s", file, fmtuid((uid_t)uid));
 							else
-								error(ERROR_SYSTEM|2, "%s: cannot change user to %s and group to %s", file, fmtuid(uid), fmtgid(gid));
+								error(ERROR_SYSTEM|2, "%s: cannot change user to %s and group to %s", file, fmtuid((uid_t)uid), fmtgid((gid_t)gid));
 						}
 						else
 						{
 							if (uid < 0)
-								error(1, "%s: changed group to %s", file, fmtgid(gid));
+								error(1, "%s: changed group to %s", file, fmtgid((gid_t)gid));
 							else if (gid < 0)
-								error(1, "%s: changed user to %s", file, fmtuid(uid));
+								error(1, "%s: changed user to %s", file, fmtuid((uid_t)uid));
 							else
-								error(1, "%s: changed user to %s and group to %s", file, fmtuid(uid), fmtgid(gid));
+								error(1, "%s: changed user to %s and group to %s", file, fmtuid((uid_t)uid), fmtgid((gid_t)gid));
 						}
 					}
 					if ((st.st_mode & S_IPERM) ^ mode)
