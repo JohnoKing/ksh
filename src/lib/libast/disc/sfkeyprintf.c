@@ -84,7 +84,7 @@ getfield(Field_t* f, int restore)
 	if (f->first)
 		f->first = 0;
 	else if (restore)
-		*s = (char)f->delimiter;
+		*s = f->delimiter;
 	b = ++s;
 	lp = rp = n = 0;
 	for (;;)
