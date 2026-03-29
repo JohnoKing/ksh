@@ -33,16 +33,15 @@ struct list
 /*
  * eliminates shell quoting as inserted with sh_fmtq
  * result replaces <string>
- * length of resulting string is returned.
  */
-static int	sh_unquote(char* string)
+static void	sh_unquote(char* string)
 {
 	char *sp=string, *dp;
 	char c;
 	while((c= *sp) && c!='\'')
 		sp++;
 	if(c==0)
-		return (int)(sp-string);
+		return;
 	if((dp=sp) > string && sp[-1]=='$')
 	{
 		ptrdiff_t n=stresc(sp+1);
@@ -56,7 +55,6 @@ static int	sh_unquote(char* string)
 			*dp++ = c;
 	}
 	*dp=0;
-	return (int)(dp-string);
 }
 
 int	wordexp(const char *string, wordexp_t *wdarg, int flags)

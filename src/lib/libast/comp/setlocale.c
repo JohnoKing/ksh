@@ -2511,14 +2511,15 @@ single(int category, Lc_t* lc, unsigned int flags)
  * return <0:composite-error 0:not-composite >0:composite-ok
  */
 
-static size_t
+static int
 composite(const char* s, int initialize)
 {
 	const char*	t;
+	int		count;
+	int		n;
 	size_t		i;
 	size_t		j;
 	size_t		k;
-	size_t		n;
 	size_t		m;
 	const char*	w;
 	Lc_t*		p;
@@ -2532,17 +2533,18 @@ composite(const char* s, int initialize)
 		n++;
 		j = 0;
 		w = s;
-		for (i = 1; i < AST_LC_COUNT; i++)
+		for (count = 1; count < AST_LC_COUNT; count++)
 		{
 			s = w;
-			t = lc_categories[i].name;
+			t = lc_categories[count].name;
 			while (*t && *s++ == *t++);
 			if (!*t && *s++ == '=')
 			{
-				cat[j++] = (int)i;
+				cat[j++] = count;
 				if (s[0] != 'L' || s[1] != 'C' || s[2] != '_')
 					break;
 				w = s;
+				count = -1;
 			}
 		}
 		for (s = w; *s && *s != '='; s++);
@@ -2550,7 +2552,7 @@ composite(const char* s, int initialize)
 		{
 			for (i = 0; i < k; i++)
 				single(stk[i], NULL, 0);
-			return (size_t)-1;
+			return -1;
 		}
 		w = ++s;
 		for (;;)
@@ -2577,7 +2579,7 @@ composite(const char* s, int initialize)
 				{
 					for (i = 0; i < k; i++)
 						single(stk[i], NULL, 0);
-					return (size_t)-1;
+					return -1;
 				}
 				stk[k++] = cat[i];
 			}
@@ -2600,11 +2602,11 @@ composite(const char* s, int initialize)
 		}
 		if (!initialize)
 		{
-			if (!single((int)n, p, 0))
+			if (!single(n, p, 0))
 			{
-				for (i = 1; i < n; i++)
-					single((int)i, NULL, 0);
-				return (size_t)-1;
+				for (count = 1; count < n; count++)
+					single(count, NULL, 0);
+				return -1;
 			}
 		}
 		else if (!lc_categories[n].prev && !(ast.locale.set & AST_LC_internal))
@@ -2785,7 +2787,7 @@ _ast_setlocale(int category, const char* locale)
 			lc_categories[category].prev = p;
 		return (char*)locales[category]->name;
 	}
-	else if (composite(locale, 0) == (size_t)-1)
+	else if (composite(locale, 0) < 0)
 		return NULL;
 	else if (lc_all != p)
 	{

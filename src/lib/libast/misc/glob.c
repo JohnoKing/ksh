@@ -827,7 +827,7 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 		{
 			strsort(av, (int)(argv - av), ast.locale.collate);
 			if (gp->gl_starstar > 1)
-				av[gp->gl_pathc = (size_t)struniq(av, (int)(argv - av))] = 0;
+				av[gp->gl_pathc = (size_t)struniq(av, argv - av)] = 0;
 			gp->gl_starstar = 0;
 		}
 	}
