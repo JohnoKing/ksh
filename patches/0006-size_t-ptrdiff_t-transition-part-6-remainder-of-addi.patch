@@ -1,6 +1,6 @@
-From 2bb21bab411067a9d9f01860fbcab4b79f4eaeda Mon Sep 17 00:00:00 2001
+From 7a7b621b706a9c1431befd9e56f8a5a047f656d4 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 27 Mar 2026 17:44:06 -0700
+Date: Sat, 28 Mar 2026 21:33:24 -0700
 Subject: size_t/ptrdiff_t transition part 6: remainder of additaments to
  libast
 
@@ -17,7 +17,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,946 => 1,580 => 37 (progression from part 5 => part 6 => part 13)
+1,947 => 1,580 => 37 (progression from part 5 => part 6 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -37,6 +37,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/include/tm.h        |   5 +-
  src/lib/libast/include/vmalloc.h   |   7 +-
  src/lib/libast/man/cdt.3           |   4 +-
+ src/lib/libast/misc/optget.c       |   2 +-
  src/lib/libast/path/pathcanon.c    |   4 +-
  src/lib/libast/path/pathcd.c       |  15 ++--
  src/lib/libast/path/pathfind.c     |   5 +-
@@ -74,7 +75,7 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/lib/libast/tm/tvgettime.c      |   5 +-
  src/lib/libast/tm/tvsleep.c        |   2 +-
  src/lib/libast/tm/tvtouch.c        |   2 +-
- 53 files changed, 417 insertions(+), 291 deletions(-)
+ 54 files changed, 418 insertions(+), 292 deletions(-)
  create mode 100644 src/lib/libast/string/fmttv.c
  create mode 100644 src/lib/libast/string/fmtversion.c
 
@@ -770,6 +771,19 @@ index cf8d9c8ac..36ce85043 100644
  This function computes a new hash value from string \f3str\fP and
  seed value \f3h\fP.
  If \f3n\fP is positive, \f3str\fP is a byte array of length \f3n\fP;
+diff --git a/src/lib/libast/misc/optget.c b/src/lib/libast/misc/optget.c
+index 46b916a29..09a015930 100644
+--- a/src/lib/libast/misc/optget.c
++++ b/src/lib/libast/misc/optget.c
+@@ -4603,7 +4603,7 @@ optget(char** argv, const char* oopts)
+ 			{
+ 				if (c >= 0 && c < (ssize_t)sizeof(map) && map[c] && cache->equiv[map[c]])
+ 					c = cache->equiv[map[c]];
+-				if (c >= 0 && c < sizeof(map) && map[c] && (k = cache->flags[map[c]]))
++				if (c >= 0 && c < (ssize_t)sizeof(map) && map[c] && (k = cache->flags[map[c]]))
+ 				{
+ 					opt_info.arg = 0;
+ 
 diff --git a/src/lib/libast/path/pathcanon.c b/src/lib/libast/path/pathcanon.c
 index 15d20b28b..00ef50088 100644
 --- a/src/lib/libast/path/pathcanon.c

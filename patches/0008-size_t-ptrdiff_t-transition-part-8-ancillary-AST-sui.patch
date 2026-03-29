@@ -1,6 +1,6 @@
-From d96bcab6f2dc6ea00dcc83ef162f47cece6801ba Mon Sep 17 00:00:00 2001
+From dc89b4f99326f370106729992d54f37b96263996 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Fri, 27 Mar 2026 17:45:31 -0700
+Date: Sat, 28 Mar 2026 21:34:55 -0700
 Subject: size_t/ptrdiff_t transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
