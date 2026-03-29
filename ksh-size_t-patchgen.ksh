@@ -37,6 +37,8 @@ git checkout 1c4bf2c65f3858784721e6d5944b19b4b4d00fd4  # part 3
 bld
 git checkout 69aa97299350c007dbac6abee26ae38e3caa74a5  # part 4
 bld
+git checkout 0e518418942347a73e38e82f3a40bcc0d7051c54  # part 5
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -67,44 +69,6 @@ upc() {
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
-
-fetch src/lib/libast/comp/
-fetch src/lib/libast/misc/
-fetch src/lib/libast/port/
-fetch src/lib/libast/include/cmdarg.h
-fetch src/lib/libast/include/glob.h
-fetch src/lib/libast/features/api
-fetch src/lib/libast/std/assert.h
-fetch src/lib/libast/include/debug.h
-upc
-git commit -m $'size_t/ptrdiff_t transition part 5: the libast zakkaya
-
-This is the fifth of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The libast compatibility functions.
-- The libast miscellaneous functions (e.g. optget and friends).
-- The libast portability functions.
-
-Remarks:
-- The second argument of getfsstat can either be a long (FreeBSD)
-  or a size_t (OpenBSD). This patch opts to cast the second argument
-  as a size_t, which will produce a warning on FreeBSD and no warning
-  on OpenBSD.
-- _ast_assertfail and debug_fatal() end with abort(), so they were
-  marked with the noreturn attribute.
-- error_break() triggered a warning because it\'s given extern
-  despite being used as though it were static, so it was
-  marked static to reflect actual usage.
-  - typefix() was not extern, but was missing its static designation,
-    so that has also been rectified.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[4]} ${w[5]} ${w[13]} ;}"' (progression from part 4 => part 5 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libast
 upc
