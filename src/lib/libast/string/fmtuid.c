@@ -64,7 +64,7 @@ fmtuid(uid_t uid)
 	}
 	else if (ip = (Id_t*)dtmatch(dict, &uid))
 		return ip->name;
-	if (pw = getpwuid((uid_t)uid))
+	if (pw = getpwuid(uid))
 	{
 		name = pw->pw_name;
 #if _WINIX

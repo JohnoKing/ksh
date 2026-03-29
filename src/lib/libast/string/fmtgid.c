@@ -64,7 +64,7 @@ fmtgid(gid_t gid)
 	}
 	else if (ip = (Id_t*)dtmatch(dict, &gid))
 		return ip->name;
-	if (gr = getgrgid((gid_t)gid))
+	if (gr = getgrgid(gid))
 	{
 		name = gr->gr_name;
 #if _WINIX

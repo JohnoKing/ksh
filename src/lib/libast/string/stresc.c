@@ -55,7 +55,7 @@ strexp(char* s, int flags)
 		*t++ = (char)c;
 	}
 	*t = 0;
-	return (int)(t - b);
+	return t - b;
 }
 
 ptrdiff_t
