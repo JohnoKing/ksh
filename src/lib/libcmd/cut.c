@@ -425,7 +425,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 							while ((c = mb2wc(w, cp, (size_t)(ep - cp))) <= 0)
 							{
 								/* mb char possibly spanning buffer boundary -- fun stuff */
-								if ((ep - cp) < (ptrdiff_t)mbmax())
+								if ((ep - cp) < (int)mbmax())
 								{
 									ptrdiff_t i;
 									ptrdiff_t j;
@@ -453,7 +453,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 										*ep = cut->eob;
 									j = i;
 									k = 0;
-									while (j < (ptrdiff_t)mbmax())
+									while (j < (int)mbmax())
 										mb[j++] = cp[k++];
 									if ((c = mb2wc(w, (char*)mb, (size_t)j)) <= 0)
 									{

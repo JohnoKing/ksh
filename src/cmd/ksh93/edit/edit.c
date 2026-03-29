@@ -765,7 +765,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
 				if(type)
 					c = -c;
 			}
-			else if((endp-p) < (ssize_t)mbmax())
+			else if((endp-p) < (int)mbmax())
 			{
 				if(errno == EILSEQ)
 					errno = 0;
