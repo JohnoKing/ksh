@@ -23,10 +23,6 @@
  * POSIX regex compiler
  */
 
-#if __clang__
-#pragma clang diagnostic ignored "-Wconstant-conversion"
-#endif
-
 #include "reglib.h"
 #include "lclib.h"
 
