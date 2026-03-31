@@ -1,6 +1,6 @@
-From 86d75afc235b63315b9aa5ffe8609855aac03b0a Mon Sep 17 00:00:00 2001
+From 7c87c40712f29a3f26ef603ff4637d4fce1d492b Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 13:08:20 -0700
+Date: Tue, 31 Mar 2026 14:39:50 -0700
 Subject: 64-bit transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -43,7 +43,17 @@ and is intended for submission sometime after this (hopefully) gets merged.
 Fixes https://github.com/ksh93/ksh/issues/592
 ---
  NEWS                            |   4 +
+ src/cmd/ksh93/bltins/cflow.c    |   2 +-
+ src/cmd/ksh93/bltins/whence.c   |   2 +-
  src/cmd/ksh93/builtins.mm       |   4 +-
+ src/cmd/ksh93/data/aliases.c    |   2 +-
+ src/cmd/ksh93/data/keywords.c   |   2 +-
+ src/cmd/ksh93/data/limits.c     |   2 +-
+ src/cmd/ksh93/data/options.c    |   2 +-
+ src/cmd/ksh93/data/signals.c    |   2 +-
+ src/cmd/ksh93/data/strdata.c    |   2 +-
+ src/cmd/ksh93/data/testops.c    |   2 +-
+ src/cmd/ksh93/data/variables.c  |   2 +-
  src/cmd/ksh93/features/externs  |  11 +-
  src/cmd/ksh93/features/fchdir   |   5 +-
  src/cmd/ksh93/features/poll     |   2 +-
@@ -58,17 +68,28 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/ulimit.h  |   4 +
  src/cmd/ksh93/sh/args.c         |  44 ++++---
  src/cmd/ksh93/sh/arith.c        |  34 ++---
+ src/cmd/ksh93/sh/defs.c         |   2 +-
  src/cmd/ksh93/sh/deparse.c      |  25 ++--
  src/cmd/ksh93/sh/expand.c       |  33 ++---
  src/cmd/ksh93/sh/fault.c        |  42 +++----
+ src/cmd/ksh93/sh/init.c         |   8 +-
  src/cmd/ksh93/sh/io.c           | 217 +++++++++++++++++---------------
- src/cmd/ksh93/sh/macro.c        |   4 +-
+ src/cmd/ksh93/sh/macro.c        |  18 +--
  src/cmd/ksh93/sh/main.c         |  21 ++--
  src/cmd/ksh93/sh/path.c         | 104 ++++++++-------
- src/cmd/ksh93/sh/streval.c      |  49 ++++----
+ src/cmd/ksh93/sh/pmain.c        |   2 +-
+ src/cmd/ksh93/sh/streval.c      |  51 ++++----
  src/cmd/ksh93/sh/xec.c          | 109 ++++++++--------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++
- 26 files changed, 438 insertions(+), 365 deletions(-)
+ src/lib/libast/port/astconf.c   |   2 +-
+ src/lib/libast/sfio/sffilbuf.c  |   4 +-
+ src/lib/libast/sfio/sfhdr.h     |   2 +-
+ src/lib/libast/sfio/sfmode.c    |   2 +-
+ src/lib/libast/sfio/sfputr.c    |   2 +-
+ src/lib/libast/sfio/sfreserve.c |   6 +-
+ src/lib/libast/sfio/sfvscanf.c  |   2 +-
+ src/lib/libast/string/tokline.c |   2 +-
+ 47 files changed, 473 insertions(+), 400 deletions(-)
 
 diff --git a/NEWS b/NEWS
 index 4c2bfa17f..4e62c86a0 100644
@@ -85,6 +106,32 @@ index 4c2bfa17f..4e62c86a0 100644
  2026-03-28:
  
  - Fixed a potential crash (buffer read overflow) in the .sh.match code
+diff --git a/src/cmd/ksh93/bltins/cflow.c b/src/cmd/ksh93/bltins/cflow.c
+index f8653e955..20e9470e3 100644
+--- a/src/cmd/ksh93/bltins/cflow.c
++++ b/src/cmd/ksh93/bltins/cflow.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/whence.c b/src/cmd/ksh93/bltins/whence.c
+index a2a80937e..1717d7124 100644
+--- a/src/cmd/ksh93/bltins/whence.c
++++ b/src/cmd/ksh93/bltins/whence.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -100,6 +147,110 @@ index d9ef1dd96..64913fcc2 100644
          if(saveoffset=stktell(stkstd))
          	savebase = stkfreeze(stkstd,0);
          \fR...\fP
+diff --git a/src/cmd/ksh93/data/aliases.c b/src/cmd/ksh93/data/aliases.c
+index fdcde3501..590c6f043 100644
+--- a/src/cmd/ksh93/data/aliases.c
++++ b/src/cmd/ksh93/data/aliases.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/keywords.c b/src/cmd/ksh93/data/keywords.c
+index 77e78b609..d90975949 100644
+--- a/src/cmd/ksh93/data/keywords.c
++++ b/src/cmd/ksh93/data/keywords.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/limits.c b/src/cmd/ksh93/data/limits.c
+index 8626c10f6..5f7ff99b4 100644
+--- a/src/cmd/ksh93/data/limits.c
++++ b/src/cmd/ksh93/data/limits.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/options.c b/src/cmd/ksh93/data/options.c
+index dbe675fc1..46b18141d 100644
+--- a/src/cmd/ksh93/data/options.c
++++ b/src/cmd/ksh93/data/options.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/signals.c b/src/cmd/ksh93/data/signals.c
+index 01672cc9c..736a654e4 100644
+--- a/src/cmd/ksh93/data/signals.c
++++ b/src/cmd/ksh93/data/signals.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/strdata.c b/src/cmd/ksh93/data/strdata.c
+index cb3de2bf0..43040a8e1 100644
+--- a/src/cmd/ksh93/data/strdata.c
++++ b/src/cmd/ksh93/data/strdata.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/testops.c b/src/cmd/ksh93/data/testops.c
+index 4d178c43e..5034d1bd2 100644
+--- a/src/cmd/ksh93/data/testops.c
++++ b/src/cmd/ksh93/data/testops.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/variables.c b/src/cmd/ksh93/data/variables.c
+index d8bfa5815..091ce450c 100644
+--- a/src/cmd/ksh93/data/variables.c
++++ b/src/cmd/ksh93/data/variables.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 diff --git a/src/cmd/ksh93/features/externs b/src/cmd/ksh93/features/externs
 index a9a58d7ac..cb9309ef5 100644
 --- a/src/cmd/ksh93/features/externs
@@ -696,6 +847,19 @@ index a4cdbe7ea..4582ba94b 100644
  				{
  					Sfdouble_t rr;
  					rr = strtold(val,&str);
+diff --git a/src/cmd/ksh93/sh/defs.c b/src/cmd/ksh93/sh/defs.c
+index e47f1163a..1cef7fb55 100644
+--- a/src/cmd/ksh93/sh/defs.c
++++ b/src/cmd/ksh93/sh/defs.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 diff --git a/src/cmd/ksh93/sh/deparse.c b/src/cmd/ksh93/sh/deparse.c
 index fbc95a477..71484f164 100644
 --- a/src/cmd/ksh93/sh/deparse.c
@@ -1067,6 +1231,41 @@ index f68711e45..5d94127a4 100644
  	void	*savptr = stkfreeze(sh.stk,0);
  	struct	checkpt buff;
  	Fcin_t	savefc;
+diff --git a/src/cmd/ksh93/sh/init.c b/src/cmd/ksh93/sh/init.c
+index de74e758f..aeab1f05d 100644
+--- a/src/cmd/ksh93/sh/init.c
++++ b/src/cmd/ksh93/sh/init.c
+@@ -836,7 +836,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
+ 				nv_putsub(np,NULL,mp->index);
+ 				for(x=mp->index; x >=0; x--)
+ 				{
+-					n = i + x*(ptrdiff_t)mp->nmatch;
++					n = i + x*mp->nmatch;
+ 					if(mp->match[2*n+1]>mp->match[2*n])
+ 						nv_putsub(np,Empty,ARRAY_ADD|x);
+ 				}
+@@ -883,7 +883,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
+ 		mp->names = mp->nodes + (size_t)mp->nmatch*(NV_MINSZ+sizeof(void*));
+ 		np = nv_namptr(mp->nodes,0);
+ 		nv_disc(SH_MATCHNOD,&mp->hdr,NV_LAST);
+-		for(i=(ptrdiff_t)nmatch; --i>=0;)
++		for(i=nmatch; --i>=0;)
+ 		{
+ 			if(match[2*i]>=0)
+ 				nv_putsub(SH_MATCHNOD,Empty,ARRAY_ADD|i);
+@@ -902,10 +902,10 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
+ 		for(n=mp->first+(mp->v-v),vsize=0,i=0; i < 2*nmatch; i++)
+ 		{
+ 			if(match[i]>=0 && (match[i] - n) > vsize)
+-				vsize = (ptrdiff_t)match[i] -n;
++				vsize = match[i] -n;
+ 		}
+ 		index *= 2*mp->nmatch;
+-		i = (index+2*(ptrdiff_t)mp->nmatch)*(ptrdiff_t)sizeof(match[0]);
++		i = (index+2*mp->nmatch)*(ptrdiff_t)sizeof(match[0]);
+ 		if(i >= (ssize_t)mp->msize)
+ 			mp->match = sh_realloc(mp->match, mp->msize = 2*(size_t)i);
+ 		if(vsize >= mp->vsize)
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
 index e03a7479c..40ab1da71 100644
 --- a/src/cmd/ksh93/sh/io.c
@@ -1733,7 +1932,7 @@ index e03a7479c..40ab1da71 100644
  	}
  	return sp;
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index a74e67cf6..6e4050b82 100644
+index a74e67cf6..207e2bf97 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
 @@ -164,7 +164,7 @@ static void setup_ifs(Mac_t *mp)
@@ -1754,6 +1953,63 @@ index a74e67cf6..6e4050b82 100644
  	mp->quoted = mp->lit = mp->split = mp->quote = 0;
  	mp->sp = 0;
  	setup_ifs(mp);
+@@ -952,9 +952,9 @@ static void mac_substitute(Mac_t *mp, char *cp,char *str,ssize_t subexp[],ssize_
+ 				continue;
+ 			}
+ 			n -= '0';
+-			if(n<subsize && (c=(ptrdiff_t)subexp[2*n])>=0)
++			if(n<subsize && (c=subexp[2*n])>=0)
+ 			{
+-				if((n=(ptrdiff_t)subexp[2*n+1]-c)>0)
++				if((n=subexp[2*n+1]-c)>0)
+ 					mac_copy(mp,str+c,n);
+ 			}
+ 		}
+@@ -1268,7 +1268,7 @@ retry1:
+ 		else if(sh.cur_line)
+ 		{
+ 			sh.used_pos = 1;
+-			v = getdolarg((ptrdiff_t)c,&vsize);
++			v = getdolarg(c,&vsize);
+ 		}
+ #endif  /* SHOPT_FILESCAN */
+ 		else if(c <= sh.st.dolc)
+@@ -1944,7 +1944,7 @@ retry2:
+ 					{
+ 						vlast = v;
+ 						vsize_last = vsize;
+-						vsize = (ptrdiff_t)match[0];
++						vsize = match[0];
+ 					}
+ 					else if(c=='#')
+ 						vsize = 0;
+@@ -2005,7 +2005,7 @@ retry2:
+ 						continue;
+ 					}
+ 					if (match[0])
+-						mac_copy(mp, v, (ptrdiff_t)match[0]);
++						mac_copy(mp, v, match[0]);
+ 					if (mbwide())  /* locale uses multibyte characters? */
+ 					{
+ 						int	wc;
+@@ -2038,7 +2038,7 @@ retry2:
+ 						buf = sh_malloc((size_t)(match[1] - match[0]));
+ 						for (cp = v + match[0], cq = buf; cp < v + match[1]; cp++, cq++)
+ 							*cq = (char)(c == '^' ? toupper(*cp) : tolower(*cp));
+-						mac_copy(mp, buf, (ptrdiff_t)(match[1] - match[0]));
++						mac_copy(mp, buf, match[1] - match[0]);
+ 						free(buf);
+ 					}
+ 					v += match[1];
+@@ -2444,7 +2444,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
+ 			lastc = str[c];
+ 			str[c] = 0;
+ 		}
+-		mac_copy(mp,str,(ptrdiff_t)c);
++		mac_copy(mp,str,c);
+ 	}
+ 	if(was_interactive)
+ 		sh_onstate(SH_INTERACTIVE);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
 index 7d8b4c2d9..8c5aca99c 100644
 --- a/src/cmd/ksh93/sh/main.c
@@ -1832,7 +2088,7 @@ index 7d8b4c2d9..8c5aca99c 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index 9860575de..45450bd9f 100644
+index 9860575de..98de52da5 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -1965,7 +2221,7 @@ index 9860575de..45450bd9f 100644
  		sfputr(sh.stk,opath,0);
  		path = stkptr(sh.stk,PATH_OFFSET);
 -		while((n=readlink(path,buff,PATH_MAX))>0)
-+		while((rlen=(ptrdiff_t)readlink(path,buff,PATH_MAX))>0)
++		while((rlen=readlink(path,buff,PATH_MAX))>0)
  		{
 -			buff[n] = 0;
 -			n = PATH_OFFSET;
@@ -2141,10 +2397,32 @@ index 9860575de..45450bd9f 100644
  		else
  			nv_setsize(np,0);
  	}
+diff --git a/src/cmd/ksh93/sh/pmain.c b/src/cmd/ksh93/sh/pmain.c
+index a4bb5ef39..75acaa446 100644
+--- a/src/cmd/ksh93/sh/pmain.c
++++ b/src/cmd/ksh93/sh/pmain.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 diff --git a/src/cmd/ksh93/sh/streval.c b/src/cmd/ksh93/sh/streval.c
-index a8a0d20e9..42f42db85 100644
+index 549b46f1a..42f42db85 100644
 --- a/src/cmd/ksh93/sh/streval.c
 +++ b/src/cmd/ksh93/sh/streval.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -54,7 +54,7 @@
  #define pow2size(x)		((x)<=2?2:(x)<=4?4:(x)<=8?8:(x)<=16?16:(x)<=32?32:64)
  #define round(x,size)		(((x)+(size)-1)&~((size)-1))
@@ -2739,6 +3017,133 @@ index 93fccd52d..3bb3d40a2 100755
  # ======
  # Is an invalid flag handled correctly?
  # ksh2020 regression: https://github.com/att/ast/issues/1284
+diff --git a/src/lib/libast/port/astconf.c b/src/lib/libast/port/astconf.c
+index 2a61837cb..4ce825249 100644
+--- a/src/lib/libast/port/astconf.c
++++ b/src/lib/libast/port/astconf.c
+@@ -392,7 +392,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
+ 		goto ok;
+ 	}
+ 	s = (char*)fp->name;
+-	n = (ptrdiff_t)fp->length;
++	n = fp->length;
+ 	d = state.data;
+ 	for (;;)
+ 	{
+diff --git a/src/lib/libast/sfio/sffilbuf.c b/src/lib/libast/sfio/sffilbuf.c
+index dc17f4f50..89839b6cf 100644
+--- a/src/lib/libast/sfio/sffilbuf.c
++++ b/src/lib/libast/sfio/sffilbuf.c
+@@ -82,7 +82,7 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
+ 			f->next = f->endb = f->endr = f->data;
+ 
+ 		if(f->bits&SFIO_MMAP)
+-			r = n > 0 ? n : (ptrdiff_t)f->size;
++			r = n > 0 ? n : f->size;
+ 		else if(!(f->flags&SFIO_STRING) )
+ 		{	r = f->size - (f->endb - f->data); /* available buffer */
+ 			if(n > 0)
+@@ -96,7 +96,7 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
+ 		/* SFRD takes care of discipline read and stack popping */
+ 		f->mode |= rcrv;
+ 		f->getr = rc;
+-		if((r = (ptrdiff_t)SFRD(f,f->endb,(size_t)r,f->disc)) >= 0)
++		if((r = SFRD(f,f->endb,(size_t)r,f->disc)) >= 0)
+ 		{	r = f->endb - f->next;
+ 			break;
+ 		}
+diff --git a/src/lib/libast/sfio/sfhdr.h b/src/lib/libast/sfio/sfhdr.h
+index 787ada04e..6e9689c4e 100644
+--- a/src/lib/libast/sfio/sfhdr.h
++++ b/src/lib/libast/sfio/sfhdr.h
+@@ -542,7 +542,7 @@ typedef struct _sfextern_s
+ /* fast peek of a stream */
+ #define _SFAVAIL(f,s,n)	((n) = (f)->endb - ((s) = (f)->next) )
+ #define SFRPEEK(f,s,n)	(_SFAVAIL(f,s,n) > 0 ? (n) : \
+-				((n) = (ptrdiff_t)SFFILBUF(f,-1), (s) = (f)->next, (n)) )
++				((n) = SFFILBUF(f,-1), (s) = (f)->next, (n)) )
+ #define SFWPEEK(f,s,n)	(_SFAVAIL(f,s,n) > 0 ? (n) : \
+ 				((n) = SFFLSBUF(f,-1), (s) = (f)->next, (n)) )
+ 
+diff --git a/src/lib/libast/sfio/sfmode.c b/src/lib/libast/sfio/sfmode.c
+index 9ba71bb03..bdaefdc3b 100644
+--- a/src/lib/libast/sfio/sfmode.c
++++ b/src/lib/libast/sfio/sfmode.c
+@@ -270,7 +270,7 @@ static int _sfpmode(Sfio_t* f, int type)
+ 	else
+ 	{	/* restore read data */
+ 		if(p->ndata > f->size)	/* may lose data!!! */
+-			p->ndata = (ptrdiff_t)f->size;
++			p->ndata = f->size;
+ 		if(p->ndata > 0)
+ 		{	memcpy(f->data,p->rdata,(size_t)p->ndata);
+ 			f->endb = f->data+p->ndata;
+diff --git a/src/lib/libast/sfio/sfputr.c b/src/lib/libast/sfio/sfputr.c
+index 05b0a740b..7f0254224 100644
+--- a/src/lib/libast/sfio/sfputr.c
++++ b/src/lib/libast/sfio/sfputr.c
+@@ -79,7 +79,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
+ 						memcpy(rsrv->data, s, (size_t)n);
+ 					if(rc >= 0)
+ 						rsrv->data[n] = (uchar)rc;
+-					if((n = (ptrdiff_t)SFWRITE(f,rsrv->data,(size_t)p)) < 0 )
++					if((n = SFWRITE(f,rsrv->data,(size_t)p)) < 0 )
+ 						n = 0;
+ 				}
+ 
+diff --git a/src/lib/libast/sfio/sfreserve.c b/src/lib/libast/sfio/sfreserve.c
+index e3195e11c..024276f69 100644
+--- a/src/lib/libast/sfio/sfreserve.c
++++ b/src/lib/libast/sfio/sfreserve.c
+@@ -119,11 +119,11 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
+ 		/* do a buffer refill or flush */
+ 		now = n;
+ 		if(f->mode&SFIO_WRITE)
+-			(void)SFFLSBUF(f, (ptrdiff_t)iosz);
++			(void)SFFLSBUF(f, iosz);
+ 		else if(type == SFIO_LOCKR && f->extent < 0 && (f->flags&SFIO_SHARE) )
+ 		{	if(n == 0) /* peek-read only if there is no buffered data */
+ 			{	f->mode |= SFIO_RV;
+-				(void)SFFILBUF(f, (ptrdiff_t)iosz );
++				(void)SFFILBUF(f, iosz);
+ 			}
+ 			if((n = f->endb - f->next) < sz)
+ 			{	if(f->mode&SFIO_PKRD)
+@@ -138,7 +138,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
+ 			if(size == 0 && type == 0)
+ 				f->mode |= SFIO_RV;
+ 
+-			(void)SFFILBUF(f, (ptrdiff_t)iosz );
++			(void)SFFILBUF(f, iosz);
+ 		}
+ 
+ 		if((n = f->endb - f->next) <= 0)
+diff --git a/src/lib/libast/sfio/sfvscanf.c b/src/lib/libast/sfio/sfvscanf.c
+index 55619f524..df74d17db 100644
+--- a/src/lib/libast/sfio/sfvscanf.c
++++ b/src/lib/libast/sfio/sfvscanf.c
+@@ -444,7 +444,7 @@ loop_fmt:
+ 							if(!(ft->flags&SFFMT_VALUE) )
+ 								goto t_arg;
+ 							if((t_str = argv.s) &&
+-							   (n_str = (ptrdiff_t)ft->size) < 0)
++							   (n_str = ft->size) < 0)
+ 								n_str = (ptrdiff_t)strlen(t_str);
+ 						}
+ 						else
+diff --git a/src/lib/libast/string/tokline.c b/src/lib/libast/string/tokline.c
+index 6f29f16a5..ca0a2d6b0 100644
+--- a/src/lib/libast/string/tokline.c
++++ b/src/lib/libast/string/tokline.c
+@@ -77,7 +77,7 @@ spliceline(Sfio_t* s, int op, void* val, Sfdisc_t* ad)
+ 		{
+ 			if (!(buf = sfgetr(d->sp, '\n', 0)) && !(buf = sfgetr(d->sp, '\n', -1)))
+ 				return 0;
+-			n = (ptrdiff_t)sfvalue(d->sp);
++			n = sfvalue(d->sp);
+ 			q = d->quote;
+ 			j = 0;
+ 			(*d->line)++;
 -- 
 2.53.0
 

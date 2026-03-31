@@ -1,6 +1,6 @@
-From ed60248195d67decd866d98bf3348070c4073215 Mon Sep 17 00:00:00 2001
+From 8d8b7a35f43306b5ac780aa3feb53d55521bf98d Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 13:03:54 -0700
+Date: Tue, 31 Mar 2026 14:35:33 -0700
 Subject: 64-bit transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
@@ -28,434 +28,42 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/bltins/alarm.c    |   2 +-
- src/cmd/ksh93/bltins/cflow.c    |   2 +-
- src/cmd/ksh93/bltins/enum.c     |   2 +-
- src/cmd/ksh93/bltins/getopts.c  |   2 +-
- src/cmd/ksh93/bltins/hist.c     |   2 +-
- src/cmd/ksh93/bltins/ulimit.c   |   2 +-
- src/cmd/ksh93/bltins/whence.c   |   2 +-
- src/cmd/ksh93/data/aliases.c    |   2 +-
- src/cmd/ksh93/data/keywords.c   |   2 +-
- src/cmd/ksh93/data/limits.c     |   2 +-
- src/cmd/ksh93/data/options.c    |   2 +-
- src/cmd/ksh93/data/signals.c    |   2 +-
- src/cmd/ksh93/data/strdata.c    |   2 +-
- src/cmd/ksh93/data/testops.c    |   2 +-
- src/cmd/ksh93/data/variables.c  |   2 +-
- src/cmd/ksh93/edit/completion.c |   2 +-
- src/cmd/ksh93/edit/emacs.c      |   2 +-
- src/cmd/ksh93/edit/hexpand.c    |   2 +-
- src/cmd/ksh93/edit/history.c    |   2 +-
- src/cmd/ksh93/sh/array.c        |   2 +-
- src/cmd/ksh93/sh/defs.c         |   2 +-
- src/cmd/ksh93/sh/fcin.c         |   2 +-
- src/cmd/ksh93/sh/nvdisc.c       |   2 +-
- src/cmd/ksh93/sh/pmain.c        |   2 +-
- src/cmd/ksh93/sh/streval.c      |   2 +-
- src/cmd/ksh93/sh/tdump.c        |   2 +-
- src/cmd/ksh93/sh/timers.c       |   2 +-
- src/cmd/ksh93/sh/trestore.c     |   2 +-
- src/lib/libcmd/basename.c       |   8 +-
- src/lib/libcmd/cat.c            |  45 +++++-----
- src/lib/libcmd/chgrp.c          |  65 ++++++++-------
- src/lib/libcmd/chmod.c          |  27 +++---
- src/lib/libcmd/cksum.c          |  40 ++++-----
- src/lib/libcmd/cmp.c            |  20 ++---
- src/lib/libcmd/comm.c           |  14 ++--
- src/lib/libcmd/context.c        |  33 ++++----
- src/lib/libcmd/cp.c             |  52 ++++++------
- src/lib/libcmd/cut.c            | 111 ++++++++++++-------------
- src/lib/libcmd/date.c           |  16 ++--
- src/lib/libcmd/dirname.c        |   4 +-
- src/lib/libcmd/expr.c           |  21 ++---
- src/lib/libcmd/fds.c            |  17 ++--
- src/lib/libcmd/fmt.c            |  30 +++----
- src/lib/libcmd/fold.c           |  27 +++---
- src/lib/libcmd/getconf.c        |   6 +-
- src/lib/libcmd/grep.c           |  76 +++++++++--------
- src/lib/libcmd/id.c             |  20 ++---
- src/lib/libcmd/join.c           | 140 ++++++++++++++++----------------
- src/lib/libcmd/logname.c        |   2 +-
- src/lib/libcmd/mkdir.c          |  10 +--
- src/lib/libcmd/mktemp.c         |   4 +-
- src/lib/libcmd/pathchk.c        |   6 +-
- src/lib/libcmd/rev.c            |  12 +--
- src/lib/libcmd/rev.h            |   5 +-
- src/lib/libcmd/revlib.c         |  15 ++--
- src/lib/libcmd/rm.c             |  10 +--
- src/lib/libcmd/stty.c           |  66 +++++++--------
- src/lib/libcmd/tail.c           |  44 +++++-----
- src/lib/libcmd/tee.c            |   6 +-
- src/lib/libcmd/uname.c          |   8 +-
- src/lib/libcmd/uniq.c           |  50 ++++++------
- src/lib/libcmd/wclib.c          |  30 +++----
- 62 files changed, 557 insertions(+), 539 deletions(-)
+ src/lib/libcmd/basename.c |   8 +--
+ src/lib/libcmd/cat.c      |  39 +++++------
+ src/lib/libcmd/chgrp.c    |  65 +++++++++---------
+ src/lib/libcmd/chmod.c    |  27 ++++----
+ src/lib/libcmd/cksum.c    |  40 +++++------
+ src/lib/libcmd/cmp.c      |  16 ++---
+ src/lib/libcmd/comm.c     |  14 ++--
+ src/lib/libcmd/context.c  |  33 ++++-----
+ src/lib/libcmd/cp.c       |  52 +++++++-------
+ src/lib/libcmd/cut.c      | 105 ++++++++++++++--------------
+ src/lib/libcmd/date.c     |  16 ++---
+ src/lib/libcmd/dirname.c  |   4 +-
+ src/lib/libcmd/expr.c     |  21 +++---
+ src/lib/libcmd/fds.c      |  17 ++---
+ src/lib/libcmd/fmt.c      |  30 ++++----
+ src/lib/libcmd/fold.c     |  27 ++++----
+ src/lib/libcmd/getconf.c  |   6 +-
+ src/lib/libcmd/grep.c     |  76 ++++++++++++---------
+ src/lib/libcmd/id.c       |  20 +++---
+ src/lib/libcmd/join.c     | 140 +++++++++++++++++++-------------------
+ src/lib/libcmd/logname.c  |   2 +-
+ src/lib/libcmd/mkdir.c    |  10 +--
+ src/lib/libcmd/mktemp.c   |   4 +-
+ src/lib/libcmd/pathchk.c  |   6 +-
+ src/lib/libcmd/rev.c      |  12 ++--
+ src/lib/libcmd/rev.h      |   5 +-
+ src/lib/libcmd/revlib.c   |  15 ++--
+ src/lib/libcmd/rm.c       |  10 +--
+ src/lib/libcmd/stty.c     |  66 +++++++++---------
+ src/lib/libcmd/tail.c     |  42 ++++++------
+ src/lib/libcmd/tee.c      |   6 +-
+ src/lib/libcmd/uname.c    |   8 +--
+ src/lib/libcmd/uniq.c     |  42 ++++++------
+ src/lib/libcmd/wclib.c    |  30 ++++----
+ 34 files changed, 516 insertions(+), 498 deletions(-)
 
-diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
-index b32cd7f48..a2a284b5c 100644
---- a/src/cmd/ksh93/bltins/alarm.c
-+++ b/src/cmd/ksh93/bltins/alarm.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/bltins/cflow.c b/src/cmd/ksh93/bltins/cflow.c
-index f8653e955..20e9470e3 100644
---- a/src/cmd/ksh93/bltins/cflow.c
-+++ b/src/cmd/ksh93/bltins/cflow.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
-index 8ea779ec0..8ea550176 100644
---- a/src/cmd/ksh93/bltins/enum.c
-+++ b/src/cmd/ksh93/bltins/enum.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/bltins/getopts.c b/src/cmd/ksh93/bltins/getopts.c
-index e1cb43ff0..405df0398 100644
---- a/src/cmd/ksh93/bltins/getopts.c
-+++ b/src/cmd/ksh93/bltins/getopts.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/bltins/hist.c b/src/cmd/ksh93/bltins/hist.c
-index 16b37a86e..8e973671a 100644
---- a/src/cmd/ksh93/bltins/hist.c
-+++ b/src/cmd/ksh93/bltins/hist.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/bltins/ulimit.c b/src/cmd/ksh93/bltins/ulimit.c
-index fa4d4a52a..c91568338 100644
---- a/src/cmd/ksh93/bltins/ulimit.c
-+++ b/src/cmd/ksh93/bltins/ulimit.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/bltins/whence.c b/src/cmd/ksh93/bltins/whence.c
-index a2a80937e..1717d7124 100644
---- a/src/cmd/ksh93/bltins/whence.c
-+++ b/src/cmd/ksh93/bltins/whence.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/aliases.c b/src/cmd/ksh93/data/aliases.c
-index fdcde3501..590c6f043 100644
---- a/src/cmd/ksh93/data/aliases.c
-+++ b/src/cmd/ksh93/data/aliases.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/keywords.c b/src/cmd/ksh93/data/keywords.c
-index 77e78b609..d90975949 100644
---- a/src/cmd/ksh93/data/keywords.c
-+++ b/src/cmd/ksh93/data/keywords.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/limits.c b/src/cmd/ksh93/data/limits.c
-index 8626c10f6..5f7ff99b4 100644
---- a/src/cmd/ksh93/data/limits.c
-+++ b/src/cmd/ksh93/data/limits.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/options.c b/src/cmd/ksh93/data/options.c
-index dbe675fc1..46b18141d 100644
---- a/src/cmd/ksh93/data/options.c
-+++ b/src/cmd/ksh93/data/options.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/signals.c b/src/cmd/ksh93/data/signals.c
-index 01672cc9c..736a654e4 100644
---- a/src/cmd/ksh93/data/signals.c
-+++ b/src/cmd/ksh93/data/signals.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/strdata.c b/src/cmd/ksh93/data/strdata.c
-index cb3de2bf0..43040a8e1 100644
---- a/src/cmd/ksh93/data/strdata.c
-+++ b/src/cmd/ksh93/data/strdata.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/testops.c b/src/cmd/ksh93/data/testops.c
-index 4d178c43e..5034d1bd2 100644
---- a/src/cmd/ksh93/data/testops.c
-+++ b/src/cmd/ksh93/data/testops.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/data/variables.c b/src/cmd/ksh93/data/variables.c
-index d8bfa5815..091ce450c 100644
---- a/src/cmd/ksh93/data/variables.c
-+++ b/src/cmd/ksh93/data/variables.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
-index 0b1b48e3c..10c0e48e3 100644
---- a/src/cmd/ksh93/edit/completion.c
-+++ b/src/cmd/ksh93/edit/completion.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/edit/emacs.c b/src/cmd/ksh93/edit/emacs.c
-index 1a82414b8..ab1df5069 100644
---- a/src/cmd/ksh93/edit/emacs.c
-+++ b/src/cmd/ksh93/edit/emacs.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/edit/hexpand.c b/src/cmd/ksh93/edit/hexpand.c
-index 7ac0c3c24..53930fb27 100644
---- a/src/cmd/ksh93/edit/hexpand.c
-+++ b/src/cmd/ksh93/edit/hexpand.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/edit/history.c b/src/cmd/ksh93/edit/history.c
-index 0bd434ecf..4d9d6f4d1 100644
---- a/src/cmd/ksh93/edit/history.c
-+++ b/src/cmd/ksh93/edit/history.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/array.c b/src/cmd/ksh93/sh/array.c
-index 0e0b4d270..3cd1decc0 100644
---- a/src/cmd/ksh93/sh/array.c
-+++ b/src/cmd/ksh93/sh/array.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/defs.c b/src/cmd/ksh93/sh/defs.c
-index e47f1163a..1cef7fb55 100644
---- a/src/cmd/ksh93/sh/defs.c
-+++ b/src/cmd/ksh93/sh/defs.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/fcin.c b/src/cmd/ksh93/sh/fcin.c
-index 740443e34..6e482938d 100644
---- a/src/cmd/ksh93/sh/fcin.c
-+++ b/src/cmd/ksh93/sh/fcin.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/nvdisc.c b/src/cmd/ksh93/sh/nvdisc.c
-index acf723383..937ab6d84 100644
---- a/src/cmd/ksh93/sh/nvdisc.c
-+++ b/src/cmd/ksh93/sh/nvdisc.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/pmain.c b/src/cmd/ksh93/sh/pmain.c
-index a4bb5ef39..75acaa446 100644
---- a/src/cmd/ksh93/sh/pmain.c
-+++ b/src/cmd/ksh93/sh/pmain.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/streval.c b/src/cmd/ksh93/sh/streval.c
-index 549b46f1a..a8a0d20e9 100644
---- a/src/cmd/ksh93/sh/streval.c
-+++ b/src/cmd/ksh93/sh/streval.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/tdump.c b/src/cmd/ksh93/sh/tdump.c
-index ac592dc0b..ca3252c25 100644
---- a/src/cmd/ksh93/sh/tdump.c
-+++ b/src/cmd/ksh93/sh/tdump.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/timers.c b/src/cmd/ksh93/sh/timers.c
-index 06e5c1b8c..a6b5b2498 100644
---- a/src/cmd/ksh93/sh/timers.c
-+++ b/src/cmd/ksh93/sh/timers.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
-diff --git a/src/cmd/ksh93/sh/trestore.c b/src/cmd/ksh93/sh/trestore.c
-index 92e919c2c..c3e5f3d26 100644
---- a/src/cmd/ksh93/sh/trestore.c
-+++ b/src/cmd/ksh93/sh/trestore.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
 --- a/src/lib/libcmd/basename.c
@@ -496,7 +104,7 @@ index 9377f9bdb..c1130cb9b 100644
  }
  
 diff --git a/src/lib/libcmd/cat.c b/src/lib/libcmd/cat.c
-index ed91813c4..b02506522 100644
+index ed91813c4..3a3751ee5 100644
 --- a/src/lib/libcmd/cat.c
 +++ b/src/lib/libcmd/cat.c
 @@ -2,7 +2,7 @@
@@ -593,19 +201,6 @@ index ed91813c4..b02506522 100644
  		}
   special:
  		switch (n)
-@@ -271,10 +272,10 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
- 			if (!(nxt = (unsigned char*)(*reserve)(ip, SFIO_UNBOUND, 0)))
- 			{
- 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
--				states[0] = (m = sfvalue(ip)) ? T_ERROR : T_EOF;
-+				states[0] = (m = (ptrdiff_t)sfvalue(ip)) ? T_ERROR : T_EOF;
- 				last = -1;
- 			}
--			else if ((m = sfvalue(ip)) <= 0)
-+			else if ((m = (ptrdiff_t)sfvalue(ip)) <= 0)
- 			{
- 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
- 				states[0] = m ? T_ERROR : T_EOF;
 @@ -292,7 +293,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
  			{
  				if (!(n = states[c]))
@@ -642,15 +237,6 @@ index ed91813c4..b02506522 100644
  				sfwrite(op, (char*)meta, 3);
  			} while (states[c = *++cp] == T_EIGHTBIT && raw);
  			break;
-@@ -352,7 +353,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
- 						*cp-- = 0;
- 						last = -1;
- 					}
--					else if ((n = sfvalue(ip)) <= 0)
-+					else if ((n = (ptrdiff_t)sfvalue(ip)) <= 0)
- 					{
- 						states[0] = n ? T_ERROR : T_EOF;
- 						cp = end = tmp;
 @@ -531,7 +532,7 @@ b_cat(int argc, char** argv, Shbltin_t* context)
  			continue;
  		}
@@ -1032,7 +618,7 @@ index afbfcc0a1..bca79dabb 100644
  		case 'x':
  			method = opt_info.arg;
 diff --git a/src/lib/libcmd/cmp.c b/src/lib/libcmd/cmp.c
-index 92018b05b..44fc881a4 100644
+index 92018b05b..d37f18bc0 100644
 --- a/src/lib/libcmd/cmp.c
 +++ b/src/lib/libcmd/cmp.c
 @@ -2,7 +2,7 @@
@@ -1072,16 +658,7 @@ index 92018b05b..44fc881a4 100644
  	int		ret = 0;
  	unsigned char*	last;
  
-@@ -155,7 +155,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
- 		{
- 			if (count > 0 && !(count -= n1))
- 				return ret;
--			if (!(p1 = (unsigned char*)sfreserve(f1, SFIO_UNBOUND, 0)) || (c1 = sfvalue(f1)) <= 0)
-+			if (!(p1 = (unsigned char*)sfreserve(f1, SFIO_UNBOUND, 0)) || (c1 = (ptrdiff_t)sfvalue(f1)) <= 0)
- 			{
- 				if (sferror(f1))
- 				{
-@@ -179,13 +179,13 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
+@@ -179,7 +179,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
  				return ret;
  			}
  			if (count > 0 && c1 > count)
@@ -1090,13 +667,6 @@ index 92018b05b..44fc881a4 100644
  			e1 = p1 + c1;
  			n1 = c1;
  		}
- 		if ((c2 = e2 - p2) <= 0)
- 		{
--			if (!(p2 = (unsigned char*)sfreserve(f2, SFIO_UNBOUND, 0)) || (c2 = sfvalue(f2)) <= 0)
-+			if (!(p2 = (unsigned char*)sfreserve(f2, SFIO_UNBOUND, 0)) || (c2 = (ptrdiff_t)sfvalue(f2)) <= 0)
- 			{
- 				if (sferror(f2))
- 				{
 @@ -206,7 +206,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
  		pos += c1;
  		if (flags & CMP_SILENT)
@@ -1471,7 +1041,7 @@ index 0c072ee16..1aee4a96c 100644
  	if (!standard)
  	{
 diff --git a/src/lib/libcmd/cut.c b/src/lib/libcmd/cut.c
-index c5249faa5..3764fb3f7 100644
+index c5249faa5..8567cd108 100644
 --- a/src/lib/libcmd/cut.c
 +++ b/src/lib/libcmd/cut.c
 @@ -2,7 +2,7 @@
@@ -1573,7 +1143,7 @@ index c5249faa5..3764fb3f7 100644
  			{
  				error(ERROR_exit(1),"bad list for c/f option");
  				UNREACHABLE();
-@@ -260,24 +260,24 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
+@@ -260,19 +260,19 @@ cutinit(int mode, char* str, Delim_t* wdelim, Delim_t* ldelim, size_t reclen)
  static void
  cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  {
@@ -1603,12 +1173,6 @@ index c5249faa5..3764fb3f7 100644
  		else
  			bp = sfgetr(fdin, '\n', 0);
  		if (!bp && !(bp = sfgetr(fdin, 0, SFIO_LASTR)))
- 			break;
--		len = sfvalue(fdin);
-+		len = (ptrdiff_t)sfvalue(fdin);
- 		xx = 0;
- 		if (!(ncol = skip  = *(lp = cut->list)))
- 			ncol = *++lp;
 @@ -287,14 +287,14 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  			if (cut->nosplit)
  			{
@@ -1660,7 +1224,7 @@ index c5249faa5..3764fb3f7 100644
  			else
  				sfputc(fdout, cut->ldelim.chr);
  		}
-@@ -375,19 +375,20 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+@@ -375,13 +375,14 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  	unsigned char *sp = cut->space;
  	unsigned char *cp;
  	unsigned char *wp;
@@ -1678,14 +1242,7 @@ index c5249faa5..3764fb3f7 100644
  	wchar_t w;
  	Sfio_t *fdtmp = 0;
  	long offset = 0;
- 	unsigned char mb[8];
- 	/* process each buffer */
--	while ((bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) && (c = sfvalue(fdin)) > 0)
-+	while ((bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) && (c = (ptrdiff_t)sfvalue(fdin)) > 0)
- 	{
- 		cp = bp;
- 		ep = cp + --c;
-@@ -421,30 +422,30 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
+@@ -421,25 +422,25 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  							continue;
  						case SP_WIDE:
  							wp = --cp;
@@ -1718,12 +1275,6 @@ index c5249faa5..3764fb3f7 100644
  											goto failed;
  									}
  									for (i = 0; i <= (ep - cp); i++)
- 										mb[i] = cp[i];
--									if (!(bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) || (c = sfvalue(fdin)) <= 0)
-+									if (!(bp = (unsigned char*)sfreserve(fdin, SFIO_UNBOUND, -1)) || (c = (ptrdiff_t)sfvalue(fdin)) <= 0)
- 										goto failed;
- 									cp = bp;
- 									ep = cp + --c;
 @@ -452,9 +453,9 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
  										*ep = cut->eob;
  									j = i;
@@ -3478,7 +3029,7 @@ index 83699631e..9e0da31cb 100644
  	{
  		if(Ttable[i].field==field &&  Ttable[i].type==BIT && *Ttable[i].description)
 diff --git a/src/lib/libcmd/tail.c b/src/lib/libcmd/tail.c
-index 9df44c599..40d733481 100644
+index 9df44c599..0c4a09d53 100644
 --- a/src/lib/libcmd/tail.c
 +++ b/src/lib/libcmd/tail.c
 @@ -2,7 +2,7 @@
@@ -3577,7 +3128,7 @@ index 9df44c599..40d733481 100644
  		{
  			error(ERROR_SYSTEM|ERROR_PANIC, "out of memory");
  			UNREACHABLE();
-@@ -685,13 +684,14 @@ b_tail(int argc, char** argv, Shbltin_t* context)
+@@ -685,10 +684,11 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  					n = 1;
  					if (timeout)
  						fp->expire = NOW + timeout;
@@ -3589,11 +3140,7 @@ index 9df44c599..40d733481 100644
 +						ptrdiff_t w;
  						z = sfvalue(fp->sp);
  						for (r = s + z; r > s && *(r - 1) != '\n'; r--);
--						if ((w = r - s) || i && (w = z))
-+						if ((w = r - s) || i && (w = (ptrdiff_t)z))
- 						{
- 							if ((flags & (HEADERS|VERBOSE)) && hp != fp)
- 							{
+ 						if ((w = r - s) || i && (w = z))
 @@ -699,13 +699,13 @@ b_tail(int argc, char** argv, Shbltin_t* context)
  								sfprintf(sfstdout, format, fp->name);
  								format = header_fmt;
@@ -3681,7 +3228,7 @@ index f16a10608..7ac0739d9 100644
  				else
  					t = (char*)hosttype;
 diff --git a/src/lib/libcmd/uniq.c b/src/lib/libcmd/uniq.c
-index 17b1679df..b6a96021e 100644
+index 17b1679df..6b325cf3d 100644
 --- a/src/lib/libcmd/uniq.c
 +++ b/src/lib/libcmd/uniq.c
 @@ -2,7 +2,7 @@
@@ -3693,7 +3240,7 @@ index 17b1679df..b6a96021e 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
-@@ -79,22 +79,25 @@ static const char usage[] =
+@@ -79,12 +79,15 @@ static const char usage[] =
  
  typedef int (*Compare_f)(const char*, const char*, size_t);
  
@@ -3712,26 +3259,16 @@ index 17b1679df..b6a96021e 100644
  	if(mode&C_FLAG)
  		cwidth = CWIDTH+1;
  	while(1)
- 	{
- 		if(bufp = sfgetr(fdin,'\n',0))
--			n = sfvalue(fdin);
-+			n = (ptrdiff_t)sfvalue(fdin);
+@@ -94,7 +97,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
  		{
--			n = sfvalue(fdin);
+ 			n = sfvalue(fdin);
 -			bufp = memcpy(fmtbuf(n + 1), bufp, n);
-+			n = (ptrdiff_t)sfvalue(fdin);
 +			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
  			bufp[n++] = '\n';
  		}
  		else
-@@ -138,12 +141,12 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
- 					reclen = mp - cp;
- 				}
- 				else
--					reclen = width;
-+					reclen = (ptrdiff_t)width;
- 			}
+@@ -143,7 +146,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  		}
  		else
  			reclen = -2;
@@ -3779,15 +3316,7 @@ index 17b1679df..b6a96021e 100644
  				return 1;
  			if(*all >= 0)
  				*all = 1;
-@@ -218,19 +221,20 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
- 		else
- 			sep = all && *all > 0;
- 		/* save current record */
--		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = sfvalue(fdout)) < 0)
-+		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = (ptrdiff_t)sfvalue(fdout)) < 0)
- 			return 1;
- 		outp = outbuff;
- 		if(outsize < n+cwidth+sep)
+@@ -225,12 +228,13 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
  		{
  			/* no room in outp, clear lock and use side buffer */
  			sfwrite(fdout,outp,0);

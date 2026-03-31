@@ -1,6 +1,6 @@
-From adcd60c62de596010a369bd304db2492e2f584cd Mon Sep 17 00:00:00 2001
+From f6bd499c18cc69e7305fbff5db61cef208b29427 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 13:05:22 -0700
+Date: Tue, 31 Mar 2026 14:36:56 -0700
 Subject: 64-bit transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -22,21 +22,30 @@ Change in the number of warnings on Linux when compiling with clang using
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/cmd/ksh93/edit/completion.c | 65 +++++++++++-----------
- src/cmd/ksh93/edit/edit.c       | 75 +++++++++++++-------------
- src/cmd/ksh93/edit/emacs.c      | 46 ++++++++--------
- src/cmd/ksh93/edit/hexpand.c    | 55 +++++++++----------
- src/cmd/ksh93/edit/history.c    | 95 ++++++++++++++++++---------------
+ src/cmd/ksh93/edit/completion.c | 67 ++++++++++++-----------
+ src/cmd/ksh93/edit/edit.c       | 75 ++++++++++++-------------
+ src/cmd/ksh93/edit/emacs.c      | 48 ++++++++--------
+ src/cmd/ksh93/edit/hexpand.c    | 57 +++++++++----------
+ src/cmd/ksh93/edit/history.c    | 97 ++++++++++++++++++---------------
  src/cmd/ksh93/edit/vi.c         | 40 +++++++-------
- src/cmd/ksh93/include/edit.h    |  6 +--
- src/cmd/ksh93/include/history.h | 13 ++---
- src/cmd/ksh93/sh/jobs.c         | 43 ++++++++-------
- 9 files changed, 226 insertions(+), 212 deletions(-)
+ src/cmd/ksh93/include/edit.h    |  6 +-
+ src/cmd/ksh93/include/history.h | 13 +++--
+ src/cmd/ksh93/sh/jobs.c         | 43 +++++++--------
+ 9 files changed, 230 insertions(+), 216 deletions(-)
 
 diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
-index 10c0e48e3..c7af2199b 100644
+index 0b1b48e3c..c7af2199b 100644
 --- a/src/cmd/ksh93/edit/completion.c
 +++ b/src/cmd/ksh93/edit/completion.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -39,7 +39,7 @@ static char *fmtx(const char *string)
  	int	 	n = 0, c;
  	int		pos = 0;
@@ -527,9 +536,18 @@ index efe881a17..078a55bbb 100644
  	else
  		insize = 0;
 diff --git a/src/cmd/ksh93/edit/emacs.c b/src/cmd/ksh93/edit/emacs.c
-index ab1df5069..d9e224824 100644
+index 1a82414b8..d9e224824 100644
 --- a/src/cmd/ksh93/edit/emacs.c
 +++ b/src/cmd/ksh93/edit/emacs.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -256,7 +256,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
  			{
  				/* accept a backslashed character */
@@ -722,9 +740,18 @@ index ab1df5069..d9e224824 100644
  		if(!isspace(out[x]))
  #endif /* SHOPT_MULTIBYTE */
 diff --git a/src/cmd/ksh93/edit/hexpand.c b/src/cmd/ksh93/edit/hexpand.c
-index 53930fb27..533b08cbf 100644
+index 7ac0c3c24..533b08cbf 100644
 --- a/src/cmd/ksh93/edit/hexpand.c
 +++ b/src/cmd/ksh93/edit/hexpand.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -61,8 +61,9 @@ struct subst
  
  static char *parse_subst(const char *s, struct subst *sb)
@@ -898,9 +925,18 @@ index 53930fb27..533b08cbf 100644
  					}
  					/* loop if g modifier specified */
 diff --git a/src/cmd/ksh93/edit/history.c b/src/cmd/ksh93/edit/history.c
-index 4d9d6f4d1..0b66bd960 100644
+index 0bd434ecf..0b66bd960 100644
 --- a/src/cmd/ksh93/edit/history.c
 +++ b/src/cmd/ksh93/edit/history.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -44,7 +44,7 @@
  
  #if !SHOPT_SCRIPTONLY

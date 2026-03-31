@@ -1,6 +1,6 @@
-From eaa0708a67e09c171c678a78475941e8f06151b6 Mon Sep 17 00:00:00 2001
+From 4d6b9bcd3e4d5a42e8f91bebd2517756e862a629 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 13:06:51 -0700
+Date: Tue, 31 Mar 2026 14:38:21 -0700
 Subject: 64-bit transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -43,13 +43,13 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/national.h |   4 +-
  src/cmd/ksh93/include/nval.h     |  30 ++--
  src/cmd/ksh93/nval.3             |  12 +-
- src/cmd/ksh93/sh/array.c         | 167 ++++++++++----------
+ src/cmd/ksh93/sh/array.c         | 169 ++++++++++----------
  src/cmd/ksh93/sh/name.c          | 260 ++++++++++++++++---------------
- src/cmd/ksh93/sh/nvdisc.c        |  31 ++--
+ src/cmd/ksh93/sh/nvdisc.c        |  33 ++--
  src/cmd/ksh93/sh/nvtree.c        |  69 ++++----
- src/cmd/ksh93/sh/nvtype.c        | 184 +++++++++++-----------
+ src/cmd/ksh93/sh/nvtype.c        | 182 ++++++++++++----------
  src/cmd/ksh93/sh/string.c        |  64 ++++----
- 10 files changed, 423 insertions(+), 408 deletions(-)
+ 10 files changed, 424 insertions(+), 409 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/name.h b/src/cmd/ksh93/include/name.h
 index 0a70f460f..95e3f4e1b 100644
@@ -236,9 +236,18 @@ index 2cbdbcd78..5152ee701 100644
  The \f3nv_getval()\fP function returns the value of the given
  name-value pair as a string.  A \f3NULL\fP return value indicates
 diff --git a/src/cmd/ksh93/sh/array.c b/src/cmd/ksh93/sh/array.c
-index 3cd1decc0..c42b57836 100644
+index 0e0b4d270..c42b57836 100644
 --- a/src/cmd/ksh93/sh/array.c
 +++ b/src/cmd/ksh93/sh/array.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -48,8 +48,8 @@ struct index_array
  {
  	Namarr_t        header;
@@ -1610,9 +1619,18 @@ index 949d2192d..ca32e628c 100644
  	return oldsize;
  }
 diff --git a/src/cmd/ksh93/sh/nvdisc.c b/src/cmd/ksh93/sh/nvdisc.c
-index 937ab6d84..64e300e6e 100644
+index acf723383..64e300e6e 100644
 --- a/src/cmd/ksh93/sh/nvdisc.c
 +++ b/src/cmd/ksh93/sh/nvdisc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 @@ -220,7 +220,7 @@ static void block_done(struct blocked *bp)
   */
  static void chktfree(Namval_t *np, struct vardisc *vp)
@@ -2011,7 +2029,7 @@ index ac3ed4709..18028b054 100644
  	{
  		if(fp->next->disc && (fp->next->disc->getnum || fp->next->disc->getval))
 diff --git a/src/cmd/ksh93/sh/nvtype.c b/src/cmd/ksh93/sh/nvtype.c
-index 628cd824e..2d1e29498 100644
+index 628cd824e..9c9cbf7d4 100644
 --- a/src/cmd/ksh93/sh/nvtype.c
 +++ b/src/cmd/ksh93/sh/nvtype.c
 @@ -88,13 +88,13 @@ struct Namtype
@@ -2305,7 +2323,7 @@ index 628cd824e..2d1e29498 100644
  	for(nnodes=1,i=1; i <numnodes; i++)
  	{
  		np=nodes[i];
-@@ -864,23 +871,23 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
+@@ -864,17 +871,17 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
  			continue;
  		if(qp)
  		{	/* delete duplicates */
@@ -2326,13 +2344,6 @@ index 628cd824e..2d1e29498 100644
  			offset -= sizeof(char*);
  		dsize = nv_datasize(np,&offset);
  		if(!nv_isarray(np) && (dp=(Namtype_t*)nv_hasdisc(np, &type_disc)))
- 		{
- 			nnodes += dp->numnodes;
--			if((n=dp->strsize)<0)
-+			if((n=(ptrdiff_t)dp->strsize)<0)
- 				n = -n;
- 			iref = nref += dp->nref;
- 			if(np->nvname[m]=='_' && np->nvname[m+1]==0 && (bp=nv_type(np)))
 @@ -890,24 +897,25 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
  				nnodes = dp->numnodes;
  				offset = 0;
