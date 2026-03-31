@@ -53,10 +53,8 @@ fi
 
 upc() {
 	# Obtain the script from the from ksh wiki
-	test -f ../update-copyright.ksh && ksh ../update-copyright.ksh
-	if [[ $1 != --all ]]; then
-		git checkout HEAD -- COPYRIGHT
-	else
+	if [[ $1 == --all ]]; then
+		test -f ../update-copyright.ksh && ksh ../update-copyright.ksh
 		git add COPYRIGHT
 	fi
 	git add bin src
