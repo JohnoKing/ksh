@@ -39,6 +39,8 @@ git checkout 69aa97299350c007dbac6abee26ae38e3caa74a5  # part 4
 bld
 git checkout 0e518418942347a73e38e82f3a40bcc0d7051c54  # part 5
 bld
+git checkout 043b4e9b869b8bacc71bbf7b65c13366077a5047  # part 6
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -70,31 +72,10 @@ upc() {
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
-fetch src/lib/libast
-upc
-git commit -m $'size_t/ptrdiff_t transition part 6: remainder of additaments to libast
-
-This is the sixth of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The reminder of SFIO located in the disc folder.
-- The libast tm and tmx sublibraries.
-- The rest of the libast path sublibrary.
-- The rest of the libast headers.
-- The vmalloc wrapper\'s header file.
-- The AST dirlib (where ssize_t was more appropriate that ptrdiff_t).
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[5]} ${w[6]} ${w[13]} ;}"' (progression from part 5 => part 6 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
-
 fetch src/lib/libast/features/tty
 fetch src/lib/libcmd
 upc
-git commit -m $'size_t/ptrdiff_t transition part 7: libcmd builtins
+git commit -m $'64-bit transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -126,7 +107,7 @@ fetch src/lib/libsum
 fetch src/cmd/builtin
 fetch src/cmd/INIT
 upc
-git commit -m $'size_t/ptrdiff_t transition part 8: ancillary AST suite components
+git commit -m $'64-bit transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -152,7 +133,7 @@ fetch src/cmd/ksh93/include/edit.h
 fetch src/cmd/ksh93/include/history.h
 fetch src/cmd/ksh93/sh/jobs.c
 upc
-git commit -m $'size_t/ptrdiff_t transition part 9: ksh93 command line editors
+git commit -m $'64-bit transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -176,7 +157,7 @@ Progresses https://github.com/ksh93/ksh/issues/592'
 fetch src/cmd/ksh93/bltins
 fetch src/cmd/ksh93/include/builtins.h
 upc
-git commit -m $'size_t/ptrdiff_t transition part 10: ksh93 preeminent builtin commands
+git commit -m $'64-bit transition part 10: ksh93 preeminent builtin commands
 
 This is the tenth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -200,7 +181,7 @@ fetch src/cmd/ksh93/sh/string.c
 fetch src/cmd/ksh93/sh/waitevent.c
 fetch src/cmd/ksh93/nval.3
 upc
-git commit -m "size_t/ptrdiff_t transition part 11: ksh93 nval
+git commit -m "64-bit transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -249,7 +230,7 @@ fetch src/cmd/ksh93/include/fcin.h
 fetch src/cmd/ksh93/include/shnodes.h
 fetch src/cmd/ksh93/include/shlex.h
 upc
-git commit -m "size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and subshells
+git commit -m "64-bit transition part 12: ksh93 lexing, parsing and subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -278,7 +259,7 @@ fetch src
 sed -i '5i '${ printf '%(%Y-%0m-%0d)T\n' now ;}':\n\n- Ksh is now capable of allocating memory within a 64-bit address space.\n' NEWS
 git add NEWS
 upc --all
-git commit -m "size_t/ptrdiff_t transition part 13: the rest of ksh93
+git commit -m "64-bit transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
