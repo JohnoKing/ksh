@@ -641,7 +641,7 @@ int sh_lex(Lex_t* lp)
 						fcsopen((char*)state);
 					/* remove \new-line */
 					n = stktell(sh.stk)-c;
-					stkseek(sh.stk,(ptrdiff_t)n);
+					stkseek(sh.stk,n);
 					lp->arg = ap;
 					if(n<=(ssize_t)ARGVAL)
 					{
@@ -1878,7 +1878,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 			{
 				if(n==S_ESC)
 					c--;
-				if(!lp->lexd.dolparen && (c=(ptrdiff_t)sfwrite(sp,bufp,(size_t)c))>0)
+				if(!lp->lexd.dolparen && (c=sfwrite(sp,bufp,(size_t)c))>0)
 					iop->iosize += (Sfoff_t)c;
 			}
 			if(LEN==0)
@@ -1922,7 +1922,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				if(!lp->lexd.dolparen)
 				{
 					/* write out line */
-					if((n=(ptrdiff_t)sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
+					if((n=sfwrite(sp,bufp,(size_t)(fcseek(0)-bufp)))>0)
 						iop->iosize += (Sfoff_t)n;
 				}
 				/* skip over tabs */
@@ -1957,7 +1957,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					if(!lp->lexd.dolparen && (c=cp-bufp))
 					{
-						if((c=(ptrdiff_t)sfwrite(sp,cp=bufp,(size_t)c))>0)
+						if((c=sfwrite(sp,cp=bufp,(size_t)c))>0)
 							iop->iosize+=(Sfoff_t)c;
 					}
 					nsave = n;
@@ -1981,7 +1981,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				{
 					if(!lp->lexd.dolparen && (n=cp-bufp))
 					{
-						if((n=(ptrdiff_t)sfwrite(sp,bufp,(size_t)n))>0)
+						if((n=sfwrite(sp,bufp,(size_t)n))>0)
 							iop->iosize += (Sfoff_t)n;
 					}
 					sh.inlineno--;
@@ -1999,7 +1999,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 					 */
 					if(!lp->lexd.dolparen && nsave>0)
 					{
-						if((n=(ptrdiff_t)sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
+						if((n=sfwrite(sp,iop->iodelim,(size_t)nsave))>0)
 							iop->iosize += (Sfoff_t)n;
 						bufp = fcfirst();
 					}
@@ -2032,7 +2032,7 @@ static ptrdiff_t here_copy(Lex_t *lp,struct ionod *iop)
 				sh.inlineno++;
 				if(!lp->lexd.dolparen && (n=(fcseek(0)-bufp)-n)>=0)
 				{
-					if(n && (n=(ptrdiff_t)sfwrite(sp,bufp,(size_t)n))>0)
+					if(n && (n=sfwrite(sp,bufp,(size_t)n))>0)
 						iop->iosize += (Sfoff_t)n;
 					bufp = fcseek(0)+1;
 				}

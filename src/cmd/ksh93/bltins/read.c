@@ -416,17 +416,17 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 				{
 					f = 1;
 					if(cp = sfreserve(iop,c,SFIO_LOCKR))
-						m = (ptrdiff_t)sfvalue(iop);
+						m = sfvalue(iop);
 					else if(flags&NN_FLAG)
 					{
 						c = size;
-						m = (cp = sfreserve(iop,c,0)) ? (ptrdiff_t)sfvalue(iop) : 0;
+						m = (cp = sfreserve(iop,c,0)) ? sfvalue(iop) : 0;
 						f = 0;
 					}
 					else
 					{
 						c = sfvalue(iop);
-						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? (ptrdiff_t)sfvalue(iop) : 0;
+						m = (cp = sfreserve(iop,c,SFIO_LOCKR)) ? sfvalue(iop) : 0;
 					}
 				}
 				if(m>0 && (flags&N_FLAG) && !binary && (v=memchr(cp,'\n',(size_t)m)))

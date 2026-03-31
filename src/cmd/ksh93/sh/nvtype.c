@@ -887,7 +887,7 @@ Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 		if(!nv_isarray(np) && (dp=(Namtype_t*)nv_hasdisc(np, &type_disc)))
 		{
 			nnodes += dp->numnodes;
-			if((n=(ptrdiff_t)dp->strsize)<0)
+			if((n=dp->strsize)<0)
 				n = -n;
 			iref = nref += dp->nref;
 			if(np->nvname[m]=='_' && np->nvname[m+1]==0 && (bp=nv_type(np)))

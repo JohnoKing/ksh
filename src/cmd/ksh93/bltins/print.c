@@ -1035,13 +1035,13 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 				return -1;
 			}
 			value->s = stkptr(sh.stk,stktell(sh.stk));
-			fe->size = (ptrdiff_t)m;
+			fe->size = m;
 		}
 		break;
 	case 'B':
 		if(!sh.strbuf2)
 			sh.strbuf2 = sfstropen();
-		fe->size = (ptrdiff_t)fmtbase64(sh.strbuf2,value->s, fe->flags&SFFMT_ALTER);
+		fe->size = fmtbase64(sh.strbuf2,value->s, fe->flags&SFFMT_ALTER);
 		value->s = sfstruse(sh.strbuf2);
 		fe->flags |= SFFMT_SHORT;
 		break;

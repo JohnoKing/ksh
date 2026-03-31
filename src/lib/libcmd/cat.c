@@ -272,10 +272,10 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 			if (!(nxt = (unsigned char*)(*reserve)(ip, SFIO_UNBOUND, 0)))
 			{
 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
-				states[0] = (m = (ptrdiff_t)sfvalue(ip)) ? T_ERROR : T_EOF;
+				states[0] = (m = sfvalue(ip)) ? T_ERROR : T_EOF;
 				last = -1;
 			}
-			else if ((m = (ptrdiff_t)sfvalue(ip)) <= 0)
+			else if ((m = sfvalue(ip)) <= 0)
 			{
 				*(cp = end = tmp + sizeof(tmp) - 1) = 0;
 				states[0] = m ? T_ERROR : T_EOF;
@@ -353,7 +353,7 @@ vcat(char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags)
 						*cp-- = 0;
 						last = -1;
 					}
-					else if ((n = (ptrdiff_t)sfvalue(ip)) <= 0)
+					else if ((n = sfvalue(ip)) <= 0)
 					{
 						states[0] = n ? T_ERROR : T_EOF;
 						cp = end = tmp;

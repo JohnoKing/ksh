@@ -691,7 +691,7 @@ b_tail(int argc, char** argv, Shbltin_t* context)
 						ptrdiff_t w;
 						z = sfvalue(fp->sp);
 						for (r = s + z; r > s && *(r - 1) != '\n'; r--);
-						if ((w = r - s) || i && (w = (ptrdiff_t)z))
+						if ((w = r - s) || i && (w = z))
 						{
 							if ((flags & (HEADERS|VERBOSE)) && hp != fp)
 							{

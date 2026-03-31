@@ -93,10 +93,10 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 	while(1)
 	{
 		if(bufp = sfgetr(fdin,'\n',0))
-			n = (ptrdiff_t)sfvalue(fdin);
+			n = sfvalue(fdin);
 		else if(bufp = sfgetr(fdin,'\n',SFIO_LASTR))
 		{
-			n = (ptrdiff_t)sfvalue(fdin);
+			n = sfvalue(fdin);
 			bufp = memcpy(fmtbuf((size_t)n + 1), bufp, (size_t)n);
 			bufp[n++] = '\n';
 		}
@@ -141,7 +141,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 					reclen = mp - cp;
 				}
 				else
-					reclen = (ptrdiff_t)width;
+					reclen = width;
 			}
 		}
 		else
@@ -221,7 +221,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, ssize_t fields, ssize_t chars, ssiz
 		else
 			sep = all && *all > 0;
 		/* save current record */
-		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = (ptrdiff_t)sfvalue(fdout)) < 0)
+		if (!(outbuff = sfreserve(fdout, 0, 0)) || (outsize = sfvalue(fdout)) < 0)
 			return 1;
 		outp = outbuff;
 		if(outsize < n+cwidth+sep)

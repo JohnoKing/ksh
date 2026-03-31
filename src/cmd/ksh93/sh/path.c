@@ -1093,7 +1093,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		stkseek(sh.stk,PATH_OFFSET);
 		sfputr(sh.stk,opath,0);
 		path = stkptr(sh.stk,PATH_OFFSET);
-		while((rlen=(ptrdiff_t)readlink(path,buff,PATH_MAX))>0)
+		while((rlen=readlink(path,buff,PATH_MAX))>0)
 		{
 			buff[rlen] = 0;
 			rlen = PATH_OFFSET;
