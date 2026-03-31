@@ -1,7 +1,7 @@
-From d50e01e922b239edbf0be9e0587bc170f86c82e5 Mon Sep 17 00:00:00 2001
+From 86d75afc235b63315b9aa5ffe8609855aac03b0a Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 28 Mar 2026 21:38:42 -0700
-Subject: size_t/ptrdiff_t transition part 13: the rest of ksh93
+Date: Tue, 31 Mar 2026 13:08:20 -0700
+Subject: 64-bit transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -65,26 +65,26 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/macro.c        |   4 +-
  src/cmd/ksh93/sh/main.c         |  21 ++--
  src/cmd/ksh93/sh/path.c         | 104 ++++++++-------
- src/cmd/ksh93/sh/streval.c      |  51 ++++----
+ src/cmd/ksh93/sh/streval.c      |  49 ++++----
  src/cmd/ksh93/sh/xec.c          | 109 ++++++++--------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++
- 26 files changed, 439 insertions(+), 366 deletions(-)
+ 26 files changed, 438 insertions(+), 365 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 4c2bfa17f..aefad7b0e 100644
+index 4c2bfa17f..4e62c86a0 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
+ For full details, see the git log at: https://github.com/ksh93/ksh
+ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
- 2026-03-28:
- 
++2026-03-31:
++
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
-+2026-03-28:
-+
- - Fixed a potential crash (buffer read overflow) in the .sh.match code
-   that was backported on 2022-02-08.
+ 2026-03-28:
  
+ - Fixed a potential crash (buffer read overflow) in the .sh.match code
 diff --git a/src/cmd/ksh93/builtins.mm b/src/cmd/ksh93/builtins.mm
 index d9ef1dd96..64913fcc2 100644
 --- a/src/cmd/ksh93/builtins.mm
@@ -413,7 +413,7 @@ index 687848936..6474cbf76 100644
  {
  	const char*	name;
 diff --git a/src/cmd/ksh93/sh/args.c b/src/cmd/ksh93/sh/args.c
-index 017a4df87..2509cecd0 100644
+index 9f33d6567..52c5658f3 100644
 --- a/src/cmd/ksh93/sh/args.c
 +++ b/src/cmd/ksh93/sh/args.c
 @@ -57,7 +57,7 @@ static  const char optksh[] =
@@ -566,7 +566,7 @@ index 017a4df87..2509cecd0 100644
  	sh.subshell = savesubshell;
  	job.jobcontrol = savejobcontrol;
 diff --git a/src/cmd/ksh93/sh/arith.c b/src/cmd/ksh93/sh/arith.c
-index df5e94bd3..c7c7fc773 100644
+index a4cdbe7ea..4582ba94b 100644
 --- a/src/cmd/ksh93/sh/arith.c
 +++ b/src/cmd/ksh93/sh/arith.c
 @@ -74,9 +74,9 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
@@ -697,7 +697,7 @@ index df5e94bd3..c7c7fc773 100644
  					Sfdouble_t rr;
  					rr = strtold(val,&str);
 diff --git a/src/cmd/ksh93/sh/deparse.c b/src/cmd/ksh93/sh/deparse.c
-index 0299b969d..3ca40cba5 100644
+index fbc95a477..71484f164 100644
 --- a/src/cmd/ksh93/sh/deparse.c
 +++ b/src/cmd/ksh93/sh/deparse.c
 @@ -111,7 +111,7 @@ static void p_tree(const Shnode_t *t,int tflags)
@@ -801,7 +801,7 @@ index 0299b969d..3ca40cba5 100644
  		sfseek(infile=sh.heredocs,iop->iooffset,SEEK_SET);
  	sfmove(infile,outfile,iop->iosize,-1);
 diff --git a/src/cmd/ksh93/sh/expand.c b/src/cmd/ksh93/sh/expand.c
-index 1a909528c..73ec5fe76 100644
+index 22578fb5a..9668ef67f 100644
 --- a/src/cmd/ksh93/sh/expand.c
 +++ b/src/cmd/ksh93/sh/expand.c
 @@ -36,8 +36,8 @@
@@ -924,7 +924,7 @@ index 1a909528c..73ec5fe76 100644
  			}
  			else
 diff --git a/src/cmd/ksh93/sh/fault.c b/src/cmd/ksh93/sh/fault.c
-index 1c040ad7c..12fb98ff0 100644
+index f68711e45..5d94127a4 100644
 --- a/src/cmd/ksh93/sh/fault.c
 +++ b/src/cmd/ksh93/sh/fault.c
 @@ -95,7 +95,7 @@ void	sh_fault(int sig)
@@ -1068,7 +1068,7 @@ index 1c040ad7c..12fb98ff0 100644
  	struct	checkpt buff;
  	Fcin_t	savefc;
 diff --git a/src/cmd/ksh93/sh/io.c b/src/cmd/ksh93/sh/io.c
-index 61bbdc044..ea46fd745 100644
+index e03a7479c..40ab1da71 100644
 --- a/src/cmd/ksh93/sh/io.c
 +++ b/src/cmd/ksh93/sh/io.c
 @@ -343,7 +343,7 @@ static int	io_heredoc(struct ionod*, const char*, int);
@@ -1733,7 +1733,7 @@ index 61bbdc044..ea46fd745 100644
  	}
  	return sp;
 diff --git a/src/cmd/ksh93/sh/macro.c b/src/cmd/ksh93/sh/macro.c
-index 3f6660417..8baa01b69 100644
+index a74e67cf6..6e4050b82 100644
 --- a/src/cmd/ksh93/sh/macro.c
 +++ b/src/cmd/ksh93/sh/macro.c
 @@ -164,7 +164,7 @@ static void setup_ifs(Mac_t *mp)
@@ -1755,7 +1755,7 @@ index 3f6660417..8baa01b69 100644
  	mp->sp = 0;
  	setup_ifs(mp);
 diff --git a/src/cmd/ksh93/sh/main.c b/src/cmd/ksh93/sh/main.c
-index 0cd68887e..40ada665f 100644
+index 7d8b4c2d9..8c5aca99c 100644
 --- a/src/cmd/ksh93/sh/main.c
 +++ b/src/cmd/ksh93/sh/main.c
 @@ -102,6 +102,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
@@ -1832,7 +1832,7 @@ index 0cd68887e..40ada665f 100644
  		for(i=0; argv[i]; i++)
  			buffsize += strlen(argv[i]) + 1;
 diff --git a/src/cmd/ksh93/sh/path.c b/src/cmd/ksh93/sh/path.c
-index bec870a40..ec7597b00 100644
+index 9860575de..45450bd9f 100644
 --- a/src/cmd/ksh93/sh/path.c
 +++ b/src/cmd/ksh93/sh/path.c
 @@ -43,8 +43,8 @@
@@ -2142,18 +2142,9 @@ index bec870a40..ec7597b00 100644
  			nv_setsize(np,0);
  	}
 diff --git a/src/cmd/ksh93/sh/streval.c b/src/cmd/ksh93/sh/streval.c
-index 1e77d44f8..1065c097c 100644
+index a8a0d20e9..42f42db85 100644
 --- a/src/cmd/ksh93/sh/streval.c
 +++ b/src/cmd/ksh93/sh/streval.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -54,7 +54,7 @@
  #define pow2size(x)		((x)<=2?2:(x)<=4?4:(x)<=8?8:(x)<=16?16:(x)<=32?32:64)
  #define round(x,size)		(((x)+(size)-1)&~((size)-1))
@@ -2339,7 +2330,7 @@ index 1e77d44f8..1065c097c 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index cd0662fd3..7eff715f6 100644
+index fddb3da7d..4141751d0 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
 @@ -147,10 +147,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)

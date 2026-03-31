@@ -1,7 +1,7 @@
-From 5fdb5a17fe5b0595ea2e28f72ece24f705be5638 Mon Sep 17 00:00:00 2001
+From ed60248195d67decd866d98bf3348070c4073215 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 28 Mar 2026 21:34:10 -0700
-Subject: size_t/ptrdiff_t transition part 7: libcmd builtins
+Date: Tue, 31 Mar 2026 13:03:54 -0700
+Subject: 64-bit transition part 7: libcmd builtins
 
 This is the seventh of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -24,46 +24,438 @@ Remarks:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,580 => 1,190 => 37 (progression from part 6 => part 7 => part 13)
+1,578 => 1,189 => 37 (progression from part 6 => part 7 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
- src/lib/libcmd/basename.c |   8 +--
- src/lib/libcmd/cat.c      |  45 ++++++------
- src/lib/libcmd/chgrp.c    |  65 +++++++++---------
- src/lib/libcmd/chmod.c    |  27 ++++----
- src/lib/libcmd/cksum.c    |  40 +++++------
- src/lib/libcmd/cmp.c      |  20 +++---
- src/lib/libcmd/comm.c     |  14 ++--
- src/lib/libcmd/context.c  |  33 ++++-----
- src/lib/libcmd/cp.c       |  52 +++++++-------
- src/lib/libcmd/cut.c      | 111 +++++++++++++++---------------
- src/lib/libcmd/date.c     |  16 ++---
- src/lib/libcmd/dirname.c  |   4 +-
- src/lib/libcmd/expr.c     |  21 +++---
- src/lib/libcmd/fds.c      |  17 ++---
- src/lib/libcmd/fmt.c      |  30 ++++----
- src/lib/libcmd/fold.c     |  27 ++++----
- src/lib/libcmd/getconf.c  |   6 +-
- src/lib/libcmd/grep.c     |  76 ++++++++++++---------
- src/lib/libcmd/id.c       |  20 +++---
- src/lib/libcmd/join.c     | 140 +++++++++++++++++++-------------------
- src/lib/libcmd/logname.c  |   2 +-
- src/lib/libcmd/mkdir.c    |  10 +--
- src/lib/libcmd/mktemp.c   |   4 +-
- src/lib/libcmd/pathchk.c  |   6 +-
- src/lib/libcmd/rev.c      |  12 ++--
- src/lib/libcmd/rev.h      |   5 +-
- src/lib/libcmd/revlib.c   |  15 ++--
- src/lib/libcmd/rm.c       |  10 +--
- src/lib/libcmd/stty.c     |  66 +++++++++---------
- src/lib/libcmd/tail.c     |  44 ++++++------
- src/lib/libcmd/tee.c      |   6 +-
- src/lib/libcmd/uname.c    |   8 +--
- src/lib/libcmd/uniq.c     |  50 +++++++-------
- src/lib/libcmd/wclib.c    |  30 ++++----
- 34 files changed, 529 insertions(+), 511 deletions(-)
+ src/cmd/ksh93/bltins/alarm.c    |   2 +-
+ src/cmd/ksh93/bltins/cflow.c    |   2 +-
+ src/cmd/ksh93/bltins/enum.c     |   2 +-
+ src/cmd/ksh93/bltins/getopts.c  |   2 +-
+ src/cmd/ksh93/bltins/hist.c     |   2 +-
+ src/cmd/ksh93/bltins/ulimit.c   |   2 +-
+ src/cmd/ksh93/bltins/whence.c   |   2 +-
+ src/cmd/ksh93/data/aliases.c    |   2 +-
+ src/cmd/ksh93/data/keywords.c   |   2 +-
+ src/cmd/ksh93/data/limits.c     |   2 +-
+ src/cmd/ksh93/data/options.c    |   2 +-
+ src/cmd/ksh93/data/signals.c    |   2 +-
+ src/cmd/ksh93/data/strdata.c    |   2 +-
+ src/cmd/ksh93/data/testops.c    |   2 +-
+ src/cmd/ksh93/data/variables.c  |   2 +-
+ src/cmd/ksh93/edit/completion.c |   2 +-
+ src/cmd/ksh93/edit/emacs.c      |   2 +-
+ src/cmd/ksh93/edit/hexpand.c    |   2 +-
+ src/cmd/ksh93/edit/history.c    |   2 +-
+ src/cmd/ksh93/sh/array.c        |   2 +-
+ src/cmd/ksh93/sh/defs.c         |   2 +-
+ src/cmd/ksh93/sh/fcin.c         |   2 +-
+ src/cmd/ksh93/sh/nvdisc.c       |   2 +-
+ src/cmd/ksh93/sh/pmain.c        |   2 +-
+ src/cmd/ksh93/sh/streval.c      |   2 +-
+ src/cmd/ksh93/sh/tdump.c        |   2 +-
+ src/cmd/ksh93/sh/timers.c       |   2 +-
+ src/cmd/ksh93/sh/trestore.c     |   2 +-
+ src/lib/libcmd/basename.c       |   8 +-
+ src/lib/libcmd/cat.c            |  45 +++++-----
+ src/lib/libcmd/chgrp.c          |  65 ++++++++-------
+ src/lib/libcmd/chmod.c          |  27 +++---
+ src/lib/libcmd/cksum.c          |  40 ++++-----
+ src/lib/libcmd/cmp.c            |  20 ++---
+ src/lib/libcmd/comm.c           |  14 ++--
+ src/lib/libcmd/context.c        |  33 ++++----
+ src/lib/libcmd/cp.c             |  52 ++++++------
+ src/lib/libcmd/cut.c            | 111 ++++++++++++-------------
+ src/lib/libcmd/date.c           |  16 ++--
+ src/lib/libcmd/dirname.c        |   4 +-
+ src/lib/libcmd/expr.c           |  21 ++---
+ src/lib/libcmd/fds.c            |  17 ++--
+ src/lib/libcmd/fmt.c            |  30 +++----
+ src/lib/libcmd/fold.c           |  27 +++---
+ src/lib/libcmd/getconf.c        |   6 +-
+ src/lib/libcmd/grep.c           |  76 +++++++++--------
+ src/lib/libcmd/id.c             |  20 ++---
+ src/lib/libcmd/join.c           | 140 ++++++++++++++++----------------
+ src/lib/libcmd/logname.c        |   2 +-
+ src/lib/libcmd/mkdir.c          |  10 +--
+ src/lib/libcmd/mktemp.c         |   4 +-
+ src/lib/libcmd/pathchk.c        |   6 +-
+ src/lib/libcmd/rev.c            |  12 +--
+ src/lib/libcmd/rev.h            |   5 +-
+ src/lib/libcmd/revlib.c         |  15 ++--
+ src/lib/libcmd/rm.c             |  10 +--
+ src/lib/libcmd/stty.c           |  66 +++++++--------
+ src/lib/libcmd/tail.c           |  44 +++++-----
+ src/lib/libcmd/tee.c            |   6 +-
+ src/lib/libcmd/uname.c          |   8 +-
+ src/lib/libcmd/uniq.c           |  50 ++++++------
+ src/lib/libcmd/wclib.c          |  30 +++----
+ 62 files changed, 557 insertions(+), 539 deletions(-)
 
+diff --git a/src/cmd/ksh93/bltins/alarm.c b/src/cmd/ksh93/bltins/alarm.c
+index b32cd7f48..a2a284b5c 100644
+--- a/src/cmd/ksh93/bltins/alarm.c
++++ b/src/cmd/ksh93/bltins/alarm.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/cflow.c b/src/cmd/ksh93/bltins/cflow.c
+index f8653e955..20e9470e3 100644
+--- a/src/cmd/ksh93/bltins/cflow.c
++++ b/src/cmd/ksh93/bltins/cflow.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/enum.c b/src/cmd/ksh93/bltins/enum.c
+index 8ea779ec0..8ea550176 100644
+--- a/src/cmd/ksh93/bltins/enum.c
++++ b/src/cmd/ksh93/bltins/enum.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/getopts.c b/src/cmd/ksh93/bltins/getopts.c
+index e1cb43ff0..405df0398 100644
+--- a/src/cmd/ksh93/bltins/getopts.c
++++ b/src/cmd/ksh93/bltins/getopts.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/hist.c b/src/cmd/ksh93/bltins/hist.c
+index 16b37a86e..8e973671a 100644
+--- a/src/cmd/ksh93/bltins/hist.c
++++ b/src/cmd/ksh93/bltins/hist.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/ulimit.c b/src/cmd/ksh93/bltins/ulimit.c
+index fa4d4a52a..c91568338 100644
+--- a/src/cmd/ksh93/bltins/ulimit.c
++++ b/src/cmd/ksh93/bltins/ulimit.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/bltins/whence.c b/src/cmd/ksh93/bltins/whence.c
+index a2a80937e..1717d7124 100644
+--- a/src/cmd/ksh93/bltins/whence.c
++++ b/src/cmd/ksh93/bltins/whence.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/aliases.c b/src/cmd/ksh93/data/aliases.c
+index fdcde3501..590c6f043 100644
+--- a/src/cmd/ksh93/data/aliases.c
++++ b/src/cmd/ksh93/data/aliases.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/keywords.c b/src/cmd/ksh93/data/keywords.c
+index 77e78b609..d90975949 100644
+--- a/src/cmd/ksh93/data/keywords.c
++++ b/src/cmd/ksh93/data/keywords.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/limits.c b/src/cmd/ksh93/data/limits.c
+index 8626c10f6..5f7ff99b4 100644
+--- a/src/cmd/ksh93/data/limits.c
++++ b/src/cmd/ksh93/data/limits.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/options.c b/src/cmd/ksh93/data/options.c
+index dbe675fc1..46b18141d 100644
+--- a/src/cmd/ksh93/data/options.c
++++ b/src/cmd/ksh93/data/options.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/signals.c b/src/cmd/ksh93/data/signals.c
+index 01672cc9c..736a654e4 100644
+--- a/src/cmd/ksh93/data/signals.c
++++ b/src/cmd/ksh93/data/signals.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2023 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/strdata.c b/src/cmd/ksh93/data/strdata.c
+index cb3de2bf0..43040a8e1 100644
+--- a/src/cmd/ksh93/data/strdata.c
++++ b/src/cmd/ksh93/data/strdata.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/testops.c b/src/cmd/ksh93/data/testops.c
+index 4d178c43e..5034d1bd2 100644
+--- a/src/cmd/ksh93/data/testops.c
++++ b/src/cmd/ksh93/data/testops.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/data/variables.c b/src/cmd/ksh93/data/variables.c
+index d8bfa5815..091ce450c 100644
+--- a/src/cmd/ksh93/data/variables.c
++++ b/src/cmd/ksh93/data/variables.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/edit/completion.c b/src/cmd/ksh93/edit/completion.c
+index 0b1b48e3c..10c0e48e3 100644
+--- a/src/cmd/ksh93/edit/completion.c
++++ b/src/cmd/ksh93/edit/completion.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/edit/emacs.c b/src/cmd/ksh93/edit/emacs.c
+index 1a82414b8..ab1df5069 100644
+--- a/src/cmd/ksh93/edit/emacs.c
++++ b/src/cmd/ksh93/edit/emacs.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/edit/hexpand.c b/src/cmd/ksh93/edit/hexpand.c
+index 7ac0c3c24..53930fb27 100644
+--- a/src/cmd/ksh93/edit/hexpand.c
++++ b/src/cmd/ksh93/edit/hexpand.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/edit/history.c b/src/cmd/ksh93/edit/history.c
+index 0bd434ecf..4d9d6f4d1 100644
+--- a/src/cmd/ksh93/edit/history.c
++++ b/src/cmd/ksh93/edit/history.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2014 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/array.c b/src/cmd/ksh93/sh/array.c
+index 0e0b4d270..3cd1decc0 100644
+--- a/src/cmd/ksh93/sh/array.c
++++ b/src/cmd/ksh93/sh/array.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/defs.c b/src/cmd/ksh93/sh/defs.c
+index e47f1163a..1cef7fb55 100644
+--- a/src/cmd/ksh93/sh/defs.c
++++ b/src/cmd/ksh93/sh/defs.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/fcin.c b/src/cmd/ksh93/sh/fcin.c
+index 740443e34..6e482938d 100644
+--- a/src/cmd/ksh93/sh/fcin.c
++++ b/src/cmd/ksh93/sh/fcin.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/nvdisc.c b/src/cmd/ksh93/sh/nvdisc.c
+index acf723383..937ab6d84 100644
+--- a/src/cmd/ksh93/sh/nvdisc.c
++++ b/src/cmd/ksh93/sh/nvdisc.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/pmain.c b/src/cmd/ksh93/sh/pmain.c
+index a4bb5ef39..75acaa446 100644
+--- a/src/cmd/ksh93/sh/pmain.c
++++ b/src/cmd/ksh93/sh/pmain.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/streval.c b/src/cmd/ksh93/sh/streval.c
+index 549b46f1a..a8a0d20e9 100644
+--- a/src/cmd/ksh93/sh/streval.c
++++ b/src/cmd/ksh93/sh/streval.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/tdump.c b/src/cmd/ksh93/sh/tdump.c
+index ac592dc0b..ca3252c25 100644
+--- a/src/cmd/ksh93/sh/tdump.c
++++ b/src/cmd/ksh93/sh/tdump.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/timers.c b/src/cmd/ksh93/sh/timers.c
+index 06e5c1b8c..a6b5b2498 100644
+--- a/src/cmd/ksh93/sh/timers.c
++++ b/src/cmd/ksh93/sh/timers.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
+diff --git a/src/cmd/ksh93/sh/trestore.c b/src/cmd/ksh93/sh/trestore.c
+index 92e919c2c..c3e5f3d26 100644
+--- a/src/cmd/ksh93/sh/trestore.c
++++ b/src/cmd/ksh93/sh/trestore.c
+@@ -2,7 +2,7 @@
+ *                                                                      *
+ *               This software is part of the ast package               *
+ *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+-*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
++*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
+ *                      and is licensed under the                       *
+ *                 Eclipse Public License, Version 2.0                  *
+ *                                                                      *
 diff --git a/src/lib/libcmd/basename.c b/src/lib/libcmd/basename.c
 index 9377f9bdb..c1130cb9b 100644
 --- a/src/lib/libcmd/basename.c
@@ -1079,7 +1471,7 @@ index 0c072ee16..1aee4a96c 100644
  	if (!standard)
  	{
 diff --git a/src/lib/libcmd/cut.c b/src/lib/libcmd/cut.c
-index c5249faa5..dc30f93c4 100644
+index c5249faa5..3764fb3f7 100644
 --- a/src/lib/libcmd/cut.c
 +++ b/src/lib/libcmd/cut.c
 @@ -2,7 +2,7 @@
@@ -1302,7 +1694,7 @@ index c5249faa5..dc30f93c4 100644
  							{
  								/* mb char possibly spanning buffer boundary -- fun stuff */
 -								if ((ep - cp) < mbmax())
-+								if ((ep - cp) < (ptrdiff_t)mbmax())
++								if ((ep - cp) < (int)mbmax())
  								{
 -									int	i;
 -									int	j;
@@ -1337,7 +1729,7 @@ index c5249faa5..dc30f93c4 100644
  									j = i;
  									k = 0;
 -									while (j < mbmax())
-+									while (j < (ptrdiff_t)mbmax())
++									while (j < (int)mbmax())
  										mb[j++] = cp[k++];
 -									if ((c = mb2wc(w, (char*)mb, j)) <= 0)
 +									if ((c = mb2wc(w, (char*)mb, (size_t)j)) <= 0)

@@ -1,8 +1,7 @@
-From 466e392b60385602173c0fcbeb2d98b63fa12d8b Mon Sep 17 00:00:00 2001
+From 01976742c7a3561efab15134bbc032b55b391f20 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Sat, 28 Mar 2026 21:37:56 -0700
-Subject: size_t/ptrdiff_t transition part 12: ksh93 lexing, parsing and
- subshells
+Date: Tue, 31 Mar 2026 13:07:35 -0700
+Subject: 64-bit transition part 12: ksh93 lexing, parsing and subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
@@ -29,15 +28,15 @@ Progresses https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/include/fcin.h    |  15 +--
  src/cmd/ksh93/include/shlex.h   |  16 +--
  src/cmd/ksh93/include/shnodes.h |   4 +-
- src/cmd/ksh93/sh/fcin.c         |  25 +++--
+ src/cmd/ksh93/sh/fcin.c         |  23 ++--
  src/cmd/ksh93/sh/lex.c          | 188 +++++++++++++++++---------------
  src/cmd/ksh93/sh/parse.c        |  94 ++++++++--------
  src/cmd/ksh93/sh/shcomp.c       |   2 +-
  src/cmd/ksh93/sh/subshell.c     |  12 +-
- src/cmd/ksh93/sh/tdump.c        |  38 +++----
- src/cmd/ksh93/sh/timers.c       |   4 +-
- src/cmd/ksh93/sh/trestore.c     |  52 ++++-----
- 11 files changed, 235 insertions(+), 215 deletions(-)
+ src/cmd/ksh93/sh/tdump.c        |  36 +++---
+ src/cmd/ksh93/sh/timers.c       |   2 +-
+ src/cmd/ksh93/sh/trestore.c     |  50 ++++-----
+ 11 files changed, 231 insertions(+), 211 deletions(-)
 
 diff --git a/src/cmd/ksh93/include/fcin.h b/src/cmd/ksh93/include/fcin.h
 index ce325bbcc..22a7e7117 100644
@@ -167,18 +166,9 @@ index 510d1c165..2b0829af8 100644
  
  #endif /* !_SHNODES_H */
 diff --git a/src/cmd/ksh93/sh/fcin.c b/src/cmd/ksh93/sh/fcin.c
-index 2badaa5b0..5fc2984c7 100644
+index 6e482938d..6a64831ba 100644
 --- a/src/cmd/ksh93/sh/fcin.c
 +++ b/src/cmd/ksh93/sh/fcin.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -34,9 +34,9 @@ Fcin_t _Fcin = {0};
  /*
   * open stream <f> for fast character input
@@ -264,7 +254,7 @@ index 2badaa5b0..5fc2984c7 100644
  			_Fcin.fcleft = n;
  			extra.next = extra.buff;
 diff --git a/src/cmd/ksh93/sh/lex.c b/src/cmd/ksh93/sh/lex.c
-index 1160c57f3..79ef35eb4 100644
+index 347e3e1da..ae5ee64d8 100644
 --- a/src/cmd/ksh93/sh/lex.c
 +++ b/src/cmd/ksh93/sh/lex.c
 @@ -73,7 +73,7 @@ static int		alias_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
@@ -855,7 +845,7 @@ index 1160c57f3..79ef35eb4 100644
  	return 1;
  }
 diff --git a/src/cmd/ksh93/sh/parse.c b/src/cmd/ksh93/sh/parse.c
-index 7c7dd73cf..d97007f40 100644
+index c2cda3aa6..c1be79cb3 100644
 --- a/src/cmd/ksh93/sh/parse.c
 +++ b/src/cmd/ksh93/sh/parse.c
 @@ -37,6 +37,7 @@
@@ -1153,7 +1143,7 @@ index 7c7dd73cf..d97007f40 100644
  	return sfclose(kia.file);
  }
 diff --git a/src/cmd/ksh93/sh/shcomp.c b/src/cmd/ksh93/sh/shcomp.c
-index 6016d46d4..c3eb8ca51 100644
+index 4f1274c96..129e9b5da 100644
 --- a/src/cmd/ksh93/sh/shcomp.c
 +++ b/src/cmd/ksh93/sh/shcomp.c
 @@ -140,7 +140,7 @@ int main(int argc, char *argv[])
@@ -1166,7 +1156,7 @@ index 6016d46d4..c3eb8ca51 100644
  	else
  		out = sfstdout;
 diff --git a/src/cmd/ksh93/sh/subshell.c b/src/cmd/ksh93/sh/subshell.c
-index dff9ee374..df1dbe832 100644
+index 9ab5c85b6..2151401ca 100644
 --- a/src/cmd/ksh93/sh/subshell.c
 +++ b/src/cmd/ksh93/sh/subshell.c
 @@ -68,7 +68,7 @@ static struct subshell
@@ -1217,18 +1207,9 @@ index dff9ee374..df1dbe832 100644
  		sh.st.otrap = 0;
  		if(nsig)
 diff --git a/src/cmd/ksh93/sh/tdump.c b/src/cmd/ksh93/sh/tdump.c
-index 19da2f796..1db7b1854 100644
+index ca3252c25..23540a4c6 100644
 --- a/src/cmd/ksh93/sh/tdump.c
 +++ b/src/cmd/ksh93/sh/tdump.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2025 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -29,17 +29,17 @@
  #include	"path.h"
  #include	"io.h"
@@ -1335,18 +1316,9 @@ index 19da2f796..1db7b1854 100644
  	size_t n=strlen(string);
  	if(sfputu(outfile,n+1)<0)
 diff --git a/src/cmd/ksh93/sh/timers.c b/src/cmd/ksh93/sh/timers.c
-index 26e96d854..18552cee7 100644
+index a6b5b2498..260831126 100644
 --- a/src/cmd/ksh93/sh/timers.c
 +++ b/src/cmd/ksh93/sh/timers.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2012 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -200,7 +200,7 @@ void *sh_timeradd(Sfulong_t msec,int flags,void (*action)(void*),void *handle)
  		{
  			Handler_t *hp = (Handler_t*)sh_malloc(sizeof(Handler_t));
@@ -1357,18 +1329,9 @@ index 26e96d854..18552cee7 100644
  		tp = tptop;
  	}
 diff --git a/src/cmd/ksh93/sh/trestore.c b/src/cmd/ksh93/sh/trestore.c
-index 8911b507e..33532ca1c 100644
+index c3e5f3d26..abafa620e 100644
 --- a/src/cmd/ksh93/sh/trestore.c
 +++ b/src/cmd/ksh93/sh/trestore.c
-@@ -2,7 +2,7 @@
- *                                                                      *
- *               This software is part of the ast package               *
- *          Copyright (c) 1982-2011 AT&T Intellectual Property          *
--*          Copyright (c) 2020-2024 Contributors to ksh 93u+m           *
-+*          Copyright (c) 2020-2026 Contributors to ksh 93u+m           *
- *                      and is licensed under the                       *
- *                 Eclipse Public License, Version 2.0                  *
- *                                                                      *
 @@ -51,12 +51,12 @@ Shnode_t *sh_trestore(Sfio_t *in)
   */
  static Shnode_t *r_tree(void)
