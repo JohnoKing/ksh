@@ -41,6 +41,8 @@ git checkout 0e518418942347a73e38e82f3a40bcc0d7051c54  # part 5
 bld
 git checkout 043b4e9b869b8bacc71bbf7b65c13366077a5047  # part 6
 bld
+git checkout 8a36bf89a01d9d52010b7a7de2703bffc9d2457c  # part 7
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -69,36 +71,6 @@ upc() {
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
-
-fetch src/lib/libast/features/tty
-fetch src/lib/libcmd
-upc
-git commit -m $'64-bit transition part 7: libcmd builtins
-
-This is the seventh of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The entirety of the libcmd builtins.
-
-Remarks:
-- Like the previous problematic getfsstat, sethostname also
-  has a platform-dependent second argument that can be
-  either signed or unsigned. This commit leaves the usage
-  of that function (which passes a size_t value) as is.
-- Moved the include directives in chmod and date to
-  silence overlength string warnings.
-- Removed unused macros from the fds code.
-- Marked unused function parameters in grep to silence
-  additional warnings.
-- Use POSIX tcflag_t, speed_t and cc_t to silence
-  warnings in stty.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[6]} ${w[7]} ${w[13]} ;}"' (progression from part 6 => part 7 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/lib/libdll
 fetch src/lib/libsum
