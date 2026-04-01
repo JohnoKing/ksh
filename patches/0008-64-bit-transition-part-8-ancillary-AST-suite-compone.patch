@@ -1,6 +1,6 @@
-From 83cc1d8deb08a78e806a1a737d4d143c040d97ec Mon Sep 17 00:00:00 2001
+From a01f230e31485a58956700b37b74abf6975554b5 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 14:36:14 -0700
+Date: Wed, 1 Apr 2026 02:27:05 -0700
 Subject: 64-bit transition part 8: ancillary AST suite components
 
 This is the eight of the thickfold patch series, which enables ksh93
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,189 => 1,033 => 37 (progression from part 7 => part 8 => part 13)
+1,188 => 1,032 => 37 (progression from part 7 => part 8 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

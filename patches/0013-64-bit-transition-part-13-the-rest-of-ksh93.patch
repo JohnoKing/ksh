@@ -1,6 +1,6 @@
-From 7c87c40712f29a3f26ef603ff4637d4fce1d492b Mon Sep 17 00:00:00 2001
+From dceae6e930e208f5c8a20374671347310403c0b3 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 14:39:50 -0700
+Date: Wed, 1 Apr 2026 02:30:30 -0700
 Subject: 64-bit transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -33,7 +33,7 @@ Conspicuous change of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-353 => 37 (progression from part 12 => part 13)
+352 => 37 (progression from part 12 => part 13)
 
 Most of the warnings that remain are mere bitflag issues of tertiary importance.
 I'll note that I have a patch that expands nvflags to uint64_t which helps
@@ -79,7 +79,7 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/sh/path.c         | 104 ++++++++-------
  src/cmd/ksh93/sh/pmain.c        |   2 +-
  src/cmd/ksh93/sh/streval.c      |  51 ++++----
- src/cmd/ksh93/sh/xec.c          | 109 ++++++++--------
+ src/cmd/ksh93/sh/xec.c          | 101 ++++++++-------
  src/cmd/ksh93/tests/basic.sh    |  24 ++++
  src/lib/libast/port/astconf.c   |   2 +-
  src/lib/libast/sfio/sffilbuf.c  |   4 +-
@@ -89,23 +89,23 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfreserve.c |   6 +-
  src/lib/libast/sfio/sfvscanf.c  |   2 +-
  src/lib/libast/string/tokline.c |   2 +-
- 47 files changed, 473 insertions(+), 400 deletions(-)
+ 47 files changed, 468 insertions(+), 397 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 4c2bfa17f..4e62c86a0 100644
+index 106689e13..66f3fae9e 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
- For full details, see the git log at: https://github.com/ksh93/ksh
- Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
-+2026-03-31:
-+
+ 2026-04-01:
+ 
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
- 2026-03-28:
++2026-04-01:
++
+ - Fixed a bug where a DEBUG trap containing a function definition would fail
+   with a spurious error message when invoked by running a compound assignment.
  
- - Fixed a potential crash (buffer read overflow) in the .sh.match code
 diff --git a/src/cmd/ksh93/bltins/cflow.c b/src/cmd/ksh93/bltins/cflow.c
 index f8653e955..20e9470e3 100644
 --- a/src/cmd/ksh93/bltins/cflow.c
@@ -2608,7 +2608,7 @@ index 549b46f1a..42f42db85 100644
  		sp = stkfreeze(sh.stk,1);
  	ep = arith_compile(s,end,convert,emode);
 diff --git a/src/cmd/ksh93/sh/xec.c b/src/cmd/ksh93/sh/xec.c
-index fddb3da7d..4141751d0 100644
+index ce7bb8a9e..84fb6ed94 100644
 --- a/src/cmd/ksh93/sh/xec.c
 +++ b/src/cmd/ksh93/sh/xec.c
 @@ -147,10 +147,10 @@ static inline Sfdouble_t timeval_to_double(struct timeval tv)
@@ -2686,18 +2686,7 @@ index fddb3da7d..4141751d0 100644
  			return;
  		}
  	}
-@@ -464,7 +467,9 @@ static Namfun_t level_disc_fun = { &level_disc, 1 };
- int sh_debug(const char *trap, const char *name, const char *subscript, char *const argv[], int flags)
- {
- 	Namval_t		*np = SH_COMMANDNOD;
--	int			n=4, offset=stktell(sh.stk);
-+	ssize_t			n=4;
-+	ptrdiff_t		offset=stktell(sh.stk);
-+	int			r;
- 	void			*sav = stkfreeze(sh.stk,0);
- 	struct sh_scoped	*savst = stkalloc(sh.stk,sizeof(struct sh_scoped));
- 	const char		*cp = "+=( ";
-@@ -483,7 +488,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
+@@ -488,7 +491,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
  			cp+=1, n-=1;
  		if(!(flags&ARG_ASSIGN))
  			n -= 2;
@@ -2706,25 +2695,7 @@ index fddb3da7d..4141751d0 100644
  	}
  	if(*argv && !(flags&ARG_RAW))
  		out_string(sh.stk, *argv++,' ', 0);
-@@ -508,7 +513,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
- 		nv_disc(SH_LEVELNOD,&level_disc_fun,NV_FIRST);
- 	nv_offattr(SH_LEVELNOD,NV_RDONLY);
- 	/* run the trap */
--	n = sh_trap(trap,0);
-+	r = sh_trap(trap,0);
- 	nv_onattr(SH_LEVELNOD,NV_RDONLY);
- 	np->nvalue = NULL;
- 	sh.indebug = 0;
-@@ -521,7 +526,7 @@ int sh_debug(const char *trap, const char *name, const char *subscript, char *co
- 		stkset(sh.stk,sav,offset);
- 	else
- 		stkseek(sh.stk,offset);
--	return n;
-+	return r;
- }
- 
- /*
-@@ -536,7 +541,7 @@ int sh_eval(Sfio_t *iop, int mode)
+@@ -545,7 +548,7 @@ int sh_eval(Sfio_t *iop, int mode)
  	struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  	static Sfio_t *io_save;
  	volatile int traceon=0, lineno=0;
@@ -2733,7 +2704,7 @@ index fddb3da7d..4141751d0 100644
  	char comsub = sh.comsub;
  	io_save = iop; /* preserve correct value across longjmp */
  	sh.binscript = 0;
-@@ -698,7 +703,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
+@@ -707,7 +710,7 @@ static void unset_instance(Namval_t *node, struct Namref *nr, long mode)
  	savein = dup(0);
  	if(fd==0)
  		fd = savein;
@@ -2742,7 +2713,7 @@ index fddb3da7d..4141751d0 100644
  	ast_close(0);
  	open(e_devnull,O_RDONLY);
  	sh.offsets[0] = -1;
-@@ -1113,10 +1118,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1122,10 +1125,11 @@ int sh_exec(const Shnode_t *t, int flags)
  				/* check for builtins */
  				if(np && is_abuiltin(np))
  				{
@@ -2756,7 +2727,7 @@ index fddb3da7d..4141751d0 100644
  					struct checkpt	*buffp;
  					Shbltin_t	*bp = &sh.bltindata;
  					/* Fallback optimization for ':'/'true' and 'false' */
-@@ -1627,7 +1633,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1636,7 +1640,8 @@ int sh_exec(const Shnode_t *t, int flags)
  		    case TSETIO:
  		    {
  			pid_t	pid = 0;
@@ -2766,7 +2737,7 @@ index fddb3da7d..4141751d0 100644
  			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
  			struct checkpt *buffp = stkalloc(sh.stk,sizeof(struct checkpt));
  			if(sh.subshell && !sh.subshare)
-@@ -1640,7 +1647,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1649,7 +1654,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				for (i = t->fork.forkio; i; i = i->ionxt)
  				{
  					unsigned f = i->iofile;
@@ -2775,7 +2746,7 @@ index fddb3da7d..4141751d0 100644
  					{
  						sh_subfork();
  						break;
-@@ -1687,7 +1694,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1696,7 +1701,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				free_list(buffp->olist);
  			if(type&FPIN)
  			{
@@ -2785,7 +2756,7 @@ index fddb3da7d..4141751d0 100644
  				job.waitall = waitall;
  				if(!(e & SH_EXITSIG))
  				{
-@@ -1754,11 +1762,11 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1763,11 +1769,11 @@ int sh_exec(const Shnode_t *t, int flags)
  		    {
  			int	pvo[3];	/* old pipe for multi-stage */
  			int	pvn[3];	/* current set up pipe */
@@ -2800,7 +2771,7 @@ index fddb3da7d..4141751d0 100644
  			int	savejobid = job.curjobid;
  			int	*exitval=0,*saveexitval = job.exitval;
  			pid_t	savepgid = job.curpgid;
-@@ -1781,8 +1789,8 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1790,8 +1796,8 @@ int sh_exec(const Shnode_t *t, int flags)
  				job.curpgid = 0;
  				while((tn=tn->lst.lstrit) && tn->tre.tretyp==TFIL)
  					job.waitall++;
@@ -2811,7 +2782,7 @@ index fddb3da7d..4141751d0 100644
  			}
  			else
  				job.waitall = !pipejob && (sh_isstate(SH_MONITOR) || sh_isstate(SH_TIMING));
-@@ -1939,7 +1947,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1948,7 +1954,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				if(t->tre.tretyp&COMSCAN)
  				{
  					char *val;
@@ -2820,7 +2791,7 @@ index fddb3da7d..4141751d0 100644
  					if(refresh)
  					{
  						sh_menu(sfstderr,nargs,args);
-@@ -1966,7 +1974,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -1975,7 +1981,7 @@ int sh_exec(const Shnode_t *t, int flags)
  							goto check;
  						}
  						while(c = *cp++)
@@ -2829,7 +2800,7 @@ index fddb3da7d..4141751d0 100644
  								break;
  						if(c!=0)
  							c = nargs;
-@@ -2284,7 +2292,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2293,7 +2299,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			{
  				Dt_t *root;
  				Namval_t *oldnspace = sh.namespace;
@@ -2838,7 +2809,7 @@ index fddb3da7d..4141751d0 100644
  				int	flags=NV_NOARRAY|NV_VARNAME;
  				struct checkpt *chkp = stkalloc(sh.stk,sizeof(struct checkpt));
  				int jmpval;
-@@ -2328,7 +2336,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2337,7 +2343,7 @@ int sh_exec(const Shnode_t *t, int flags)
  			error_info.line = t->funct.functline-sh.st.firstline;
  			if(cp || sh.prefix)
  			{
@@ -2847,7 +2818,7 @@ index fddb3da7d..4141751d0 100644
  				if(sh.prefix)
  				{
  					cp = sh.prefix;
-@@ -2339,7 +2347,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2348,7 +2354,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				}
  				else
  				{
@@ -2856,7 +2827,7 @@ index fddb3da7d..4141751d0 100644
  					sfputc(sh.stk,0);
  					npv = nv_open(stkptr(sh.stk,offset),sh.var_tree,NV_NOARRAY|NV_VARNAME);
  				}
-@@ -2435,7 +2443,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2444,7 +2450,7 @@ int sh_exec(const Shnode_t *t, int flags)
  				rp->nspace = sh.namespace;
  				rp->fname = 0;
  				rp->argv = ac ? ac->comarg.dp->dolval + 1 : NULL;
@@ -2865,7 +2836,7 @@ index fddb3da7d..4141751d0 100644
  				rp->fdict = sh.fun_tree;
  				fp = (struct functnod*)(slp+1);
  				if(fp->functtyp==(TFUN|FAMP))
-@@ -2503,7 +2511,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2512,7 +2518,7 @@ int sh_exec(const Shnode_t *t, int flags)
  					{
  						char unop[3];
  						unop[0] = '-';
@@ -2874,7 +2845,7 @@ index fddb3da7d..4141751d0 100644
  						unop[2] = 0;
  						argv[1] = unop;
  						argv[2] = left;
-@@ -2531,7 +2539,7 @@ int sh_exec(const Shnode_t *t, int flags)
+@@ -2540,7 +2546,7 @@ int sh_exec(const Shnode_t *t, int flags)
  						argv[5] = 0;
  						sh_debug(trap,NULL,NULL,argv,pattern);
  					}
@@ -2883,7 +2854,7 @@ index fddb3da7d..4141751d0 100644
  					if(traceon)
  					{
  						sfprintf(sfstderr,"%s %s ",sh_fmtq(left),op);
-@@ -2602,17 +2610,17 @@ int sh_run(int argn, char *argv[])
+@@ -2611,17 +2617,17 @@ int sh_run(int argn, char *argv[])
  {
  	struct dolnod	*dp;
  	struct comnod	*t = stkalloc(sh.stk,sizeof(struct comnod));
@@ -2904,7 +2875,7 @@ index fddb3da7d..4141751d0 100644
  	t->comarg.dp = dp;
  	if(!strchr(argv[0],'/'))
  		t->comnamp = nv_bfsearch(argv[0],sh.fun_tree,(Namval_t**)&t->comnamq,NULL);
-@@ -2692,16 +2700,16 @@ static void timed_out(void *handle)
+@@ -2701,16 +2707,16 @@ static void timed_out(void *handle)
   */
  pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  {
@@ -2924,7 +2895,7 @@ index fddb3da7d..4141751d0 100644
  			errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_nofork);
  			UNREACHABLE();
  		}
-@@ -2711,17 +2719,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
+@@ -2720,17 +2726,18 @@ pid_t _sh_fork(pid_t parent,int flags,int *jobid)
  		{
  			if(nochild)
  				pause();
@@ -2946,7 +2917,7 @@ index fddb3da7d..4141751d0 100644
  		if(job.toclear)
  			job_clear();
  		job.waitall = waitall;
-@@ -2859,7 +2868,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2868,7 +2875,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	Namval_t	node,*mp,*np, *nref[9], **nr=nref;
  	char		*argv[2];
  	struct funenv	funenv;
@@ -2955,7 +2926,7 @@ index fddb3da7d..4141751d0 100644
  	np = (Namval_t*)fp;
  	funenv.node = np;
  	funenv.nref = nref;
-@@ -2869,7 +2878,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
+@@ -2878,7 +2885,7 @@ Sfdouble_t sh_mathfun(void *fp, int nargs, Sfdouble_t *arg)
  	SH_VALNOD->nvmeta = NULL;
  	SH_VALNOD->nvflag = NV_LDOUBLE|NV_NOFREE;
  	SH_VALNOD->nvalue = NULL;
@@ -2964,7 +2935,7 @@ index fddb3da7d..4141751d0 100644
  	{
  		*nr++ = mp = nv_namptr(sh.mathnodes,i);
  		mp->nvalue = arg++;
-@@ -2973,7 +2982,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
+@@ -2982,7 +2989,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
  	}
  	if(!posix_fun)
  	{
@@ -2973,7 +2944,7 @@ index fddb3da7d..4141751d0 100644
  		if(!fun)
  		{
  			if(nv_isattr(fp->node,NV_TAGGED))
-@@ -3172,7 +3181,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
+@@ -3181,7 +3188,7 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
  	struct checkpt	*checkpoint;
  	int		jmpval = 0;
  	int		jmpthresh;
@@ -2983,10 +2954,10 @@ index fddb3da7d..4141751d0 100644
  	Namval_t	node;
  	struct Namref	nr;
 diff --git a/src/cmd/ksh93/tests/basic.sh b/src/cmd/ksh93/tests/basic.sh
-index 93fccd52d..3bb3d40a2 100755
+index bfd257d3c..224cfd453 100755
 --- a/src/cmd/ksh93/tests/basic.sh
 +++ b/src/cmd/ksh93/tests/basic.sh
-@@ -957,6 +957,30 @@ for t in {A..Z}; do
+@@ -962,6 +962,30 @@ for t in {A..Z}; do
  	[[ $? == 1 ]] || err_exit "'trap' throws segfault when given invalid signal name '$t'"
  done
  

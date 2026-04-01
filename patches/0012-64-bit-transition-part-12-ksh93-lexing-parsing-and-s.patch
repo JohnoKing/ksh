@@ -1,6 +1,6 @@
-From ad57c38a7ea27d0fb11f21af6b71d70325431d6f Mon Sep 17 00:00:00 2001
+From b2a0c6959320eef7f20100e7bc905ce7d74433b0 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 14:39:04 -0700
+Date: Wed, 1 Apr 2026 02:29:46 -0700
 Subject: 64-bit transition part 12: ksh93 lexing, parsing and subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93
@@ -21,7 +21,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-482 => 353 => 37 (progression from part 11 => part 12 => part 13)
+481 => 352 => 37 (progression from part 11 => part 12 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

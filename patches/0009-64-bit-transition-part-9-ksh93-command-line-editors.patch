@@ -1,6 +1,6 @@
-From f6bd499c18cc69e7305fbff5db61cef208b29427 Mon Sep 17 00:00:00 2001
+From c2ec614fe15c5af948d434f268be02e5d0d6cf89 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 14:36:56 -0700
+Date: Wed, 1 Apr 2026 02:27:46 -0700
 Subject: 64-bit transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
@@ -18,7 +18,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-1,033 => 912 => 37 (progression from part 8 => part 9 => part 13)
+1,032 => 911 => 37 (progression from part 8 => part 9 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---

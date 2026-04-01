@@ -1,6 +1,6 @@
-From 4d6b9bcd3e4d5a42e8f91bebd2517756e862a629 Mon Sep 17 00:00:00 2001
+From 456aee49e2a7c819123ae585bba5c1eea5cc05e7 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 14:38:21 -0700
+Date: Wed, 1 Apr 2026 02:29:06 -0700
 Subject: 64-bit transition part 11: ksh93 nval
 
 This is the eleventh of the thickfold patch series, which enables ksh93
@@ -35,7 +35,7 @@ Conspicuous changes of note:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-803 => 482 => 37 (progression from part 10 => part 11 => part 13)
+802 => 481 => 37 (progression from part 10 => part 11 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
@@ -236,7 +236,7 @@ index 2cbdbcd78..5152ee701 100644
  The \f3nv_getval()\fP function returns the value of the given
  name-value pair as a string.  A \f3NULL\fP return value indicates
 diff --git a/src/cmd/ksh93/sh/array.c b/src/cmd/ksh93/sh/array.c
-index 0e0b4d270..c42b57836 100644
+index aef0bc390..08ca0cbdd 100644
 --- a/src/cmd/ksh93/sh/array.c
 +++ b/src/cmd/ksh93/sh/array.c
 @@ -2,7 +2,7 @@
@@ -727,9 +727,9 @@ index 0e0b4d270..c42b57836 100644
 +	char c;
 +	ptrdiff_t count=1;
  	char *sp = cp+1;
- 	assert(*cp=='[');
- 	/* first find matching ']' */
-@@ -1502,7 +1505,7 @@ char *nv_endsubscript(Namval_t *np, char *cp, int mode)
+ 	if(*cp!='[')
+ 		errormsg(SH_DICT, ERROR_exit(0), "Failure: *cp == %c, cp == '%s'", *cp, cp);
+@@ -1504,7 +1507,7 @@ char *nv_endsubscript(Namval_t *np, char *cp, int mode)
  	{
  		/* strip escape characters */
  		count = stktell(sh.stk);
@@ -738,7 +738,7 @@ index 0e0b4d270..c42b57836 100644
  		sh_trim(sp=stkptr(sh.stk,count));
  	}
  	if(mode && np)
-@@ -1565,7 +1568,7 @@ Namval_t *nv_opensub(Namval_t* np)
+@@ -1567,7 +1570,7 @@ Namval_t *nv_opensub(Namval_t* np)
  #if SHOPT_FIXEDARRAY
  		else if(fp)
  		{
@@ -747,7 +747,7 @@ index 0e0b4d270..c42b57836 100644
  			if((fp->dim+1) < fp->ndim)
  			{
  				fp->dim++;
-@@ -1587,7 +1590,7 @@ char	*nv_getsub(Namval_t* np)
+@@ -1589,7 +1592,7 @@ char	*nv_getsub(Namval_t* np)
  {
  	static char numbuff[NUMSIZE+1];
  	struct index_array *ap;
@@ -756,7 +756,7 @@ index 0e0b4d270..c42b57836 100644
  	char *cp = &numbuff[NUMSIZE];
  	if(!np || !(ap = (struct index_array*)nv_arrayptr(np)))
  		return NULL;
-@@ -1598,7 +1601,7 @@ char	*nv_getsub(Namval_t* np)
+@@ -1600,7 +1603,7 @@ char	*nv_getsub(Namval_t* np)
  		np = nv_namptr(ap->xp,0);
  		if(!np->nvalue)
  			np->nvalue = sh_malloc(sizeof(uint16_t));
@@ -765,7 +765,7 @@ index 0e0b4d270..c42b57836 100644
  		return nv_getval(np);
  	}
  	if((dot = ap->cur)==0)
-@@ -1606,7 +1609,7 @@ char	*nv_getsub(Namval_t* np)
+@@ -1608,7 +1611,7 @@ char	*nv_getsub(Namval_t* np)
  	else while(n=dot)
  	{
  		dot /= 10;
@@ -774,7 +774,7 @@ index 0e0b4d270..c42b57836 100644
  	}
  	return cp;
  }
-@@ -1629,10 +1632,10 @@ int nv_aindex(Namval_t* np)
+@@ -1631,10 +1634,10 @@ int nv_aindex(Namval_t* np)
  	return ((struct index_array*)(ap))->cur & ARRAY_MASK;
  }
  
@@ -787,7 +787,7 @@ index 0e0b4d270..c42b57836 100644
  #if SHOPT_FIXEDARRAY
  	if(!ap || is_associative(&ap->header) || ap->header.fixed)
  #else
-@@ -1799,7 +1802,7 @@ void *nv_associative(Namval_t *np,const char *sp,int mode)
+@@ -1801,7 +1804,7 @@ void *nv_associative(Namval_t *np,const char *sp,int mode)
   */
  void nv_setvec(Namval_t *np,int append,int argc,char *argv[])
  {

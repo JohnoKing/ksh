@@ -1,6 +1,6 @@
-From 6c4214db22b9584a942dafbbc2d782f6200d663a Mon Sep 17 00:00:00 2001
+From fe0ad7e356463796bac1a3115bc01dfbe1d40c91 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Tue, 31 Mar 2026 14:37:39 -0700
+Date: Wed, 1 Apr 2026 02:28:26 -0700
 Subject: 64-bit transition part 10: ksh93 preeminent builtin commands
 
 This is the tenth of the thickfold patch series, which enables ksh93
@@ -14,7 +14,7 @@ The parts of ksh93 affected by this commit are:
 
 Change in the number of warnings on Linux when compiling with clang using
 -Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-912 => 803 => 37 (progression from part 9 => part 10 => part 13)
+911 => 802 => 37 (progression from part 9 => part 10 => part 13)
 
 Progresses https://github.com/ksh93/ksh/issues/592
 ---
