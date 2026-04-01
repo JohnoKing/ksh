@@ -1023,7 +1023,7 @@ char *hist_word(char *string,int size,int word)
 	History_t *hp = hist_ptr;
 	if(!hp)
 		return NULL;
-	hist_copy(string,size,(int)hp->histind-1,-1);
+	hist_copy(string,size,hp->histind-1,-1);
 	for(quoted=0;c = (int)*cp;cp++)
 	{
 		is_boundary = !quoted && hist_iswordbndry(c);
@@ -1094,7 +1094,7 @@ Histloc_t hist_locate(History_t *hp,int command,int line,int lines)
 	}
 	else
 	{
-		int least = (int)hp->histind-hp->histsize;
+		int least = hp->histind-hp->histsize;
 		while(1)
 		{
 			if(line >=0)

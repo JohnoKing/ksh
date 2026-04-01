@@ -58,14 +58,15 @@ static char *fmtx(const char *string)
 	sfwrite(sh.stk,string,(size_t)(--cp-string));
 	for(string=cp;c=mbchar(cp);string=cp)
 	{
-		if((n=(int)(cp-string))==1)
+		ptrdiff_t diff = cp-string;
+		if(diff==1)
 		{
 			if(((n=state[c]) && n!=S_EPAT) || (hexp && ((c==hc[0]) || (c==hc[2] && !pos))))
 				sfputc(sh.stk,'\\');
 			sfputc(sh.stk,c);
 		}
 		else
-			sfwrite(sh.stk,string,(size_t)n);
+			sfwrite(sh.stk,string,(size_t)diff);
 		pos++;
 	}
 	sfputc(sh.stk,0);
@@ -81,16 +82,10 @@ static int charcmp(int a, int b, int nocase)
 	{
 #if _lib_towlower
 		if(mbwide())
-		{
-			a = (int)towlower((wint_t)a);
-			b = (int)towlower((wint_t)b);
-		}
+			return towlower((wint_t)a)==towlower((wint_t)b);
 		else
 #endif
-		{
-			a = tolower(a);
-			b = tolower(b);
-		}
+			return tolower(a)==tolower(b);
 	}
 	return a==b;
 }

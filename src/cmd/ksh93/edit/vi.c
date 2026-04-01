@@ -684,7 +684,7 @@ static int cntlmode(Vi_t *vp)
 			if(curhline == histmax && sh.hist_ptr)
 			{
 				hist_eof(sh.hist_ptr);
-				histmax = (int)sh.hist_ptr->histind;
+				histmax = sh.hist_ptr->histind;
 				curhline = histmax;
 				if(histmax >= sh.hist_ptr->histsize)
 					hist_flush(sh.hist_ptr);

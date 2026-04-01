@@ -150,7 +150,8 @@ void hist_setchars(char *hc)
 
 int hist_expand(const char *ln, char **xp)
 {
-	ptrdiff_t off;	/* stack offset */
+	ptrdiff_t off,	/* stack offset */
+		  off2; /* other stack offset */
 	int	q,	/* quotation flags */
 		p,	/* flag */
 		c,	/* current char */
@@ -243,10 +244,10 @@ int hist_expand(const char *ln, char **xp)
 		case '#': /* the line up to current position */
 			flag |= HIST_HASH;
 			cp++;
-			n = (Sfoff_t)stktell(sh.stk); /* terminate string and dup */
+			off2 = stktell(sh.stk); /* terminate string and dup */
 			sfputc(sh.stk,'\0');
 			cc = sh_strdup(stkptr(sh.stk,0));
-			stkseek(sh.stk,(ptrdiff_t)n); /* remove null byte again */
+			stkseek(sh.stk,off2); /* remove null byte again */
 			ref = sfopen(ref, cc, "s"); /* open as file */
 			n = 0; /* skip history file referencing */
 			break;
