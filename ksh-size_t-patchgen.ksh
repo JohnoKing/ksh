@@ -43,6 +43,8 @@ git checkout 043b4e9b869b8bacc71bbf7b65c13366077a5047  # part 6
 bld
 git checkout 8a36bf89a01d9d52010b7a7de2703bffc9d2457c  # part 7
 bld
+git checkout fb8d8144aa60c7d063213faad22d9563336f70ab  # part 8
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -71,32 +73,6 @@ upc() {
 
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
-
-fetch src/lib/libdll
-fetch src/lib/libsum
-fetch src/cmd/builtin
-fetch src/cmd/INIT
-upc
-git commit -m $'64-bit transition part 8: ancillary AST suite components
-
-This is the eight of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The entirety of the libdll library.
-  - An unused dllopen() wrapper hidden behind \'\#if 0\' has been
-    removed to prevent bitrot.
-- The entirety of the libsum library.
-  - match(): Added an UNREACHABLE() to fix a -Wunreachable-code-return
-    warning.
-- The pty test utility.
-- The mamake build program.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[7]} ${w[8]} ${w[13]} ;}"' (progression from part 7 => part 8 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
 
 fetch src/cmd/ksh93/edit
 fetch src/cmd/ksh93/include/edit.h
