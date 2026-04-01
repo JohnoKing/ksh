@@ -1,6 +1,6 @@
-From dceae6e930e208f5c8a20374671347310403c0b3 Mon Sep 17 00:00:00 2001
+From 69a20927989ef5576b708be1bed090ad34327305 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 1 Apr 2026 02:30:30 -0700
+Date: Wed, 1 Apr 2026 12:00:45 -0700
 Subject: 64-bit transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93

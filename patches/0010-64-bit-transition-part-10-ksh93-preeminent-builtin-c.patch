@@ -1,6 +1,6 @@
-From fe0ad7e356463796bac1a3115bc01dfbe1d40c91 Mon Sep 17 00:00:00 2001
+From 875aec17fefaf4571e762c274b0d8fdd21ac0c4c Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 1 Apr 2026 02:28:26 -0700
+Date: Wed, 1 Apr 2026 11:58:39 -0700
 Subject: 64-bit transition part 10: ksh93 preeminent builtin commands
 
 This is the tenth of the thickfold patch series, which enables ksh93

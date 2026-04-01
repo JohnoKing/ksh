@@ -1,6 +1,6 @@
-From c2ec614fe15c5af948d434f268be02e5d0d6cf89 Mon Sep 17 00:00:00 2001
+From a38618319355bc19ca86deb7970cee3579e1ff8f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 1 Apr 2026 02:27:46 -0700
+Date: Wed, 1 Apr 2026 11:57:59 -0700
 Subject: 64-bit transition part 9: ksh93 command line editors
 
 This is the ninth of the thickfold patch series, which enables ksh93
