@@ -1,6 +1,6 @@
-From 53ff98c21cb0595b8ef18599c062f7da9413e065 Mon Sep 17 00:00:00 2001
+From e14f0fd8edde0869e6c683e5dcbe5b4d5799b904 Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 1 Apr 2026 12:00:01 -0700
+Date: Thu, 2 Apr 2026 06:05:06 -0700
 Subject: 64-bit transition part 12: ksh93 lexing, parsing and subshells
 
 This is the twelfth of the thickfold patch series, which enables ksh93

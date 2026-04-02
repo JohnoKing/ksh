@@ -1,6 +1,6 @@
-From 69a20927989ef5576b708be1bed090ad34327305 Mon Sep 17 00:00:00 2001
+From d076be46958979add79116901342c7361218266f Mon Sep 17 00:00:00 2001
 From: Johnothan King <johnothanking@protonmail.com>
-Date: Wed, 1 Apr 2026 12:00:45 -0700
+Date: Thu, 2 Apr 2026 06:05:49 -0700
 Subject: 64-bit transition part 13: the rest of ksh93
 
 This is the thirteenth of the thickfold patch series, which enables ksh93
@@ -54,6 +54,7 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/cmd/ksh93/data/strdata.c    |   2 +-
  src/cmd/ksh93/data/testops.c    |   2 +-
  src/cmd/ksh93/data/variables.c  |   2 +-
+ src/cmd/ksh93/edit/edit.c       |   4 +-
  src/cmd/ksh93/features/externs  |  11 +-
  src/cmd/ksh93/features/fchdir   |   5 +-
  src/cmd/ksh93/features/poll     |   2 +-
@@ -89,23 +90,23 @@ Fixes https://github.com/ksh93/ksh/issues/592
  src/lib/libast/sfio/sfreserve.c |   6 +-
  src/lib/libast/sfio/sfvscanf.c  |   2 +-
  src/lib/libast/string/tokline.c |   2 +-
- 47 files changed, 468 insertions(+), 397 deletions(-)
+ 48 files changed, 470 insertions(+), 399 deletions(-)
 
 diff --git a/NEWS b/NEWS
-index 106689e13..66f3fae9e 100644
+index 106689e13..4448a9c15 100644
 --- a/NEWS
 +++ b/NEWS
-@@ -4,6 +4,10 @@ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
+@@ -2,6 +2,10 @@ This documents significant changes in the dev branch of ksh 93u+m.
+ For full details, see the git log at: https://github.com/ksh93/ksh
+ Uppercase BUG_* IDs are shell bug IDs as used by the Modernish shell library.
  
- 2026-04-01:
- 
++2026-04-02:
++
 +- Ksh is now capable of allocating memory within a 64-bit address space.
 +
-+2026-04-01:
-+
- - Fixed a bug where a DEBUG trap containing a function definition would fail
-   with a spurious error message when invoked by running a compound assignment.
+ 2026-04-01:
  
+ - Fixed a bug where a DEBUG trap containing a function definition would fail
 diff --git a/src/cmd/ksh93/bltins/cflow.c b/src/cmd/ksh93/bltins/cflow.c
 index f8653e955..20e9470e3 100644
 --- a/src/cmd/ksh93/bltins/cflow.c
@@ -251,6 +252,28 @@ index d8bfa5815..091ce450c 100644
  *                      and is licensed under the                       *
  *                 Eclipse Public License, Version 2.0                  *
  *                                                                      *
+diff --git a/src/cmd/ksh93/edit/edit.c b/src/cmd/ksh93/edit/edit.c
+index 68d9e22a6..078a55bbb 100644
+--- a/src/cmd/ksh93/edit/edit.c
++++ b/src/cmd/ksh93/edit/edit.c
+@@ -66,7 +66,7 @@ static char *erase_eos;  /* erase to end of screen */
+ #define ECHOMODE	3
+ #define SYSERR	-1
+ 
+-static int keytrap(Edit_t *,char*, int, int, int);
++static int keytrap(Edit_t *,char*, int, ssize_t, int);
+ 
+ #ifndef _POSIX_DISABLE
+ #   define _POSIX_DISABLE	0
+@@ -1278,7 +1278,7 @@ size_t	ed_genlen(const genchar *str)
+  * Execute keyboard trap on given buffer <inbuff> of given size <isize>
+  * <mode> < 0 for vi insert mode
+  */
+-static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
++static int keytrap(Edit_t *ep,char *inbuff,int insize, ssize_t bufsize, int mode)
+ {
+ 	char *cp;
+ 	int savexit;
 diff --git a/src/cmd/ksh93/features/externs b/src/cmd/ksh93/features/externs
 index a9a58d7ac..cb9309ef5 100644
 --- a/src/cmd/ksh93/features/externs
@@ -717,7 +740,7 @@ index 9f33d6567..52c5658f3 100644
  	sh.subshell = savesubshell;
  	job.jobcontrol = savejobcontrol;
 diff --git a/src/cmd/ksh93/sh/arith.c b/src/cmd/ksh93/sh/arith.c
-index a4cdbe7ea..4582ba94b 100644
+index 2b0a57e87..fee5cfe4c 100644
 --- a/src/cmd/ksh93/sh/arith.c
 +++ b/src/cmd/ksh93/sh/arith.c
 @@ -74,9 +74,9 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
@@ -732,7 +755,7 @@ index a4cdbe7ea..4582ba94b 100644
  		cp[flag] = 0;
  		if((!(np = nv_open(cp,sh.var_tree,assign|NV_VARNAME|NV_NOADD|NV_NOFAIL)) || nv_isnull(np))
  		&& sh_macfun(cp, offset = stktell(sh.stk)))
-@@ -109,7 +109,8 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
+@@ -110,7 +110,8 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
  	while(nv_isref(np))
  	{
  #if SHOPT_FIXEDARRAY
@@ -742,7 +765,7 @@ index a4cdbe7ea..4582ba94b 100644
  		dim = nv_refdimen(np);
  		n = nv_refindex(np);
  #endif /* SHOPT_FIXEDARRAY */
-@@ -164,7 +165,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
+@@ -165,7 +166,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
  				sfputr(sh.strbuf,sub,-1);
  				sub = sfstruse(sh.strbuf);
  			}
@@ -751,7 +774,7 @@ index a4cdbe7ea..4582ba94b 100644
  			if(c || hasdot)
  			{
  				np = nv_open(sub,sh.var_tree,NV_VARNAME|assign);
-@@ -200,7 +201,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
+@@ -201,7 +202,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
  }
  
  /* look up a function in the standard math function table */
@@ -760,7 +783,7 @@ index a4cdbe7ea..4582ba94b 100644
  {
  	const struct mathtab *tp;
  	char c = fname[0];
-@@ -326,8 +327,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -327,8 +328,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  			}
  			if(c=='(')
  			{
@@ -771,7 +794,7 @@ index a4cdbe7ea..4582ba94b 100644
  				const struct mathtab *tp;
  				c = **ptr;
  				lvalue->fun = 0;
-@@ -336,7 +337,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -337,7 +338,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  				if(np=nv_search(stkptr(sh.stk,off),sh.fun_tree,0))
  				{
  					struct Ufunction *rp = np->nvalue;
@@ -780,7 +803,7 @@ index a4cdbe7ea..4582ba94b 100644
  					lvalue->fun = (Math_f)np;
  					break;
  				}
-@@ -353,7 +354,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -354,7 +355,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  			if((lvalue->emode&ARITH_COMP) && dot)
  			{
  				lvalue->value = (char*)*ptr;
@@ -789,7 +812,7 @@ index a4cdbe7ea..4582ba94b 100644
  				break;
  			}
  			*str = 0;
-@@ -361,10 +362,10 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -362,10 +363,10 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  				np = L_ARGNOD;
  			else
  			{
@@ -802,7 +825,7 @@ index a4cdbe7ea..4582ba94b 100644
  				cp = str;
  				while(c=='[' || c=='.')
  				{
-@@ -411,14 +412,14 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -412,14 +413,14 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  				else if(!(np = nv_open(*ptr,root,NV_NOREF|NV_VARNAME|dot)))
  				{
  					lvalue->value = (char*)*ptr;
@@ -819,7 +842,7 @@ index a4cdbe7ea..4582ba94b 100644
  			if(!np && lvalue->value)
  				break;
  			lvalue->value = (char*)np;
-@@ -428,7 +429,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -429,7 +430,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  			lvalue->flag = 0;
  			if(c=='[')
  			{
@@ -828,7 +851,7 @@ index a4cdbe7ea..4582ba94b 100644
  				do
  				{
  					while(c=='.')
-@@ -446,7 +447,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -447,7 +448,8 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  		}
  		else
  		{
@@ -838,7 +861,7 @@ index a4cdbe7ea..4582ba94b 100644
  			lvalue->isenum = 0;
  			errno = 0;
  			r = strtonll(val,&str, &lastbase,-1);
-@@ -485,7 +487,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
+@@ -486,7 +488,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  			{
  				if(val[2]=='#')
  					val += 3;
