@@ -66,7 +66,7 @@ static char *erase_eos;  /* erase to end of screen */
 #define ECHOMODE	3
 #define SYSERR	-1
 
-static int keytrap(Edit_t *,char*, int, ssize_t, int);
+static int keytrap(Edit_t *,char*, int, int, int);
 
 #ifndef _POSIX_DISABLE
 #   define _POSIX_DISABLE	0
@@ -1278,7 +1278,7 @@ size_t	ed_genlen(const genchar *str)
  * Execute keyboard trap on given buffer <inbuff> of given size <isize>
  * <mode> < 0 for vi insert mode
  */
-static int keytrap(Edit_t *ep,char *inbuff,int insize, ssize_t bufsize, int mode)
+static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
 {
 	char *cp;
 	int savexit;
