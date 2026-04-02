@@ -42,7 +42,7 @@ struct	tevent
 	Namval_t	*node;
 	Namval_t	*action;
 	struct tevent	*next;
-	long		milli;
+	Sflong_t	milli;
 	int		flags;
 	void            *timeout;
 };
@@ -111,7 +111,7 @@ static void	print_alarms(void *list)
 			char *name = nv_name(tp->node);
 			if(tp->flags&R_FLAG)
 			{
-				double d = tp->milli;
+				Sfdouble_t d = tp->milli;
 				sfprintf(sfstdout,e_alrm1,name,d/1000.);
 			}
 			else
