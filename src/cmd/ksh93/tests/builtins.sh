@@ -1269,8 +1269,8 @@ then	got=$( { "$SHELL" -c '
 		"(got status $e$( ((e>128)) && print -n /SIG && kill -l "$e"), $(printf %q "$got"))"
 
 	# alarm output should print the full floating point number
-	exp='alarm -r varname +100.123'
-	got=$( "$SHELL" -c 'alarm -r varname 100.123; alarm' )
+	exp=$'alarm bar +2.200\nalarm -r foo +100.123'
+	got=$( "$SHELL" -c 'alarm -r foo 100.123; alarm bar 2.2; alarm' )
 	[[ $exp == $got ]] || err_exit "alarm output fumbles floating point numbers" \
 		"(expected $(printf %q "$exp"), got $(printf %q "$got"))"
 fi

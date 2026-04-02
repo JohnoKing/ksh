@@ -2148,7 +2148,7 @@ const char sh_optwhence[] =
 
 
 const char e_alrm1[]		= "alarm -r %s +%.3Lf\n";
-const char e_alrm2[]		= "alarm %s %.3f\n";
+const char e_alrm2[]		= "alarm %s +%.3Lf\n";
 const char e_baddisc[]		= "%s: invalid discipline function";
 const char e_nofork[]		= "cannot fork";
 const char e_nosignal[]		= "%s: unknown signal name";

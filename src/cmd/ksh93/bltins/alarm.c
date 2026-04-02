@@ -116,8 +116,8 @@ static void	print_alarms(void *list)
 			}
 			else
 			{
-				Time_t num = nv_getnum(tp->node), now = getnow();
-				sfprintf(sfstdout,e_alrm2,name,(double)(num - now));
+				Sfdouble_t d = tp->milli;
+				sfprintf(sfstdout,e_alrm2,name,d/1000.);
 			}
 		}
 		tp = tp->next;
