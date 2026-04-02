@@ -1486,8 +1486,6 @@ char *nv_endsubscript(Namval_t *np, char *cp, int mode)
 	char c;
 	ptrdiff_t count=1;
 	char *sp = cp+1;
-	if(*cp!='[')
-		errormsg(SH_DICT, ERROR_exit(0), "Failure: *cp == %c, cp == '%s'", *cp, cp);
 	assert(*cp=='[');
 	/* first find matching ']' */
 	while(count>0 && (c= *++cp))

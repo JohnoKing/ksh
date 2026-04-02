@@ -45,6 +45,8 @@ git checkout 8a36bf89a01d9d52010b7a7de2703bffc9d2457c  # part 7
 bld
 git checkout fb8d8144aa60c7d063213faad22d9563336f70ab  # part 8
 bld
+git checkout a58ccad183b16e602944109d9198e8c38c100c00  # part 9
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -56,7 +58,7 @@ if [[ $1 == --sanity ]]; then
 fi
 
 upc() {
-	# Obtain the script from the from ksh wiki
+	# Run the script from the from ksh wiki
 	if [[ $1 == --all ]]; then
 		test -f ../update-copyright.ksh && ksh ../update-copyright.ksh
 		git add COPYRIGHT
@@ -74,36 +76,10 @@ upc() {
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
-fetch src/cmd/ksh93/edit
-fetch src/cmd/ksh93/include/edit.h
-fetch src/cmd/ksh93/include/history.h
-fetch src/cmd/ksh93/sh/jobs.c
-upc
-git commit -m $'64-bit transition part 9: ksh93 command line editors
-
-This is the ninth of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The interactive emacs and vi editor modes.
-  Neither possess an exigent need to operate on exceedingly large
-  buffers (I\'d be surprised if they ever needed to operate in
-  gigabytes to begin with), so I opted to liberally use int
-  casts to merely fix compiler warnings.
-  - Moved a FALLTHROUGH comment to fix a fallthrough warning.
-- Various fixes for jobs.c.
-  - Get rid of if/else PID botch; a single casted strtoll is fine.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[8]} ${w[9]} ${w[13]} ;}"' (progression from part 8 => part 9 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
-
 fetch src/cmd/ksh93/bltins
 fetch src/cmd/ksh93/include/builtins.h
 upc
-git commit -m $'64-bit transition part 10: ksh93 preeminent builtin commands
+git commit -m $'64-bit transition part 10: ksh93 builtin commands
 
 This is the tenth of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
