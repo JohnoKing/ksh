@@ -47,6 +47,8 @@ git checkout fb8d8144aa60c7d063213faad22d9563336f70ab  # part 8
 bld
 git checkout a58ccad183b16e602944109d9198e8c38c100c00  # part 9
 bld
+git checkout 3b979933cfe74dc8c3764adc2e699066f1a10a54  # part 10
+bld
 
 git branch -D 64bit-fixes-series 2>/dev/null || true
 git checkout -b 64bit-fixes-series
@@ -76,26 +78,6 @@ upc() {
 export GIT_AUTHOR_EMAIL='johnothanking@protonmail.com'
 export GIT_AUTHOR_NAME='Johnothan King'
 
-fetch src/cmd/ksh93/bltins
-fetch src/cmd/ksh93/include/builtins.h
-upc
-git commit -m $'64-bit transition part 10: ksh93 builtin commands
-
-This is the tenth of the thickfold patch series, which enables ksh93
-to operate within a 64-bit address space.
-
-The parts of ksh93 affected by this commit are:
-- The various primary ksh93 builtins located in the bltins folder.
-  - print_namval() returns a value only used for boolean tests,
-    so it doesn\'t need to return nv_size + 1 and thus a warning
-    can be quashed.
-
-Change in the number of warnings on Linux when compiling with clang using
--Wsign-compare -Wshorten-64-to-32 -Wsign-conversion -Wimplicit-int-conversion:
-'"${ printf "%'d => %'d => %'d" ${w[9]} ${w[10]} ${w[13]} ;}"' (progression from part 9 => part 10 => part 13)
-
-Progresses https://github.com/ksh93/ksh/issues/592'
-
 fetch src/cmd/ksh93/sh/n*
 fetch src/cmd/ksh93/include/n*
 fetch src/cmd/ksh93/sh/array.c
@@ -109,6 +91,8 @@ This is the eleventh of the thickfold patch series, which enables ksh93
 to operate within a 64-bit address space.
 
 The parts of ksh93 affected by this commit are:
+- Various pieces of code wrongly assuming char is signed
+  (follow-up to https://github.com/ksh93/ksh/issues/962).
 - The nval system, string.c, array handling and waitevent.c.
   This is probably one of the most consequential changes, the
   effect being that ksh is now capable of storing variables
