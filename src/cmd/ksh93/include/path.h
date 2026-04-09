@@ -76,7 +76,7 @@ extern void 		path_settrackedalias(const char*,Pathcomp_t*);
 extern Namval_t		*path_gettrackedalias(const char*);
 extern Pathcomp_t 	*path_absolute(const char*, Pathcomp_t*, int);
 extern char 		*path_basename(const char*);
-extern char 		*path_fullname(const char*);
+extern char		*path_fullname(const char*) malloc_attr returns_nonnull;
 extern int 		path_expand(const char*, struct argnod**, int);
 extern noreturn void 	path_exec(const char*,char*[],struct argnod*);
 extern pid_t		path_spawn(const char*,char*[],char*[],Pathcomp_t*,int);

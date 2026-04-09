@@ -422,7 +422,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 							n = '+';
 						if(trap)
 							sh_debug(trap,name,NULL,argv,(arg->argflag&ARG_APPEND)|ARG_ASSIGN);
-						if(traceon)
+						if(unlikely(traceon))
 						{
 							sh_trace(NULL,0);
 							sfputr(sfstderr,name,n);
@@ -631,7 +631,7 @@ void nv_setlist(struct argnod *arg,int flags, Namval_t *typ)
 					append = ARG_APPEND;
 				cp++;
 			}
-			if(traceon)
+			if(unlikely(traceon))
 			{
 				sh_trace(NULL,0);
 				nv_outname(sfstderr,name,-1);
@@ -1536,9 +1536,9 @@ skip:
 			}
 			isref = nv_isref(np);
 #if SHOPT_FIXEDARRAY
-			if(sh_isoption(SH_XTRACE) && (ap=nv_arrayptr(np)) && !ap->fixed)
+			if(unlikely(sh_isoption(SH_XTRACE)) && (ap=nv_arrayptr(np)) && !ap->fixed)
 #else
-			if(sh_isoption(SH_XTRACE) && nv_isarray(np))
+			if(unlikely(sh_isoption(SH_XTRACE)) && nv_isarray(np))
 #endif /* SHOPT_FIXEDARRAY */
 				sub = nv_getsub(np);
 			f = msg==e_aliname? 0: (append | (flags&NV_EXPORT));
@@ -1608,7 +1608,7 @@ static char savechars[8+1];
  * If <flags> contains NV_NOFREE, previous value is freed, and <sp>
  * becomes value of node and <flags> becomes attributes.
  */
-void nv_putval(Namval_t *np, const char *sp, int flags)
+NONNULL(1) void nv_putval(Namval_t *np, const char *sp, int flags)
 {
 	void		**vpp;	/* pointer to value pointer */
 	size_t		size = 0;
@@ -1620,7 +1620,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 	 * When we are in an invocation-local scope and we are using the
 	 * += operator, clone the variable from the previous scope.
 	 */
-	if(sh.invoc_local && (flags&NV_APPEND) && nv_isnull(np))
+	if(unlikely(sh.invoc_local && (flags&NV_APPEND) && nv_isnull(np)))
 	{
 		Namval_t *mp = nv_search(np->nvname,sh.var_tree->view,0);
 		if(mp)
@@ -1806,7 +1806,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					else
 						l = (int32_t)((uint32_t)ld);
 				}
-				if(nv_size(np) <= 1)
+				if(unlikely(nv_size(np) <= 1))
 					nv_setsize(np,10);
 				if(nv_isattr(np,NV_SHORT))
 				{
@@ -1859,7 +1859,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 			}
 			sp = sfstruse(sh.strbuf);
 		}
-		if(nv_isattr(np, NV_HOST|NV_INTEGER)==NV_HOST && sp)
+		if(unlikely(nv_isattr(np, NV_HOST|NV_INTEGER)==NV_HOST) && sp)
 		{
 			/*
 			 * return the host file name given the UNIX name
@@ -1895,7 +1895,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 			tofree = 0;
 		if(nv_isattr(np,NV_LJUST|NV_RJUST) && nv_isattr(np,NV_LJUST|NV_RJUST)!=(NV_LJUST|NV_RJUST))
 			tofree = 0;
-		if(!sp)
+		if(unlikely(!sp))  /* acc. gcov */
 			*vpp = NULL;
 		else
 		{
@@ -1905,7 +1905,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 			if(sp==*vpp && !(flags&NV_APPEND))
 				return;
 			dot = strlen(sp);
-			if(nv_isattr(np,NV_BINARY))
+			if(expect(!!(nv_isattr(np,NV_BINARY)),1,0.20))  /* gcov's probability is lower, but this ought not be moved too far away */
 			{
 				size_t oldsize = (flags&NV_APPEND)?nv_size(np):0;
 				if(flags&NV_RAW)
@@ -1970,7 +1970,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					}
 				}
 			}
-			if(size==0 || tofree || dot || !(cp = *vpp))
+			if(likely(size==0 || tofree || dot || !(cp = *vpp)))
 			{
 				if(dot==0 && !nv_isattr(np,NV_LJUST|NV_RJUST))
 				{
@@ -1990,7 +1990,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 					nv_offattr(np,NV_NOFREE);
 				}
 			}
-			if(dot)
+			if(likely(dot))  /* acc. gcov */
 			{
 				char c = cp[dot+append];
 				strncpy(cp+append, sp, dot+1);
@@ -2014,7 +2014,7 @@ void nv_putval(Namval_t *np, const char *sp, int flags)
 		}
 		if(flags&NV_APPEND)
 			stkseek(sh.stk,offset);
-		if(tofree && tofree!=Empty && tofree!=AltEmpty)
+		if(unlikely(tofree && tofree!=Empty && tofree!=AltEmpty))  /* acc. gcov */
 			free((void*)tofree);
 	}
 	if(!was_local && ((flags&NV_EXPORT) || nv_isattr(np,NV_EXPORT)))
@@ -2142,10 +2142,10 @@ static void pushnam(Namval_t *np, void *data)
 {
 	char *value;
 	struct adata *ap = (struct adata*)data;
-	if(strchr(np->nvname,'.'))
+	if(unlikely(strchr(np->nvname,'.')))  /* 4/1165176 acc. gcov */
 		return;
 	ap->tp = 0;
-	if(value=nv_getval(np))
+	if(likely(value=nv_getval(np)))  /* 1165172/1165144 acc. gcov */
 		*ap->argnam++ = staknam(np,value);
 }
 
@@ -2194,7 +2194,7 @@ static int scanfilter(Namval_t *np, struct scan *sp)
 	int k=np->nvflag;
 	struct adata *tp = (struct adata*)sp->scandata;
 	char	*cp;
-	if(!is_abuiltin(np) && tp && tp->tp && nv_type(np)!=tp->tp)
+	if(unlikely(!is_abuiltin(np) && tp && tp->tp && nv_type(np)!=tp->tp)) /* 9056/9915752 acc. gcov */
 		return 0;
 	if(sp->scanmask==NV_TABLE && nv_isvtree(np))
 		k = NV_TABLE;
@@ -2367,12 +2367,12 @@ void	nv_unset(Namval_t *np,int flags)
 	{
 		struct Ufunction *rp = np->nvalue;
 		struct slnod *slp = np->nvmeta;
-		if(rp->running)
+		if(unlikely(rp->running))  /* 34/2000897 acc. gcov */
 		{
 			rp->running |= 1;
 			return;
 		}
-		if(slp && !nv_isattr(np,NV_NOFREE))
+		if(likely(slp && !nv_isattr(np,NV_NOFREE)))  /* 2000791/2000863 gcov */
 		{
 			struct Ufunction *rq;
 			/* free function definition */
@@ -2408,7 +2408,7 @@ void	nv_unset(Namval_t *np,int flags)
 				}
 				dtclose(rp->sdict);
 			}
-			if(slp->slptr)
+			if(unlikely(slp->slptr))  /* 66/2000791 gcov */
 			{
 				Stk_t *sp = slp->slptr;
 				slp->slptr = NULL;
@@ -2535,7 +2535,7 @@ static void put_optimize(Namval_t* np,const char *val,int flags,Namfun_t *fp)
 	optimize_clear(np,fp);
 }
 
-static Namfun_t *clone_optimize(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
+static pure Namfun_t *clone_optimize(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 {
 	NOT_USED(np);
 	NOT_USED(mp);
@@ -2550,7 +2550,7 @@ void nv_optimize(Namval_t *np)
 {
 	Namfun_t *fp;
 	struct optimize *op, *xp = 0;
-	if(nv_getoptimize())
+	if(likely(nv_getoptimize()))
 	{
 		if(np==SH_LINENO)
 		{
@@ -2625,13 +2625,13 @@ void sh_optclear(void *old)
  *   If the value of <np> is an integer, the string returned will
  *   be overwritten by the next call to nv_getval.
  *
- *   If <np> has no value, 0 is returned.
+ *   If <np> has no value, NULL is returned.
  */
 char *nv_getval(Namval_t *np)
 {
 	void *vp = np->nvalue;	/* value pointer */
 	size_t n;
-	if(!nv_local && nv_getoptimize())
+	if(!nv_local && unlikely(nv_getoptimize()))
 		nv_optimize(np);
 	if((!np->nvfun || !np->nvfun->disc) && !nv_isattr(np,NV_ARRAY|NV_INTEGER|NV_FUNCT|NV_REF))
 		goto done;
@@ -2738,12 +2738,12 @@ done:
 	return vp;
 }
 
-Sfdouble_t nv_getnum(Namval_t *np)
+hot NONNULL(1) Sfdouble_t nv_getnum(Namval_t *np)
 {
 	void *vp;	/* value pointer */
 	Sfdouble_t r=0;
 	char *str;
-	if(!nv_local && nv_getoptimize())
+	if(!nv_local && unlikely(nv_getoptimize()))
 		nv_optimize(np);
 	if(nv_istable(np))
 	{
@@ -2769,7 +2769,7 @@ Sfdouble_t nv_getnum(Namval_t *np)
      	if(nv_isattr(np,NV_INTEGER))
 	{
 		vp = np->nvalue;
-		if(!vp || vp==Empty)
+		if(unlikely(!vp || vp==Empty))
 			r = 0;
 		else if(nv_isattr(np, NV_DOUBLE)==NV_DOUBLE)
 		{
@@ -2822,7 +2822,7 @@ void nv_newattr(Namval_t *np, unsigned newatts, ssize_t size)
 	newatts &= ~NV_NODISC;
 
 	/* check for restrictions */
-	if(sh_isoption(SH_RESTRICTED) && ((sp=nv_name(np))==nv_name(PATHNOD) || sp==nv_name(SHELLNOD) || sp==nv_name(ENVNOD) || sp==nv_name(FPATHNOD)))
+	if(unlikely(sh_isoption(SH_RESTRICTED)) && ((sp=nv_name(np))==nv_name(PATHNOD) || sp==nv_name(SHELLNOD) || sp==nv_name(ENVNOD) || sp==nv_name(FPATHNOD)))
 	{
 		errormsg(SH_DICT,ERROR_exit(1),e_restricted,nv_name(np));
 		UNREACHABLE();
@@ -2884,6 +2884,7 @@ void nv_newattr(Namval_t *np, unsigned newatts, ssize_t size)
 	}
 	do
 	{
+		size_t alloc_size = 0;
 		nv_setsize(np,oldsize);
 		np->nvflag = oldatts;
 		if (sp = nv_getval(np))
@@ -2894,7 +2895,8 @@ void nv_newattr(Namval_t *np, unsigned newatts, ssize_t size)
 				if(!*sp) sp--;		/* if number was 0, leave one zero */
 			}
 			len = strlen(sp);
-			cp = (char*)sh_malloc((len >= (unsigned)size ? len : (unsigned)size) + 1);
+			alloc_size = (len >= (size_t)size ? len : (size_t)size) + 1;
+			cp = (char*)sh_malloc(alloc_size);
 			strcpy(cp, sp);
 			if(sp && (mp=nv_opensub(np)))
 			{
@@ -2933,10 +2935,11 @@ void nv_newattr(Namval_t *np, unsigned newatts, ssize_t size)
 		{
 			if(!mp)
 				nv_putval (np, cp, NV_RDONLY);
-			free(cp);
+			free_sized(cp,alloc_size);
+			alloc_size = 0;
 			cp = 0;
 		}
-		if(sh.subshell && !sh.subshare && nv_isattr(np,NV_ARRAY|NV_RDONLY)==NV_ARRAY && sp && sp!=Empty && sp!=AltEmpty && array_assoc(ap))
+		if(sh.subshell && !sh.subshare && nv_isattr(np,NV_ARRAY|NV_RDONLY)==NV_ARRAY && unlikely(sp && sp!=Empty && sp!=AltEmpty && array_assoc(ap)))
 			free(sp);
 	}
 	while(ap && nv_nextsub(np));
@@ -3211,12 +3214,12 @@ int nv_rename(Namval_t *np, int flags)
 			sfwrite(sh.strbuf,")\n",2);
 			cp = sfstruse(sh.strbuf);
 			iop = sfopen(NULL,cp,"s");
-			if(trace)
+			if(unlikely(trace))
 				sh_offoption(SH_XTRACE);
 			sh.var_tree = last_root;
 			sh_eval(iop,SH_READEVAL);
 			sh.var_tree = save_root;
-			if(trace)
+			if(unlikely(trace))
 				sh_onoption(SH_XTRACE);
 			if(flags&NV_MOVE)
 				sh_setmatch(0,0,0,0,0);
@@ -3432,7 +3435,7 @@ void sh_unscope(void)
 {
 	Dt_t *root = sh.var_tree;
 	Dt_t *dp = dtview(root,NULL);
-	if(dp)
+	if(likely(dp))
 	{
 		table_unset(root,NV_RDONLY|NV_NOSCOPE,dp);
 		if(sh.st.real_fun && dp==sh.st.real_fun->sdict)
@@ -3490,7 +3493,7 @@ char *nv_name(Namval_t *np)
 #endif /* SHOPT_NAMESPACE */
 		return np->nvname;
 	}
-	if(!np->nvname)
+	if(unlikely(!np->nvname))
 		goto skip;
 #if SHOPT_FIXEDARRAY
 	ap = nv_arrayptr(np);

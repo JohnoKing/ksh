@@ -110,6 +110,7 @@ typedef struct _arith_
 #define NOFLOAT		020	/* illegal with floating point */
 #define PRECMASK	017	/* precision bit mask */
 
+#define A_EXPECTNONE	-1
 #define A_EOF		1
 #define A_NEQ		2
 #define A_NOT		3
@@ -199,6 +200,6 @@ extern const struct 		mathtab shtab_math[];
 
 extern Sfdouble_t arith_strval(const char*,char**,Sfdouble_t(*)(const char**,struct lval*,int,Sfdouble_t),int);
 extern Arith_t *arith_compile(const char*,char**,Sfdouble_t(*)(const char**,struct lval*,int,Sfdouble_t),int);
-extern Sfdouble_t arith_exec(Arith_t*);
+extern Sfdouble_t arith_exec(Arith_t*) NONNULL(1);
 
 #endif /* !_STREVAL_H */

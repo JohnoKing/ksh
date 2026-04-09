@@ -307,7 +307,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 					return NULL;
 				memset(b, 0, n + m);
 			}
-			else if (!(b = newof(0, Hash_bucket_t, 0, n + m)))
+			else if (unlikely(!(b = newof(0, Hash_bucket_t, 0, n + m))))
 				return NULL;
 			b->name = (char*)b + n;
 			memcpy(b->name, name, m);
@@ -320,7 +320,7 @@ hashlook(Hash_table_t* tab, const char* name, long flags, const char* value)
 					return NULL;
 				memset(b, 0, n);
 			}
-			else if (!(b = newof(0, Hash_bucket_t, 0, n)))
+			else if (unlikely(!(b = newof(0, Hash_bucket_t, 0, n))))
 				return NULL;
 			b->name = (char*)name;
 		}

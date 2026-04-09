@@ -266,7 +266,7 @@ int    b_typeset(int argc,char *argv[],Shbltin_t *context)
 	{
 		if(tdata.aflag==0)
 			tdata.aflag = *opt_info.option;
-		switch(n)
+		switch(expect(n,'H',0.01))
 		{
 			case 'a':
 				flag |= NV_IARRAY;
@@ -1389,7 +1389,7 @@ static int unall(int argc, char **argv, Dt_t *troot)
 		sh_pushcontext(&buff,1);
 		jmpval = sigsetjmp(buff.buff,0);
 		np = 0;
-		if(jmpval==0)
+		if(likely(jmpval==0))
 		{
 #if SHOPT_NAMESPACE
 			if(sh.namespace && troot==sh.fun_tree && !sh.prefix && *name!='.')
@@ -1412,7 +1412,7 @@ static int unall(int argc, char **argv, Dt_t *troot)
 			np=nv_open(name,troot,NV_NOADD|nflag);
 		}
 		sh_popcontext(&buff);
-		if(jmpval)
+		if(unlikely(jmpval))
 		{
 			r = 1;
 			continue;

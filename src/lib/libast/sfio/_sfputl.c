@@ -33,7 +33,7 @@ ssize_t _sfputl(Sfio_t*		f,	/* write a portable long to this stream */
 	ptrdiff_t	p;
 	uchar		c[N_ARRAY];
 
-	if(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
+	if(unlikely(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0)))
 		return -1;
 	SFLOCK(f,0);
 

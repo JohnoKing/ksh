@@ -144,7 +144,7 @@ b_mktemp(int argc, char** argv, Shbltin_t* context)
 	}
 	for (;;)
 	{
-		if (!pathtemp(path, sizeof(path), dir, pfx, fdp))
+		if (unlikely(!pathtemp(path, sizeof(path), dir, pfx, fdp)))
 		{
 			if (quiet)
 				error_info.errors++;

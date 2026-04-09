@@ -57,8 +57,8 @@ regstat_t* regstat(const regex_t* \fIre\fP);
 regex_t*   regcache(const char* \fIpattern\fP, regflags_t \fIflags\fP, int* \fIpcode\fP);
 
 int        regnexec(const regex_t* \fIre\fP, const char* \fIsubject\fP, size_t \fIsize\fP, size_t \fInmatch\fP, regmatch_t* \fImatch\fP, regflags_t \fIflags\fP);
-void       regfatal(regex_t* \fIre\fP, int \fIlevel\fP, int \fIcode\fP);
-void       regfatalpat(regex_t* \fIre\fP, int \fIlevel\fP, int \fIcode\fP, const char* \fIpattern\fP);
+cold void  regfatal(regex_t* \fIre\fP, int \fIlevel\fP, int \fIcode\fP);
+cold void  regfatalpat(regex_t* \fIre\fP, int \fIlevel\fP, int \fIcode\fP, const char* \fIpattern\fP);
 
 int        regsubcomp(regex_t* \fIre\fP, const char* \fIstr\fP, const regflags_t* \fImap\fP, int \fIminmatch\fP, regflags_t \fIflags\fP);
 int        regsubexec(const regex_t* \fIre\fP, const char* \fIsubject\fP, size_t \fInmatch\fP, regmatch_t* match);

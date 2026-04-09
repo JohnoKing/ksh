@@ -225,6 +225,15 @@ extern char*		setlocale(int, const char*);
 #endif
 
 /*
+ * Define a three-bit type for optimal memory usage (C23-only).
+ */
+#if __STDC_VERSION__ >= 202311L
+typedef unsigned _BitInt(3)	uint_least3_t;
+#else
+typedef uint8_t			uint_least3_t;
+#endif
+
+/*
  * This struct defines all the global ast.* variables.
  * It is initialized in misc/state.c, and not by name -- so the order must be kept in sync.
  * Changing the order also breaks ABI compat for dynamic libraries.
@@ -254,7 +263,7 @@ typedef struct
 	int		(*alpha)(wchar_t);
 	int		(*conv)(char*, wchar_t);
 	int		(*len)(const char*, size_t);
-	int		(*towc)(wchar_t*, const char*, size_t);
+	int		(*towc)(wchar_t *restrict, const char *restrict, size_t);
 	int		(*width)(wchar_t);
 	}		mb;
 #endif

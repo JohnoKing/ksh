@@ -21,12 +21,13 @@
 
 /*
  * copy t into s, return a pointer to the end of s ('\0')
+ * the buffers can overlap
  */
 
 char*
 strcopy(char* s, const char* t)
 {
-	if (!t)
+	if (unlikely(!t))
 		return s;
 	while (*s++ = *t++);
 	return s - 1;

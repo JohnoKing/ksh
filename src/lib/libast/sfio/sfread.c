@@ -32,13 +32,13 @@ ssize_t sfread(Sfio_t*	f,	/* read from this stream. 	*/
 	ssize_t		r;
 	int		local, justseek;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);
 	justseek = f->bits&SFIO_JUSTSEEK; f->bits &= ~SFIO_JUSTSEEK;
 
-	if(!buf)
+	if(unlikely(!buf))
 		return n == 0 ? 0 : -1;
 
 	/* release peek lock */

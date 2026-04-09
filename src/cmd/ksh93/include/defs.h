@@ -96,19 +96,19 @@ extern char*	sh_setenviron(const char*);
 #define SH_FUNEVAL		0x10000	/* for sh_eval for function load */
 
 extern char 		**sh_argbuild(int*,const struct comnod*,int);
-extern struct dolnod	*sh_argfree(struct dolnod*,int);
+extern struct dolnod	*sh_argfree(struct dolnod*);
 extern struct dolnod	*sh_argnew(char*[],struct dolnod**);
 extern void 		*sh_argopen(void);
 extern struct argnod	*sh_argprocsub(struct argnod*);
 extern void 		sh_argreset(struct dolnod*,struct dolnod*);
-extern void		sh_assignok(Namval_t*,int);
+extern void		sh_assignok(Namval_t*,int) NONNULL(1);
 extern struct dolnod	*sh_arguse(void);
 extern char		*sh_checkid(char*,char*);
 extern void		sh_chktrap(void);
 extern void		sh_deparse(Sfio_t*,const Shnode_t*,int,int);
 extern int		sh_debug(const char*,const char*,const char*,char *const[],int);
 extern char 		**sh_envgen(void);
-extern Sfdouble_t	sh_arith(const char*);
+extern hot Sfdouble_t	sh_arith(const char*);
 extern void		*sh_arithcomp(char*);
 extern pid_t 		sh_fork(int,int*);
 extern pid_t		_sh_fork(pid_t, int ,int*);
@@ -129,8 +129,8 @@ extern Sfio_t		*sh_sfeval(char*[]);
 extern void		sh_setmatch(const char*,ptrdiff_t,ssize_t,ssize_t[],int);
 extern void		sh_scope(struct argnod*, int);
 extern Namval_t		*sh_scoped(Namval_t*);
-extern Dt_t		*sh_subtracktree(int);
-extern Dt_t		*sh_subfuntree(int);
+extern Dt_t		*sh_subtracktree(int) returns_nonnull;
+extern Dt_t		*sh_subfuntree(int) returns_nonnull;
 extern void		sh_subjobcheck(pid_t);
 extern int		sh_subsavefd(int);
 extern void		sh_subtmpfile(void);
@@ -143,7 +143,7 @@ extern int		sh_type(const char*);
 extern void		sh_unscope(void);
 extern void		sh_clear_subshell_pwdfd(void);
 #if _lib_openat
-    extern int		sh_diropenat(int,const char *);
+    extern int		sh_diropenat(int,const char *) NONNULL(2);
     extern void		sh_pwdupdate(int);
     extern int		sh_validate_subpwdfd(void);
 #endif /* _lib_openat */
@@ -152,11 +152,11 @@ extern void		sh_clear_subshell_pwdfd(void);
 #endif /* SHOPT_NAMESPACE */
 
 /* malloc related wrappers */
-extern void		*sh_malloc(size_t size);
-extern void		*sh_realloc(void *ptr, size_t size);
-extern void		*sh_calloc(size_t nmemb, size_t size);
-extern char		*sh_strdup(const char *s);
-extern void		*sh_memdup(const void *s, size_t n);
+extern void		*sh_malloc(size_t size) malloc_attr returns_nonnull;
+extern void		*sh_realloc(void *ptr, size_t size) returns_nonnull;
+extern void		*sh_calloc(size_t nmemb, size_t size) malloc_attr returns_nonnull;
+extern char		*sh_strdup(const char *s) malloc_attr NONNULL(1) returns_nonnull;
+extern void		*sh_memdup(const void *s, size_t n) malloc_attr NONNULL(1) returns_nonnull;
 extern char		*sh_getcwd(void);
 #define new_of(type,x)	((type*)sh_malloc(sizeof(type)+(x)))
 #define sh_newof(p,t,n,x)	((p)?(t*)sh_realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)sh_calloc(1,sizeof(t)*(n)+(x)))

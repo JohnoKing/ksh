@@ -45,7 +45,7 @@ context_open(Sfio_t* ip, size_t before, size_t after, Context_list_f listf, void
 {
 	Context_t*	cp;
 
-	if (!(cp = newof(0, Context_t, 1, (before + after) * sizeof(Context_line_t))))
+	if (unlikely(!(cp = newof(0, Context_t, 1, (before + after) * sizeof(Context_line_t)))))
 		return 0;
 	cp->ip = ip;
 	cp->before = before;
@@ -90,7 +90,7 @@ context_line(Context_t* cp)
 	if (cp->cur >= cp->end)
 	{
 		lp->drop = cp->buf;
-		if (!(cp->buf = oldof(0, char, CONTEXT_BLOCK, 0)))
+		if (unlikely(!(cp->buf = oldof(0, char, CONTEXT_BLOCK, 0))))
 			return 0;
 		cp->cur = cp->buf;
 		if ((r = sfread(cp->ip, cp->buf, CONTEXT_BLOCK)) <= 0)
@@ -113,7 +113,7 @@ context_line(Context_t* cp)
 	else
 	{
 		m = roundof(n, CONTEXT_LINE);
-		if (!(t = oldof(0, char, m, 0)))
+		if (unlikely(!(t = oldof(0, char, m, 0))))
 			return 0;
 		lp->data = t;
 		lp->span = 1;
@@ -121,7 +121,7 @@ context_line(Context_t* cp)
 		memcpy(t, cp->cur, n);
 		t += n;
 		lp->drop = cp->buf;
-		if (!(cp->buf = oldof(0, char, CONTEXT_BLOCK, 0)))
+		if (unlikely(!(cp->buf = oldof(0, char, CONTEXT_BLOCK, 0))))
 			return 0;
 		do
 		{
@@ -134,7 +134,7 @@ context_line(Context_t* cp)
 				r = t - lp->data;
 				m = (size_t)(r + (s - cp->buf));
 				m = roundof(m, CONTEXT_LINE);
-				if (!(lp->data = oldof(lp->data, char, m, 0)))
+				if (unlikely(!(lp->data = oldof(lp->data, char, m, 0))))
 					return 0;
 				t = lp->data + r;
 			}

@@ -35,7 +35,7 @@ Sfio_t* sfnew(Sfio_t*		oldf,	/* old stream to be reused */
 	Sfio_t*		f;
 	unsigned short	sflags;
 
-	if(!(flags&SFIO_RDWR))
+	if(unlikely(!(flags&SFIO_RDWR)))
 		return NULL;
 
 	sflags = 0;
@@ -83,7 +83,7 @@ Sfio_t* sfnew(Sfio_t*		oldf,	/* old stream to be reused */
 		}
 
 		if(!f)
-		{	if(!(f = (Sfio_t*)malloc(sizeof(Sfio_t))) )
+		{	if(unlikely(!(f = (Sfio_t*)malloc(sizeof(Sfio_t)))) )
 				return NULL;
 			SFCLEAR(f);
 		}

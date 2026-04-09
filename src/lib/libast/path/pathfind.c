@@ -58,7 +58,7 @@ pathinclude(const char* dir)
 		for (dp = state.head; dp; dp = dp->next)
 			if (streq(dir, dp->dir))
 				return 0;
-		if (!(dp = oldof(0, Dir_t, 1, strlen(dir))))
+		if (unlikely(!(dp = oldof(0, Dir_t, 1, strlen(dir)))))
 			return -1;
 		strcpy(dp->dir, dir);
 		dp->next = 0;

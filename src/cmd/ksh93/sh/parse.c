@@ -191,7 +191,7 @@ static void check_typedef(struct comnod *tp, char intypeset)
 		{
 			if(!(ap->argflag&ARG_RAW) || strncmp(ap->argval,"--",2))
 				break;
-			if(sh_isoption(SH_NOEXEC))
+			if(unlikely(sh_isoption(SH_NOEXEC)))
 				typeset_order(ap->argval,tp->comline);
 			if(strncmp(ap->argval,"-T",2)==0)
 			{
@@ -223,7 +223,7 @@ static void check_typedef(struct comnod *tp, char intypeset)
 		}
 		else while((cp = *argv++) && strncmp(cp,"--",2))
 		{
-			if(sh_isoption(SH_NOEXEC))
+			if(unlikely(sh_isoption(SH_NOEXEC)))
 				typeset_order(cp,tp->comline);
 			if(strncmp(cp,"-T",2)==0)
 			{
@@ -644,7 +644,7 @@ static Shnode_t	*term(Lex_t *lexp,int flag)
 	else
 		token = sh_lex(lexp);
 	/* check to see if pipeline is to be timed */
-	if(token==TIMESYM || token==NOTSYM)
+	if(token==NOTSYM || unlikely(token==TIMESYM))
 	{
 		t = getnode(parnod);
 		t->par.partyp=TTIME;
@@ -885,7 +885,7 @@ static Shnode_t *funct(Lex_t *lexp)
 		sh_syntax(lexp,0);
 	sh_pushcontext(&buff,1);
 	jmpval = sigsetjmp(buff.buff,0);
-	if(jmpval == 0)
+	if(likely(jmpval == 0))
 	{
 		/* create a new stack to compile the command */
 		savstak = sh.stk;
@@ -944,7 +944,7 @@ static Shnode_t *funct(Lex_t *lexp)
 #if SHOPT_KIA
 	kia.current = current;
 #endif /* SHOPT_KIA */
-	if(jmpval)
+	if(unlikely(jmpval))
 	{
 		if(slp && slp->slptr)
 		{
@@ -1509,7 +1509,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 				sh_syntax(lexp,0);
 			*argtail = argp;
 			argtail = &(argp->argnxt.ap);
-			if(!(lexp->assignok=key_on)  && !(flag&SH_NOIO) && sh_isoption(SH_NOEXEC))
+			if(!(lexp->assignok=key_on)  && !(flag&SH_NOIO) && unlikely(sh_isoption(SH_NOEXEC)))
 				lexp->assignok = SH_COMPASSIGN;
 			lexp->aliasok = 0;
 		}
@@ -1624,7 +1624,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 	}
 #endif /* SHOPT_KIA */
 	/* noexec: warn about obsolescent options passed to set and alias */
-	if(sh_isoption(SH_NOEXEC) && t->comnamp)
+	if(unlikely(sh_isoption(SH_NOEXEC)) && t->comnamp)
 	{
 		int lineno = sh.inlineno - (lexp->token == NL);
 		if((Namval_t*)t->comnamp==SYSSET)

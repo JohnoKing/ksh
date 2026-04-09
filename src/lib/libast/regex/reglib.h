@@ -72,7 +72,7 @@ typedef struct regsubop_s
 #if AST_NOMULTIBYTE
 #define MBSIZE(p)	((p),1)
 #else
-#define MBSIZE(p)	((ast.mb.tmp_i = mbsize(p)) > 0 ? ast.mb.tmp_i : 1)
+#define MBSIZE(p)	(likely((ast.mb.tmp_i = mbsize(p)) > 0) ? ast.mb.tmp_i : 1)
 #endif /* AST_NOMULTIBYTE */
 
 #undef	RE_DUP_MAX			/* POSIX puts this in limits.h!	*/
@@ -570,6 +570,6 @@ extern State_t		state;
 extern void*		alloc(regdisc_t*, void*, size_t);
 extern regclass_t	classfun(int);
 extern void		drop(regdisc_t*, Rex_t*);
-extern int		fatal(regdisc_t*, int, const char*);
+extern int		fatal(regdisc_t*, int, const char*) cold;
 
 #endif

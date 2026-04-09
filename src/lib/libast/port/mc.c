@@ -238,7 +238,7 @@ mcopen(Sfio_t* ip)
 	 * allocate the region
 	 */
 
-	if (!(vm = vmopen()) || !(mc = vmnewof(vm, 0, Mc_t, 1, 0)))
+	if (unlikely(!(vm = vmopen())) || unlikely(!(mc = vmnewof(vm, 0, Mc_t, 1, 0))))
 	{
 		errno = oerrno;
 		return NULL;
@@ -251,7 +251,7 @@ mcopen(Sfio_t* ip)
 		 * read the translation record
 		 */
 
-		if (!(sp = sfgetr(ip, 0, 0)) || !(mc->translation = vmstrdup(vm, sp)))
+		if (!(sp = sfgetr(ip, 0, 0)) || unlikely(!(mc->translation = vmstrdup(vm, sp))))
 			goto bad;
 
 		/*
@@ -274,20 +274,20 @@ mcopen(Sfio_t* ip)
 		if (sfeof(ip))
 			goto bad;
 	}
-	else if (!(mc->translation = vmnewof(vm, 0, char, 1, 0)))
+	else if (unlikely(!(mc->translation = vmnewof(vm, 0, char, 1, 0))))
 		goto bad;
 
 	/*
 	 * allocate the remaining space
 	 */
 
-	if (!(mc->set = vmnewof(vm, 0, Mcset_t, (size_t)mc->num + 1, 0)))
+	if (unlikely(!(mc->set = vmnewof(vm, 0, Mcset_t, (size_t)mc->num + 1, 0))))
 		goto bad;
 	if (!ip)
 		return mc;
-	if (!(mp = vmnewof(vm, 0, char*, mc->nmsgs + (size_t)mc->num + 1, 0)))
+	if (unlikely(!(mp = vmnewof(vm, 0, char*, mc->nmsgs + (size_t)mc->num + 1, 0))))
 		goto bad;
-	if (!(rp = sp = vmalloc(vm, mc->nstrs + 1)))
+	if (unlikely(!(rp = sp = vmalloc(vm, mc->nstrs + 1))))
 		goto bad;
 
 	/*
@@ -322,7 +322,7 @@ mcopen(Sfio_t* ip)
 
 	if (sfread(ip, rp, mc->nstrs) != (ssize_t)mc->nstrs || sfgetc(ip) != EOF)
 		goto bad;
-	if (!(mc->tmp = sfstropen()))
+	if (unlikely(!(mc->tmp = sfstropen())))
 		goto bad;
 	mc->cvt = iconv_open("", "utf");
 	errno = oerrno;
@@ -428,7 +428,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 		if (set > mc->gen)
 		{
 			i = MC_SET_MAX;
-			if (!(sp = vmnewof(mc->vm, 0, Mcset_t, (size_t)i + 1, 0)))
+			if (unlikely(!(sp = vmnewof(mc->vm, 0, Mcset_t, (size_t)i + 1, 0))))
 				return -1;
 			mc->gen = i;
 			for (i = 1; i <= mc->num; i++)
@@ -454,7 +454,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 					i = 2 * num;
 				if (i > MC_NUM_MAX)
 					i = MC_NUM_MAX;
-				if (!(mp = vmnewof(mc->vm, 0, char*, (size_t)i + 1, 0)))
+				if (unlikely(!(mp = vmnewof(mc->vm, 0, char*, (size_t)i + 1, 0))))
 					return -1;
 				mc->gen = i;
 				sp->msg = mp;
@@ -466,7 +466,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 				i = 2 * mc->gen;
 				if (i > MC_NUM_MAX)
 					i = MC_NUM_MAX;
-				if (!(mp = vmnewof(mc->vm, sp->msg, char*, (size_t)i + 1, 0)))
+				if (unlikely(!(mp = vmnewof(mc->vm, sp->msg, char*, (size_t)i + 1, 0))))
 					return -1;
 				sp->gen = i;
 				sp->msg = mp;
@@ -495,7 +495,7 @@ mcput(Mc_t* mc, int set, int num, const char* msg)
 	 * allocate, add and adjust the string table size
 	 */
 
-	if (!(s = vmstrdup(mc->vm, msg)))
+	if (unlikely(!(s = vmstrdup(mc->vm, msg))))
 		return -1;
 	sp->msg[num] = s;
 	mc->nstrs += strlen(s) + 1;

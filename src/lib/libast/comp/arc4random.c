@@ -118,21 +118,21 @@ static int
 _rs_allocate(struct _rs **rsp, struct _rsx **rsxp)
 {
 #if _mmap_anon && defined(MAP_PRIVATE)
-	if ((*rsp = mmap(NULL, sizeof(**rsp), PROT_READ|PROT_WRITE,
-	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED)
+	if (unlikely((*rsp = mmap(NULL, sizeof(**rsp), PROT_READ|PROT_WRITE,
+	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED))
 		return -1;
 
-	if ((*rsxp = mmap(NULL, sizeof(**rsxp), PROT_READ|PROT_WRITE,
-	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED)
+	if (unlikely((*rsxp = mmap(NULL, sizeof(**rsxp), PROT_READ|PROT_WRITE,
+	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED))
 	{
 		munmap(*rsp, sizeof(**rsp));
 		*rsp = NULL;
 		return -1;
 	}
 #else
-	if ((*rsp = calloc(1, sizeof(**rsp))) == NULL)
+	if (unlikely((*rsp = calloc(1, sizeof(**rsp))) == NULL))
 		return -1;
-	if ((*rsxp = calloc(1, sizeof(**rsxp))) == NULL)
+	if (unlikely((*rsxp = calloc(1, sizeof(**rsxp))) == NULL))
 	{
 		free(*rsp);
 		*rsp = NULL;

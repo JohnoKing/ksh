@@ -87,12 +87,12 @@ static int rev_char(Sfio_t *in, Sfio_t *out)
 			if (sfwrite(out, bp, (size_t)(cp - bp)) < 0)
 			{
 				if (wp)
-					free(wp);
+					free_sized(wp, sizeof(wchar_t) * w);
 				return -1;
 			}
 		}
 		if (wp)
-			free(wp);
+			free_sized(wp, sizeof(wchar_t) * w);
 	}
 	else
 		while(cp = bp = sfgetr(in,'\n',0))

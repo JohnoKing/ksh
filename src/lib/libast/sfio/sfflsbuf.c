@@ -34,7 +34,7 @@ ptrdiff_t _sfflsbuf(Sfio_t*	f,	/* write out the buffered content of this stream 
 	int		local, isall;
 	ptrdiff_t	inpc = c;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);

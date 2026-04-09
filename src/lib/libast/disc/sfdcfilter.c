@@ -138,7 +138,7 @@ int sfdcfilter(Sfio_t*		f,	/* stream to filter data	*/
 	/* unbuffered stream */
 	sfsetbuf(filter,NULL,0);
 
-	if(!(fi = (Filter_t*)malloc(sizeof(Filter_t))) )
+	if(unlikely(!(fi = (Filter_t*)malloc(sizeof(Filter_t)))) )
 	{	sfclose(filter);
 		return -1;
 	}
@@ -152,7 +152,7 @@ int sfdcfilter(Sfio_t*		f,	/* stream to filter data	*/
 
 	if(sfdisc(f,(Sfdisc_t*)fi) != (Sfdisc_t*)fi)
 	{	sfclose(filter);
-		free(fi);
+		free_sized(fi, sizeof(Filter_t));
 		return -1;
 	}
 

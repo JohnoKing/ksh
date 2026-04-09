@@ -292,7 +292,7 @@ tmlocal(time_t now)
 	}
 	else
 #endif
-	if ((s = getenv("TZNAME")) && *s && (s = strdup(s)))
+	if ((s = getenv("TZNAME")) && *s && likely(s = strdup(s)))
 	{
 		/*
 		 * BSD

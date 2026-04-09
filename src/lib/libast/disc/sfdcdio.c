@@ -152,11 +152,19 @@ int sfdcdio(Sfio_t* f, size_t bufsize)
 	if(bufsize > dio.d_maxiosz)
 		bufsize = dio.d_maxiosz;
 
-	if(!(di = (Direct_t*)malloc(sizeof(Direct_t))) )
+	if(unlikely(!(di = (Direct_t*)malloc(sizeof(Direct_t)))) )
 		goto no_direct;
 
-	if(!(buf = memalign(dio.d_mem,bufsize)) )
-	{	free(di);
+#if _lib_aligned_alloc
+	buf = aligned_alloc(dio.d_mem,bufsize);
+#elif _lib_memalign
+	buf = memalign(dio.d_mem,bufsize);
+#else
+	if(posix_memalign(&buf,dio.d_mem,bufsize))
+		buf = NULL;
+#endif
+	if(!buf)
+	{	free_sized(di,sizeof(Direct_t));
 		goto no_direct;
 	}
 
@@ -164,8 +172,8 @@ int sfdcdio(Sfio_t* f, size_t bufsize)
 	if(sfsetbuf(f,buf,0) == buf)
 		sfset(f,SFIO_MALLOC,1);
 	else
-	{	free(buf);
-		free(di);
+	{	free_aligned_sized(buf,dio.d_mem,bufsize);
+		free_sized(di,sizeof(Direct_t));
 		goto no_direct;
 	}
 
@@ -177,7 +185,7 @@ int sfdcdio(Sfio_t* f, size_t bufsize)
 	di->dio = dio;
 
 	if(sfdisc(f,(Sfdisc_t*)di) != (Sfdisc_t*)di)
-	{	free(di);
+	{	free_sized(di,sizeof(Direct_t));
 	no_direct:
 		cntl &= ~FDIRECT;
 		(void)fcntl(f->file,F_SETFL,cntl);

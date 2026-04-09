@@ -36,7 +36,7 @@
 #define FWIDE(f,r) \
 	do \
 	{ \
-		if (fwide(f, 0) < 0) \
+		if (unlikely(fwide(f, 0) < 0)) \
 			return r; \
 		f->bits |= SFIO_WC; \
 	} while (0)

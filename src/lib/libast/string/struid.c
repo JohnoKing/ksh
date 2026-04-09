@@ -88,7 +88,7 @@ struid(const char* name)
 			id = -1;
 #endif
 	}
-	if (dict && (ip = newof(0, Id_t, 1, strlen(name))))
+	if (dict && likely(ip = newof(0, Id_t, 1, strlen(name))))
 	{
 		strcpy(ip->name, name);
 		ip->id = id >= 0 ? id : -2;

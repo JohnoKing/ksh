@@ -47,7 +47,7 @@ hashscan(Hash_table_t* tab, int flags)
 
 	static Hash_bucket_t		empty;
 
-	if (!(pos = newof(0, Hash_position_t, 1, 0))) return NULL;
+	if (unlikely(!(pos = newof(0, Hash_position_t, 1, 0)))) return NULL;
 	pos->tab = tab->root->last.table = tab;
 	pos->bucket = &empty;
 	pos->slot = tab->table - 1;

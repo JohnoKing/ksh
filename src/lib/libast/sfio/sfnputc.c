@@ -33,11 +33,11 @@ ssize_t sfnputc(Sfio_t*		f,	/* file to write */
 	uchar	buf[128];
 	int	local;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);
-	if(SFMODE(f,local) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,local) < 0)
+	if(unlikely(SFMODE(f,local) != SFIO_WRITE && _sfmode(f,SFIO_WRITE,local) < 0))
 		return -1;
 
 	SFLOCK(f,local);
@@ -47,8 +47,7 @@ ssize_t sfnputc(Sfio_t*		f,	/* file to write */
 		{ ps = buf; p = sizeof(buf); }
 	if((size_t)p > n)
 		p = (ssize_t)n;
-	MEMSET(ps,c,(size_t)p);
-	ps -= p;
+	memset(ps,c,(size_t)p);
 
 	w = (ssize_t)n;
 	if(ps == f->next)

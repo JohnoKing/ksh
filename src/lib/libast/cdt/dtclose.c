@@ -30,13 +30,13 @@ int dtclose(Dt_t* dt)
 	Dt_t		pdt;
 	Dtdisc_t	*disc = dt->disc;
 
-	if(!dt || dt->nview > 0 ) /* can't close if being viewed */
+	if(unlikely(!dt || dt->nview > 0)) /* can't close if being viewed */
 		return -1;
 
 	if(disc && disc->eventf) /* announce closing event */
 		ev = (*disc->eventf)(dt, DT_CLOSE, (void*)1, disc);
 	else	ev = 0;
-	if(ev < 0) /* cannot close */
+	if(unlikely(ev < 0)) /* cannot close */
 		return -1;
 
 	if(dt->view) /* turn off viewing at this point */
@@ -51,7 +51,7 @@ int dtclose(Dt_t* dt)
 		/**/DEBUG_ASSERT(!dt->data);
 	}
 	if(!(type&DT_INDATA) )
-		(void)free(dt);
+		free_sized(dt, sizeof(Dt_t));
 
 	if(disc && disc->eventf) /* announce end of closing activities */
 		(void)(*disc->eventf)(&pdt, DT_ENDCLOSE, NULL, disc);

@@ -67,13 +67,13 @@ local_iswblank(wchar_t wc)
 #define setchar(lp,c)	(lp->lexd.lastc = ((lp->lexd.lastc&~0xff)|(c)))
 #define poplevel(lp)	(lp->lexd.lastc=lex_match[--lp->lexd.level])
 
-static char		*fmttoken(Lex_t*, int);
+static char		*fmttoken(Lex_t*, int) NONNULL(1);
 static struct argnod	*endword(int);
 static int		alias_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
-static void		setupalias(Lex_t*,const char*, Namval_t*);
-static int		comsub(Lex_t*,int);
-static void		nested_here(Lex_t*);
-static int		here_copy(Lex_t*, struct ionod*);
+static void		setupalias(Lex_t*,const char*, Namval_t*) NONNULL(1,2,3);
+static int		comsub(Lex_t*,int) NONNULL(1);
+static void		nested_here(Lex_t*) NONNULL(1);
+static int		here_copy(Lex_t*, struct ionod*) NONNULL(1,2);
 static int 		stack_grow(void);
 static const Sfdisc_t alias_disc = { NULL, NULL, NULL, alias_exceptf, NULL };
 
@@ -129,7 +129,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
 	/* write to history file and to stderr if necessary */
 	if(iop && !sfstacked(iop))
 	{
-		if(sh_isstate(SH_HISTORY) && sh.hist_ptr)
+		if(unlikely(sh_isstate(SH_HISTORY) && sh.hist_ptr))
 			sfwrite(sh.hist_ptr->histfp, buff, size);
 		if(sh_isstate(SH_VERBOSE))
 			sfwrite(sfstderr, buff, size);
@@ -167,7 +167,7 @@ static void lex_advance(Sfio_t *iop, const char *buff, int size, void *context)
  * fill up another input buffer
  * preserves lexical state
  */
-static int lexfill(Lex_t *lp)
+static NONNULL(1) int lexfill(Lex_t *lp)
 {
 	int c;
 	Lex_t savelex;
@@ -199,7 +199,7 @@ static int lexfill(Lex_t *lp)
 /*
  * mode=1 for reinitialization
  */
-Lex_t *sh_lexopen(Lex_t *lp, int mode)
+returns_nonnull Lex_t *sh_lexopen(Lex_t *lp, int mode)
 {
 	if(!lp)
 		lp = sh_newof(0,Lex_t,1,0);
@@ -251,7 +251,7 @@ int sh_lex(Lex_t *lp)
  * This can happen at any point, including in the middle of a token.
  * Therefore, do not save any pointer or offset to use later.
  */
-int sh_lex(Lex_t* lp)
+NONNULL(1) int sh_lex(Lex_t* lp)
 {
 	const char	*state;
 	int		n, c, mode=ST_BEGIN, wordflags=0;
@@ -1344,7 +1344,7 @@ breakloop:
 	{
 		lp->arg->argflag |= ARG_ASSIGN;
 		lp->varnamelength = varnamelength;
-		if(sh_isoption(SH_NOEXEC))
+		if(unlikely(sh_isoption(SH_NOEXEC)))
 		{
 			char *cp = strchr(state, '=');
 			if(cp && strncmp(++cp, "$((", 3) == 0)
@@ -1554,7 +1554,7 @@ breakloop:
  *
  * TODO: to achieve correctness, actually parse command substitutions at parse time.
  */
-static int comsub(Lex_t *lp, int endtok)
+static NONNULL(1) int comsub(Lex_t *lp, int endtok)
 {
 	int n,c;
 	unsigned short count=1;
@@ -1711,7 +1711,7 @@ done:
  * here-doc nested in $(...)
  * allocate ionode with delimiter filled in without disturbing the stack
  */
-static void nested_here(Lex_t *lp)
+static NONNULL(1) void nested_here(Lex_t *lp)
 {
 	struct ionod	*iop;
 	int		n=0,offset;
@@ -1751,7 +1751,7 @@ static void nested_here(Lex_t *lp)
  * if <copy> is non,zero, then the characters are copied to the stack
  * <state> is the initial lexical state
  */
-void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
+NONNULL(1) void sh_lexskip(Lex_t *lp,int close, int copy, int state)
 {
 	char	*cp;
 	lp->lexd.nest = close;
@@ -1804,7 +1804,7 @@ void sh_lexskip(Lex_t *lp,int close, int copy, int  state)
  * noted with the IOQUOTE flag
  * returns 1 for complete here-doc, 0 for EOF
  */
-static int here_copy(Lex_t *lp,struct ionod *iop)
+static NONNULL(1,2) int here_copy(Lex_t *lp,struct ionod *iop)
 {
 	const char	*state;
 	int		c,n;
@@ -1851,7 +1851,7 @@ static int here_copy(Lex_t *lp,struct ionod *iop)
 			/* skip over regular characters */
 			do
 			{
-				if(mbsize(fcseek(0)) < 0 && fcleft() < MB_LEN_MAX)
+				if(unlikely(mbsize(fcseek(0)) < 0) && fcleft() < MB_LEN_MAX)
 				{
 					n = S_EOF;
 					SETLEN(-fcleft());
@@ -2052,7 +2052,7 @@ done:
 /*
  * generates string for given token
  */
-static char	*fmttoken(Lex_t *lp, int sym)
+static NONNULL(1) char *fmttoken(Lex_t *lp, int sym)
 {
 	if(sym < 0)
 		return (char*)sh_translate(e_lexzerobyte);
@@ -2114,7 +2114,7 @@ static char	*fmttoken(Lex_t *lp, int sym)
 /*
  * print a bad syntax message
  */
-noreturn void sh_syntax(Lex_t *lp, int special)
+cold NONNULL(1) noreturn void sh_syntax(Lex_t *lp, int special)
 {
 	const int eof = lp->token==EOFSYM && lp->lasttok;
 	Sfio_t *sp;
@@ -2132,7 +2132,7 @@ noreturn void sh_syntax(Lex_t *lp, int special)
 	sh.inlineno = lp->inlineno;
 	sh.st.firstline = lp->firstline;
 	/* construct error message */
-	if (sh_isstate(SH_INTERACTIVE) || sh_isstate(SH_PROFILE))
+	if (unlikely(sh_isstate(SH_INTERACTIVE) || sh_isstate(SH_PROFILE)))
 		sfprintf(sh.strbuf, sh_translate(e_syntaxerror));
 	else
 		sfprintf(sh.strbuf, sh_translate(e_syntaxerror_at), eof ? sh.inlineno : lp->lastline);
@@ -2152,7 +2152,7 @@ noreturn void sh_syntax(Lex_t *lp, int special)
 	UNREACHABLE();
 }
 
-static unsigned char *stack_shift(unsigned char *sp, unsigned char *dp)
+static NONNULL(1,2) returns_nonnull unsigned char *stack_shift(unsigned char *sp, unsigned char *dp)
 {
 	unsigned char *ep;
 	int offset = stktell(sh.stk);
@@ -2469,28 +2469,24 @@ done:
 }
 
 
-static void setupalias(Lex_t *lp, const char *string,Namval_t *np)
+static NONNULL(1,2,3) void setupalias(Lex_t *lp, const char *string,Namval_t *np)
 {
 	Sfio_t *iop, *base;
 	struct alias *ap = (struct alias*)sh_malloc(sizeof(struct alias));
 	ap->disc = alias_disc;
 	ap->lp = lp;
 	ap->buf[1] = 0;
-	if(ap->np = np)
-	{
+	ap->np = np;
 #if SHOPT_KIA
-		if(kia.file)
-		{
-			unsigned long r;
-			r=kiaentity(lp,nv_name(np),-1,'p',0,0,kia.current,'a',0,"");
-			sfprintf(kia.tmp,"p;%..64d;p;%..64d;%d;%d;e;\n",kia.current,r,sh.inlineno,sh.inlineno);
-		}
-#endif /* SHOPT_KIA */
-		if((ap->nextc=fcget())==0)
-			ap->nextc = ' ';
+	if(kia.file)
+	{
+		unsigned long r;
+		r=kiaentity(lp,nv_name(np),-1,'p',0,0,kia.current,'a',0,"");
+		sfprintf(kia.tmp,"p;%..64d;p;%..64d;%d;%d;e;\n",kia.current,r,sh.inlineno,sh.inlineno);
 	}
-	else
-		ap->nextc = 0;
+#endif /* SHOPT_KIA */
+	if((ap->nextc=fcget())==0)
+		ap->nextc = ' ';
 	iop = sfopen(NULL,(char*)string,"s");
 	sfdisc(iop, &ap->disc);
 	lp->lexd.nocopy++;

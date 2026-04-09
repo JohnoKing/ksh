@@ -209,7 +209,7 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 		goto skipopts;
 	}
 #endif /* SHOPT_PRINTF_LEGACY */
-	while((n = optget(argv,options))) switch(n)
+	while((n = optget(argv,options))) switch(expect(n,'s',0.01))
 	{
 		case 'n':
 			nflag++;
@@ -253,7 +253,7 @@ int    b_print(int argc, char *argv[], Shbltin_t *context)
 #if SHOPT_SCRIPTONLY
 			else if(!(sh.inuse_bits&(1<<fd)) && sh_inuse(fd))
 #else
-			else if(!(sh.inuse_bits&(1<<fd)) && (sh_inuse(fd) || (sh.hist_ptr && fd==sffileno(sh.hist_ptr->histfp))))
+			else if(!(sh.inuse_bits&(1<<fd)) && (sh_inuse(fd) || unlikely(sh.hist_ptr && fd==sffileno(sh.hist_ptr->histfp))))
 #endif /* SHOPT_SCRIPTONLY */
 				fd = -1;
 			break;
@@ -349,7 +349,7 @@ skip2:
 	}
 	else if(!(fdmode=sh.fdstatus[fd]))
 		fdmode = sh_iocheckfd(fd);
-	if(!(fdmode&IOWRITE))
+	if(unlikely(!(fdmode&IOWRITE)))
 	{
 		/* don't print error message for stdout for compatibility */
 		if(fd==1)
@@ -434,6 +434,8 @@ printf_v:
 		if (sfsync(outfile) < 0)
 			exitval = 1;
 	}
+	if(likely(exitval == 0))  /* indicate to GCC/Clang other branches are unlikely */
+		return 0;
 	return exitval;
 }
 
@@ -533,7 +535,7 @@ static char *fmthtml(const char *string, int flags)
 		/* Encode for HTML and XML, for main text and single- and double-quoted attributes. */
 		while(op = cp, c = mbchar(cp))
 		{
-			if(mbwide() && c < 0)		/* invalid multibyte char */
+			if(mbwide() && unlikely(c < 0))	/* invalid multibyte char */
 				sfputc(sh.stk,'?');
 			else if(c == 60)		/* < */
 				sfputr(sh.stk,"&lt;",-1);
@@ -556,7 +558,7 @@ static char *fmthtml(const char *string, int flags)
 		{
 			while(op = cp, c = mbchar(cp))
 			{
-				if(c < 0)
+				if(unlikely(c < 0))
 					sfputr(sh.stk,"%3F",-1);
 				else if(c < 128 && strchr(URI_RFC3986_UNRESERVED, c))
 					sfputc(sh.stk,c);

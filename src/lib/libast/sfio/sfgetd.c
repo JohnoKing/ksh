@@ -31,10 +31,10 @@ Sfdouble_t sfgetd(Sfio_t* f)
 	ptrdiff_t	p;
 	Sfdouble_t	v;
 
-	if(!f || (sign = sfgetc(f)) < 0 || (exp = (int)sfgetu(f)) < 0)
+	if(unlikely(!f || (sign = sfgetc(f)) < 0 || (exp = (int)sfgetu(f)) < 0))
 		return -1.;
 
-	if(f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)
+	if(unlikely(f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
 		return -1.;
 
 	SFLOCK(f,0);

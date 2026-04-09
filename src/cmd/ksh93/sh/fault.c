@@ -43,7 +43,7 @@ static int	cursig = -1;
 /*
  * Most signals caught or ignored by the shell come here
 */
-void	sh_fault(int sig)
+cold void	sh_fault(int sig)
 {
 	int 		flag=0;
 	char		*trap;
@@ -102,7 +102,7 @@ void	sh_fault(int sig)
 		if(flag&SH_SIGDONE)
 		{
 			void *ptr=0;
-			if((flag&SH_SIGINTERACTIVE) && sh_isstate(SH_INTERACTIVE) && !sh_isstate(SH_FORKED))
+			if((flag&SH_SIGINTERACTIVE) && unlikely(sh_isstate(SH_INTERACTIVE)) && !sh_isstate(SH_FORKED))
 			{
 				/* check for TERM signal between fork/exec */
 				if(sig==SIGTERM && job.in_critical)
@@ -113,7 +113,7 @@ void	sh_fault(int sig)
 			sigrelease(sig);
 			if(pp->mode != SH_JMPSUB)
 			{
-				if(pp->mode < SH_JMPSUB && !sh_isstate(SH_INTERACTIVE))
+				if(pp->mode < SH_JMPSUB && likely(!sh_isstate(SH_INTERACTIVE)))
 					pp->mode = sh.subshell?SH_JMPSUB:SH_JMPFUN;
 				else
 					pp->mode = SH_JMPEXIT;
@@ -123,7 +123,7 @@ void	sh_fault(int sig)
 			if(sig==SIGABRT || (abortsig(sig) && (ptr = malloc(1))))
 			{
 				if(ptr)
-					free(ptr);
+					free_sized(ptr,1);
 				sh_done(sig);
 			}
 			/* mark signal and continue */
@@ -134,7 +134,7 @@ void	sh_fault(int sig)
 		}
 	}
 	/* make sure ^Z is handled correctly after interrupt */
-	if(sig==SIGINT && sh_isstate(SH_INTERACTIVE))
+	if(sig==SIGINT && unlikely(sh_isstate(SH_INTERACTIVE)))
 		signal(SIGTSTP, sh.sigflag[SIGTSTP]&SH_SIGOFF ? SIG_IGN : sh_fault);
 	errno = 0;
 	if(pp->mode==SH_JMPCMD || (pp->mode==1 && sh.bltinfun) && !(flag&SH_SIGIGNORE))
@@ -205,9 +205,9 @@ void	sh_winsize(void)
 	int		lines, columns;
 	int32_t		i;
 	astwinsize(2,&lines,&columns);
-	if (lines < 0 || lines > USHRT_MAX)
+	if (unlikely(lines < 0 || lines > USHRT_MAX))
 		lines = 0;
-	if (columns < 0 || columns > USHRT_MAX)
+	if (unlikely(columns < 0 || columns > USHRT_MAX))
 		columns = 0;
 	/*
 	 * Update LINES and COLUMNS only when the values changed; this makes
@@ -467,13 +467,13 @@ void	sh_chktrap(void)
  */
 int sh_trap(const char *trap, int mode)
 {
+	int	staktop = stktell(sh.stk);
+	void	*savptr = stkfreeze(sh.stk,0);
 	int	jmpval, savxit = sh.exitval, savxit_return;
 	int	was_history = sh_isstate(SH_HISTORY);
 	int	was_verbose = sh_isstate(SH_VERBOSE);
 	char	was_no_trapdontexec = !sh.st.trapdontexec;
 	char	save_chldexitsig = sh.chldexitsig;
-	int	staktop = stktell(sh.stk);
-	void	*savptr = stkfreeze(sh.stk,0);
 	struct	checkpt buff;
 	Fcin_t	savefc;
 	fcsave(&savefc);
@@ -485,7 +485,7 @@ int sh_trap(const char *trap, int mode)
 		sh.st.trapdontexec = 's';  /* special value for direct sh_trap() call */
 	sh_pushcontext(&buff,SH_JMPTRAP);
 	jmpval = sigsetjmp(buff.buff,0);
-	if(jmpval == 0)
+	if(likely(jmpval == 0))
 	{
 		if(mode==2)
 			sh_exec((Shnode_t*)trap,sh_isstate(SH_ERREXIT));
@@ -519,13 +519,13 @@ int sh_trap(const char *trap, int mode)
 		sh.exitval = savxit;
 	stkset(sh.stk,savptr,staktop);
 	fcrestore(&savefc);
-	if(was_history)
+	if(unlikely(was_history))
 		sh_onstate(SH_HISTORY);
 	if(was_verbose)
 		sh_onstate(SH_VERBOSE);
 	sh.chldexitsig = save_chldexitsig;
 	exitset();
-	if(jmpval>SH_JMPTRAP && (((struct checkpt*)sh.jmpbuffer)->prev || ((struct checkpt*)sh.jmpbuffer)->mode==SH_JMPSCRIPT))
+	if(unlikely(jmpval>SH_JMPTRAP) && (((struct checkpt*)sh.jmpbuffer)->prev || ((struct checkpt*)sh.jmpbuffer)->mode==SH_JMPSCRIPT))
 		siglongjmp(*sh.jmplist,jmpval);
 	return savxit_return;
 }
@@ -563,7 +563,7 @@ void sh_exit(int xno)
 		sh_offstate(SH_STOPOK);
 		sh.trapnote = 0;
 		sh.forked = 1;
-		if(sh_isstate(SH_INTERACTIVE) && (sig=sh_fork(0,NULL)))
+		if(unlikely(sh_isstate(SH_INTERACTIVE)) && (sig=sh_fork(0,NULL)))
 		{
 			job.curpgid = 0;
 			job.parent = (pid_t)-1;
@@ -610,9 +610,9 @@ void sh_exit(int xno)
 	sh.tilde_block = 0;
 	if(job.in_critical)
 		job_unlock();
-	if(pp->mode == SH_JMPSCRIPT && !pp->prev)
+	if(unlikely(pp->mode == SH_JMPSCRIPT && !pp->prev))
 		sh_done(sig);
-	if(pp->mode)
+	if(likely(pp->mode))
 		siglongjmp(pp->buff,pp->mode);
 }
 
@@ -657,7 +657,7 @@ noreturn void sh_done(int sig)
 #endif	/* SHOPT_ACCT */
 	if(mbwide() && sh_editor_active())
 		tty_cooked(-1);
-	if((sh_isoption(SH_INTERACTIVE) && sh_isoption(SH_LOGIN_SHELL)) || (!sh_isoption(SH_INTERACTIVE) && (sig==SIGHUP)))
+	if(unlikely((sh_isoption(SH_INTERACTIVE) && sh_isoption(SH_LOGIN_SHELL)) || (!sh_isoption(SH_INTERACTIVE) && (sig==SIGHUP))))
 		job_walk(sfstderr, job_hup, SIGHUP, NULL);
 	job_close();
 	sfsync((Sfio_t*)sfstdin);
@@ -685,7 +685,7 @@ noreturn void sh_done(int sig)
 		pause();
 	}
 #if SHOPT_KIA
-	if(sh_isoption(SH_NOEXEC))
+	if(unlikely(sh_isoption(SH_NOEXEC)))
 		kiaclose((Lex_t*)sh.lex_context);
 #endif /* SHOPT_KIA */
 	/* Exit with portable 8-bit status (128 + signum) if last child process exits due to signal */

@@ -185,7 +185,7 @@ init(void)
 	int	i;
 
 	setlocale(LC_ALL, "");
-	if (jp = newof(0, Join_t, 1, 0))
+	if (likely(jp = newof(0, Join_t, 1, 0)))
 	{
 		if (jp->mb = mbwide())
 			for (i = 0x80; i <= 0xff; i++)
@@ -194,8 +194,8 @@ init(void)
 		jp->state['\n'] = S_NL;
 		jp->delim = -1;
 		jp->nullfield = 0;
-		if (!(jp->file[0].fields = newof(0, Field_t, NFIELD + 1, 0)) ||
-		    !(jp->file[1].fields = newof(0, Field_t, NFIELD + 1, 0)))
+		if (unlikely(!(jp->file[0].fields = newof(0, Field_t, NFIELD + 1, 0))) ||
+		    unlikely(!(jp->file[1].fields = newof(0, Field_t, NFIELD + 1, 0))))
 		{
 			done(jp);
 			return NULL;

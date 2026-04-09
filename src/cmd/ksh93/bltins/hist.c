@@ -33,13 +33,13 @@
 
 #if !SHOPT_SCRIPTONLY
 
-static void hist_subst(const char*, int fd, char*);
+static void hist_subst(const char*, int fd, char*) cold;
 
 #if 0
     /* for the benefit of the dictionary generator */
-    int	b_fc(int argc,char *argv[], Shbltin_t *context){}
+    cold int	b_fc(int argc,char *argv[], Shbltin_t *context){}
 #endif
-int	b_hist(int argc,char *argv[], Shbltin_t *context)
+cold int	b_hist(int argc,char *argv[], Shbltin_t *context)
 {
 	History_t *hp;
 	char *arg;
@@ -316,7 +316,7 @@ int	b_hist(int argc,char *argv[], Shbltin_t *context)
  * given a file containing a command and a string of the form old=new,
  * execute the command with the string old replaced by new
  */
-static void hist_subst(const char *command,int fd,char *replace)
+static cold void hist_subst(const char *command,int fd,char *replace)
 {
 	char *newp=replace;
 	char *sp;
@@ -345,7 +345,7 @@ static void hist_subst(const char *command,int fd,char *replace)
 
 #else
 
-int	b_hist(int argc,char *argv[], Shbltin_t *context)
+cold int	b_hist(int argc,char *argv[], Shbltin_t *context)
 {
 	NOT_USED(argc);
 	NOT_USED(argv);

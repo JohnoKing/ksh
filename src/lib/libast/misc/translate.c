@@ -103,14 +103,14 @@ entry(Dt_t* dict, int set, int seq, const char* msg)
 {
 	Message_t*	mp;
 
-	if (!(mp = newof(0, Message_t, 1, strlen(msg))))
+	if (unlikely(!(mp = newof(0, Message_t, 1, strlen(msg)))))
 		return 0;
 	strcpy(mp->text, msg);
 	mp->set = set;
 	mp->seq = seq;
-	if (!dtinsert(dict, mp))
+	if (unlikely(!dtinsert(dict, mp)))
 	{
-		free(mp);
+		free_sized(mp, sizeof(Message_t) * 1 + strlen(msg));
 		return 0;
 	}
 #if DEBUG_trace > 1
@@ -166,12 +166,12 @@ init(char* s)
 	 * insert into the catalog dictionary
 	 */
 
-	if (!(cp = newof(0, Catalog_t, 1, strlen(s))))
+	if (unlikely(!(cp = newof(0, Catalog_t, 1, strlen(s)))))
 		return NULL;
 	strcpy(cp->name, s);
-	if (!dtinsert(state.catalogs, cp))
+	if (unlikely(!dtinsert(state.catalogs, cp)))
 	{
-		free(cp);
+		free_sized(cp, sizeof(Catalog_t) * 1 + strlen(s));
 		return NULL;
 	}
 	cp->cat = NOCAT;
@@ -195,7 +195,7 @@ init(char* s)
 		 * missing messages
 		 */
 
-		if (cp->messages = dtopen(&state.message_disc, Dtset))
+		if (likely(cp->messages = dtopen(&state.message_disc, Dtset)))
 		{
 			n = m = 0;
 			for (;;)
@@ -321,12 +321,12 @@ translate(const char* loc, const char* cmd, const char* cat, const char* msg)
 	{
 		if (state.error)
 			goto done;
-		if (!(state.tmp = sfstropen()))
+		if (unlikely(!(state.tmp = sfstropen())))
 		{
 			state.error = 1;
 			goto done;
 		}
-		if (!(state.catalogs = dtopen(&state.catalog_disc, Dtset)))
+		if (unlikely(!(state.catalogs = dtopen(&state.catalog_disc, Dtset))))
 		{
 			sfclose(state.tmp);
 			state.error = 1;
@@ -379,13 +379,13 @@ sfprintf(sfstderr, "AHA#%d:%s cp->cat %p cp->debug %d NOCAT %p\n", __LINE__, __F
 	}
 	if (cp->cat == NOCAT)
 	{
-		if (cp->debug)
+		if (unlikely(cp->debug))
 		{
 			p = tempget(state.tmp);
 			sfprintf(state.tmp, "(%s,%d,%d)", cp->name, mp->set, mp->seq);
 			r = tempuse(state.tmp, p);
 		}
-		else if (ast.locale.set & AST_LC_debug)
+		else if (unlikely(ast.locale.set & AST_LC_debug))
 		{
 			p = tempget(state.tmp);
 			sfprintf(state.tmp, "(%s,%d,%d)%s", cp->name, mp->set, mp->seq, r);
@@ -409,7 +409,7 @@ sfprintf(sfstderr, "AHA#%d:%s cp->cat %p cp->debug %d NOCAT %p\n", __LINE__, __F
 				r = (char*)msg;
 			}
 		}
-		if (ast.locale.set & AST_LC_debug)
+		if (unlikely(ast.locale.set & AST_LC_debug))
 		{
 			p = tempget(state.tmp);
 			sfprintf(state.tmp, "(%s,%d,%d)%s", cp->name, mp->set, mp->seq, r);

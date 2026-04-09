@@ -26,8 +26,8 @@
 int sfresize(Sfio_t* f, Sfoff_t size)
 {
 
-	if(size < 0 || f->extent < 0 ||
-	   !f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
+	if(unlikely(size < 0 || f->extent < 0 ||
+	   !f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0)))
 		return -1;
 
 	SFLOCK(f,0);
@@ -39,7 +39,7 @@ int sfresize(Sfio_t* f, Sfoff_t size)
 		{	if((f->flags&SFIO_MALLOC) && (f->next - f->data) <= size)
 			{	size_t	s = ((size_t)(size + 1023)/1024)*1024;
 				void*	d;
-				if(s < (size_t)f->size && (d = realloc(f->data, s)) )
+				if(s < (size_t)f->size && likely(d = realloc(f->data, s)) )
 				{	f->data = d;
 					f->size = (ssize_t)s;
 					f->extent = (ssize_t)s;

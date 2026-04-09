@@ -151,11 +151,11 @@ ssize_t sfvprintf(Sfio_t*		f,		/* file to print to	*/
 
 	SFCVINIT();	/* initialize conversion tables */
 
-	if(!f || !form)
+	if(unlikely(!f || !form))
 		return -1;
 
 	/* make sure stream is in write mode and buffer is not NULL */
-	if(f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0)
+	if(unlikely(f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
 		return -1;
 
 	SFLOCK(f,0);
@@ -638,7 +638,7 @@ loop_fmt :
 				fmstk->ft = ft = argv.ft;
 			}
 			else			/* stack a new environment */
-			{	if(!(fm = (Fmt_t*)malloc(sizeof(Fmt_t))) )
+			{	if(unlikely(!(fm = (Fmt_t*)malloc(sizeof(Fmt_t)))) )
 					goto done;
 
 				ft = fm->ft = argv.ft;

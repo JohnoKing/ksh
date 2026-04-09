@@ -26,10 +26,10 @@
 **	Written by Kiem-Phong Vo (5/26/96)
 */
 
-static void* dtmemory(Dt_t* 	dt,	/* dictionary			*/
-		      void* 	addr,	/* address to be manipulate	*/
-		      size_t	size,	/* size to obtain		*/
-		      Dtdisc_t* disc)	/* discipline			*/
+static malloc_attr void* dtmemory(Dt_t* 	dt,	/* dictionary			*/
+				  void* 	addr,	/* address to be manipulate	*/
+				  size_t	size,	/* size to obtain		*/
+				  Dtdisc_t*	disc)	/* discipline			*/
 {
 	NOT_USED(dt);
 	NOT_USED(disc);

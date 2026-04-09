@@ -28,7 +28,7 @@ int sfset(Sfio_t* f, int flags, int set)
 {
 	int	oflags, tflags, rv;
 
-	if(!f)
+	if(unlikely(!f))
 		return 0;
 
 	if(flags == 0 && set == 0)

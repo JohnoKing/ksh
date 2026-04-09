@@ -154,28 +154,29 @@ void	sh_timetraps(void)
 					 * so save the lexer state and push/pop context to make sure we can restore it. */
 					struct checkpt	checkpoint;
 					int		jmpval;
+					int		oerrno = errno;
 					int		exitval = sh.exitval, savexit = sh.savexit;
 					Shopt_t		opts = sh.options;
 					int		states = sh.st.states;
 					char		*dbg = sh.st.trap[SH_DEBUGTRAP];
-					Lex_t		*lexp = sh.lex_context, savelex = *lexp;
+					Lex_t		*lexp = sh.lex_context, savelex;
 					char		jc = job.jobcontrol;
 					int		savesig = job.savesig;
 					struct process	*pw = job.pwlist;
 					Fcin_t		savefc;
-					int		oerrno = errno;
+					memcpy(&savelex,lexp,sizeof(Lex_t));
 					fcsave(&savefc);
 					job.jobcontrol = 0;
 					job.pwlist = NULL;	/* avoid external commands in the disc funct affecting job list */
-					sh_lexopen(lexp,0);	/* fully reset lexer state */
 					sh_offoption(SH_XTRACE);
 					sh_offoption(SH_VERBOSE);
 					sh_offstate(SH_INTERACTIVE);
 					sh_offstate(SH_TTYWAIT);
 					sh.st.trap[SH_DEBUGTRAP] = NULL;
 					sh_pushcontext(&checkpoint,SH_JMPTRAP);
+					sh_lexopen(lexp,0);	/* fully reset lexer state */
 					jmpval = sigsetjmp(checkpoint.buff,0);
-					if(!jmpval)
+					if(likely(!jmpval))
 						sh_fun(tp->action,tp->node,NULL);
 					sh_popcontext(&checkpoint);
 					*lexp = savelex;

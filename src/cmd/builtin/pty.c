@@ -122,7 +122,7 @@ static const char usage[] =
 #define CMIN		1
 #endif
 
-static noreturn void outofmemory(size_t size)
+static cold noreturn void outofmemory(size_t size)
 {
 	error(ERROR_SYSTEM|ERROR_PANIC, "out of memory (failed to allocate %zu bytes)", size);
 	UNREACHABLE();
@@ -234,7 +234,7 @@ mkpty(int* master, int* minion)
 	sigprocmask(SIG_BLOCK, &blckttou, &oldset);
 #endif
 	alarm(6);
-	if (tcgetattr(sffileno(sfstderr), &tty) < 0)
+	if (unlikely(tcgetattr(sffileno(sfstderr), &tty) < 0))
 	{
 		if (errno != ENOTTY)
 			error(-1, "unable to get standard error terminal attributes");
@@ -275,7 +275,7 @@ mkpty(int* master, int* minion)
 #endif
 	ttyp = &tty;
 #ifdef TIOCGWINSZ
-	if (ioctl(sffileno(sfstderr), TIOCGWINSZ, &win) < 0)
+	if (unlikely(ioctl(sffileno(sfstderr), TIOCGWINSZ, &win) < 0))
 	{
 		if (errno != ENOTTY)
 			error(-1, "unable to get standard error window size");
@@ -283,9 +283,9 @@ mkpty(int* master, int* minion)
 		win.ws_col = 0;
 		winp = 0;
 	}
-	if (win.ws_row < 24)
+	if (unlikely(win.ws_row < 24))
 		win.ws_row = 24;
-	if (win.ws_col < 80)
+	if (unlikely(win.ws_col < 80))
 		win.ws_col = 80;
 	winp = &win;
 #endif
@@ -1086,11 +1086,14 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 	if (stty)
 	{
 		Argv_t* ap;
+		size_t alloc_size;
 		n = 2;
 		for (s = stty; *s; s++)
 			if (isspace(*s))
 				n++;
-		ap = newof(0, Argv_t, 1, (size_t)(n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
+		alloc_size = sizeof(Argv_t) * 1 + ((n + 2) * sizeof(char*) + (size_t)(s - stty + 1));
+		if(!(ap = calloc(1,alloc_size)))
+			outofmemory(alloc_size);
 		ap->argc = n + 1;
 		ap->argv = (char**)(ap + 1);
 		ap->args = (char*)(ap->argv + n + 2);
@@ -1106,7 +1109,7 @@ b_pty(int argc, char** argv, Shbltin_t* context)
 			}
 		ap->argv[n + 1] = 0;
 		b_stty(ap->argc, ap->argv, 0);
-		free(ap);
+		free_sized(ap, alloc_size);
 	}
 	if (!log)
 		lp = 0;

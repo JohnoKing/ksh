@@ -129,7 +129,10 @@ getfsids(Sfio_t* sp, const char* name, int flags, int lastchar)
 					while (s = *q++)
 						n += strlen(s) + 1;
 					if (!(x = newof(0, char*, q - p, n)))
-						break;
+					{
+						error(ERROR_SYSTEM|ERROR_PANIC, "out of memory [getfsids]");
+						UNREACHABLE();
+					}
 					s = (char*)(x + (q - p));
 					q = x;
 					while (t = *p++)

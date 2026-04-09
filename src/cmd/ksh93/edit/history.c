@@ -96,7 +96,7 @@ static int	hist_nearend(History_t*,Sfio_t*, off_t);
 static int	hist_check(int);
 static int	hist_clean(int);
 static ssize_t	hist_write(Sfio_t*, const void*, size_t, Sfdisc_t*);
-static int	hist_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
+static int	hist_exceptf(Sfio_t*, int, void*, Sfdisc_t*) cold;
 
 static int	histinit;
 static mode_t	histmode;
@@ -123,16 +123,16 @@ static History_t *hist_ptr;
 			cp = "unknown";
 	}
 	logname = sh_strdup(cp);
-	if((acctfd=sh_open(acctfile,O_BINARY|O_WRONLY|O_APPEND|O_CREAT|O_cloexec,S_IRUSR|S_IWUSR))>=0 && acctfd < 10)
+	if(likely((acctfd=sh_open(acctfile,O_BINARY|O_WRONLY|O_APPEND|O_CREAT|O_cloexec,S_IRUSR|S_IWUSR))>=0) && likely(acctfd < 10))
 	{
 		int n;
-		if((n = sh_fcntl(acctfd, F_dupfd_cloexec, 10)) >= 0)
+		if(likely((n = sh_fcntl(acctfd, F_dupfd_cloexec, 10)) >= 0))
 		{
 			sh_close(acctfd);
 			acctfd = n;
 		}
 	}
-	if(acctfd < 0)
+	if(unlikely(acctfd < 0))
 	{
 		acctfd = 0;
 		return 0;
@@ -156,9 +156,9 @@ static int sh_checkaudit(const char *name, char *logbuf, size_t len)
 	uid_t	id1, id2;
 	int	r=0, fd;
 	ssize_t	n;
-	if((fd=open(name, O_RDONLY|O_cloexec)) < 0)
+	if(unlikely((fd=open(name, O_RDONLY|O_cloexec)) < 0))
 		return 0;
-	if((n = read(fd, logbuf,len-1)) < 0)
+	if(unlikely((n = read(fd, logbuf,len-1)) < 0))
 		goto done;
 	while(logbuf[n-1]=='\n')
 		n--;
@@ -199,7 +199,7 @@ static void hist_touch(void *handle)
  * if HISTFILE is longer than HIST_MAX bytes then it is cleaned up.
  * sh_histinit() returns 1 if history file is open.
  */
-int  sh_histinit(void)
+cold int  sh_histinit(void)
 {
 	int fd;
 	History_t *hp;
@@ -209,7 +209,7 @@ int  sh_histinit(void)
 	char *cp;
 	off_t hsize = 0;
 
-	if(sh.hist_ptr=hist_ptr)
+	if(likely(sh.hist_ptr=hist_ptr))
 		return 1;
 	if(!(histname = nv_getval(HISTFILE)))
 	{
@@ -226,9 +226,9 @@ retry:
 		histmode = S_IRUSR|S_IWUSR;
 	if((fd=sh_open(cp,O_BINARY|O_APPEND|O_RDWR|O_CREAT|O_cloexec,histmode))>=0)
 		hsize=lseek(fd,0,SEEK_END);
-	if(fd > 0 && fd < 10)
+	if(likely(fd > 0) && likely(fd < 10))
 	{
-		if((n=sh_fcntl(fd,F_dupfd_cloexec,10))>=0)
+		if(likely((n=sh_fcntl(fd,F_dupfd_cloexec,10))>=0))
 		{
 			sh_close(fd);
 			fd=n;
@@ -243,7 +243,7 @@ retry:
 			goto retry;
 		fd = -1;
 	}
-	if(fd < 0)
+	if(unlikely(fd < 0))
 	{
 		/* don't allow root a history_file in /tmp */
 		if(sh.userid)
@@ -253,7 +253,7 @@ retry:
 			fd = sh_open(fname,O_BINARY|O_APPEND|O_CREAT|O_RDWR|O_cloexec,S_IRUSR|S_IWUSR);
 		}
 	}
-	if(fd<0)
+	if(unlikely(fd<0))
 		return 0;
 	if(!(sh.fdstatus[fd]&IOCLEX))
 		sh_fcntl(fd,F_SETFD,FD_CLOEXEC);  /* set the file to close-on-exec */
@@ -365,7 +365,7 @@ retry:
 /*
  * close the history file and free the space
  */
-void hist_close(History_t *hp)
+cold void hist_close(History_t *hp)
 {
 	sfclose(hp->histfp);
 #if SHOPT_AUDIT
@@ -406,7 +406,7 @@ static int hist_check(int fd)
 static int hist_clean(int fd)
 {
 	struct stat statb;
-	return fstat(fd,&statb)>=0 && (time(NULL)-statb.st_mtime) >= HIST_RECENT;
+	return likely(fstat(fd,&statb)>=0) && (time(NULL)-statb.st_mtime) >= HIST_RECENT;
 }
 
 /*
@@ -552,7 +552,7 @@ begin:
  * unless it is followed by 0.  If followed by 0 then it cancels
  * the previous command.
  */
-void hist_eof(History_t *hp)
+cold void hist_eof(History_t *hp)
 {
 	char *cp,*first,*endbuff;
 	int incmd = 0;
@@ -667,7 +667,7 @@ again:
 /*
  * This routine will cause the previous command to be cancelled
  */
-void hist_cancel(History_t *hp)
+cold void hist_cancel(History_t *hp)
 {
 	int c;
 	if(!hp)
@@ -683,7 +683,7 @@ void hist_cancel(History_t *hp)
 /*
  * flush the current history command
  */
-void hist_flush(History_t *hp)
+cold void hist_flush(History_t *hp)
 {
 	char *buff;
 	if(hp)
@@ -813,7 +813,7 @@ static void hist_marker(char *buff,long cmdno)
 /*
  * return byte offset in history file for command <n>
  */
-off_t hist_tell(History_t *hp, int n)
+cold off_t hist_tell(History_t *hp, int n)
 {
 	return hp->histcmds[hist_ind(hp,n)];
 }
@@ -821,7 +821,7 @@ off_t hist_tell(History_t *hp, int n)
 /*
  * seek to the position of command <n>
  */
-off_t hist_seek(History_t *hp, int n)
+cold off_t hist_seek(History_t *hp, int n)
 {
 	if(!(n >= hist_min(hp) && n < hist_max(hp)))
 		return -1;
@@ -833,7 +833,7 @@ off_t hist_seek(History_t *hp, int n)
  * if character <last> appears before newline it is deleted
  * each new-line character is replaced with string <nl>.
  */
-void hist_list(History_t *hp,Sfio_t *outfile, off_t offset,int last, char *nl)
+cold void hist_list(History_t *hp,Sfio_t *outfile, off_t offset,int last, char *nl)
 {
 	int oldc=0;
 	int c;
@@ -863,7 +863,7 @@ void hist_list(History_t *hp,Sfio_t *outfile, off_t offset,int last, char *nl)
  * If flag==0 then line must begin with string
  * direction < 1 for backwards search
 */
-Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
+cold Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
 {
 	int index2;
 	off_t offset;
@@ -920,7 +920,7 @@ Histloc_t hist_find(History_t*hp,char *string,int index1,int flag,int direction)
  * If coffset==0 then line must begin with string
  * returns the line number of the match if successful, otherwise -1
  */
-int hist_match(History_t *hp,off_t offset,char *string,ptrdiff_t *coffset)
+cold int hist_match(History_t *hp,off_t offset,char *string,ptrdiff_t *coffset)
 {
 	unsigned char *first, *cp;
 	int c=1,line=0;
@@ -961,7 +961,7 @@ int hist_match(History_t *hp,off_t offset,char *string,ptrdiff_t *coffset)
  * line < 0 for full command copy
  * -1 returned if there is no history file
  */
-int hist_copy(char *s1,int size,int command,int line)
+cold int hist_copy(char *s1,int size,int command,int line)
 {
 	int c;
 	History_t *hp = sh.hist_ptr;
@@ -1004,7 +1004,7 @@ int hist_copy(char *s1,int size,int command,int line)
  * character following c is considered to start a new word
  */
 
-int hist_iswordbndry(int c)
+cold int hist_iswordbndry(int c)
 {
 	return isspace(c) || strchr("|&;()`<>",c);
 }
@@ -1012,7 +1012,7 @@ int hist_iswordbndry(int c)
 /*
  * return word number <word> from command number <command>
  */
-char *hist_word(char *string,int size,int word)
+cold char *hist_word(char *string,int size,int word)
 {
 	int c;
 	int is_boundary;
@@ -1071,7 +1071,7 @@ char *hist_word(char *string,int size,int word)
  * and number of lines back or forward,
  * compute the new command and line number.
  */
-Histloc_t hist_locate(History_t *hp,int command,int line,int lines)
+cold Histloc_t hist_locate(History_t *hp,int command,int line,int lines)
 {
 	Histloc_t next;
 	line += lines;
@@ -1116,7 +1116,7 @@ done:
 /*
  * Handle history file exceptions
  */
-static int hist_exceptf(Sfio_t* fp, int type, void *data, Sfdisc_t *handle)
+static cold int hist_exceptf(Sfio_t* fp, int type, void *data, Sfdisc_t *handle)
 {
 	int newfd,oldfd;
 	History_t *hp = (History_t*)handle;

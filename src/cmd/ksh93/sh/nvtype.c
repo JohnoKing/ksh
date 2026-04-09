@@ -568,7 +568,7 @@ static Namval_t *next_type(Namval_t* np, Dt_t *root,Namfun_t *fp)
 	return nv_namptr(dp->nodes,dp->current);
 }
 
-static Namfun_t *clone_inttype(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
+static malloc_attr returns_nonnull Namfun_t *clone_inttype(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp)
 {
 	Namfun_t	*pp = (Namfun_t*)sh_malloc(fp->dsize);
 	NOT_USED(flags);

@@ -145,11 +145,13 @@ int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
 {
 	Union_t*	un;
 	int		i;
+	size_t		alloc_size;
 
 	if(n <= 0)
 		return -1;
 
-	if(!(un = (Union_t*)malloc(sizeof(Union_t)+((size_t)n-1)*sizeof(File_t))) )
+	alloc_size = sizeof(Union_t)+((size_t)n-1)*sizeof(File_t);
+	if(unlikely(!(un = (Union_t*)malloc(alloc_size))))
 		return -1;
 	memset(un, 0, sizeof(*un));
 
@@ -169,7 +171,7 @@ int sfdcunion(Sfio_t* f, Sfio_t** array, int n)
 	}
 
 	if(sfdisc(f,(Sfdisc_t*)un) != (Sfdisc_t*)un)
-	{	free(un);
+	{	free_sized(un,alloc_size);
 		return -1;
 	}
 

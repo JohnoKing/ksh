@@ -28,7 +28,7 @@ int sfpurge(Sfio_t* f)
 {
 	int	mode;
 
-	if(!f || (mode = f->mode&SFIO_RDWR) != (int)f->mode && _sfmode(f,mode|SFIO_SYNCED,0) < 0)
+	if(unlikely(!f || (mode = f->mode&SFIO_RDWR) != (int)f->mode && _sfmode(f,mode|SFIO_SYNCED,0) < 0))
 		return -1;
 
 	if((f->flags&SFIO_IOCHECK) && f->disc && f->disc->exceptf)

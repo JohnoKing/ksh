@@ -84,10 +84,10 @@ static pid_t _spawnveg(const char *path, char* const argv[], char* const envp[],
 	{
 		sh_stats(STAT_SPAWN);
 		pid = spawnveg(path,argv,envp,pgid,job.jobcontrol?job.fd:-1);
-		if(pid>=0 || errno!=EAGAIN)
+		if(likely(pid>=0) || errno!=EAGAIN)
 			break;
 	}
-	if(pid<0 && job.jobcontrol)
+	if(unlikely(pid<0 && job.jobcontrol))
 		tcsetpgrp(job.fd,sh.pid);  /* if spawnveg set tcpgrp, we must restore it ourselves */
 	return pid;
 }
@@ -115,6 +115,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 	char *const *ev;
 	ssize_t size, left;
 	int nlast=1,n,exitval=0;
+	size_t alloc_size = 0;
 	pid_t pid;
 	if(sh.xargmin < 0)
 		abort();
@@ -154,6 +155,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 		{
 			n = nlast*sizeof(char*);
 			saveargs = (char**)sh_malloc(n);
+			alloc_size = n;
 			memcpy(saveargs,av,n);
 			memcpy(av,avlast,n);
 		}
@@ -172,7 +174,7 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 				if(saveargs)
 				{
 					memcpy(av,saveargs,n);
-					free(saveargs);
+					free_sized(saveargs,alloc_size);
 				}
 				return -1;
 			}
@@ -185,7 +187,8 @@ static pid_t command_xargs(const char *path, char *argv[],char *const envp[], in
 			if(saveargs)
 			{
 				memcpy(av,saveargs,n);
-				free(saveargs);
+				free_sized(saveargs,alloc_size);
+				alloc_size = 0;
 				saveargs = 0;
 			}
 		}
@@ -214,9 +217,9 @@ char *path_pwd(void)
 	char tofree = 0;
 	Namval_t *pwdnod;
 	/* Don't bother if PWD already set */
-	if(sh.pwd)
+	if(likely(sh.pwd))
 	{
-		if(*sh.pwd=='/')
+		if(likely(*sh.pwd=='/'))
 			return sh.pwd;
 		free(sh.pwd);
 	}
@@ -269,7 +272,7 @@ void  path_delete(Pathcomp_t *first)
 	while(pp)
 	{
 		ppnext = pp->next;
-		if(--pp->refcount<=0)
+		if(unlikely(--pp->refcount<=0))
 		{
 			if(pp->lib)
 				free(pp->lib);
@@ -513,7 +516,7 @@ char	*path_basename(const char *name)
 	return ((char*)start);
 }
 
-char *path_fullname(const char *name)
+malloc_attr returns_nonnull char *path_fullname(const char *name)
 {
 	size_t len=strlen(name)+1,dirlen=0;
 	char *path,*pwd;
@@ -1014,7 +1017,7 @@ noreturn void path_exec(const char *arg0,char *argv[],struct argnod *local)
 			pp = path_nextcomp(pp,arg0,0);
 	}
 	while(pp);
-	if(sh_isstate(SH_EXEC) && sh_isstate(SH_INTERACTIVE))
+	if(sh_isstate(SH_EXEC) && unlikely(sh_isstate(SH_INTERACTIVE)))
 	{
 		/*
 		 * An error just occurred and the shell cannot exit because it's
@@ -1198,6 +1201,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 		pid = _spawnveg(opath, &argv[0], envp, spawn>>1);
 	else
 		pid = execve(opath, &argv[0], envp);
+	ASSUME(pid != 0);
 	if(xp)
 		*xp = xval;
 #ifdef SHELLMAGIC
@@ -1236,7 +1240,7 @@ pid_t path_spawn(const char *opath,char **argv, char **envp, Pathcomp_t *libpath
 				if((pid=fork())>0)
 					return pid;
 			}
-			while(_sh_fork(pid,0,NULL) < 0);
+			while(unlikely(_sh_fork(pid,0,NULL) < 0));
 			((struct checkpt*)sh.jmplist)->mode = SH_JMPEXIT;
 		}
 		exscript(path,argv);
@@ -1511,10 +1515,10 @@ static int checkdotpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int 
 	if(pp->len==1 && *stkptr(sh.stk,offset)=='/')
 		stkseek(sh.stk,offset);
 	sfputr(sh.stk,"/.paths",0);
-	if((fd=open(stkptr(sh.stk,offset),O_RDONLY))>=0)
+	if(unlikely((fd=open(stkptr(sh.stk,offset),O_RDONLY))>=0))
 	{
 		fstat(fd,&statb);
-		if(!S_ISREG(statb.st_mode))
+		if(unlikely(!S_ISREG(statb.st_mode)))
 		{
 			/* .paths cannot be a directory */
 			ast_close(fd);

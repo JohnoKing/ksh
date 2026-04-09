@@ -98,7 +98,7 @@ static void* llist(Dt_t* dt, Dtlink_t* lnk, int type)
 	Dtlist_t	*list = (Dtlist_t*)dt->data;
 
 	if(type&(DT_FLATTEN|DT_EXTRACT) )
-	{	if(lnk) /* error on calling */
+	{	if(unlikely(lnk)) /* error on calling */
 			return NULL;
 
 		lnk = list->link;
@@ -140,8 +140,7 @@ static void* dtlist(Dt_t* dt, void* obj, int type)
 	Dtdisc_t	*disc = dt->disc;
 	Dtlist_t	*list = (Dtlist_t*)dt->data;
 
-	type = DTTYPE(dt,type); /* map type for upward compatibility */
-	if(!(type&DT_OPERATIONS) )
+	if(unlikely(!(type&DT_OPERATIONS)) )
 		return NULL;
 
 	DTSETLOCK(dt);
@@ -309,7 +308,7 @@ static int listevent(Dt_t* dt, int event, void* arg)
 	if(event == DT_OPEN)
 	{	if(list) /* already initialized */
 			return 0;
-		if(!(list = (Dtlist_t*)(*dt->memoryf)(dt, 0, sizeof(Dtlist_t), dt->disc)) )
+		if(unlikely(!(list = (Dtlist_t*)(*dt->memoryf)(dt, 0, sizeof(Dtlist_t), dt->disc)) ))
 		{	DTERROR(dt, "Error in allocating a list data structure");
 			return -1;
 		}

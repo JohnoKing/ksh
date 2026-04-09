@@ -35,7 +35,7 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 	unsigned short	sflags;
 
 	/* get the control flags */
-	if((sflags = _sftype(mode,&oflags,&fflags)) == 0)
+	if(unlikely((sflags = _sftype(mode,&oflags,&fflags)) == 0))
 		return NULL;
 
 	/* changing the control flags */
@@ -86,10 +86,10 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 			return NULL;
 
 #if _has_oflags /* open the file */
-		while((fd = open((char*)file,oflags,SFIO_CREATMODE)) < 0 && errno == EINTR)
+		while((fd = open((char*)file,oflags,SFIO_CREATMODE)) < 0 && unlikely(errno == EINTR))
 			errno = 0;
 #else
-		while((fd = open(file,oflags&O_ACCMODE)) < 0 && errno == EINTR)
+		while((fd = open(file,oflags&O_ACCMODE)) < 0 && unlikely(errno == EINTR))
 			errno = 0;
 		if(fd >= 0)
 		{	if((oflags&(O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL) )
@@ -99,19 +99,19 @@ Sfio_t* _sfopen(Sfio_t*		f,		/* old stream structure */
 			if(oflags&O_TRUNC )	/* truncate file */
 			{	int	tf;
 				while((tf = creat(file,SFIO_CREATMODE)) < 0 &&
-				      errno == EINTR)
+				      unlikely(errno == EINTR))
 					errno = 0;
 				ast_close(tf);
 			}
 		}
 		else if(oflags&O_CREAT)
-		{	while((fd = creat(file,SFIO_CREATMODE)) < 0 && errno == EINTR)
+		{	while((fd = creat(file,SFIO_CREATMODE)) < 0 && unlikely(errno == EINTR))
 				errno = 0;
 			if((oflags&O_ACCMODE) != O_WRONLY)
 			{	/* the file now exists, reopen it for read/write */
 				ast_close(fd);
 				while((fd = open(file,oflags&O_ACCMODE)) < 0 &&
-				      errno == EINTR)
+				      unlikely(errno == EINTR))
 					errno = 0;
 			}
 		}

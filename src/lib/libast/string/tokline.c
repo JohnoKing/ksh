@@ -162,18 +162,18 @@ tokline(const char* arg, int flags, int* line)
 
 	static int	hidden;
 
-	if (!(d = newof(0, Splice_t, 1, 0)))
+	if (unlikely(!(d = newof(0, Splice_t, 1, 0))))
 		return NULL;
-	if (!(s = sfopen(NULL, NULL, "s")))
+	if (unlikely(!(s = sfopen(NULL, NULL, "s"))))
 	{
-		free(d);
+		free_sized(d, sizeof(Splice_t));
 		return NULL;
 	}
 	if (!(flags & (SFIO_STRING|SFIO_READ)))
 		f = (Sfio_t*)arg;
-	else if (!(f = sfopen(NULL, arg, (flags & SFIO_STRING) ? "s" : "r")))
+	else if (unlikely(!(f = sfopen(NULL, arg, (flags & SFIO_STRING) ? "s" : "r"))))
 	{
-		free(d);
+		free_sized(d, sizeof(Splice_t));
 		sfclose(s);
 		return NULL;
 	}

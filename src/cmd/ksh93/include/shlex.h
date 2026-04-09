@@ -165,11 +165,11 @@ typedef struct  _shlex_
 #define LBRACT	'['
 #define RBRACT	']'
 
-extern int		sh_lex(Lex_t*);
+extern int		sh_lex(Lex_t*) NONNULL(1);
 extern Shnode_t		*sh_dolparen(Lex_t*);
-extern Lex_t		*sh_lexopen(Lex_t*, int);
-extern void 		sh_lexskip(Lex_t*,int,int,int);
-extern noreturn void 	sh_syntax(Lex_t*, int);
+extern Lex_t		*sh_lexopen(Lex_t*, int) returns_nonnull;
+extern void		sh_lexskip(Lex_t*,int,int,int) NONNULL(1);
+extern noreturn void	sh_syntax(Lex_t*, int) cold NONNULL(1);
 
 #if SHOPT_KIA
     typedef struct

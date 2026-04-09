@@ -37,14 +37,14 @@ fmtbuf(size_t n)
 {
 	char*	cur;
 
-	if (n > (size_t)(&buf[elementsof(buf)] - nxt))
+	if (unlikely(n > (size_t)(&buf[elementsof(buf)] - nxt)))
 	{
-		if (n > elementsof(buf))
+		if (unlikely(n > elementsof(buf)))
 		{
 			if (n > bigsiz)
 			{
 				bigsiz = roundof(n, 8U * 1024U);
-				if (!(big = newof(big, char, bigsiz, 0)))
+				if (unlikely(!(big = newof(big, char, bigsiz, 0))))
 					return NULL;
 			}
 			return big;

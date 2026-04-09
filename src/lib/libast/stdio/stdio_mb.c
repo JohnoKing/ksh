@@ -206,19 +206,19 @@ vfwprintf(Sfio_t* f, const wchar_t* fmt, va_list args)
 
 	FWIDE(f, -1);
 	n = wcstombs(NULL, fmt, 0);
-	if (m = malloc(n + 1))
+	if (likely(m = malloc(n + 1)))
 	{
-		if (t = sfstropen())
+		if (likely(t = sfstropen()))
 		{
 			wcstombs(m, fmt, n + 1);
 			sfvprintf(t, m, args);
 			free(m);
-			if (!(x = sfstruse(t)))
+			if (unlikely(!(x = sfstruse(t))))
 				v = -1;
 			else
 			{
 				n = mbstowcs(NULL, x, 0);
-				if (w = (wchar_t*)sfreserve(f, (ssize_t)(n * sizeof(wchar_t) + 1), 0))
+				if (likely(w = (wchar_t*)sfreserve(f, (ssize_t)(n * sizeof(wchar_t) + 1), 0)))
 					v = (int)mbstowcs(w, x, n + 1);
 				else
 					v = -1;
@@ -295,9 +295,9 @@ vfwscanf(Sfio_t* f, const wchar_t* fmt, va_list args)
 
 	FWIDE(f, EOF);
 	n = wcstombs(NULL, fmt, 0);
-	if (w = newof(0, Wide_t, 1, n))
+	if (likely(w = newof(0, Wide_t, 1, n)))
 	{
-		if (t = sfnew(NULL, buf, sizeof(buf), (int)astconf_long(CONF_OPEN_MAX)+1, SFIO_READ))
+		if (likely(t = sfnew(NULL, buf, sizeof(buf), (int)astconf_long(CONF_OPEN_MAX)+1, SFIO_READ)))
 		{
 			w->sfdisc.exceptf = wideexcept;
 			w->sfdisc.readf = wideread;
@@ -332,7 +332,7 @@ vswprintf(wchar_t* s, size_t n, const wchar_t* fmt, va_list args)
 	Sfio_t	f;
 	int	v;
 
-	if (!s)
+	if (unlikely(!s))
 		return -1;
 
 	/*
@@ -362,7 +362,7 @@ vswscanf(const wchar_t* s, const wchar_t* fmt, va_list args)
 {
 	Sfio_t	f;
 
-	if (!s)
+	if (unlikely(!s))
 		return -1;
 
 	/*

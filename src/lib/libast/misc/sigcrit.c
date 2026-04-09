@@ -65,10 +65,10 @@ sigcritical(int op)
 
 	if (op > 0)
 	{
-		if (!level++)
+		if (likely(!level++))
 		{
 			region = op;
-			if (op & SIG_REG_SET)
+			if (unlikely(op & SIG_REG_SET))
 				level--;
 			sigemptyset(&nmask);
 			for (i = 0; i < elementsof(signals); i++)
@@ -78,7 +78,7 @@ sigcritical(int op)
 		}
 		return level;
 	}
-	else if (op < 0)
+	else if (unlikely(op < 0))
 	{
 		sigpending(&nmask);
 		for (i = 0; i < elementsof(signals); i++)
@@ -101,7 +101,7 @@ sigcritical(int op)
 		 * invoke sigcritical(0).)
 		 */
 
-		if (--level <= 0)
+		if (likely(--level <= 0))
 		{
 			level = 0;
 			sigprocmask(SIG_SETMASK, &mask, NULL);

@@ -28,7 +28,7 @@ Sfoff_t sfsize(Sfio_t* f)
 	int		mode;
 	Sfoff_t		s;
 
-	if(!f || ((mode = f->mode&SFIO_RDWR) != (int)f->mode && _sfmode(f,mode,0) < 0))
+	if(unlikely(!f || ((mode = f->mode&SFIO_RDWR) != (int)f->mode && _sfmode(f,mode,0) < 0)))
 		return (Sfoff_t)(-1);
 
 	if(f->flags&SFIO_STRING)

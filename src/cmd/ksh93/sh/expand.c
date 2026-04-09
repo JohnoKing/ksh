@@ -79,7 +79,7 @@ int path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 	if(sh_isoption(SH_GLOBCASEDET))
 		flags |= GLOB_DCASE;
 #endif
-	if(sh_isstate(SH_COMPLETE))	/* command completion */
+	if(unlikely(sh_isstate(SH_COMPLETE)))	/* command completion */
 	{
 		extra += scantree(sh.alias_tree,pattern,arghead);
 		extra += scantree(sh.fun_tree,pattern,arghead);
@@ -87,7 +87,7 @@ int path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 		flags |= GLOB_COMPLETE;
 		flags &= ~GLOB_NOCHECK;
 	}
-	if(sh_isstate(SH_FCOMPLETE))	/* file name completion */
+	if(unlikely(sh_isstate(SH_FCOMPLETE)))	/* file name completion */
 		flags |= GLOB_FCOMPLETE;
 	gp->gl_fignore = nv_getval(sh_scoped(FIGNORENOD));
 	if(suflen)
@@ -129,7 +129,7 @@ int path_expand(const char *pattern, struct argnod **arghead, int musttrim)
 		if(!ap->argnxt.ap)
 			ap->argchn.ap = *arghead;
 	}
-	if(gp->gl_list)
+	if(likely(gp->gl_list))  /* acc. gcov */
 		*arghead = (struct argnod*)gp->gl_list;
 	return gp->gl_pathc+extra;
 }
@@ -369,7 +369,7 @@ again:
 			for(; ap; ap=apin)
 			{
 				apin = ap->argchn.ap;
-				if(!sh_isoption(SH_NOGLOB) || sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE))
+				if(!sh_isoption(SH_NOGLOB) || unlikely(sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE)))
 					brace = path_expand(ap->argval,arghead,musttrim);
 				else
 				{

@@ -60,7 +60,7 @@ static void addmapping(Dosdisc_t *dp)
 	if((n=dp->maptop++)>=(ssize_t)dp->mapsize)
 	{
 		dp->mapsize *= 2;
-		if(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map))))
+		if(unlikely(!(dp->maptable=(struct map*)realloc(dp->maptable,(dp->mapsize+1)*sizeof(struct map)))))
 		{
 			dp->maptop--;
 			dp->mapsize *= 2;
@@ -149,7 +149,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 	if(!dp->maptable)
 	{
 		dp->begin += cp - (char*)buff-1;
-		if(dp->maptable=(struct map*)malloc((MINMAP+1)*sizeof(struct map)))
+		if(likely(dp->maptable=(struct map*)malloc((MINMAP+1)*sizeof(struct map))))
 		{
 			dp->mapsize = MINMAP;
 			dp->maptable[0].logical=  dp->begin;
@@ -159,7 +159,7 @@ static ssize_t dos_read(Sfio_t *iop, void *buff, size_t size, Sfdisc_t* disc)
 		}
 	}
 	/* save original discipline inside buffer */
-	if(count > dp->bsize && !(dp->buff = realloc(dp->buff, (size_t)(dp->bsize = count))))
+	if(count > dp->bsize && unlikely(!(dp->buff = realloc(dp->buff, (size_t)(dp->bsize = count)))))
 		return -1;
 	memcpy(dp->buff, cp, (size_t)count);
 	count=1;
@@ -343,7 +343,7 @@ int sfdcdos(Sfio_t *f)
 	if(sfset(f,0,0)&SFIO_WRITE)
 		return -1;
 
-	if(!(dos = (Dosdisc_t*)malloc(sizeof(Dosdisc_t))) )
+	if(unlikely(!(dos = (Dosdisc_t*)malloc(sizeof(Dosdisc_t)))) )
 		return -1;
 	memset(dos,'\0',sizeof(Dosdisc_t));
 
@@ -353,7 +353,7 @@ int sfdcdos(Sfio_t *f)
 	dos->disc.exceptf = dos_except;
 
 	if(sfdisc(f,(Sfdisc_t*)dos) != (Sfdisc_t*)dos)
-	{	free(dos);
+	{	free_sized(dos, sizeof(Dosdisc_t));
 		return -1;
 	}
 

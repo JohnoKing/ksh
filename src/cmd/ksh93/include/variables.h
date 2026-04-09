@@ -30,8 +30,8 @@ struct rand
 	unsigned short	rand_seed[3];
 	int32_t		rand_last;
 };
-extern void sh_reseed_rand(struct rand *);
-extern void sh_save_rand_seed(struct rand *, int);
+extern void sh_reseed_rand(struct rand *) NONNULL(1);
+extern void sh_save_rand_seed(struct rand *, int) NONNULL(1);
 
 #define RAND_SEED_INVALIDATED		-2
 #define sh_invalidate_rand_seed()	(((struct rand*)RANDNOD->nvfun)->rand_last = RAND_SEED_INVALIDATED)

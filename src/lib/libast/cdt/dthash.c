@@ -69,7 +69,7 @@ static int htable(Dt_t* dt)
 		return 0;
 
 	/* allocate new table */
-	if(!(htbl = (Dtlink_t**)(*dt->memoryf)(dt, 0, (size_t)n*sizeof(Dtlink_t*), disc)) )
+	if(unlikely(!(htbl = (Dtlink_t**)(*dt->memoryf)(dt, 0, (size_t)n*sizeof(Dtlink_t*), disc)) ))
 	{	DTERROR(dt, "Error in allocating an extended hash table");
 		return -1;
 	}
@@ -257,8 +257,7 @@ static void* dthashchain(Dt_t* dt, void* obj, int type)
 	Dtdisc_t	*disc = dt->disc;
 	Dthash_t	*hash = (Dthash_t*)dt->data;
 
-	type = DTTYPE(dt,type); /* map type for upward compatibility */
-	if(!(type&DT_OPERATIONS) )
+	if(unlikely(!(type&DT_OPERATIONS)) )
 		return NULL;
 
 	DTSETLOCK(dt);
@@ -408,7 +407,7 @@ static int hashevent(Dt_t* dt, int event, void* arg)
 	if(event == DT_OPEN)
 	{	if(hash)
 			return 0;
-		if(!(hash = (Dthash_t*)(*dt->memoryf)(dt, 0, sizeof(Dthash_t), dt->disc)) )
+		if(unlikely(!(hash = (Dthash_t*)(*dt->memoryf)(dt, 0, sizeof(Dthash_t), dt->disc)) ))
 		{	DTERROR(dt, "Error in allocating a hash table with chaining");
 			return -1;
 		}

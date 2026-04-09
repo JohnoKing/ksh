@@ -149,17 +149,17 @@ int	wordexp(const char *string, wordexp_t *wdarg, int flags)
 		c += wdarg->we_offs;
 	if(flags&WRDE_APPEND)
 		av = (char**)realloc(&wdarg->we_wordv[-1], (wdarg->we_wordc+(size_t)c)*sizeof(char*));
-	else if(av = (char**)malloc((size_t)c*sizeof(char*)))
+	else if(likely(av = (char**)malloc((size_t)c*sizeof(char*))))
 	{
 		if(flags&WRDE_DOOFFS)
 			memset(av,0,(wdarg->we_offs+1)*sizeof(char*));
 		else
 			av[0] = 0;
 	}
-	if(!av)
+	if(unlikely(!av))
 		return WRDE_NOSPACE;
 	c = (int)stktell(stkstd);
-	if(!(cp = (char*)malloc(sizeof(char*)+(size_t)c)))
+	if(unlikely(!(cp = (char*)malloc(sizeof(char*)+(size_t)c))))
 	{
 		c=WRDE_NOSPACE;
 		goto err;

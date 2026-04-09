@@ -58,7 +58,7 @@ ssize_t sfrd(Sfio_t* f, void* buf, size_t n, Sfdisc_t* disc)
 	int		local, dosync, oerrno;
 	uint32_t	rcrv;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);

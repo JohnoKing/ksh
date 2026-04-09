@@ -39,12 +39,12 @@ NoN(strlcat)
  */
 
 extern size_t
-strlcat(char* s, const char* t, size_t n)
+strlcat(char *restrict s, const char *restrict t, size_t n)
 {
 	size_t	m;
 	const char*	o = t;
 
-	if (m = n)
+	if (likely(m = n))
 	{
 		while (n && *s)
 		{

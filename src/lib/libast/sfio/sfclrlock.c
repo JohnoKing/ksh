@@ -29,7 +29,7 @@ int sfclrlock(Sfio_t* f)
 	int	rv;
 
 	/* already closed */
-	if(f && (f->mode&SFIO_AVAIL) || !f)
+	if(f && (f->mode&SFIO_AVAIL) || unlikely(!f))
 		return 0;
 
 	/* clear error bits */

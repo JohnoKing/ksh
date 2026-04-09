@@ -33,11 +33,13 @@ int sfpoll(Sfio_t** fa,	/* array of streams to poll		*/
 	int		r, c, m, np, eintr;
 	Sfio_t*		f;
 	int		*status, *check;
+	size_t		alloc_size = 0, status_alloc_size;
 
-	if(n <= 0 || !fa)
+	if(unlikely(n <= 0 || !fa))
 		return -1;
 
-	if(!(status = (int*)malloc(2*(size_t)n*sizeof(int))) )
+	status_alloc_size = 2*(size_t)n*sizeof(int);
+	if(unlikely(!(status = (int*)malloc(status_alloc_size))) )
 		return -1;
 	check = status+n; /* streams that need polling */
 
@@ -104,7 +106,8 @@ int sfpoll(Sfio_t** fa,	/* array of streams to poll		*/
 			if(HASAUXFD(f))
 				m += 1;
 		}
-		if(!(fds = (struct pollfd*)malloc(m*sizeof(struct pollfd))) )
+		alloc_size = m*sizeof(struct pollfd);
+		if(unlikely(!(fds = (struct pollfd*)malloc(alloc_size))) )
 			return -1;
 
 		for(m = 0, r = 0; r < c; ++r, ++m)
@@ -152,7 +155,7 @@ int sfpoll(Sfio_t** fa,	/* array of streams to poll		*/
 			}
 		}
 
-		free(fds);
+		free_sized(fds, alloc_size);
 	}
 #endif /*_lib_poll*/
 
@@ -239,6 +242,6 @@ int sfpoll(Sfio_t** fa,	/* array of streams to poll		*/
 		r += 1;
 	}
 
-	free(status);
+	free_sized(status,status_alloc_size);
 	return r ? r : np < 0 ? -1 : 0;
 }

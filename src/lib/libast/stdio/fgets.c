@@ -27,7 +27,7 @@ _stdgets(Sfio_t* f, char* us, ptrdiff_t n, int isgets)
 	unsigned char*	is;
 	unsigned char*	ps;
 
-	if(n <= 0 || !us || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
+	if(unlikely(n <= 0 || !us || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)))
 		return NULL;
 
 	SFLOCK(f,0);

@@ -98,6 +98,7 @@ int sfdcprefix(Sfio_t* f, const char* prefix)
 	Prefix_t*	pfx;
 	char*		s;
 	size_t		n;
+	size_t		alloc_size;
 
 	/*
 	 * this is a writeonly discipline
@@ -105,7 +106,8 @@ int sfdcprefix(Sfio_t* f, const char* prefix)
 
 	if (!prefix || !(n = strlen(prefix)) || !(sfset(f, 0, 0) & SFIO_WRITE))
 		return -1;
-	if (!(pfx = (Prefix_t*)malloc(sizeof(Prefix_t) + n)))
+	alloc_size = sizeof(Prefix_t) + n;
+	if (unlikely(!(pfx = (Prefix_t*)malloc(alloc_size))))
 		return -1;
 	memset(pfx, 0, sizeof(*pfx));
 
@@ -122,7 +124,7 @@ int sfdcprefix(Sfio_t* f, const char* prefix)
 
 	if (sfdisc(f, &pfx->disc) != &pfx->disc)
 	{
-		free(pfx);
+		free_sized(pfx,alloc_size);
 		return -1;
 	}
 

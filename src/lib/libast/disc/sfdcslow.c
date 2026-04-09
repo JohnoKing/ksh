@@ -51,7 +51,7 @@ int sfdcslow(Sfio_t* f)
 {
 	Sfdisc_t*	disc;
 
-	if(!(disc = (Sfdisc_t*)malloc(sizeof(Sfdisc_t))) )
+	if(unlikely(!(disc = (Sfdisc_t*)malloc(sizeof(Sfdisc_t)))) )
 		return -1;
 
 	disc->readf = NULL;
@@ -60,7 +60,7 @@ int sfdcslow(Sfio_t* f)
 	disc->exceptf = slowexcept;
 
 	if(sfdisc(f,disc) != disc)
-	{	free(disc);
+	{	free_sized(disc, sizeof(Sfdisc_t));
 		return -1;
 	}
 	sfset(f,SFIO_IOINTR,1);

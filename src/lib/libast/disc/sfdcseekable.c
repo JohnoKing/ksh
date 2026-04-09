@@ -174,7 +174,7 @@ int sfdcseekable(Sfio_t* f)
 	if(sfseek(f,0,SEEK_CUR) >= 0)
 		return 0;
 
-	if(!(sk = (Seek_t*)malloc(sizeof(Seek_t))) )
+	if(unlikely(!(sk = (Seek_t*)malloc(sizeof(Seek_t)))) )
 		return -1;
 	memset(sk, 0, sizeof(*sk));
 
@@ -189,7 +189,7 @@ int sfdcseekable(Sfio_t* f)
 
 	if(sfdisc(f, (Sfdisc_t*)sk) != (Sfdisc_t*)sk)
 	{	sfclose(sk->shadow);
-		free(sk);
+		free_sized(sk, sizeof(Seek_t));
 		return -1;
 	}
 

@@ -36,6 +36,10 @@
 #include <namval.h>
 #include <error.h>
 
+#ifdef bmi2
+#include <x86intrin.h>
+#endif
+
 #if ( _lib_wcwidth || _lib_wctomb ) && _hdr_wctype
 #include <wctype.h>
 #endif
@@ -186,8 +190,8 @@ static unsigned char debug_order[] =
 	248, 249, 250, 251, 252, 253, 254, 255,
 };
 
-static int
-debug_mbtowc(wchar_t* p, const char* s, size_t n)
+static cold int
+debug_mbtowc(wchar_t *restrict p, const char *restrict s, size_t n)
 {
 	const char*	q;
 	const char*	r;
@@ -240,7 +244,7 @@ debug_mbtowc(wchar_t* p, const char* s, size_t n)
 	return w;
 }
 
-static int
+static cold int
 debug_wctomb(char* s, wchar_t c)
 {
 	int	w;
@@ -279,13 +283,13 @@ debug_wctomb(char* s, wchar_t c)
 	return w;
 }
 
-static int
+static cold int
 debug_mblen(const char* s, size_t n)
 {
 	return debug_mbtowc(NULL, s, n);
 }
 
-static int
+static cold int
 debug_wcwidth(wchar_t c)
 {
 	if (c >= 0 && c <= UCHAR_MAX)
@@ -295,13 +299,13 @@ debug_wcwidth(wchar_t c)
 	return c + DD;
 }
 
-static int
+static cold int
 debug_alpha(wchar_t c)
 {
 	return isalpha((c >> DZ) & ((1<<DC)-1));
 }
 
-static size_t
+static cold size_t
 debug_strxfrm(char* t, const char* s, size_t n)
 {
 	const char*	q;
@@ -395,7 +399,7 @@ debug_strxfrm(char* t, const char* s, size_t n)
 	return (size_t)(t - o);
 }
 
-static int
+static cold int
 debug_strcoll(const char* a, const char* b)
 {
 	char	ab[1024];
@@ -437,7 +441,7 @@ default_wcwidth(wchar_t w)
 static int
 set_collate(Lc_category_t* cp)
 {
-	if (locales[cp->internal]->flags & LC_debug)
+	if (unlikely(locales[cp->internal]->flags & LC_debug))
 	{
 		ast.locale.collate = debug_strcoll;
 		ast.locale.transform = debug_strxfrm;
@@ -466,7 +470,7 @@ static mbstate_t	sjis_state_zero;
 static mbstate_t	sjis_state;
 
 static int
-sjis_mbtowc(wchar_t* p, const char* s, size_t n)
+sjis_mbtowc(wchar_t *restrict p, const char *restrict s, size_t n)
 {
 	if (n && p && s && (*s == '\\' || *s == '~') && !memcmp(&sjis_state, &sjis_state_zero, sizeof(mbstate_t)))
 	{
@@ -499,7 +503,7 @@ static const uint32_t		utf8mask[] =
 	0xfc000000,
 };
 
-static const unsigned char	utf8tab[256] =
+static const uint_least3_t	utf8tab[256] =
 {
 	0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -519,57 +523,117 @@ static const unsigned char	utf8tab[256] =
 	4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 0, 0,
 };
 
-static int
-utf8_mbtowc(wchar_t* wp, const char* str, size_t n)
+static cold int utf8_eilseq_err(unsigned char i)
 {
-	unsigned char*	sp = (unsigned char*)str;
-	size_t		m;
-	size_t		i;
-	int		c;
-	wchar_t		w = 0;
-
-	if (!sp || !n)
-		return ast.mb.sync = 0;
-	if ((m = utf8tab[*sp]) > 0)
-	{
-		if (m > n)
-			goto invalid;
-		if (wp)
-		{
-			if (m == 1)
-			{
-				*wp = *sp;
-				return 1;
-			}
-			w = *sp & ((1<<(8-m))-1);
-			for (i = m - 1; i > 0; i--)
-			{
-				c = *++sp;
-				if ((c&0xc0) != 0x80)
-					goto invalid;
-				w = (w<<6) | (c&0x3f);
-			}
-			if (!(utf8mask[m] & (uint32_t)w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
-				goto invalid;
-			*wp = w;
-		}
-		return (int)m;
-	}
-	if (!*sp)
-		return ast.mb.sync = 0;
- invalid:
 	errno = EILSEQ;
-	ast.mb.sync = (uint32_t)((const char*)sp - str);
+	ast.mb.sync = i;
 	return -1;
 }
 
-static int
+/*
+ * This is libast's performance optimized implementation of C99 mbtowc.
+ * It places ASCII on the fast codepath without sacrificing too much
+ * UTF performance. The BMI2 codepath uses the bzhi instruction to
+ * negate the branch prediction penalty almost completely.
+ * According to gcov and gperf this is among the most frequently called
+ * functions in this codebase (it usually deals with ASCII characters
+ * in shell scripts). The function ought be structured for the best
+ * possible branch prediction, since cache misses will tank performance
+ * here.
+ */
+static hot always_inline int
+utf8_mbtowc(wchar_t *restrict wp, const char *restrict str, size_t n)
+{
+	unsigned char*	sp = (unsigned char*)str;
+	unsigned char	i, m, s;
+	uint32_t	w;
+
+	if (expect(!sp || !n || !(s = *sp), 1, 0.02))
+		return ast.mb.sync = 0;
+	if (expect(s < 0x80, 1, 0.75))
+	{
+		/* avoid table lookup for ASCII (hot code path) */
+		if(likely(wp))
+			*wp = s;
+		return 1;
+	}
+	m = utf8tab[s];
+	if (!m || m > n)
+		return utf8_eilseq_err(0);
+	ASSUME(m > 1);
+	w = s & ((1 << (8 - m)) - 1);
+	for (i = 1; i < m; i++)
+	{
+		unsigned char c = sp[i];
+		if ((c & 0xc0) != 0x80)
+			return utf8_eilseq_err(i);
+		w = (w << 6) | (c & 0x3f);
+	}
+	if (!(utf8mask[m] & w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
+		return utf8_eilseq_err(i - 1);
+	if (likely(wp))
+		*wp = (wchar_t)w;
+	return (int)m;
+}
+
+static hot int
 utf8_mblen(const char* str, size_t n)
 {
 	wchar_t		w;
 
 	return utf8_mbtowc(&w, str, n);
 }
+
+/*
+ * The BMI2-optimized versions are manually dispatched, which helpfully also
+ * allows us to use the hot attribute and avoids a harmful if branch. The
+ * difference is small, but not negligible.
+ */
+
+#ifdef bmi2
+static bmi2 hot always_inline int
+utf8_bmi2_mbtowc(wchar_t *restrict wp, const char *restrict str, size_t n)
+{
+	unsigned char*	sp = (unsigned char*)str;
+	unsigned char	i, m, s;
+	uint32_t	w;
+
+	if (expect(!sp || !n || !(s = *sp), 1, 0.02))
+		return ast.mb.sync = 0;
+	if (expect(s < 0x80, 1, 0.75))
+	{
+		/* avoid table lookup for ASCII (hot code path) */
+		if(likely(wp))
+			*wp = s;
+		return 1;
+	}
+	m = utf8tab[s];
+	if (!m || m > n)
+		return utf8_eilseq_err(0);
+	ASSUME(m > 1);
+	w = _bzhi_u32(s, 8 - m);
+	for (i = 1; i < m; i++)
+	{
+		unsigned char c = sp[i];
+		if ((c & 0xc0) != 0x80)
+			return utf8_eilseq_err(i);
+		w = (w << 6) | (c & 0x3f);
+	}
+	if (!(utf8mask[m] & w) || w >= 0xd800 && (w <= 0xdfff || w >= 0xfffe && w <= 0xffff))
+		return utf8_eilseq_err(i - 1);
+	if (likely(wp))
+		*wp = (wchar_t)w;
+	return (int)m;
+}
+
+static bmi2 hot int
+utf8_bmi2_mblen(const char* str, size_t n)
+{
+	wchar_t		w;
+
+	return utf8_bmi2_mbtowc(&w, str, n);
+}
+#endif
 
 static const unsigned char	utf8_wcw[] =
 {
@@ -1604,7 +1668,7 @@ utf8_wcwidth(wchar_t c)
 {
 	int	n;
 
-	return (n = (utf8_wcw[(c >> 2) & 0x3fff] >> ((c & 0x3) << 1)) & 0x3) == 3 ? -1 : n;
+	return unlikely((n = (utf8_wcw[(c >> 2) & 0x3fff] >> ((c & 0x3) << 1)) & 0x3) == 3) ? -1 : n;
 }
 
 static const unsigned char	utf8_wam[] =
@@ -2139,6 +2203,13 @@ utf8_alpha(wchar_t c)
 
 #endif /* !AST_NOMULTIBYTE */
 
+#ifndef bmi2
+
+#define utf8_bmi2_mbtowc	0
+#define utf8_bmi2_mblen		0
+
+#endif /* bmi2 */
+
 #if !_hdr_wchar || !_lib_wctype || !_lib_iswctype
 #undef	iswalpha
 #define iswalpha	default_iswalpha
@@ -2191,7 +2262,7 @@ set_ctype(Lc_category_t* cp)
 		sfprintf(sfstderr, "locale setf %17s %16s\n", cp->name, locales[cp->internal]->name);
 #endif
 #if !AST_NOMULTIBYTE
-	if (locales[cp->internal]->flags & LC_debug)
+	if (unlikely(locales[cp->internal]->flags & LC_debug))
 	{
 		ast.mb.cur_max = DEBUG_MB_CUR_MAX;
 		ast.mb.len = debug_mblen;
@@ -2200,15 +2271,25 @@ set_ctype(Lc_category_t* cp)
 		ast.mb.conv = debug_wctomb;
 		ast.mb.alpha = debug_alpha;
 	}
-	else if ((locales[cp->internal]->flags & LC_utf8) && !(ast.locale.set & AST_LC_test))
+	else if (likely((locales[cp->internal]->flags & LC_utf8) && !(ast.locale.set & AST_LC_test)))
 	{
 		ast.mb.cur_max = 6;
-		ast.mb.len = utf8_mblen;
-		ast.mb.towc = utf8_mbtowc;
+#ifdef bmi2
+		if(__builtin_cpu_supports("bmi2"))
+		{
+			ast.mb.len = utf8_bmi2_mblen;
+			ast.mb.towc = utf8_bmi2_mbtowc;
+		}
+		else
+#endif
+		{
+			ast.mb.len = utf8_mblen;
+			ast.mb.towc = utf8_mbtowc;
+		}
 		if ((locales[cp->internal]->flags & LC_local) || !(ast.mb.width = wcwidth))
 			ast.mb.width = utf8_wcwidth;
-		ast.mb.conv = utf8_wctomb;
 		ast.mb.alpha = utf8_alpha;
+		ast.mb.conv = utf8_wctomb;
 	}
 	else if ((locales[cp->internal]->flags & LC_default) || (ast.mb.cur_max = (uint32_t)MB_CUR_MAX) <= 1 || !(ast.mb.len = mblen) || !(ast.mb.towc = mbtowc))
 	{
@@ -2284,7 +2365,7 @@ set_numeric(Lc_category_t* cp)
 	{
 		if (locales[cp->internal]->flags & LC_local)
 			dp = locales[cp->internal]->territory == &lc_territories[0] ? &default_numeric : *locales[cp->internal]->territory->code == 'e' ? &eu_numeric : &us_numeric;
-		else if ((lp = localeconv()) && (dp = newof(0, Lc_numeric_t, 1, 0)))
+		else if ((lp = localeconv()) && likely(dp = newof(0, Lc_numeric_t, 1, 0)))
 		{
 			dp->decimal = lp->decimal_point && *lp->decimal_point ? *(unsigned char*)lp->decimal_point : '.';
 			dp->thousand = lp->thousands_sep && *lp->thousands_sep ? *(unsigned char*)lp->thousands_sep : -1;
@@ -2469,15 +2550,15 @@ single(int category, Lc_t* lc, unsigned int flags)
 		return (char*)lc->name;
 	}
 #if !AST_NOMULTIBYTE
-	if ((ast.locale.set & (AST_LC_debug|AST_LC_setlocale)) && !(ast.locale.set & AST_LC_internal))
+	if (unlikely(ast.locale.set & (AST_LC_debug|AST_LC_setlocale)) && !(ast.locale.set & AST_LC_internal))
 	{
 		header();
 		sfprintf(sfstderr, "locale set  %17s %16s %16s %16s", lc_categories[category].name, lc->name, sys, lc_categories[category].prev ? lc_categories[category].prev->name : NULL);
 		if (category == AST_LC_CTYPE)
 			sfprintf(sfstderr, " MB_CUR_MAX=%d%s%s%s%s%s"
 				, ast.mb.cur_max
-				, ast.mb.len == debug_mblen ? " debug_mblen" : ast.mb.len == utf8_mblen ? " utf8_mblen" : ast.mb.len == mblen ? " mblen" : ""
-				, ast.mb.towc == debug_mbtowc ? " debug_mbtowc" : ast.mb.towc == utf8_mbtowc ? " utf8_mbtowc" : ast.mb.towc == mbtowc ? " mbtowc"
+				, ast.mb.len == debug_mblen ? " debug_mblen" : ast.mb.len == utf8_mblen ? " utf8_mblen" : ast.mb.len == utf8_bmi2_mblen ? " utf8_bmi2_mblen" : ast.mb.len == mblen ? " mblen" : ""
+				, ast.mb.towc == debug_mbtowc ? " debug_mbtowc" : ast.mb.towc == utf8_mbtowc ? " utf8_mbtowc" : ast.mb.towc == utf8_bmi2_mbtowc ? " utf8_bmi2_mbtowc" : ast.mb.towc == mbtowc ? " mbtowc"
 #if sjis_workaround
 					: ast.mb.towc == sjis_mbtowc ? " sjis_mbtowc"
 #endif
@@ -2652,7 +2733,7 @@ _ast_setlocale(int category, const char* locale)
 	compose:
 		if (category != AST_LC_ALL && category != AST_LC_LANG)
 			return (char*)locales[category]->name;
-		if (!sp && !(sp = sfstropen()))
+		if (!sp && unlikely(!(sp = sfstropen())))
 			return NULL;
 		for (i = 1; i < AST_LC_COUNT; i++)
 			cat[i] = -1;
@@ -2689,7 +2770,7 @@ _ast_setlocale(int category, const char* locale)
 		stropt(getenv("LC_OPTIONS"), options, sizeof(*options), setopt, NULL);
 		initialized = 0;
 	}
-	if ((ast.locale.set & (AST_LC_debug|AST_LC_setlocale)) && !(ast.locale.set & AST_LC_internal))
+	if (unlikely(ast.locale.set & (AST_LC_debug|AST_LC_setlocale)) && !(ast.locale.set & AST_LC_internal))
 	{
 		header();
 		sfprintf(sfstderr, "locale user %17s %16s %16s %16s%s%s\n", category == AST_LC_LANG ? "LANG" : lc_categories[category].name, locale && !*locale ? "''" : locale, "", "", initialized ? "" : " initial", (ast.locale.set & AST_LC_setenv) ? " setenv" : "");
@@ -2750,7 +2831,7 @@ _ast_setlocale(int category, const char* locale)
 						single(i, NULL, 0);
 					return NULL;
 				}
-			if (ast.locale.set & AST_LC_debug)
+			if (unlikely(ast.locale.set & AST_LC_debug))
 				for (i = 1; i < AST_LC_COUNT; i++)
 					sfprintf(sfstderr, "locale env  %17s %16s %16s %16s\n", lc_categories[i].name, locales[i]->name, "", lc_categories[i].prev ? lc_categories[i].prev->name : NULL);
 			initialized = 1;

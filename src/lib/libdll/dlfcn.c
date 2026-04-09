@@ -367,7 +367,7 @@
 		}
 		if (!path)
 			dll = &global;
-		else if (!(dll = newof(0, Dll_t, 1, strlen(path))))
+		else if (unlikely(!(dll = newof(0, Dll_t, 1, strlen(path)))))
 		{
 			dlmessage = e_nomemory;
 			return NULL;

@@ -56,7 +56,7 @@ prng_open(const Method_t* method, const char* name)
 	const char*	v;
 	ptrdiff_t	i;
 
-	if (sum = newof(0, Prng_t, 1, 0))
+	if (likely(sum = newof(0, Prng_t, 1, 0)))
 	{
 		sum->method = (Method_t*)method;
 		sum->name = name;

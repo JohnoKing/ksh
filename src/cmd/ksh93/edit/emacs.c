@@ -162,7 +162,7 @@ static void show_info(Emacs_t*,const char*);
 static void xcommands(Emacs_t*,int);
 static int blankline(Emacs_t*, genchar*, int);
 
-int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
+cold NONNULL(1,3) int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 {
 	Edit_t *ed = (Edit_t*)context;
 	int c;
@@ -178,7 +178,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 	char prompt[PRSIZE];
 	genchar Screen[MAXLINE];
 	/* Set raw mode */
-	if(tty_raw(ERRIO,0) < 0)
+	if(unlikely(tty_raw(ERRIO,0) < 0))
 		return reedit ? reedit : ed_read(context, fd, buff, scend, 0);
 	/* Initialize some things */
 	memset(Screen,0,sizeof(Screen));
@@ -1554,7 +1554,7 @@ static void draw(Emacs_t *ep,Draw_t option)
  * This is used from edit.c for redrawing the command line upon SIGWINCH.
  */
 
-void emacs_redraw(void *vp)
+cold NONNULL(1) void emacs_redraw(void *vp)
 {
 	Emacs_t	*ep = (Emacs_t*)vp;
 	draw(ep, REFRESH);

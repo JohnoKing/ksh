@@ -61,7 +61,7 @@ pathexists(char* path, int mode)
 	t = &tree;
 	e = (c = *path) == '/' ? path + 1 : path;
 	cmp = pathicase(path) > 0 ? strcasecmp : strcmp;
-	if ((ast.locale.set & (AST_LC_debug|AST_LC_find)) == (AST_LC_debug|AST_LC_find))
+	if (unlikely((ast.locale.set & (AST_LC_debug|AST_LC_find)) == (AST_LC_debug|AST_LC_find)))
 		sfprintf(sfstderr, "locale test %s\n", path);
 	while (c)
 	{
@@ -72,7 +72,7 @@ pathexists(char* path, int mode)
 		for (t = p->tree; t && (*cmp)(s, t->name); t = t->next);
 		if (!t)
 		{
-			if (!(t = newof(0, Tree_t, 1, strlen(s))))
+			if (unlikely(!(t = newof(0, Tree_t, 1, strlen(s)))))
 			{
 				*e = c;
 				return 0;
@@ -89,7 +89,7 @@ pathexists(char* path, int mode)
 			}
 			else
 				ee = 0;
-			if ((ast.locale.set & (AST_LC_debug|AST_LC_find)) == (AST_LC_debug|AST_LC_find))
+			if (unlikely((ast.locale.set & (AST_LC_debug|AST_LC_find)) == (AST_LC_debug|AST_LC_find)))
 				sfprintf(sfstderr, "locale stat %s\n", path);
 			x = stat(path, &st);
 			if (ee)
@@ -98,7 +98,7 @@ pathexists(char* path, int mode)
 				c = cc;
 				if (!x || errno == ENOENT)
 					t->mode = PATH_READ|PATH_EXECUTE;
-				if (!(p = newof(0, Tree_t, 1, strlen(s))))
+				if (unlikely(!(p = newof(0, Tree_t, 1, strlen(s)))))
 				{
 					*e = c;
 					return 0;

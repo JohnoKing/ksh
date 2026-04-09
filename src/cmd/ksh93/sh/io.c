@@ -138,7 +138,7 @@ getaddrinfo(const char* node, const char* service, const struct addrinfo* hint, 
 	char*			prot;
 	long			n;
 
-	if (!(hp = gethostbyname(node)) || hp->h_addrtype!=AF_INET || hp->h_length>sizeof(struct in_addr))
+	if (unlikely(!(hp = gethostbyname(node)) || hp->h_addrtype!=AF_INET || hp->h_length>sizeof(struct in_addr)))
 	{
 		errno = EADDRNOTAVAIL;
 		return EAI_SYSTEM;
@@ -171,15 +171,15 @@ getaddrinfo(const char* node, const char* service, const struct addrinfo* hint, 
 				protocol = "udp";
 				break;
 			}
-		if (!protocol)
+		if (unlikely(!protocol))
 		{
 			errno =  EPROTONOSUPPORT;
-			return 1;
+			return EAI_SYSTEM;
 		}
 		if (sp = getservbyname(service, protocol))
 			ip_port = sp->s_port;
 	}
-	if (!ip_port)
+	if (unlikely(!ip_port))
 	{
 		errno = EADDRNOTAVAIL;
 		return EAI_SYSTEM;
@@ -227,11 +227,11 @@ inetopen(const char* path, int flags)
 
 	memset(&hint, 0, sizeof(hint));
 	hint.ai_family = PF_UNSPEC;
-	switch (path[0])
+	switch (expect(path[0],-1,0.001))
 	{
 #ifdef IPPROTO_SCTP
 	case 's':
-		if (path[1]!='c' || path[2]!='t' || path[3]!='p' || path[4]!='/')
+		if (unlikely(path[1]!='c' || path[2]!='t' || path[3]!='p' || path[4]!='/'))
 		{
 			errno = ENOTDIR;
 			return -1;
@@ -242,7 +242,7 @@ inetopen(const char* path, int flags)
 		break;
 #endif
 	case 't':
-		if (path[1]!='c' || path[2]!='p' || path[3]!='/')
+		if (unlikely(path[1]!='c' || path[2]!='p' || path[3]!='/'))
 		{
 			errno = ENOTDIR;
 			return -1;
@@ -251,7 +251,7 @@ inetopen(const char* path, int flags)
 		path += 4;
 		break;
 	case 'u':
-		if (path[1]!='d' || path[2]!='p' || path[3]!='/')
+		if (unlikely(path[1]!='d' || path[2]!='p' || path[3]!='/'))
 		{
 			errno = ENOTDIR;
 			return -1;
@@ -276,7 +276,7 @@ inetopen(const char* path, int flags)
 	else
 		fd = -1;
 	free(s);
-	if (fd)
+	if (unlikely(fd))
 	{
 		if (fd != EAI_SYSTEM)
 			errno = ENOTDIR;
@@ -311,7 +311,7 @@ inetopen(const char* path, int flags)
 	}
  done:
 	freeaddrinfo(addr);
-	if (fd >= 0)
+	if (likely(fd >= 0))
 		errno = oerrno;
 	return fd;
 }
@@ -338,12 +338,12 @@ static ssize_t	piperead(Sfio_t*, void*, size_t, Sfdisc_t*);
 static ssize_t	slowread(Sfio_t*, void*, size_t, Sfdisc_t*);
 static ssize_t	subread(Sfio_t*, void*, size_t, Sfdisc_t*);
 static ssize_t	tee_write(Sfio_t*,const void*,size_t,Sfdisc_t*);
-static int	io_prompt(Sfio_t*,int);
+static cold int	io_prompt(Sfio_t*,int);
 static int	io_heredoc(struct ionod*, const char*, int);
 static void	sftrack(Sfio_t*,int,void*);
 static const Sfdisc_t eval_disc = { NULL, NULL, NULL, eval_exceptf, NULL};
 static Sfdisc_t tee_disc = {NULL,tee_write,NULL,NULL,NULL};
-static Sfio_t	*subopen(Sfio_t*, off_t, long);
+static malloc_attr Sfio_t	*subopen(Sfio_t*, off_t, long);
 static const Sfdisc_t sub_disc = { subread, 0, 0, subexcept, 0 };
 
 struct subfile
@@ -396,20 +396,20 @@ int  sh_iovalidfd(int fd)
 	int		n, **fdptrs = sh.fdptrs;
 	unsigned char	*fdstatus = sh.fdstatus;
 	long		max;
-	if(fd<0)
+	if(unlikely(fd < 0))
 		return 0;
-	if(fd < sh.lim.open_max)
+	if(likely(fd < sh.lim.open_max))
 		return 1;
 	max = astconf_long(CONF_OPEN_MAX);
-	if(max > INT_MAX)
+	if(unlikely(max > INT_MAX))
 		max = INT_MAX;
-	if(fd >= max)
+	if(unlikely(fd >= max))
 	{
 		errno = EBADF;
 		return 0;
 	}
 	n = (fd+16)&~0xf;
-	if(n > max)
+	if(unlikely(n > max))
 		n = max;
 	max = sh.lim.open_max;
 	sh.sftable = (Sfio_t**)sh_calloc((n+1)*(sizeof(int*)+sizeof(Sfio_t*)+1),1);
@@ -451,9 +451,9 @@ int  sh_iosafefd(int min_fd)
 	return min_fd;
 }
 
-int  sh_inuse(int fd)
+pure int  sh_inuse(int fd)
 {
-	return fd < sh.lim.open_max && sh.fdptrs[fd];
+	return likely(fd < sh.lim.open_max) && sh.fdptrs[fd];
 }
 
 void sh_ioinit(void)
@@ -626,7 +626,7 @@ static void io_preserve(Sfio_t *sp, int f2)
 		errormsg(SH_DICT,ERROR_system(1),e_toomany);
 		UNREACHABLE();
 	}
-	if(f2 >= sh.lim.open_max)
+	if(unlikely(f2 >= sh.lim.open_max))
 		sh_iovalidfd(f2);
 	if(sh.fdptrs[fd]=sh.fdptrs[f2])
 	{
@@ -693,7 +693,7 @@ int sh_iorenumber(int f1,int f2)
 		if(f2<=2)
 			sfset(sp,SFIO_SHARE|SFIO_PUBLIC,1);
 	}
-	if(f2>=sh.lim.open_max)
+	if(unlikely(f2>=sh.lim.open_max))
 		sh_iovalidfd(f2);
 	return f2;
 }
@@ -705,20 +705,20 @@ int sh_close(int fd)
 {
 	Sfio_t *sp;
 	int r = 0;
-	if(fd<0)
+	if(unlikely(fd<0))
 	{
 		errno = EBADF;
 		return -1;
 	}
-	if(fd >= sh.lim.open_max)
+	if(unlikely(fd >= sh.lim.open_max))
 		sh_iovalidfd(fd);
+	if(fdnotify)
+		(*fdnotify)(fd,SH_FDCLOSE);
 	if(!(sp=sh.sftable[fd]) || sfclose(sp) < 0)
 	{
-		if(fdnotify)
-			(*fdnotify)(fd,SH_FDCLOSE);
 		errno = 0;
 		ast_close(fd);
-		if(errno)
+		if(unlikely(errno))
 			r = -1;
 	}
 	if(fd>2)
@@ -764,12 +764,12 @@ int sh_open(const char *path, int flags, ...)
 	mode = (flags & O_CREAT) ? va_arg(ap, int) : 0;
 	va_end(ap);
 	errno = 0;
-	if(path==0)
+	if(unlikely(path==0))
 	{
 		errno = EFAULT;
 		return -1;
 	}
-	if(*path==0)
+	if(unlikely(*path==0))
 	{
 		errno = ENOENT;
 		return -1;
@@ -848,7 +848,7 @@ int sh_open(const char *path, int flags, ...)
 	}
 	else
 	{
-		while((fd = open(path, flags, mode)) < 0)
+		while(unlikely((fd = open(path, flags, mode)) < 0))
 			if(errno!=EINTR || sh.trapnote)
 				return -1;
  	}
@@ -860,7 +860,7 @@ int sh_open(const char *path, int flags, ...)
 		mode = (IOREAD|IOWRITE);
 	else
 		mode = IOREAD;
-	if(fd >= sh.lim.open_max)
+	if(unlikely(fd >= sh.lim.open_max))
 		sh_iovalidfd(fd);
 	if((sp = sh.sftable[fd]) && (sfset(sp,0,0) & SFIO_STRING))
 	{
@@ -902,7 +902,7 @@ int sh_chkopen(const char *name)
 int sh_iomovefd(int fdold, int minfd)
 {
 	int fdnew, dupflags;
-	if(fdold >= sh.lim.open_max)
+	if(unlikely(fdold >= sh.lim.open_max))
 		sh_iovalidfd(fdold);
 	if(fdold<0 || fdold>=minfd)
 		return fdold;
@@ -1119,6 +1119,13 @@ static char *io_usename(char *name, int *perm, int fno, int mode)
 	return tname;
 }
 
+static cold NONNULL(1) noreturn void
+sh_redirect_error(const char *message, const char *fname)
+{
+	errormsg(SH_DICT,ERROR_system(1),message,fname);
+	UNREACHABLE();
+}
+
 /*
  * I/O redirection
  * flag = 0: normal redirection; file descriptors are restored when command terminates
@@ -1237,7 +1244,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 			if((iof&IOLSEEK) || ((iof&IOMOV) && *fname=='-'))
 				fn = nv_getnum(np);
 		}
-		if(fn>=sh.lim.open_max && !sh_iovalidfd(fn))
+		if(unlikely(fn>=sh.lim.open_max) && !sh_iovalidfd(fn))
 		{
 			errormsg(SH_DICT,ERROR_system(1),e_file+4);
 			UNREACHABLE();
@@ -1258,10 +1265,10 @@ int	sh_redirect(struct ionod *iop, int flag)
 		{
 			if(iof&IODOC)
 			{
-				if(traceon)
+				if(unlikely(traceon))
 					sfputr(sfstderr,io_op,'<');
 				fd = io_heredoc(iop,fname,traceon);
-				if(traceon && (flag==SH_SHOWME))
+				if(unlikely(traceon && (flag==SH_SHOWME)))
 					sh_close(fd);
 				fname = 0;
 			}
@@ -1279,10 +1286,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 						number++;
 					}
 					if(*number || !sh_iovalidfd(dupfd) || dupfd > IOUFD)
-					{
-						message = e_file;
-						goto fail;
-					}
+						sh_redirect_error(e_file,fname);
 					if(sh.subshell && dupfd==1)
 					{
 						if(sh.subshell)
@@ -1307,15 +1311,12 @@ int	sh_redirect(struct ionod *iop, int flag)
 						toclose = dupfd;
 				}
 				else
-				{
-					message = e_file;
-					goto fail;
-				}
-				if(flag==SH_SHOWME)
+					sh_redirect_error(e_file,fname);
+				if(unlikely(flag==SH_SHOWME))
 					goto traceit;
 				if((fd=sh_fcntl(dupfd,F_DUPFD,3))<0)
-					goto fail;
-				if(fd>= sh.lim.open_max)
+					sh_redirect_error(message,fname);
+				if(unlikely(fd>= sh.lim.open_max))
 					sh_iovalidfd(fd);
 				sh_iocheckfd(dupfd);
 				sh.fdstatus[fd] = (sh.fdstatus[dupfd]&~IOCLEX);
@@ -1345,7 +1346,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 			}
 			else if(!(iof&IOPUT))
 			{
-				if(flag==SH_SHOWME)
+				if(unlikely(flag==SH_SHOWME))
 					goto traceit;
 				fd=sh_chkopen(fname);
 			}
@@ -1381,8 +1382,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 							if(S_ISREG(sb.st_mode))
 							{
 								errno = EEXIST;
-								errormsg(SH_DICT,ERROR_system(1),e_exists,fname);
-								UNREACHABLE();
+								sh_redirect_error(e_exists,fname);
 							}
 						}
 						else
@@ -1390,13 +1390,10 @@ int	sh_redirect(struct ionod *iop, int flag)
 					}
 				}
 			openit:
-				if(flag!=SH_SHOWME)
+				if(likely(flag!=SH_SHOWME))
 				{
 					if((fd=sh_open(tname?tname:fname,o_mode,RW_ALL)) <0)
-					{
-						errormsg(SH_DICT,ERROR_system(1),((o_mode&O_CREAT)?e_create:e_open),fname);
-						UNREACHABLE();
-					}
+						sh_redirect_error(((o_mode&O_CREAT)?e_create:e_open),fname);
 					if(perm>0)
 #if _lib_fchmod
 						fchmod(fd,perm);
@@ -1406,13 +1403,13 @@ int	sh_redirect(struct ionod *iop, int flag)
 				}
 			}
 		traceit:
-			if(traceon && fname)
+			if(unlikely(traceon) && fname)
 			{
 				if(np)
 					sfprintf(sfstderr,"{%s",nv_name(np));
 				sfprintf(sfstderr,"%s %s%s%c",io_op,fname,after,iop->ionxt?' ':'\n');
 			}
-			if(flag==SH_SHOWME)
+			if(unlikely(flag==SH_SHOWME))
 				continue;
 			if(trace && fname)
 			{
@@ -1443,20 +1440,18 @@ int	sh_redirect(struct ionod *iop, int flag)
 				if(r==IOCLOSE)
 				{
 					fname = io_op;
-					message = e_file;
-					goto fail;
+					sh_redirect_error(e_file,fname);
 				}
 				if(iof&IOARITH)
 				{
 					if(r&IONOSEEK)
 					{
 						fname = io_op;
-						message = e_notseek;
-						goto fail;
+						sh_redirect_error(e_notseek,fname);
 					}
 					message = e_badseek;
 					if((off = file_offset(fn,fname))<0)
-						goto fail;
+						sh_redirect_error(message,fname);
 					if(sp)
 					{
 						off=sfseek(sp, off, SEEK_SET);
@@ -1471,15 +1466,9 @@ int	sh_redirect(struct ionod *iop, int flag)
 				{
 					regex_t *rp;
 					if(!(r&IOREAD))
-					{
-						message = e_noread;
-						goto fail;
-					}
+						sh_redirect_error(e_noread,fname);
 					if(!(rp = regcache(fname, REG_SHELL|REG_NOSUB|REG_NEWLINE|REG_AUGMENTED|REG_FIRST|REG_LEFT|REG_RIGHT, &r)))
-					{
-						message = e_badpattern;
-						goto fail;
-					}
+						sh_redirect_error(e_badpattern,fname);
 					if(!sp)
 						sp = sh_iostream(fn);
 					r=io_patseek(rp,sp,iof);
@@ -1491,7 +1480,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 					}
 				}
 				if(r<0)
-					goto fail;
+					sh_redirect_error(message,fname);
 				if(flag==3)
 					return fn;
 				continue;
@@ -1543,9 +1532,9 @@ int	sh_redirect(struct ionod *iop, int flag)
 					if(fd<10)
 					{
 						if((fn=sh_fcntl(fd,dupflags,10)) < 0)
-							goto fail;
-						if(fn>=sh.lim.open_max && !sh_iovalidfd(fn))
-							goto fail;
+							sh_redirect_error(message,fname);
+						if(unlikely(fn>=sh.lim.open_max) && !sh_iovalidfd(fn))
+							sh_redirect_error(message,fname);
 						if(flag!=2 || sh.subshell)
 							sh_iosave(fn,indx|0x10000,tname?fname:(trunc?Empty:0));
 						sh.fdstatus[fn] = sh.fdstatus[fd];
@@ -1569,12 +1558,9 @@ int	sh_redirect(struct ionod *iop, int flag)
 				sh_fcntl(fd,F_SETFD,FD_CLOEXEC);
 		}
 		else
-			goto fail;
+			sh_redirect_error(message,fname);
 	}
 	return indx;
-fail:
-	errormsg(SH_DICT,ERROR_system(1),message,fname);
-	UNREACHABLE();
 }
 /*
  * Create a tmp file for the here-document
@@ -1594,7 +1580,7 @@ static int io_heredoc(struct ionod *iop, const char *name, int traceon)
 	}
 	if(iop->iofile&IOSTRG)
 	{
-		if(traceon)
+		if(unlikely(traceon))
 			sfprintf(sfstderr,"< %s\n",name);
 		sfputr(outfile,name,'\n');
 	}
@@ -1616,7 +1602,7 @@ static int io_heredoc(struct ionod *iop, const char *name, int traceon)
 		}
 		off = sftell(sh.heredocs);
 		infile = subopen(sh.heredocs,iop->iooffset,iop->iosize);
-		if(traceon)
+		if(unlikely(traceon))
 		{
 			char *cp = sh_fmtq(iop->iodelim);
 			fd = (*cp=='$' || *cp=='\'')?' ':'\\';
@@ -1653,7 +1639,7 @@ static int io_heredoc(struct ionod *iop, const char *name, int traceon)
 	fd = sffileno(outfile);
 	sfsetfd(outfile,-1);
 	sfclose(outfile);
-	if(traceon && !(iop->iofile&IOSTRG))
+	if(unlikely(traceon) && !(iop->iofile&IOSTRG))
 		sfputr(sfstderr,iop->ioname,'\n');
 	lseek(fd,0,SEEK_SET);
 	sh.fdstatus[fd] = IOREAD;
@@ -1689,7 +1675,7 @@ void sh_iosave(int origfd, int oldtop, char *name)
 			return;
 	}
 	/* make sure table is large enough */
-	if(sh.topfd >= filemapsize)
+	if(unlikely(sh.topfd >= filemapsize))  /* acc. gcov */
 	{
 		char 	*cp, *oldptr = (char*)filemap;
 		char 	*oldend = (char*)&filemap[filemapsize];
@@ -1785,7 +1771,7 @@ void	sh_iorestore(int last, int jmpval)
 	{
 		if(!flag && filemap[fd].subshell)
 			continue;
-		if(jmpval==SH_JMPSCRIPT)
+		if(unlikely(jmpval==SH_JMPSCRIPT))  /* acc. gcov */
 		{
 			if ((savefd = filemap[fd].save_fd) >= 0)
 			{
@@ -1795,7 +1781,7 @@ void	sh_iorestore(int last, int jmpval)
 			continue;
 		}
 		origfd = filemap[fd].orig_fd;
-		if(origfd<0)
+		if(unlikely(origfd<0))
 		{
 			/* this should never happen */
 			savefd = filemap[fd].save_fd;
@@ -1811,7 +1797,7 @@ void	sh_iorestore(int last, int jmpval)
 		else if(filemap[fd].tname)
 			io_usename(filemap[fd].tname,NULL,origfd,sh.exitval?2:1);
 		sh_close(origfd);
-		if ((savefd = filemap[fd].save_fd) >= 0)
+		if (likely((savefd = filemap[fd].save_fd) >= 0))  /* acc. gcov */
 		{
 			sh_fcntl(savefd, F_DUPFD, origfd);
 			if(savefd==job.fd)
@@ -1843,7 +1829,7 @@ void	sh_iorestore(int last, int jmpval)
 				filemap[last++] = filemap[fd];
 		}
 	}
-	if(last < sh.topfd)
+	if(likely(last < sh.topfd))  /* acc. gcov */
 		sh.topfd = last;
 }
 
@@ -1968,7 +1954,7 @@ static ssize_t piperead(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
 		errno = EINTR;
 		return -1;
 	}
-	if(sh_isstate(SH_INTERACTIVE) && fd==0 && io_prompt(iop,sh.nextprompt)<0 && errno==EIO)
+	if(unlikely(sh_isstate(SH_INTERACTIVE)) && fd==0 && io_prompt(iop,sh.nextprompt)<0 && errno==EIO)
 		return 0;
 	sh_onstate(SH_TTYWAIT);
 	if(!(sh.fdstatus[fd]&IOCLEX) && (sfset(iop,0,0)&SFIO_SHARE))
@@ -2023,7 +2009,7 @@ static ssize_t slowread(Sfio_t *iop,void *buff,size_t size,Sfdisc_t *handle)
 			sh_timerdel(timeout);
 		timeout=0;
 #if SHOPT_HISTEXPAND
-		if(rsize > 0 && *(char*)buff != '\n' && sh.nextprompt==1 && sh_isoption(SH_HISTEXPAND))
+		if(unlikely(rsize > 0 && *(char*)buff != '\n' && sh.nextprompt==1 && sh_isoption(SH_HISTEXPAND)))
 		{
 			char *xp;
 			int r;
@@ -2147,7 +2133,7 @@ int sh_iocheckfd(int fd)
 /*
  * Display prompt PS<flag> on standard error
  */
-static int	io_prompt(Sfio_t *iop,int flag)
+static cold int	io_prompt(Sfio_t *iop,int flag)
 {
 	char *cp;
 	char buff[1];
@@ -2219,7 +2205,7 @@ static int pipeexcept(Sfio_t* iop, int mode, void *data, Sfdisc_t* handle)
 	NOT_USED(data);
 	if(mode==SFIO_DPOP || mode==SFIO_FINAL)
 		free(handle);
-	else if(mode==SFIO_WRITE && ERROR_PIPE(errno))
+	else if(mode==SFIO_WRITE && unlikely(ERROR_PIPE(errno)))
 	{
 		sfpurge(iop);
 		return -1;
@@ -2258,7 +2244,7 @@ static void	sftrack(Sfio_t* sp, int flag, void* data)
 		return;
 	}
 #endif
-	if(fd<0 || fd==PSEUDOFD || (fd>=sh.lim.open_max && !sh_iovalidfd(fd)))
+	if(unlikely(fd<0) || fd==PSEUDOFD || (unlikely(fd>=sh.lim.open_max) && !sh_iovalidfd(fd)))
 		return;
 	if(sh_isstate(SH_NOTRACK))
 		return;
@@ -2388,7 +2374,7 @@ static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
  * the stream <sp> starting at offset <offset>
  * The stream can be read with the normal stream operations
  */
-static Sfio_t *subopen(Sfio_t* sp, off_t offset, long size)
+static malloc_attr Sfio_t *subopen(Sfio_t* sp, off_t offset, long size)
 {
 	struct subfile *disp;
 	if(sfseek(sp,offset,SEEK_SET) <0)
@@ -2455,7 +2441,7 @@ static int subexcept(Sfio_t* sp,int mode, void *data, Sfdisc_t* handle)
 /*
  * print a list of arguments in columns
  */
-void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
+cold void	sh_menu(Sfio_t *outfile,int argn,char *argv[])
 {
 	int i,j;
 	char **arg;
@@ -2570,7 +2556,7 @@ int sh_fcntl(int fd, int op, ...)
 #endif
 		if(sh.fdstatus[fd] == IOCLOSE)
 			sh.fdstatus[fd] = 0;
-		if(newfd>=sh.lim.open_max)
+		if(unlikely(newfd>=sh.lim.open_max))
 			sh_iovalidfd(newfd);
 #if F_dupfd_cloexec != F_DUPFD
 		if(op==F_DUPFD)
@@ -2689,9 +2675,9 @@ Sfio_t *sh_pathopen(const char *cp)
 	return sh_iostream(n);
 }
 
-int sh_isdevfd(const char *fd)
+pure int sh_isdevfd(const char *fd)
 {
-	if(!fd || strncmp(fd,"/dev/fd/",8) || fd[8]==0)
+	if(!fd || likely(strncmp(fd,"/dev/fd/",8)) || fd[8]==0)
 		return 0;
 	for ( fd=&fd[8] ; *fd != '\0' ; fd++ )
 	{
@@ -2705,7 +2691,7 @@ int sh_isdevfd(const char *fd)
 int sh_fchdir(int fd)
 {
 	int r,err=errno;
-	while((r=fchdir(fd))<0 && errno==EINTR)
+	while((r=fchdir(fd))<0 && unlikely(errno==EINTR))
 		errno = err;
 	return r;
 }
@@ -2714,7 +2700,7 @@ int sh_fchdir(int fd)
 int sh_chdir(const char* dir)
 {
 	int r,err=errno;
-	while((r=chdir(dir))<0 && errno==EINTR)
+	while((r=chdir(dir))<0 && unlikely(errno==EINTR))
 		errno = err;
 	return r;
 }

@@ -360,8 +360,7 @@ static void* dttree(Dt_t* dt, void* obj, int type)
 	Dtdisc_t	*disc = dt->disc;
 	Dttree_t	*tree = (Dttree_t*)dt->data;
 
-	type = DTTYPE(dt, type); /* map type for upward compatibility */
-	if(!(type&DT_OPERATIONS) )
+	if(unlikely(!(type&DT_OPERATIONS)) )
 		return NULL;
 
 	DTSETLOCK(dt);
@@ -377,7 +376,7 @@ static void* dttree(Dt_t* dt, void* obj, int type)
 		DTRETURN(obj, tstat(dt, (Dtstat_t*)obj));
 	}
 
-	if(!obj) /* from here on, an object prototype is required */
+	if(unlikely(!obj)) /* from here on, an object prototype is required */
 		DTRETURN(obj, NULL);
 
 	if(type&DT_RELINK) /* relinking objects after some processing */
@@ -610,7 +609,7 @@ static int treeevent(Dt_t* dt, int event, void* arg)
 	if(event == DT_OPEN)
 	{	if(tree) /* already initialized */
 			return 0;
-		if(!(tree = (Dttree_t*)(*dt->memoryf)(dt, 0, sizeof(Dttree_t), dt->disc)) )
+		if(unlikely(!(tree = (Dttree_t*)(*dt->memoryf)(dt, 0, sizeof(Dttree_t), dt->disc)) ))
 		{	DTERROR(dt, "Error in allocating a tree data structure");
 			return -1;
 		}

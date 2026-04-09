@@ -73,14 +73,14 @@ pathcd(const char* path, const char* home)
 		 * this should work 99% of the time
 		 */
 
-		if (!chdir(p))
+		if (likely(!chdir(p)))
 			return r;
 
 		/*
-		 * chdir failed
+		 * chdir failed (usually not because of PATH_MAX)
 		 */
 
-		if ((n = (ptrdiff_t)strlen(p)) < PATH_MAX)
+		if (expect((n = (ptrdiff_t)strlen(p)) < PATH_MAX, 1, 0.7))
 			return -1;
 #ifdef ENAMETOOLONG
 		if (errno != ENAMETOOLONG)

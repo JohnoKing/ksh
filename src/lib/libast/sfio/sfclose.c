@@ -29,7 +29,7 @@ int sfclose(Sfio_t* f)
 	int		local, ex, rv;
 	void*		data = NULL;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);
@@ -113,7 +113,7 @@ int sfclose(Sfio_t* f)
 	if(f->file >= 0 && !(f->flags&SFIO_STRING))
 	{	errno = 0;
 		ast_close(f->file);
-		if(errno)
+		if(unlikely(errno))
 			rv = -1;
 	}
 	f->file = -1;

@@ -62,7 +62,7 @@ hashalloc(Hash_table_t* ref, ...)
 			goto out;
 		memset(tab, 0, sizeof(Hash_table_t));
 	}
-	else if (!(tab = newof(0, Hash_table_t, 1, 0)))
+	else if (unlikely(!(tab = newof(0, Hash_table_t, 1, 0))))
 		goto out;
 	tab->bucketsize = (sizeof(Hash_header_t) + sizeof(char*) - 1) / sizeof(char*);
 	if (ref)
@@ -79,9 +79,9 @@ hashalloc(Hash_table_t* ref, ...)
 				goto out;
 			memset(tab->root, 0, sizeof(Hash_root_t));
 		}
-		else if (!(tab->root = newof(0, Hash_root_t, 1, 0)))
+		else if (unlikely(!(tab->root = newof(0, Hash_root_t, 1, 0))))
 			goto out;
-		if (!(tab->root->local = newof(0, Hash_local_t, 1, 0)))
+		if (unlikely(!(tab->root->local = newof(0, Hash_local_t, 1, 0))))
 			goto out;
 		if (tab->root->local->region = region)
 			tab->root->local->handle = handle;
@@ -181,7 +181,8 @@ hashalloc(Hash_table_t* ref, ...)
 						goto out;
 					memset(tab->table, 0, sizeof(Hash_bucket_t*) * (size_t)tab->size);
 				}
-				else if (!(tab->table = newof(0, Hash_bucket_t*, (size_t)tab->size, 0))) goto out;
+				else if (unlikely(!(tab->table = newof(0, Hash_bucket_t*, (size_t)tab->size, 0))))
+					goto out;
 			}
 			if (!ref)
 			{

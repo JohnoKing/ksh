@@ -294,7 +294,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 				{
 					if (!(*s & 0x80))
 						z = 1;
-					else if ((z = mbnsize(s, (size_t)w)) <= 0)
+					else if (unlikely((z = mbnsize(s, (size_t)w)) <= 0))
 					{
 						if (s == bp && xx)
 						{
@@ -324,7 +324,7 @@ cutcols(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 				while (w > 0 && ncol > 0)
 				{
 					ncol--;
-					if (!(*s & 0x80) || (z = mbnsize(s, (size_t)w)) <= 0)
+					if (!(*s & 0x80) || unlikely((z = mbnsize(s, (size_t)w)) <= 0))
 						z = 1;
 					s += z;
 					w -= z;

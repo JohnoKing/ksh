@@ -659,7 +659,7 @@ _ccmap(int i, int o)
 	for (map = maps; map; map = map->next)
 		if (map->op == op)
 			return map->map;
-	if (!(map = newof(0, Map_t, 1, 0)))
+	if (unlikely(!(map = newof(0, Map_t, 1, 0))))
 		return NULL;
 	map->op = op;
 	a = (unsigned char*)tab + MAP * (2 * (o - 1));

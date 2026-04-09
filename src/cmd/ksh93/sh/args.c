@@ -292,7 +292,7 @@ int sh_argopts(int argc,char *argv[])
 		off_option(&newflags,SH_VERBOSE);
 		trace = 0;
 	}
-	if(trace)
+	if(unlikely(trace))
 		sh_trace(argv,1);
 	/* Invalidating the IFS state table must be done after sh_trace, because xtrace reads IFS */
 	if(invalidate_ifs)
@@ -365,7 +365,7 @@ int sh_argopts(int argc,char *argv[])
 static void applyopts(Shopt_t newflags)
 {
 	/* cannot set -n for interactive shells since there is no way out */
-	if(sh_isoption(SH_INTERACTIVE))
+	if(unlikely(sh_isoption(SH_INTERACTIVE)))
 		off_option(&newflags,SH_NOEXEC);
 	if(is_option(&newflags,SH_PRIVILEGED))
 		on_option(&newflags,SH_NOUSRPROFILE);
@@ -419,7 +419,7 @@ char *sh_argdolminus(void* context)
  */
 static void argset(Arg_t *ap,char *argv[])
 {
-	sh_argfree(ap->dolh,0);
+	sh_argfree(ap->dolh);
 	ap->dolh = sh_argcreate(argv);
 	/* link into chain */
 	ap->dolh->dolnxt = ap->argfor;
@@ -435,7 +435,7 @@ static void argset(Arg_t *ap,char *argv[])
  * Delete the blk from the argfor chain
  * If flag is set, then the block dolh is not freed
  */
-struct dolnod *sh_argfree(struct dolnod *blk,int flag)
+struct dolnod *sh_argfree(struct dolnod *blk)
 {
 	struct dolnod*	argr=blk;
 	struct dolnod*	argblk;
@@ -445,25 +445,20 @@ struct dolnod *sh_argfree(struct dolnod *blk,int flag)
 		if((--argblk->dolrefcnt)==0)
 		{
 			argr = argblk->dolnxt;
-			if(flag && argblk==ap->dolh)
-				ap->dolh->dolrefcnt = 1;
+			/* delete from chain */
+			if(likely(ap->argfor == argblk))  /* acc. gcov */
+				ap->argfor = argblk->dolnxt;
 			else
 			{
-				/* delete from chain */
-				if(ap->argfor == argblk)
-					ap->argfor = argblk->dolnxt;
-				else
-				{
-					for(argr=ap->argfor;argr;argr=argr->dolnxt)
-						if(argr->dolnxt==argblk)
-							break;
-					if(!argr)
-						return NULL;
-					argr->dolnxt = argblk->dolnxt;
-					argr = argblk->dolnxt;
-				}
-				free(argblk);
+				for(argr=ap->argfor;argr;argr=argr->dolnxt)
+					if(argr->dolnxt==argblk)
+						break;
+				if(!argr)
+					return NULL;
+				argr->dolnxt = argblk->dolnxt;
+				argr = argblk->dolnxt;
 			}
+			free(argblk);
 		}
 	}
 	return argr;
@@ -518,7 +513,7 @@ struct dolnod *sh_argnew(char *argi[], struct dolnod **savargfor)
 void sh_argreset(struct dolnod *blk, struct dolnod *afor)
 {
 	Arg_t *ap = (Arg_t*)sh.arg_context;
-	while(ap->argfor=sh_argfree(ap->argfor,0));
+	while(ap->argfor=sh_argfree(ap->argfor));
 	ap->argfor = afor;
 	if(ap->dolh = blk)
 	{
@@ -687,7 +682,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
 		comargn = stkalloc(sh.stk,(unsigned)(argn+1)*sizeof(char*));
 		comargm = comargn += argn;
 		*comargn = NULL;
-		if(!argp)
+		if(unlikely(!argp))  /* acc. gcov */
 		{
 			/* reserve an extra null pointer */
 			*--comargn = 0;
@@ -703,7 +698,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
 				sh_trim(*comargn);
 			if(!(argp=nextarg) || (argp->argflag&ARG_MAKE))
 			{
-				if((argn=comargm-comargn)>1)
+				if(unlikely((argn=comargm-comargn)>1))  /* acc. gcov */
 					strsort(comargn,argn,ast.locale.collate);
 				comargm = comargn;
 			}

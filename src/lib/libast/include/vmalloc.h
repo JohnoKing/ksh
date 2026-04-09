@@ -33,11 +33,11 @@ typedef struct
 	void		*_list_;		/* head of allocations list		*/
 } Vmalloc_t;
 
-extern Vmalloc_t	*vmopen(void);
-extern void		*vmalloc(Vmalloc_t*, size_t);
+extern malloc_attr Vmalloc_t *vmopen(void);
+extern malloc_attr void	*vmalloc(Vmalloc_t*, size_t);
 extern void		*vmresize(Vmalloc_t*, void*, size_t);
 extern void		*_Vm_newoldof_(Vmalloc_t*, void*, size_t, int);
-extern char		*vmstrdup(Vmalloc_t*, const char*);
+extern malloc_attr char	*vmstrdup(Vmalloc_t*, const char*);
 extern void		vmfree(Vmalloc_t*, void*);
 extern void		vmclear(Vmalloc_t*);
 extern void		vmclose(Vmalloc_t*);

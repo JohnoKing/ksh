@@ -198,7 +198,7 @@ static int	textmod(Vi_t*,int,int);
 /*
  * if reedit is non-zero, initialize edit buffer with reedit chars
  */
-int ed_viread(void *context, int fd, char *shbuf, int nchar, int reedit)
+cold NONNULL(1,3) int ed_viread(void *context, int fd, char *shbuf, int nchar, int reedit)
 {
 	Edit_t *ed = (Edit_t*)context;
 	int i;				/* general variable */
@@ -213,7 +213,7 @@ int ed_viread(void *context, int fd, char *shbuf, int nchar, int reedit)
 
 	/*** Set raw mode ***/
 
-	if( tty_raw(ERRIO,0) < 0 )
+	if( unlikely(tty_raw(ERRIO,0) < 0) )
 		return reedit ? reedit : ed_read(context, fd, shbuf, nchar, 0);
 
 	if(!vp)
@@ -1639,7 +1639,7 @@ find_b:
  *
 }*/
 
-void vi_redraw(void *ep)
+cold void vi_redraw(void *ep)
 {
 	Vi_t	*vp = (Vi_t*)ep;
 	ed_putstring(vp->ed,Prompt);

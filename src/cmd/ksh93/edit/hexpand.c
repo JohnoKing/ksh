@@ -131,7 +131,7 @@ static char *parse_subst(const char *s, struct subst *sb)
  * assign history expansion characters to an array of 3
  */
 
-void hist_setchars(char *hc)
+cold NONNULL(1) void hist_setchars(char *hc)
 {
 	Namval_t *np;
 	char *cp;
@@ -148,7 +148,7 @@ void hist_setchars(char *hc)
  * history expansion main routine
  */
 
-int hist_expand(const char *ln, char **xp)
+cold NONNULL(2) int hist_expand(const char *ln, char **xp)
 {
 	ptrdiff_t off,	/* stack offset */
 		  off2; /* other stack offset */

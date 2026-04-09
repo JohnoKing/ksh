@@ -427,6 +427,12 @@ static const Section_t	sections[] =
 	"L",	"LOCAL COMMANDS",
 };
 
+static cold char*
+outofmemory_str(void)
+{
+	return T(NULL, ID, "[* out of memory *]");
+}
+
 /*
  * return section name given abbreviation
  */
@@ -496,14 +502,14 @@ pop(Push_t* psp)
  * skip over line space to the next token
  */
 
-static char*
+static hot char*
 next(char* s, int version)
 {
 	char*	b;
 
 	while (*s == '\t' || *s == '\r' || version >= 1 && *s == ' ')
 		s++;
-	if (*s == '\n')
+	if (expect(*s == '\n', 0, 0.95))  /* most characters encountered aren't newlines */
 	{
 		b = s;
 		while (*++s == ' ' || *s == '\t' || *s == '\r');
@@ -784,7 +790,7 @@ search(const void* tab, size_t num, size_t siz, char* s)
  * save ap+bp+cp and return the saved pointer
  */
 
-static char*
+static hot char*
 save(const char* ap, size_t az, const char* bp, size_t bz, const char* cp, size_t cz)
 {
 	char*		b;
@@ -798,10 +804,10 @@ save(const char* ap, size_t az, const char* bp, size_t bz, const char* cp, size_
 
 	if (!dict)
 	{
-		if (!(d = newof(0, Dtdisc_t, 1, 0)))
+		if (unlikely(!(d = newof(0, Dtdisc_t, 1, 0))))
 			return (char*)ap;
 		d->key = offsetof(Save_t, text);
-		if (!(dict = dtopen(d, Dtset)))
+		if (unlikely(!(dict = dtopen(d, Dtset))))
 			return (char*)ap;
 	}
 	b = buf;
@@ -816,7 +822,7 @@ save(const char* ap, size_t az, const char* bp, size_t bz, const char* cp, size_
 	*b = 0;
 	if (!(p = (Save_t*)dtmatch(dict, buf)))
 	{
-		if (!(p = newof(0, Save_t, 1, (size_t)(b - buf))))
+		if (unlikely(!(p = newof(0, Save_t, 1, (size_t)(b - buf)))))
 			return (char*)ap;
 		strcpy(p->text, buf);
 		dtinsert(dict, p);
@@ -862,7 +868,7 @@ expand(char* s, char* e, char** p, Sfio_t* ip, char* id)
 	else if (!opt_info.disc || !opt_info.disc->infof || (*opt_info.disc->infof)(&opt_info, ip, b, opt_info.disc) < 0)
 		n = 0;
 	*p = s;
-	if (s = sfstruse(ip))
+	if (likely(s = sfstruse(ip)))
 		s += n;
 	else
 		s = "error";
@@ -882,7 +888,7 @@ initdict(void)
 	state.msgdisc.key = offsetof(Msg_t, text);
 	state.msgdisc.size = -1;
 	state.msgdisc.link = offsetof(Msg_t, link);
-	if (state.msgdict = dtopen(&state.msgdisc, Dtset))
+	if (likely(state.msgdict = dtopen(&state.msgdisc, Dtset)))
 		for (n = 0; n < elementsof(C_LC_MESSAGES_libast); n++)
 			dtinsert(state.msgdict, C_LC_MESSAGES_libast + n);
 }
@@ -931,11 +937,11 @@ init(char* s, Optpass_t* p)
 	if (*s == '+')
 		s++;
 	s = next(s, 0);
-	if (*s++ == '[')
+	if (likely(*s++ == '['))
 	{
 		if (*s == '+')
 			p->version = 1;
-		else if (*s++ == '-')
+		else if (likely(*s++ == '-'))
 		{
 			if (*s == '?' || *s == ']')
 				p->version = 1;
@@ -1059,7 +1065,7 @@ init(char* s, Optpass_t* p)
 				}
 			}
 	}
-	if (!error_info.id)
+	if (unlikely(!error_info.id))
 	{
 		if (!(error_info.id = p->id))
 			p->id = "command";
@@ -1099,7 +1105,7 @@ init(char* s, Optpass_t* p)
 				a--;
 		}
 	}
-	if (!p->version && (t = strchr(s, '(')) && strchr(t, ')') && (state.cp || (state.cp = sfstropen())))
+	if (!p->version && (t = strchr(s, '(')) && strchr(t, ')') && (state.cp || likely(state.cp = sfstropen())))
 	{
 		/*
 		 * Solaris long option compatibility
@@ -1135,7 +1141,7 @@ init(char* s, Optpass_t* p)
 			if (a)
 				sfputr(state.cp, ":[string]", -1);
 		}
-		if (!(p->oopts = s = sfstruse(state.cp)))
+		if (unlikely(!(p->oopts = s = sfstruse(state.cp))))
 			return -1;
 		s += n;
 	}
@@ -1185,7 +1191,7 @@ info(Push_t* psp, char* s, char* e, Sfio_t* ip, char* id)
 
 	b = expand(s, e, &s, ip, id);
 	n = strlen(b);
-	if (tsp = newof(0, Push_t, 1, n + 1))
+	if (likely(tsp = newof(0, Push_t, 1, n + 1)))
 	{
 		tsp->nb = (char*)(tsp + 1);
 		tsp->ne = tsp->nb + n;
@@ -1234,7 +1240,7 @@ localize(Push_t* psp, char* s, char* e, int term, int n, Sfio_t* ip, int version
 	if (!(s = sfstruse(ip)) || (u = T(id, catalog, s)) == s)
 		return NULL;
 	len = strlen(u);
-	if (tsp = newof(0, Push_t, 1, len + 1))
+	if (likely(tsp = newof(0, Push_t, 1, len + 1)))
 	{
 		tsp->nb = (char*)(tsp + 1);
 		tsp->ne = tsp->nb + len;
@@ -2342,7 +2348,7 @@ list(Sfio_t* sp, const List_t* lp)
  * margin flush pops to previous indent
  */
 
-char*
+cold char*
 opthelp(const char* oopts, const char* what)
 {
 	Sfio_t*		sp;
@@ -2419,7 +2425,7 @@ opthelp(const char* oopts, const char* what)
 	Sfio_t*		sp_info = 0;
 	Sfio_t*		sp_misc = 0;
 
-	if (!(mp = state.mp) && !(mp = state.mp = sfstropen()))
+	if (!(mp = state.mp) && unlikely(!(mp = state.mp = sfstropen())))
 		goto outofmemory;
 	if (!what)
 		style = state.style;
@@ -2439,7 +2445,7 @@ opthelp(const char* oopts, const char* what)
 	{
 		if ((style = state.force) < STYLE_man)
 			style = STYLE_man;
-		if (!(sp_help = sfstropen()))
+		if (unlikely(!(sp_help = sfstropen())))
 			goto outofmemory;
 		for (j = 0; j < elementsof(help_head); j++)
 			list(sp_help, &help_head[j]);
@@ -2496,9 +2502,9 @@ opthelp(const char* oopts, const char* what)
 	}
 	if (style <= STYLE_usage)
 	{
-		if (!(sp_text = sfstropen()) || !(sp_info = sfstropen()))
+		if (unlikely(!(sp_text = sfstropen()) || !(sp_info = sfstropen())))
 			goto outofmemory;
-		if (style >= STYLE_match && style < STYLE_keys && !(sp_body = sfstropen()))
+		if (style >= STYLE_match && style < STYLE_keys && unlikely(!(sp_body = sfstropen())))
 			goto outofmemory;
 	}
 	switch (style)
@@ -2903,7 +2909,7 @@ opthelp(const char* oopts, const char* what)
 		if (*p == '+')
 		{
 			p++;
-			if (!(sp = sp_plus) && !(sp = sp_plus = sfstropen()))
+			if (!(sp = sp_plus) && unlikely(!(sp = sp_plus = sfstropen())))
 				goto outofmemory;
 		}
 		else if (style >= STYLE_match)
@@ -2982,7 +2988,7 @@ opthelp(const char* oopts, const char* what)
 					{
 						if (*(p + 1) != '-')
 						{
-							if (!sp_misc && !(sp_misc = sfstropen()))
+							if (!sp_misc && unlikely(!(sp_misc = sfstropen())))
 								goto outofmemory;
 							else
 								p = textout(sp_misc, p, cb, cl, style, 1, 3, sp_info, version, id, catalog, &hflags);
@@ -3024,7 +3030,7 @@ opthelp(const char* oopts, const char* what)
 						{
 							sp_head = sp_body;
 							hflags = dflags = bflags;
-							if (!(sp_body = sfstropen()))
+							if (unlikely(!(sp_body = sfstropen())))
 								goto outofmemory;
 						}
 						continue;
@@ -3285,7 +3291,7 @@ opthelp(const char* oopts, const char* what)
 					{
 						if (sp_body)
 							sfputc(sp_body, ' ');
-						else if (!(sp_body = sfstropen()))
+						else if (unlikely(!(sp_body = sfstropen())))
 							goto outofmemory;
 						if (mutex)
 						{
@@ -3641,7 +3647,7 @@ opthelp(const char* oopts, const char* what)
 		{
 			if (hp = (Help_t*)search(styles, elementsof(styles), sizeof(styles[0]), (char*)what))
 			{
-				if (!sp_help && !(sp_help = sfstropen()))
+				if (!sp_help && unlikely(!(sp_help = sfstropen())))
 					goto outofmemory;
 				sfprintf(sp_help, "[-][:%s?%s]", hp->match, hp->text);
 				if (!(opts = sfstruse(sp_help)))
@@ -4084,7 +4090,7 @@ opthelp(const char* oopts, const char* what)
 		sfclose(sp);
 	return opt_info.msg = p;
  outofmemory:
-	s = T(NULL, ID, "[* out of memory *]");
+	s = outofmemory_str();
  nope:
 	if (psp)
 		pop(psp);
@@ -4109,7 +4115,7 @@ opthelp(const char* oopts, const char* what)
  * compatibility wrapper to opthelp()
  */
 
-char*
+cold char*
 optusage(const char* opts)
 {
 	return opthelp(opts, NULL);
@@ -4151,7 +4157,7 @@ optnumber(const char* s, char** t, int* e)
  * optget() return value is returned
  */
 
-static int
+static cold int
 opterror(char* p, int err, int version, char* id, char* catalog)
 {
 	Sfio_t*		mp;
@@ -4161,7 +4167,7 @@ opterror(char* p, int err, int version, char* id, char* catalog)
 
 	if (opt_info.num != LONG_MIN)
 		opt_info.num = (long)(opt_info.number = 0);
-	if (!p || !(mp = state.mp) && !(mp = state.mp = sfstropen()))
+	if (!p || !(mp = state.mp) && unlikely(!(mp = state.mp = sfstropen())))
 		goto outofmemory;
 	s = *p == '-' ? p : opt_info.name;
 	if (*p == '!')
@@ -4224,7 +4230,7 @@ opterror(char* p, int err, int version, char* id, char* catalog)
 	if (opt_info.arg = sfstruse(mp))
 		return ':';
  outofmemory:
-	opt_info.arg = T(NULL, ID, "[* out of memory *]");
+	opt_info.arg = outofmemory_str();
 	return ':';
 }
 
@@ -4324,7 +4330,7 @@ optget(char** argv, const char* oopts)
 			state.join = 0;
 		}
 	}
-	if (!argv)
+	if (unlikely(!argv))
 		cache = 0;
 	else
 		for (pcache = 0, cache = state.cache; cache; pcache = cache, cache = cache->next)
@@ -4343,7 +4349,7 @@ optget(char** argv, const char* oopts)
 	}
 	else
 	{
-		if (!argv)
+		if (unlikely(!argv))
 			n = state.npass ? state.npass : 1;
 		else if ((n = state.join - 1) < 0)
 			n = 0;
@@ -4361,7 +4367,7 @@ optget(char** argv, const char* oopts)
 					state.npass = n + 1;
 			}
 		}
-		if (!argv)
+		if (unlikely(!argv))
 			return 0;
 		pass = &state.pass[n];
 	}
@@ -4551,7 +4557,7 @@ optget(char** argv, const char* oopts)
 	 *	v	long option value (via =) if w != 0
 	 */
 
-	if (c == '?')
+	if (unlikely(c == '?'))
 	{
 		/*
 		 * ? always triggers internal help
@@ -4687,7 +4693,7 @@ optget(char** argv, const char* oopts)
 				}
 				cache = 0;
 			}
-			else if (cache = newof(0, Optcache_t, 1, 0))
+			else if (likely(cache = newof(0, Optcache_t, 1, 0)))
 			{
 				cache->caching = c;
 				c = 0;
@@ -5627,7 +5633,7 @@ optstr(const char* str, const char* opts)
  again:
 	if (s)
 	{
-		if (!(mp = state.strp) && !(mp = state.strp = sfstropen()))
+		if (!(mp = state.strp) && unlikely(!(mp = state.strp = sfstropen())))
 			return 0;
 		if (state.str != s)
 			state.str = s;

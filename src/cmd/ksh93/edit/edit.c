@@ -127,7 +127,7 @@ int tty_get(int fd, struct termios *tty)
  * If fd<0, then current attributes are invalidated
  */
 
-int tty_set(int fd, int action, struct termios *tty)
+cold int tty_set(int fd, int action, struct termios *tty)
 {
 	Edit_t *ep = (Edit_t*)(sh.ed_context);
 	if(fd >=0)
@@ -151,7 +151,7 @@ int tty_set(int fd, int action, struct termios *tty)
  *
 }*/
 
-void tty_cooked(int fd)
+cold void tty_cooked(int fd)
 {
 	Edit_t *ep = (Edit_t*)(sh.ed_context);
 	ep->e_keytrap = 0;
@@ -172,7 +172,7 @@ void tty_cooked(int fd)
  *
 }*/
 
-int tty_raw(int fd, int echomode)
+cold int tty_raw(int fd, int echomode)
 {
 	int echo = echomode;
 	Edit_t *ep = (Edit_t*)(sh.ed_context);
@@ -243,7 +243,7 @@ int tty_raw(int fd, int echomode)
  *
  *	return the window size
  */
-int ed_window(void)
+cold int ed_window(void)
 {
 	int	cols;
 	sh_winsize();
@@ -261,7 +261,7 @@ int ed_window(void)
  *
  */
 
-void ed_flush(Edit_t *ep)
+cold void ed_flush(Edit_t *ep)
 {
 	ptrdiff_t n = ep->e_outptr-ep->e_outbase;
 	int fd = ERRIO;
@@ -275,7 +275,7 @@ void ed_flush(Edit_t *ep)
  * send the bell character ^G to the terminal
  */
 
-void ed_ringbell(void)
+cold void ed_ringbell(void)
 {
 	write(ERRIO,bellchr,1);
 }
@@ -285,12 +285,14 @@ void ed_ringbell(void)
 /*
  * Get or update a tput (terminfo or termcap) capability string.
  */
-static void get_tput(char *tp, char **cpp)
+static cold void get_tput(char *tp, char **cpp)
 {
-	Shopt_t	o = sh.options;
-	char	*d = sh.st.trap[SH_DEBUGTRAP];
+	Shopt_t	o;
+	char	*d;
 	char	*cp;
 	sigblock(SIGINT);
+	o = sh.options;
+	d = sh.st.trap[SH_DEBUGTRAP];
 	sh_offoption(SH_RESTRICTED);
 	sh_offoption(SH_VERBOSE);
 	sh_offoption(SH_XTRACE);
@@ -327,7 +329,7 @@ static void get_tput(char *tp, char **cpp)
  *	    are not counted as part of the prompt length.
  */
 
-void	ed_setup(Edit_t *ep, int fd, int reedit)
+cold void	ed_setup(Edit_t *ep, int fd, int reedit)
 {
 	char *pp;
 	char *last, *prev;
@@ -555,14 +557,14 @@ void	ed_setup(Edit_t *ep, int fd, int reedit)
 	}
 }
 
-void ed_putstring(Edit_t *ep, const char *str)
+cold void ed_putstring(Edit_t *ep, const char *str)
 {
 	int c;
 	while (c = mbchar(str))
 		ed_putchar(ep, c < 0 ? '?' : c);
 }
 
-static void ed_nputchar(Edit_t *ep, int n, int c)
+static cold void ed_nputchar(Edit_t *ep, int n, int c)
 {
 	while(n-->0)
 		ed_putchar(ep,c);
@@ -572,7 +574,7 @@ static void ed_nputchar(Edit_t *ep, int n, int c)
 /*
  * Show any buffered 'set -b' job notification(s)
  */
-static void flush_notifybuf(void)
+static cold void flush_notifybuf(void)
 {
 	char *cp;
 	if(sh.notifybuf && (cp = sfstruse(sh.notifybuf)) && *cp)
@@ -616,7 +618,7 @@ int ed_read(void *context, int fd, char *buff, int size, int reedit)
 		 * If sh.winch is set, the number of window columns changed and/or there is a buffered
 		 * job notification. When using a line editor, erase and redraw the command line.
 		 */
-		if(sh.winch && sh_editor_active() && sh_isstate(SH_INTERACTIVE))
+		if(unlikely(sh.winch && sh_editor_active() && sh_isstate(SH_INTERACTIVE)))
 		{
 			ssize_t n;
 			if(!ep->e_prompt)
@@ -728,7 +730,7 @@ done:
  *    onto the stack so that it can be checked for KEYTRAP
  * putstack() returns 1 except when in the middle of a multi-byte char
  */
-static int putstack(Edit_t *ep,char string[], int nbyte, int type)
+static cold int putstack(Edit_t *ep,char string[], int nbyte, int type)
 {
 	int c;
 #if SHOPT_MULTIBYTE
@@ -825,7 +827,7 @@ static int putstack(Edit_t *ep,char string[], int nbyte, int type)
  *   1		edit keys not mapped
  *   2		Next key is literal
  */
-int ed_getchar(Edit_t *ep,int mode)
+cold int ed_getchar(Edit_t *ep,int mode)
 {
 	int n = 0, c;
 	char *readin = fmtbuf(LOOKAHEAD + mbmax());
@@ -897,7 +899,7 @@ int ed_getchar(Edit_t *ep,int mode)
 }
 
 #if SHOPT_ESH || SHOPT_VSH
-void ed_ungetchar(Edit_t *ep,int c)
+cold void ed_ungetchar(Edit_t *ep,int c)
 {
 	if (ep->e_lookahead < LOOKAHEAD)
 		ep->e_lbuf[ep->e_lookahead++] = c;
@@ -912,9 +914,9 @@ void ed_ungetchar(Edit_t *ep,int c)
  */
 
 #if SHOPT_MULTIBYTE
-static void	ed_putbyte(Edit_t *ep,int c)
+static cold void	ed_putbyte(Edit_t *ep,int c)
 #else
-void		ed_putchar(Edit_t *ep,int c)
+cold void		ed_putchar(Edit_t *ep,int c)
 #endif /* SHOPT_MULTIBYTE */
 {
 	char *dp = ep->e_outptr;
@@ -933,7 +935,7 @@ void		ed_putchar(Edit_t *ep,int c)
  * put a character into the output buffer
  */
 
-void	ed_putchar(Edit_t *ep,int c)
+cold void	ed_putchar(Edit_t *ep,int c)
 {
 	char buf[8];
 	int size, i;
@@ -953,7 +955,7 @@ void	ed_putchar(Edit_t *ep,int c)
  * returns the line and column corresponding to offset <off> in the physical buffer
  * if <cur> is non-zero and <= <off>, then corresponding <curpos> will start the search
  */
-Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
+cold Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
 {
 	genchar *sp=phys;
 	int c=1, col=ep->e_plen;
@@ -1000,7 +1002,7 @@ Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
 #endif /* SHOPT_ESH || SHOPT_VSH */
 
 #if SHOPT_ESH || SHOPT_VSH
-int ed_setcursor(Edit_t *ep,genchar *physical,int old,int new,int first)
+cold int ed_setcursor(Edit_t *ep,genchar *physical,int old,int new,int first)
 {
 	static int oldline;
 	int delta;
@@ -1105,7 +1107,7 @@ int ed_setcursor(Edit_t *ep,genchar *physical,int old,int new,int first)
 /*
  * copy virtual to physical and return the index for cursor in physical buffer
  */
-int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int poff)
+cold int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int poff)
 {
 	genchar *sp = virt;
 	genchar *dp = phys;
@@ -1174,7 +1176,7 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
  * returns number of chars in dest
  */
 
-int	ed_internal(const char *src, genchar *dest)
+cold int	ed_internal(const char *src, genchar *dest)
 {
 	const unsigned char *cp = (unsigned char *)src;
 	int c;
@@ -1200,7 +1202,7 @@ int	ed_internal(const char *src, genchar *dest)
  * returns number of chars in dest.
  */
 
-int	ed_external(const genchar *src, char *dest)
+cold int	ed_external(const genchar *src, char *dest)
 {
 	genchar wc;
 	char *dp = dest;
@@ -1239,7 +1241,7 @@ int	ed_external(const genchar *src, char *dest)
  * copy <sp> to <dp>
  */
 
-void	ed_gencpy(genchar *dp,const genchar *sp)
+cold void	ed_gencpy(genchar *dp,const genchar *sp)
 {
 	dp = (genchar*)roundof((uintptr_t)dp,sizeof(genchar));
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
@@ -1252,7 +1254,7 @@ void	ed_gencpy(genchar *dp,const genchar *sp)
  * copy at most <n> items from <sp> to <dp>
  */
 
-void	ed_genncpy(genchar *dp,const genchar *sp, size_t n)
+cold void	ed_genncpy(genchar *dp,const genchar *sp, size_t n)
 {
 	dp = (genchar*)roundof((uintptr_t)dp,sizeof(genchar));
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
@@ -1265,7 +1267,7 @@ void	ed_genncpy(genchar *dp,const genchar *sp, size_t n)
  * find the string length of <str>
  */
 
-size_t	ed_genlen(const genchar *str)
+cold size_t	ed_genlen(const genchar *str)
 {
 	const genchar *sp = str;
 	sp = (const genchar*)roundof((uintptr_t)sp,sizeof(genchar));
@@ -1321,7 +1323,7 @@ static int keytrap(Edit_t *ep,char *inbuff,int insize, int bufsize, int mode)
 	return insize;
 }
 
-void	*ed_open(void)
+cold void	*ed_open(void)
 {
 	Edit_t *ed = sh_newof(0,Edit_t,1,0);
 	strcpy(ed->e_macro,"_??");
@@ -1336,16 +1338,16 @@ void	*ed_open(void)
 int sh_tcgetattr(int fd, struct termios *tty)
 {
 	int r,err = errno;
-	while((r=tcgetattr(fd,tty)) < 0 && errno==EINTR)
+	while((r=tcgetattr(fd,tty)) < 0 && unlikely(errno==EINTR))
 		errno = err;
 	return r;
 }
 
 #undef tcsetattr
-int sh_tcsetattr(int fd, int cmd, struct termios *tty)
+cold int sh_tcsetattr(int fd, int cmd, struct termios *tty)
 {
 	int r,err = errno;
-	while((r=tcsetattr(fd,cmd,tty)) < 0 && errno==EINTR)
+	while((r=tcsetattr(fd,cmd,tty)) < 0 && unlikely(errno==EINTR))
 		errno = err;
 	return r;
 }

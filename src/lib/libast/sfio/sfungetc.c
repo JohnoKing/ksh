@@ -28,7 +28,7 @@ static int _uexcept(Sfio_t* f, int type, void* val, Sfdisc_t* disc)
 	NOT_USED(val);
 
 	/* hmm! This should never happen */
-	if(disc != _Sfudisc)
+	if(unlikely(disc != _Sfudisc))
 		return -1;
 
 	/* close the unget stream */
@@ -43,7 +43,7 @@ int sfungetc(Sfio_t*	f,	/* push back one byte to this stream */
 {
 	Sfio_t*	uf;
 
-	if(!f || c < 0 || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
+	if(unlikely(!f || c < 0 || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)))
 		return -1;
 	SFLOCK(f,0);
 
@@ -55,8 +55,8 @@ int sfungetc(Sfio_t*	f,	/* push back one byte to this stream */
 
 	/* make a string stream for unget characters */
 	if(f->disc != _Sfudisc)
-	{	if(!(uf = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND,
-				-1,SFIO_STRING|SFIO_READ)))
+	{	if(unlikely(!(uf = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND,
+				-1,SFIO_STRING|SFIO_READ))))
 		{	c = -1;
 			goto done;
 		}
@@ -70,7 +70,7 @@ int sfungetc(Sfio_t*	f,	/* push back one byte to this stream */
 	{	uchar*	data;
 		if(f->size < 0)
 			f->size = 0;
-		if(!(data = (uchar*)malloc((size_t)(f->size+16))))
+		if(unlikely(!(data = (uchar*)malloc((size_t)(f->size+16)))))
 		{	c = -1;
 			goto done;
 		}

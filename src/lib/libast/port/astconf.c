@@ -289,7 +289,7 @@ static char *set_fp_value(Feature_t *fp, const char *str, Error_f conferror)
 	if(str == null)
 		return fp->value = null;
 	fp->value = strdup(str);
-	if (!fp->value)
+	if (unlikely(!fp->value))
 	{
 		if (conferror)
 			(*conferror)(&state, &state, 2, "set_fp_value(): out of memory");
@@ -343,7 +343,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 		if ((s = getenv(state.name)) || getenv(state.strict) && (s = (char*)state.standard))
 			n += strlen(s) + 1;
 		n = roundof(n, 32);
-		if (!(state.data = newof(0, char, (size_t)n, 0)))
+		if (unlikely(!(state.data = newof(0, char, (size_t)n, 0))))
 		{
 			if (conferror)
 				(*conferror)(&state, &state, 2, "synthesize(): out of memory");
@@ -455,7 +455,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 		state.data -= state.prefix;
 		c = n + state.last - state.data + 3 * MAXVAL;
 		c = roundof(c, 32);
-		if (!(state.data = newof(state.data, char, (size_t)c, 0)))
+		if (unlikely(!(state.data = newof(state.data, char, (size_t)c, 0))))
 		{
 			if (conferror)
 				(*conferror)(&state, &state, 2, "synthesize(): out of memory");
@@ -484,7 +484,7 @@ synthesize(Feature_t* fp, const char* path, const char* value, Error_f conferror
 		fp->value = 0;
 	if (n == 1 && (*value == '0' || *value == '-'))
 		n = 0;
-	if(!(newvalue = malloc((size_t)(n + 1))))
+	if(unlikely(!(newvalue = malloc((size_t)(n + 1)))))
 	{
 		set_fp_value(fp, null, conferror);
 		if (conferror)
@@ -546,7 +546,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
 #if DEBUG_astconf
 			error(-6, "astconf initialize name=%s ok=%d PATH=%s", fp->name, ok, p);
 #endif
-			if (tmp = sfstropen())
+			if (likely(tmp = sfstropen()))
 			{
 				for (;;)
 				{
@@ -562,7 +562,7 @@ initialize(Feature_t* fp, const char* path, const char* command, const char* suc
 								sfwrite(tmp, d, (size_t)r);
 								sfputc(tmp, '/');
 								sfputr(tmp, command, 0);
-								if ((d = sfstruse(tmp)) && !eaccess(d, X_OK))
+								if (likely(d = sfstruse(tmp)) && !eaccess(d, X_OK))
 								{
 									ok = 1;
 									if (fp->op != OP_universe)
@@ -715,7 +715,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 		{
 			while (n < univ_max && !streq(value, univ_name[n]))
 				n++;
-			if (n >= univ_max)
+			if (unlikely(n >= univ_max))
 			{
 				if (conferror)
 					(*conferror)(&state, &state, 2, "%s: %s: universe value too large", fp->name, value);
@@ -743,7 +743,7 @@ format(Feature_t* fp, const char* path, const char* value, unsigned int flags, E
 					fp->value = NULL;
 				mayfree = fp->value;
 				len = strlen(value);
-				if (!(fp->value = newof(fp->value, char, len, 1)))
+				if (unlikely(!(fp->value = newof(fp->value, char, len, 1))))
 				{
 					free(mayfree);
 					if (conferror)
@@ -804,7 +804,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 		if (state.notify && !(*state.notify)(name, path, value))
 			return NULL;
 		n = strlen(name);
-		if (!(fp = newof(0, Feature_t, 1, n + 1)))
+		if (unlikely(!(fp = newof(0, Feature_t, 1, n + 1))))
 		{
 			if (conferror)
 				(*conferror)(&state, &state, 2, "%s: out of memory", name);
@@ -820,7 +820,7 @@ feature(Feature_t* fp, const char* name, const char* path, const char* value, un
 	}
 	else if (value)
 	{
-		if (fp->flags & CONF_READONLY)
+		if (unlikely(fp->flags & CONF_READONLY))
 		{
 			if (conferror)
 				(*conferror)(&state, &state, 2, "%s: cannot set readonly symbol", fp->name);
@@ -1020,21 +1020,21 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 	flags |= CONF_LIMIT_DEF|CONF_MINMAX_DEF;
 	if (conferror && name)
 	{
-		if ((p->flags & CONF_PREFIX_ONLY) && look->standard < 0)
+		if (unlikely((p->flags & CONF_PREFIX_ONLY) && look->standard < 0))
 			goto bad;
 		if (!(flags & CONF_MINMAX) || !(p->flags & CONF_MINMAX))
 		{
 			switch (p->call)
 			{
 			case CONF_pathconf:
-				if (path == root)
+				if (unlikely(path == root))
 				{
 					(*conferror)(&state, &state, 2, "%s: path expected", name);
 					goto bad;
 				}
 				break;
 			default:
-				if (path != root)
+				if (unlikely(path != root))
 				{
 					(*conferror)(&state, &state, 2, "%s: path not expected", name);
 					goto bad;
@@ -1042,23 +1042,23 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 				break;
 			}
 #ifdef _pth_getconf
-			if (p->flags & CONF_DEFER_CALL)
+			if (unlikely(p->flags & CONF_DEFER_CALL))
 				goto bad;
 #endif
 		}
 		else
 		{
-			if (path != root)
+			if (unlikely(path != root))
 			{
 				(*conferror)(&state, &state, 2, "%s: path not expected", name);
 				goto bad;
 			}
 #ifdef _pth_getconf
-			if ((p->flags & CONF_DEFER_MM) || !(p->flags & CONF_MINMAX_DEF))
+			if (unlikely((p->flags & CONF_DEFER_MM) || !(p->flags & CONF_MINMAX_DEF)))
 				goto bad;
 #endif
 		}
-		if (look->standard >= 0 && (name[0] != '_' && ((p->flags & CONF_UNDERSCORE) || look->section <= 1) || name[0] == '_' && (p->flags & CONF_NOUNDERSCORE)) || look->standard < 0 && name[0] == '_')
+		if (unlikely(look->standard >= 0 && (name[0] != '_' && ((p->flags & CONF_UNDERSCORE) || look->section <= 1) || name[0] == '_' && (p->flags & CONF_NOUNDERSCORE)) || look->standard < 0 && name[0] == '_'))
 			goto bad;
 	}
 	s = 0;
@@ -1191,7 +1191,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 			flags &= (unsigned)~(CONF_LIMIT_DEF|CONF_MINMAX_DEF);
 		else if (errno != EINVAL || !i)
 		{
-			if (!sp)
+			if (unlikely(!sp))
 			{
 				if (conferror)
 				{
@@ -1210,9 +1210,9 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 		}
 	}
 	errno = olderrno;
-	if ((listflags & ASTCONF_defined) && !(flags & (CONF_LIMIT_DEF|CONF_MINMAX_DEF)))
+	if (unlikely((listflags & ASTCONF_defined) && !(flags & (CONF_LIMIT_DEF|CONF_MINMAX_DEF))))
 		goto bad;
-	if ((drop = !sp) && !(sp = sfstropen()))
+	if (unlikely((drop = !sp) && unlikely(!(sp = sfstropen()))))
 		goto bad;
 	if (listflags & ASTCONF_table)
 	{
@@ -1327,7 +1327,7 @@ print(Sfio_t* sp, Lookup_t* look, const char* name, const char* path, int listfl
 	}
 	if (drop)
 	{
-		if (call = sfstruse(sp))
+		if (likely(call = sfstruse(sp)))
 			call = buffer(call);
 		else
 			call = "[ out of memory ]";
@@ -1431,7 +1431,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 		return s;
 	if (lookup(&look, name, (unsigned)flags))
 	{
-		if (value)
+		if (unlikely(value))
 		{
 		ro:
 			errno = EINVAL;
@@ -1445,12 +1445,12 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 	{
 		if (streq(name + n - 3, "DEV"))
 		{
-			if (tmp = sfstropen())
+			if (likely(tmp = sfstropen()))
 			{
 				sfprintf(tmp, "/dev/");
 				for (s = (char*)name; s < (char*)name + n - 3; s++)
 					sfputc(tmp, isupper(*s) ? tolower(*s) : *s);
-				if ((s = sfstruse(tmp)) && !access(s, F_OK))
+				if (likely(s = sfstruse(tmp)) && !access(s, F_OK))
 				{
 					if (value)
 						goto ro;
@@ -1472,7 +1472,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 			altname[n - 3] = 0;
 			if (lookup(&altlook, altname, (unsigned)flags))
 			{
-				if (value)
+				if (unlikely(value))
 				{
 					errno = EINVAL;
 					if (conferror)
@@ -1484,12 +1484,12 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 			for (s = altname; *s; s++)
 				if (isupper(*s))
 					*s = (char)tolower(*s);
-			if (tmp = sfstropen())
+			if (likely(tmp = sfstropen()))
 			{
 				for (n = 0; n < elementsof(dirs); n++)
 				{
 					sfprintf(tmp, "%s/%s/.", dirs[n], altname);
-					if ((s = sfstruse(tmp)) && !access(s, F_OK))
+					if (likely(s = sfstruse(tmp)) && !access(s, F_OK))
 					{
 						if (value)
 							goto ro;
@@ -1502,7 +1502,7 @@ astgetconf(const char* name, const char* path, const char* value, int flags, Err
 			}
 		}
 	}
-	if ((look.standard < 0 || look.standard == CONF_AST) && look.call <= 0 && look.section <= 1 && (s = feature(0, look.name, path, value, (unsigned)flags, conferror)))
+	if (likely((look.standard < 0 || look.standard == CONF_AST) && look.call <= 0 && look.section <= 1 && (s = feature(0, look.name, path, value, (unsigned)flags, conferror))))
 		return s;
 	errno = EINVAL;
 	if (conferror && !(flags & ASTCONF_system))

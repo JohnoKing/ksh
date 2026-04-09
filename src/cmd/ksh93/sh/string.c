@@ -196,7 +196,7 @@ char *sh_substitute(const char *string,const char *oldsp,char *newsp)
 #if SHOPT_MULTIBYTE
 			/* skip a whole character at a time */
 			int c = mbsize(sp);
-			if(c < 0)
+			if(unlikely(c < 0))
 				sp++;
 			while(c-- > 0)
 #endif /* SHOPT_MULTIBYTE */

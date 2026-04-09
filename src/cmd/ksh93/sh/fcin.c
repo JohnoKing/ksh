@@ -148,7 +148,7 @@ struct Extra
 	unsigned char	*next;
 };
 
-int _fcmbget(short *len)
+hot int _fcmbget(short *len)
 {
 	static struct Extra	extra;
 	int			i, c, n;
@@ -156,7 +156,7 @@ int _fcmbget(short *len)
 	 * Check if we need to piece together a split multibyte
 	 * character started at the end of the previous buffer.
 	 */
-	if(_Fcin.fcleft)
+	if(unlikely(_Fcin.fcleft))
 	{
 		if((c = mbsize(extra.next)) < 0)
 			c = 1;
@@ -174,7 +174,7 @@ int _fcmbget(short *len)
 			c = mbchar(extra.next);
 		return c;
 	}
-	switch(*len = mbsize(_Fcin.fcptr))
+	switch(expect(*len = mbsize(_Fcin.fcptr),-1,0.001))
 	{
 	    case -1:
 		/*

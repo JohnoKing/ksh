@@ -66,7 +66,7 @@ regexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmatch,
 		size_t		i;
 		int		r;
 
-		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
+		if (unlikely(!(match = oldof(0, regmatch_t, nmatch, 0))))
 			return -1;
 		if (!(r = regexec_20120528(p, s, nmatch, match, flags)))
 			for (i = 0; i < nmatch; i++)

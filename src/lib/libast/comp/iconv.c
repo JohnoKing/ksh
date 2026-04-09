@@ -56,7 +56,7 @@
 
 #define RETURN(e,n,fn) \
 	if (*fn && !e) e = E2BIG; \
-	if (e) { errno = e; return (size_t)(-1); } \
+	if (unlikely(e)) { errno = e; return (size_t)(-1); } \
 	return n;
 
 typedef struct Map_s
@@ -348,7 +348,7 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+		else if (unlikely((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0))
 		{
 			e = EINVAL;
 			break;
@@ -544,7 +544,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+		else if (unlikely((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0))
 		{
 			e = EINVAL;
 			break;
@@ -667,7 +667,7 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+		if (unlikely((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0))
 		{
 			e = EINVAL;
 			break;
@@ -765,7 +765,7 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			c = 1;
 			w = *f;
 		}
-		else if ((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0)
+		else if (unlikely((c = (*ast.mb.towc)(&w, (char*)f, (size_t)(fe - f))) < 0))
 		{
 			e = EINVAL;
 			break;
@@ -844,7 +844,7 @@ error(DEBUG_TRACE, "AHA#%d _ast_iconv_open f=%s:%s:%d t=%s:%s:%d\n", __LINE__, f
 	 * allocate a new one
 	 */
 
-	if (!(cc = newof(0, Conv_t, 1, strlen(to) + strlen(fr) + 2)))
+	if (unlikely(!(cc = newof(0, Conv_t, 1, strlen(to) + strlen(fr) + 2))))
 		return (iconv_t)(-1);
 	cc->to.name = (char*)(cc + 1);
 	cc->from.name = strcopy(cc->to.name, to) + 1;
@@ -1001,7 +1001,7 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		{
 			if (cc->to.fun)
 			{
-				if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
+				if (!cc->buf && unlikely(!(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0))))
 				{
 					errno = ENOMEM;
 					return (size_t)-1;
@@ -1035,7 +1035,7 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 		{
 			if (!(m = cc->from.map))
 				return (*cc->to.fun)(cc->cvt, fb, fn, tb, tn);
-			if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0)))
+			if (!cc->buf && unlikely(!(cc->buf = oldof(0, char, cc->size = SFIO_BUFSIZE, 0))))
 			{
 				errno = ENOMEM;
 				return (size_t)-1;

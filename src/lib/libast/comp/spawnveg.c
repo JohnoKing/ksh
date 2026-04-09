@@ -41,7 +41,7 @@
 static void setup_child(pid_t pgid, int tcfd)
 {
 	sigcritical(0);
-	if (pgid == -1)
+	if (unlikely(pgid == -1))
 		setsid();
 	else if (pgid)
 	{
@@ -50,7 +50,7 @@ static void setup_child(pid_t pgid, int tcfd)
 		if (setpgid(0, pgid) < 0 && errno == EPERM)
 			setpgid(pgid, 0);
 	}
-	if (tcfd >= 0)
+	if (unlikely(tcfd >= 0))
 	{
 		if (pgid == -1)
 			pgid = getpid();
@@ -84,7 +84,7 @@ static noreturn void exit_child(void)
 	if (errno == ENOENT)
 		_exit(EXIT_NOTFOUND);
 #ifdef ENAMETOOLONG
-	if (errno == ENAMETOOLONG)
+	if (unlikely(errno == ENAMETOOLONG))
 		_exit(EXIT_NOTFOUND);
 #endif
 	_exit(EXIT_NOEXEC);
@@ -165,11 +165,11 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 	args.tcfd = tcfd;
 	sigcritical(SIG_REG_EXEC|SIG_REG_PROC|(tcfd>=0?SIG_REG_TERM:0));
 	pid = clone(exec_process, stack_top, CLONE_VM|CLONE_VFORK|SIGCHLD, &args);
-	if (pid == -1)
+	if (unlikely(pid == -1))
 		args.err = errno;
 	else if (args.err)
 	{
-		while (waitpid(pid, NULL, 0) == -1 && errno == EINTR);
+		while (waitpid(pid, NULL, 0) == -1 && unlikely(errno == EINTR));
 		pid = -1;
 	}
 	fork_cleanup(pid, pgid, args.err);
@@ -195,26 +195,26 @@ spawnveg_fast(const char* path, char* const argv[], char* const envv[], pid_t pg
 	posix_spawnattr_t		attr;
 	NOT_USED(tcfd);
 
-	if (err = posix_spawnattr_init(&attr))
+	if (unlikely(err = posix_spawnattr_init(&attr)))
 		goto nope;
 #ifdef POSIX_SPAWN_SETSID
-	if (pgid == -1)
+	if (unlikely(pgid == -1))
 		flags |= POSIX_SPAWN_SETSID;
 #endif
 	if (pgid && pgid != -1)
 		flags |= POSIX_SPAWN_SETPGROUP;
-	if (flags && (err = posix_spawnattr_setflags(&attr, flags)))
+	if (flags && unlikely(err = posix_spawnattr_setflags(&attr, flags)))
 		goto bad;
 	if (pgid && pgid != -1)
 	{
 		if (pgid <= 1)
 			pgid = 0;
-		if (err = posix_spawnattr_setpgroup(&attr, pgid))
+		if (unlikely(err = posix_spawnattr_setpgroup(&attr, pgid)))
 			goto bad;
 	}
-	if (err = posix_spawn(&pid, path, NULL, &attr, argv, envv ? envv : environ))
+	if (unlikely(err = posix_spawn(&pid, path, NULL, &attr, argv, envv ? envv : environ)))
 	{
-		if ((err != EPERM) || (err = posix_spawn(&pid, path, NULL, NULL, argv, envv ? envv : environ)))
+		if ((err != EPERM) || unlikely(err = posix_spawn(&pid, path, NULL, NULL, argv, envv ? envv : environ)))
 			goto bad;
 	}
 	posix_spawnattr_destroy(&attr);
@@ -310,7 +310,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 		return spawnve(path, argv, envv);
 #endif /* _lib_spawnve */
 	n = errno;
-	if (pipe(err) < 0)
+	if (unlikely(pipe(err) < 0))
 		err[0] = -1;
 #if !(_lib_pipe2 && O_cloexec)
 	else
@@ -321,7 +321,7 @@ spawnveg_slow(const char* path, char* const argv[], char* const envv[], pid_t pg
 #endif
 	sigcritical(SIG_REG_EXEC|SIG_REG_PROC|(tcfd>=0?SIG_REG_TERM:0));
 	pid = fork();
-	if (pid == -1)
+	if (unlikely(pid == -1))
 		n = errno;
 	else if (!pid)
 	{
@@ -365,11 +365,11 @@ pid_t
 spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid, int tcfd)
 {
 #if !_lib_clone
-	if (tcfd >= 0)
+	if (unlikely(tcfd >= 0))
 		return spawnveg_slow(path, argv, envv, pgid, tcfd);
 #endif
 #if !_lib_clone && !defined(POSIX_SPAWN_SETSID)
-	if (pgid == -1)
+	if (unlikely(pgid == -1))
 		return spawnveg_slow(path, argv, envv, pgid, tcfd);
 #endif
 #if _fast_spawnveg

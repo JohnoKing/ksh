@@ -79,7 +79,7 @@ fmtgid(gid_t gid)
 		name = fmtbuf(z = sizeof(gid) * 3 + 1);
 		sfsprintf(name, z, "%I*d", sizeof(gid), gid);
 	}
-	if (dict && (ip = newof(0, Id_t, 1, strlen(name))))
+	if (dict && likely(ip = newof(0, Id_t, 1, strlen(name))))
 	{
 		ip->id = gid;
 		strcpy(ip->name, name);

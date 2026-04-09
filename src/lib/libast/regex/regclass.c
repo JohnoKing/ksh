@@ -234,7 +234,7 @@ regclass(const char* s, char** e)
 	}
 	if (!cp->name)
 	{
-		if (!(cp->name = (const char*)memdup(s, n + 1)))
+		if (unlikely(!(cp->name = (const char*)memdup(s, n + 1))))
 			return NULL;
 		*((char*)cp->name + n) = 0;
 	}
@@ -272,7 +272,7 @@ regaddclass(const char* name, regclass_t fun)
 			cp->ctype = fun;
 			return 0;
 		}
-	if (!(np = newof(0, Ctype_t, 1, n + 1)))
+	if (unlikely(!(np = newof(0, Ctype_t, 1, n + 1))))
 		return REG_ESPACE;
 	np->size = n;
 	np->name = strcpy((char*)(np + 1), name);

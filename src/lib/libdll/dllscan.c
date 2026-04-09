@@ -221,7 +221,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 	size_t		k;
 	char		buf[32];
 
-	if (!(vm = vmopen()))
+	if (unlikely(!(vm = vmopen())))
 		return NULL;
 	if (lib && *lib && (*lib != '-' || *(lib + 1)))
 	{
@@ -240,7 +240,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 	}
 	if (version && (!*version || *version == '-' && !*(version + 1)))
 		version = 0;
-	if (!(scan = vmnewof(vm, 0, Dllscan_t, 1, i)) || !(scan->tmp = sfstropen()))
+	if (unlikely(!(scan = vmnewof(vm, 0, Dllscan_t, 1, i))) || unlikely(!(scan->tmp = sfstropen())))
 	{
 		vmclose(vm);
 		return NULL;
@@ -263,7 +263,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 	}
 	else if (t = (char*)strrchr(name, '/'))
 	{
-		if (!(scan->pb = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 2)))
+		if (unlikely(!(scan->pb = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 2))))
 			goto bad;
 		memcpy(scan->pb, name, (size_t)(t - (char*)name));
 		name = (const char*)(t + 1);
@@ -278,7 +278,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 			if (i > k && streq(name + i - k, info->suffix))
 			{
 				i -= j + k;
-				if (!(t = vmnewof(vm, 0, char, i, 1)))
+				if (unlikely(!(t = vmnewof(vm, 0, char, i, 1))))
 					goto bad;
 				memcpy(t, name + j, i);
 				t[i] = 0;
@@ -292,7 +292,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 					if (*t != '-')
 						scan->flags |= DLL_MATCH_VERSION;
 					version = t + 1;
-					if (!(s = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 1)))
+					if (unlikely(!(s = vmnewof(vm, 0, char, (size_t)(t - (char*)name), 1))))
 						goto bad;
 					memcpy(s, name, (size_t)(t - (char*)name));
 					name = (const char*)s;
@@ -311,7 +311,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 			if (isdigit(*s))
 				sfputc(scan->tmp, *s);
 		sfprintf(scan->tmp, "%s", info->suffix);
-		if (!(s = sfstruse(scan->tmp)))
+		if (unlikely(!(s = sfstruse(scan->tmp))))
 			goto bad;
 		sfsprintf(scan->nam, sizeof(scan->nam), "%s", s);
 	}
@@ -418,7 +418,7 @@ dllsread(Dllscan_t* scan)
 			if (!(scan->flags & DLL_MATCH_NAME))
 			{
 				sfprintf(scan->tmp, "/%s", scan->nam);
-				if (!(p = sfstruse(scan->tmp)))
+				if (unlikely(!(p = sfstruse(scan->tmp))))
 					return NULL;
 				if (!eaccess(p, R_OK))
 				{
@@ -431,7 +431,7 @@ dllsread(Dllscan_t* scan)
 			if (scan->flags & (DLL_MATCH_NAME|DLL_MATCH_VERSION))
 			{
 				sfstrseek(scan->tmp, scan->off, SEEK_SET);
-				if (!(t = sfstruse(scan->tmp)))
+				if (unlikely(!(t = sfstruse(scan->tmp))))
 					return NULL;
 				if ((scan->fts = fts_open((char**)t, FTS_LOGICAL|FTS_NOPOSTORDER|FTS_ONEPATH, vercmp)) && (scan->ent = fts_read(scan->fts)) && (scan->ent = fts_children(scan->fts, FTS_NOSTAT)))
 					break;
@@ -441,7 +441,7 @@ dllsread(Dllscan_t* scan)
 	b = scan->ent->fts_name;
 	sfstrseek(scan->tmp, scan->off, SEEK_SET);
 	sfprintf(scan->tmp, "/%s", b);
-	if (!(p = sfstruse(scan->tmp)))
+	if (unlikely(!(p = sfstruse(scan->tmp))))
 		return NULL;
  found:
 	b = scan->buf + sfsprintf(scan->buf, sizeof(scan->buf), "%s", b + scan->prelen);
@@ -502,20 +502,20 @@ dllsread(Dllscan_t* scan)
 			scan->disc.key = offsetof(Uniq_t, name);
 			scan->disc.size = 0;
 			scan->disc.link = offsetof(Uniq_t, link);
-			if (!(scan->dict = dtopen(&scan->disc, Dtset)))
+			if (unlikely(!(scan->dict = dtopen(&scan->disc, Dtset))))
 				return NULL;
 			dtinsert(scan->dict, scan->uniq);
 		}
 		if (dtmatch(scan->dict, b))
 			goto again;
-		if (!(u = vmnewof(scan->vm, 0, Uniq_t, 1, strlen(b))))
+		if (unlikely(!(u = vmnewof(scan->vm, 0, Uniq_t, 1, strlen(b)))))
 			return NULL;
 		strcpy(u->name, b);
 		dtinsert(scan->dict, u);
 	}
 	else if (!(scan->flags & DLL_MATCH_NAME))
 		scan->flags |= DLL_MATCH_DONE;
-	else if (!(scan->uniq = vmnewof(scan->vm, 0, Uniq_t, 1, strlen(b))))
+	else if (unlikely(!(scan->uniq = vmnewof(scan->vm, 0, Uniq_t, 1, strlen(b)))))
 		return NULL;
 	else
 		strcpy(scan->uniq->name, b);

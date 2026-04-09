@@ -33,7 +33,7 @@ ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
 	uchar		c[N_ARRAY];
 	Sfdouble_t	x;
 
-	if(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
+	if(unlikely(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0)))
 		return -1;
 	SFLOCK(f,0);
 
@@ -57,7 +57,7 @@ ssize_t _sfputd(Sfio_t* f, Sfdouble_t v)
 
 	/* write out the signs and the exp */
 	SFOPEN(f,0);
-	if(sfputc(f,n) < 0 || (w = sfputu(f,w)) < 0)
+	if(unlikely(sfputc(f,n) < 0 || (w = sfputu(f,w)) < 0))
 		return -1;
 	SFLOCK(f,0);
 	w += 1;

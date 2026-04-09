@@ -53,17 +53,17 @@ getcwd(char* buf, size_t len)
 	n = PATH_MAX;
 	for (;;)
 	{
-		if (!(buf = newof(buf, char, n, 0)))
+		if (unlikely(!(buf = newof(buf, char, n, 0))))
 			ERROR(ENOMEM);
 		if (SYSGETCWD(buf, n) >= 0)
 		{
-			if ((r = strlen(buf) + len + 1) != n && !(buf = newof(buf, char, r, 0)))
+			if ((r = strlen(buf) + len + 1) != n && unlikely(!(buf = newof(buf, char, r, 0))))
 				ERROR(ENOMEM);
 			break;
 		}
 		if (errno != ERANGE)
 		{
-			free(buf);
+			free_sized(buf, sizeof(char) * n);
 			return NULL;
 		}
 		n += PATH_MAX / 4;
@@ -119,9 +119,9 @@ pushdir(struct dirlist* d, char* dots, char* path, char* end)
 {
 	struct dirlist*	p;
 
-	if (!(p = newof(0, struct dirlist, 1, 0)) || chdir(dots))
+	if (unlikely(!(p = newof(0, struct dirlist, 1, 0))) || chdir(dots))
 	{
-		if (p) free(p);
+		if (p) free_sized(p,sizeof(struct dirlist));
 		if (d) popdir(d, end);
 		return NULL;
 	}
@@ -136,9 +136,9 @@ pushdir(struct dirlist* d, char* dots, char* path, char* end)
  *
  * a few environment variables are checked before the search algorithm
  * return value is placed in buf of len chars
- * if buf is 0 then space is allocated via malloc() with
+ * if buf is NULL then space is allocated via malloc() with
  * len extra chars after the path name
- * 0 is returned on error with errno set as appropriate
+ * NULL is returned on error with errno set as appropriate
  */
 
 char*
@@ -194,7 +194,7 @@ getcwd(char* buf, size_t len)
 				{
 					if (len < namlen) ERROR(ERANGE);
 				}
-				else if (!(buf = newof(0, char, namlen, len))) ERROR(ENOMEM);
+				else if (unlikely(!(buf = newof(0, char, namlen, len)))) ERROR(ENOMEM);
 				return (char*)memcpy(buf, p, namlen);
 			}
 		}
@@ -203,7 +203,7 @@ getcwd(char* buf, size_t len)
 	{
 		extra = (ssize_t)len;
 		len = PATH_MAX;
-		if (!(buf = newof(0, char, len, (size_t)extra))) ERROR(ENOMEM);
+		if (unlikely(!(buf = newof(0, char, len, (size_t)extra)))) ERROR(ENOMEM);
 	}
 	d = dots;
 	p = buf + len - 1;
@@ -241,7 +241,7 @@ getcwd(char* buf, size_t len)
 					d = buf;
 					while (*d++ = *p++);
 					len = (size_t)(d - buf);
-					if (extra >= 0 && !(buf = newof(buf, char, len, (size_t)extra))) ERROR(ENOMEM);
+					if (extra >= 0 && unlikely(!(buf = newof(buf, char, len, (size_t)extra)))) ERROR(ENOMEM);
 				}
 				if (dirstk && popdir(dirstk, buf + len - 1))
 				{
@@ -286,7 +286,7 @@ getcwd(char* buf, size_t len)
 		{
 			x = (buf + len - 1) - (p += namlen);
 			s = buf + len;
-			if (extra < 0 || !(buf = newof(buf, char, len += PATH_MAX, (size_t)extra))) ERROR(ERANGE);
+			if (extra < 0 || unlikely(!(buf = newof(buf, char, len += PATH_MAX, (size_t)extra)))) ERROR(ERANGE);
 			p = buf + len;
 			while (p > buf + len - 1 - x) *--p = *--s;
 		}

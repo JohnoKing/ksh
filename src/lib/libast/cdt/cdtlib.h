@@ -82,9 +82,6 @@ typedef struct _dtlib_s
 				   (dt)->disc && (dt)->disc->eventf ) ? \
 					(*(dt)->disc->eventf)((dt), DT_ANNOUNCE|(ty), (ob), (dt)->disc) : 0 )
 
-/* map bits for upward compatibility */
-#define DTTYPE(dt,ty)		((dt)->typef ? (*(dt)->typef)((dt), (ty)) : (ty) )
-
 /* shorthands for fields in Dtlink_t.
 ** note that __hash is used as a hash value
 ** or as the position in the parent table.

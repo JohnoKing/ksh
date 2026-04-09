@@ -212,11 +212,11 @@ typedef uint32_t regflags_t;
 #define mbmax()		( ast.mb.cur_max )
 #define mberr()		( ast.mb.tmp_i < 0 )
 
-#define mbwide()	( mbmax() > 1 )
+#define mbwide()	( likely(mbmax() > 1) )
 
 #define mb2wc(w,p,n)	( (*ast.mb.towc)(&w, (char*)(p), n) )
 #define mbchar(p)	mbnchar(p, mbmax())
-#define mbnchar(p,n)	( mbwide() ? ( (ast.mb.tmp_i = (*ast.mb.towc)(&ast.mb.tmp_w, (char*)(p), n)) > 0 ? \
+#define mbnchar(p,n)	( mbwide() ? ( likely((ast.mb.tmp_i = (*ast.mb.towc)(&ast.mb.tmp_w, (char*)(p), n)) > 0) ? \
 			( (p+=ast.mb.tmp_i),ast.mb.tmp_w) : (p+=ast.mb.sync+1,ast.mb.tmp_i) ) : (*(unsigned char*)(p++)) )
 #define mbsize(p)	mbnsize(p, mbmax())
 #define mbnsize(p,n)	( mbwide() ? (*ast.mb.len)((char*)(p), n) : ((p), 1) )
@@ -278,6 +278,13 @@ typedef uint32_t regflags_t;
 
 #define NOT_USED(x)	NoP(x)
 
+#if !_lib_free_aligned_sized
+#define free_aligned_sized(x,y,z)	free(x)
+#endif
+#if !_lib_free_sized
+#define free_sized(x,y)			free(x)
+#endif
+
 typedef int (*Error_f)(void*, void*, int, ...);
 
 typedef int (*Ast_confdisc_f)(const char*, const char*, const char*);
@@ -323,7 +330,7 @@ extern char*		fmtbuf(size_t);
 extern char*		fmtclock(Sfulong_t);
 extern char*		fmtelapsed(unsigned long, unsigned long);
 extern char*		fmtesc(const char*);
-extern char*		fmtesq(const char*, const char*);
+extern char*		fmtesq(const char *restrict, const char *restrict);
 extern char*		fmtident(const char*);
 extern char*		fmtip4(uint32_t, int);
 extern char*		fmtfmt(const char*);
@@ -331,10 +338,10 @@ extern char*		fmtgid(gid_t);
 extern char*		fmtint(intmax_t, int);
 extern char*		fmtmatch(const char*);
 extern char*		fmtmode(mode_t, int);
-extern char*		fmtnesq(const char*, const char*, size_t);
+extern char*		fmtnesq(const char *restrict, const char *restrict, size_t);
 extern char*		fmtnum(unsigned long, int);
 extern char*		fmtperm(mode_t);
-extern char*		fmtquote(const char*, const char*, const char*, size_t, int);
+extern char*		fmtquote(const char *restrict, const char *restrict, const char *restrict, size_t, int);
 extern char*		fmtre(const char*);
 extern char*		fmtscale(Sfulong_t, unsigned int);
 extern char*		fmtsignal(int);
@@ -345,7 +352,7 @@ extern size_t		memhash(const void*, int);
 extern unsigned long	memsum(const void*, int, unsigned long);
 extern char*		pathaccess(char*, const char*, const char*, const char*, int);
 extern char*		pathaccess_20100601(const char*, const char*, const char*, int, char*, size_t);
-extern char*		pathbin(void);
+extern char*		pathbin(void) returns_nonnull;
 extern char*		pathcanon(char*, int);
 extern char*		pathcanon_20100601(char*, size_t, int);
 extern char*		pathcat(char*, const char*, int, const char*, const char*);
@@ -368,7 +375,7 @@ extern char*		pathtmp(char*, const char*, const char*, int*);
 extern char*		setenviron(const char*);
 extern pid_t		spawnveg(const char*, char* const[], char* const[], pid_t, int);
 extern char*		strcopy(char*, const char*);
-extern unsigned long	strelapsed(const char*, char**, int);
+extern unsigned long	strelapsed(const char *restrict, char **restrict, int);
 extern ptrdiff_t	stresc(char*);
 extern ptrdiff_t	strexp(char*, int);
 extern long		streval(const char*, char**, long(*)(const char*, char**));
@@ -423,17 +430,17 @@ extern size_t		utf32toutf8(char*, uint32_t);
 #define ast_close(fd)	posix_close(fd, 0)
 #elif defined(__linux__) || defined(__FreeBSD__) || _WINIX
 /* Never try again after EINTR */
-#define ast_close(fd)	do {						\
-				int _cerr = errno;			\
-				if(close(fd)<0 && errno==EINTR) 	\
-					errno = _cerr;			\
+#define ast_close(fd)	do {								\
+				int _cerr = errno;					\
+				if(unlikely(close(fd)<0) && unlikely(errno==EINTR)) 	\
+					errno = _cerr;					\
 			} while(0)
 #else
 /* Always try again after EINTR */
-#define ast_close(fd)	do {						\
-				int _cerr = errno;			\
-				while(close(fd)<0 && errno==EINTR) 	\
-					errno = _cerr;			\
+#define ast_close(fd)	do {								\
+				int _cerr = errno;					\
+				while(unlikely(close(fd)<0) && unlikely(errno==EINTR)) 	\
+					errno = _cerr;					\
 			} while(0)
 #endif
 

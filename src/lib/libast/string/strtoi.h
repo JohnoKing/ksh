@@ -238,7 +238,7 @@ S2I_function(const char* a, char** e, int base)
 			base = 1;
 	}
 #endif
-	if (base && (base < 2 || base > SFIO_RADIX))
+	if (base && unlikely(base < 2 || base > SFIO_RADIX))
 	{
 		if (e)
 			*e = (char*)a;
@@ -290,7 +290,7 @@ S2I_function(const char* a, char** e, int base)
 		}
 		if (!base)
 			base = 10;
-		else if (base < 2 || base > SFIO_RADIX)
+		else if (unlikely(base < 2 || base > SFIO_RADIX))
 		{
 			if (e)
 				*e = (char*)a;
@@ -350,7 +350,7 @@ S2I_function(const char* a, char** e, int base)
 			{
 				if (e)
 					*e = (char*)s - 1;
-				if (overflow)
+				if (unlikely(overflow))
 				{
 					errno = ERANGE;
 #if S2I_unsigned
@@ -607,7 +607,7 @@ S2I_function(const char* a, char** e, int base)
 #endif
 	if (e)
 		*e = (char*)s;
-	if (overflow)
+	if (unlikely(overflow))
 	{
 #if !S2I_unsigned
 		if (negative)

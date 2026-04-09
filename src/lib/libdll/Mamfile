@@ -24,7 +24,7 @@ make install virtual
 	bind -last
 	make dll.req
 		makp %{INSTALLROOT}/bin/mkreq
-		exec - mkreq %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} : %{LDFLAGS} : dll dl dld ast
+		exec - mkreq %{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} : %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} : dll dl dld ast
 	done
 
 	note *
@@ -38,7 +38,7 @@ make install virtual
 				make FEATURE/dll
 					makp features/dll
 					exec - iffe %{IFFEFLAGS} -v -c \
-					exec -  '%{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS}' \
+					exec -  '%{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS}' \
 					exec -	ref -I%{INCLUDE_AST} -I%{INSTALLROOT}/include \
 					exec -	%{mam_libdl} %{mam_libast} : run %{<}
 				done
@@ -99,7 +99,7 @@ make install virtual
 		loop OBJ %{_c_source_files_|sed 's/\.c$//'}
 			make %{OBJ}.o
 				prev %{OBJ}.c
-				exec - %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} -I. -I%{INCLUDE_AST} -D_BLD_dll -c %{<}
+				exec - %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} -I. -I%{INCLUDE_AST} -D_BLD_dll -c %{<}
 			done
 		done
 
@@ -117,7 +117,7 @@ make install virtual
 	make %{INSTALLROOT}/dyn/lib/%{DYLIB_PRE}dll%{DYLIB_SUF} dontcare
 		prev libdll.a
 		prev dll.req
-		exec - export LDFLAGS='%{LDFLAGS} %{CCLDFLAGS} %{mam_cc_LD_NOASNEEDED}'
+		exec - export LDFLAGS='%{mam_cc_LD_RELRO} %{LDFLAGS} %{CCLDFLAGS} %{mam_cc_LD_NOASNEEDED}'
 		exec - dylink -m dll -v %{DYLIB_VERSION} -p '%{DYLIB_PRE}' -s '%{DYLIB_SUF}' $(sed 1d %{<}) %{_libdll_object_files_}
 	done
 

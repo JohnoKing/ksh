@@ -30,10 +30,10 @@ getdelim(char** sp, size_t* np, int delim, Sfio_t* f)
 	uchar*		s;
 	uchar*		ps;
 
-	if(delim < 0 || delim > 255 || !sp || !np) /* bad parameters */
+	if(unlikely(delim < 0 || delim > 255 || !sp || !np)) /* bad parameters */
 		return -1;
 
-	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
+	if(unlikely(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)))
 		return -1;
 
 	SFLOCK(f,0);
@@ -60,7 +60,7 @@ getdelim(char** sp, size_t* np, int delim, Sfio_t* f)
 
 		if((m+k+1) >= n ) /* make sure there is space */
 		{	n = ((m+k+15)/8)*8;
-			if(!(s = (uchar*)realloc(s, (size_t)n)) )
+			if(unlikely(!(s = (uchar*)realloc(s, (size_t)n))) )
 			{	*sp = 0; *np = 0;
 				m = -1;
 				break;

@@ -100,7 +100,7 @@ void* sfsetbuf(Sfio_t*	f,	/* stream to be buffered */
 	int		okmmap;
 #endif
 
-	if(!f)
+	if(unlikely(!f))
 		return NULL;
 
 	GETLOCAL(f,local);
@@ -357,7 +357,7 @@ setbuf:
 		if(!buf)
 		{	/* do allocation */
 			while(!buf && size > 0)
-			{	if((buf = malloc(size)) )
+			{	if(likely(buf = malloc(size)) )
 					break;
 				else	size /= 2;
 			}

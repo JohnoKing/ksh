@@ -138,7 +138,7 @@ node(Cenv_t* env, unsigned char type, ptrdiff_t lo, ptrdiff_t hi, size_t extra)
 	Rex_t*	e;
 
 	DEBUG_TEST(0x0800,(sfprintf(sfstdout, "node(%u,%td,%td,%zu)\n", (unsigned int)type, lo, hi, sizeof(Rex_t) + extra)),(0));
-	if (e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra))
+	if (likely(e = (Rex_t*)alloc(env->disc, 0, sizeof(Rex_t) + extra)))
 	{
 		memset(e, 0, sizeof(Rex_t) + extra);
 		e->type = type;
@@ -1435,7 +1435,7 @@ bra(Cenv_t* env)
 		if (!(dt = (Dt_t*)LCINFO(AST_LC_COLLATE)->data))
 		{
 			disc.key = offsetof(Cchr_t, key);
-			if ((cc = newof(0, Cchr_t, elementsof(primary), 0)) && (dt = dtopen(&disc, Dtoset)))
+			if (likely(cc = newof(0, Cchr_t, elementsof(primary), 0)) && likely(dt = dtopen(&disc, Dtoset)))
 			{
 				for (i = 0; i < elementsof(primary) - 1; i++, cc++)
 				{
@@ -1451,7 +1451,7 @@ bra(Cenv_t* env)
 			else
 			{
 				if (cc)
-					free(cc);
+					free_sized(cc, sizeof(Cchr_t) * elementsof(primary));
 				drop(env->disc, e);
 				return NULL;
 			}
@@ -1897,7 +1897,7 @@ trienode(Cenv_t* env, unsigned char c)
 {
 	Trie_node_t*	t;
 
-	if (t = (Trie_node_t*)alloc(env->disc, 0, sizeof(Trie_node_t)))
+	if (likely(t = (Trie_node_t*)alloc(env->disc, 0, sizeof(Trie_node_t))))
 	{
 		memset(t, 0, sizeof(Trie_node_t));
 		t->c = c;
@@ -1957,7 +1957,7 @@ insert(Cenv_t* env, Rex_t* f, Rex_t* g)
 
 /*
  * trie() tries to combine nontrivial e and f into a REX_TRIE
- * unless 0 is returned, e and f are deleted as far as possible
+ * unless NULL is returned, e and f are deleted as far as possible
  */
 
 static Rex_t*
@@ -2932,12 +2932,13 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 	Rex_t*			e;
 	Rex_t*			f;
 	regdisc_t*		disc;
+	Stk_t*			new_stack;
 	unsigned char*		fold;
 	int			i;
 	size_t			j;
 	Cenv_t			env;
 
-	if (!p)
+	if (unlikely(!p))
 		return REG_BADPAT;
 	if (flags & REG_DISCIPLINE)
 	{
@@ -2968,9 +2969,10 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
  again:
 	if (!(p->env = (Env_t*)alloc(disc, 0, sizeof(Env_t))))
 		return fatal(disc, REG_ESPACE, pattern);
-	memset(p->env, 0, sizeof(*p->env));
-	if (!(p->env->mst = stkopen(STK_NULL)))
+	if (!(new_stack = stkopen(STK_NULL)))
 		return fatal(disc, REG_ESPACE, pattern);
+	memset(p->env, 0, sizeof(*p->env));
+	p->env->mst = new_stack;
 	memset(&env, 0, sizeof(env));
 	env.regex = p;
 	env.flags = flags;

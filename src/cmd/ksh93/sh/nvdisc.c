@@ -31,11 +31,11 @@
 
 static void assign(Namval_t*,const char*,int,Namfun_t*);
 
-int nv_compare(Dt_t* dict, void *sp, void *dp, Dtdisc_t *disc)
+hot pure int nv_compare(Dt_t* dict, void *sp, void *dp, Dtdisc_t *disc)
 {
 	NOT_USED(dict);
 	NOT_USED(disc);
-	if(sp==dp)
+	if(expect(sp==dp,0,0.95))  /* acc. gcov */
 		return 0;
 	return strcmp((char*)sp,(char*)dp);
 }
@@ -291,14 +291,14 @@ static void	assign(Namval_t *np,const char* val,int flags,Namfun_t *handle)
 		Lex_t		*lexp = (Lex_t*)sh.lex_context, savelex;
 		int		bflag;
 		/* disciplines like PS2 may run at parse time; save, reinit and restore the lexer state */
-		savelex = *lexp;
-		sh_lexopen(lexp, 0);   /* needs full init (0), not what it calls reinit (1) */
+		memcpy(&savelex,lexp,sizeof(Lex_t));
 		block(bp,type);
 		if(bflag = (type==APPEND && !isblocked(bp,LOOKUPS)))
 			block(bp,LOOKUPS);
-		sh_pushcontext(&checkpoint, SH_JMPFUN);
+		sh_pushcontext(&checkpoint, SH_JMPFUN);  /* done before sh_lexopen() for better AVX code gen */
+		sh_lexopen(lexp, 0);   /* needs full init (0), not what it calls reinit (1) */
 		jmpval = sigsetjmp(checkpoint.buff, 0);
-		if(!jmpval)
+		if(likely(!jmpval))
 			sh_fun(nq,np,NULL);
 		sh_popcontext(&checkpoint);
 		if(sh.topfd != checkpoint.topfd)
@@ -381,7 +381,7 @@ done:
  * This function executes a lookup disc and then performs
  * the lookup on the given node <np>
  */
-static char*	lookup(Namval_t *np, int type, Sfdouble_t *dp,Namfun_t *handle)
+static vecdisp char*	lookup(Namval_t *np, int type, Sfdouble_t *dp,Namfun_t *handle)
 {
 	struct vardisc	*vp = (struct vardisc*)handle;
 	struct blocked	block, *bp = block_info(np, &block);
@@ -395,10 +395,9 @@ static char*	lookup(Namval_t *np, int type, Sfdouble_t *dp,Namfun_t *handle)
 		struct checkpt	checkpoint;
 		int		savexit = sh.savexit;
 		Lex_t		*lexp = (Lex_t*)sh.lex_context, savelex;
-		/* disciplines like PS2 may run at parse time; save, reinit and restore the lexer state */
-		savelex = *lexp;
-		sh_lexopen(lexp, 0);   /* needs full init (0), not what it calls reinit (1) */
-		node = *SH_VALNOD;
+		memcpy(&node,SH_VALNOD,sizeof(Namval_t));	/* for AVX2+, we avoid one vzeroupper via two memcpy uses before sh_lexopen() */
+		memcpy(&savelex,lexp,sizeof(Lex_t));		/* disciplines like PS2 may run at parse time; save, reinit and restore the lexer state */
+		sh_lexopen(lexp,0);	    			/* needs full init (0), not what it calls reinit (1) */
 		if(!nv_isnull(SH_VALNOD))
 		{
 			nv_onattr(SH_VALNOD,NV_NOFREE);
@@ -413,7 +412,7 @@ static char*	lookup(Namval_t *np, int type, Sfdouble_t *dp,Namfun_t *handle)
 		block(bp, UNASSIGN);   /* make sure nv_setdisc doesn't invalidate 'vp' by freeing it */
 		sh_pushcontext(&checkpoint, SH_JMPFUN);
 		jmpval = sigsetjmp(checkpoint.buff, 0);
-		if(!jmpval)
+		if(likely(!jmpval))
 			sh_fun(nq,np,NULL);
 		sh_popcontext(&checkpoint);
 		if(sh.topfd != checkpoint.topfd)
@@ -719,16 +718,16 @@ int nv_adddisc(Namval_t *np, const char **names, Namval_t **funs)
  *    NV_FIRST:  Move or push <fp> to top of the stack or delete top
  *    NV_LAST:	 Move or push <fp> to bottom of stack or delete last
  *    NV_POP:	 Delete <fp> from top of the stack
- *    NV_CLONE:  Replace fp with a copy created my malloc() and return it
+ *    NV_CLONE:  Replace fp with a copy created by malloc() and return it
  */
 Namfun_t *nv_disc(Namval_t *np, Namfun_t* fp, int mode)
 {
 	Namfun_t *lp, **lpp;
 	if(nv_isref(np))
 		return NULL;
-	if(mode==NV_CLONE && !fp)
+	if(mode==NV_CLONE && unlikely(!fp))
 		return NULL;
-	if(fp)
+	if(likely(fp))
 	{
 		fp->subshell = sh.subshell;
 		if((lp=np->nvfun)==fp)
@@ -808,7 +807,7 @@ Namfun_t *nv_disc(Namval_t *np, Namfun_t* fp, int mode)
  * returns discipline pointer if discipline with specified functions
  * is on the discipline stack
  */
-Namfun_t *nv_hasdisc(Namval_t *np, const Namdisc_t *dp)
+hot Namfun_t *nv_hasdisc(Namval_t *np, const Namdisc_t *dp)
 {
 	Namfun_t *fp;
 	for(fp=np->nvfun; fp; fp = fp->next)
@@ -819,7 +818,7 @@ Namfun_t *nv_hasdisc(Namval_t *np, const Namdisc_t *dp)
 	return NULL;
 }
 
-static void *newnode(const char *name)
+static returns_nonnull void *newnode(const char *name)
 {
 	size_t s;
 	Namval_t *np = sh_newof(0,Namval_t,1,s=strlen(name)+1);
@@ -831,7 +830,7 @@ static void *newnode(const char *name)
 /*
  * clone a numeric value
  */
-static void *num_clone(Namval_t *np, void *val)
+static malloc_attr void *num_clone(Namval_t *np, void *val)
 {
 	size_t size;
 	void *nval;
@@ -987,12 +986,12 @@ int nv_clone(Namval_t *np, Namval_t *mp, int flags)
  *   node's name is used.
  * Note: The mode bitmask is NOT compatible with nv_open's flags bitmask.
  */
-Namval_t *nv_search(const char *name, Dt_t *root, int mode)
+hot Namval_t *nv_search(const char *name, Dt_t *root, int mode)
 {
 	Namval_t *np;
 	Dt_t *dp = 0;
 	/* do not find builtins when using 'command -x' */
-	if(!(mode&NV_ADD) && sh_isstate(SH_XARG) && (root==sh.bltin_tree || root==sh.fun_tree))
+	if(!(mode&NV_ADD) && unlikely(sh_isstate(SH_XARG) && (root==sh.bltin_tree || root==sh.fun_tree)))
 		return NULL;
 	if(mode&NV_NOSCOPE)
 		dp = dtview(root,0);
@@ -1009,7 +1008,7 @@ Namval_t *nv_search(const char *name, Dt_t *root, int mode)
 		np = dtmatch(root,name);
 	}
 	/* skip dummy shell function node (function unset in virtual subshell) */
-	if(np && !np->nvflag && root==sh.fun_tree)
+	if(np && unlikely(!np->nvflag && root==sh.fun_tree))
 		np = mode&NV_NOSCOPE ? NULL : dtmatch(sh.bltin_tree,name);
 	if(!np && (mode&NV_ADD))
 	{
@@ -1242,7 +1241,7 @@ static Namfun_t *clone_table(Namval_t* np, Namval_t *mp, int flags, Namfun_t *fp
 	struct table	*tp = (struct table*)fp;
 	struct table	*ntp = (struct table*)nv_clone_disc(fp,0);
 	Dt_t		*oroot=tp->dict,*nroot=dtopen(&_Nvdisc,Dtoset);
-	if(!nroot)
+	if(unlikely(!nroot))
 		return NULL;
 	memcpy(ntp,fp,sizeof(struct table));
 	ntp->dict = nroot;
@@ -1350,15 +1349,15 @@ static const Namdisc_t table_disc =
 Namval_t *nv_parent(Namval_t *np)
 {
 	struct table *tp = (struct table *)nv_hasdisc(np,&table_disc);
-	if(tp)
+	if(likely(tp))
 		return tp->parent;
 	return NULL;
 }
 
-Dt_t *nv_dict(Namval_t* np)
+hot Dt_t *nv_dict(Namval_t* np)
 {
 	struct table *tp = (struct table*)nv_hasdisc(np,&table_disc);
-	if(tp)
+	if(likely(tp))
 		return tp->dict;
 	np = sh.last_table;
 	if(np && (tp = (struct table*)nv_hasdisc(np,&table_disc)))
@@ -1366,7 +1365,7 @@ Dt_t *nv_dict(Namval_t* np)
 	return sh.var_tree;
 }
 
-int nv_istable(Namval_t *np)
+hot int nv_istable(Namval_t *np)
 {
 	return nv_hasdisc(np,&table_disc)!=0;
 }

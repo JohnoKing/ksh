@@ -44,10 +44,10 @@ ssize_t sfvsprintf(char* s, size_t n, const char* form, va_list args)
 	_Sfnotify = 0;
 	f = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND, -1,SFIO_WRITE|SFIO_STRING);
 	_Sfnotify = notify;
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
-	if((rv = sfvprintf(f,form,args)) < 0 )
+	if(unlikely((rv = sfvprintf(f,form,args)) < 0))
 		return -1;
 	if(s && n > 0)
 	{	if((size_t)(rv+1) >= n)

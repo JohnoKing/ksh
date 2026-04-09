@@ -19,7 +19,7 @@ make install virtual
 	bind -last
 	make sum.req
 		makp %{INSTALLROOT}/bin/mkreq
-		exec - mkreq %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} : %{LDFLAGS} : sum md ast
+		exec - mkreq %{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} : %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} : sum md ast
 	done
 
 	note *
@@ -44,7 +44,7 @@ make install virtual
 				make FEATURE/sum
 					makp features/sum
 					exec - iffe %{IFFEFLAGS} -v -c \
-					exec -  '%{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS}' \
+					exec -  '%{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS}' \
 					exec -	ref -I%{INCLUDE_AST} -I%{INSTALLROOT}/include %{mam_libast} : run %{<}
 				done
 				prev %{INCLUDE_AST}/hashpart.h
@@ -60,7 +60,7 @@ make install virtual
 					prev %{INCLUDE_AST}/ast.h
 				done
 			done
-			exec - %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} -I. -I%{INCLUDE_AST} -c %{<}
+			exec - %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} -I. -I%{INCLUDE_AST} -c %{<}
 		done sumlib.o
 
 		note * include shell action for linking the library

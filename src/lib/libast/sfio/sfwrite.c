@@ -32,12 +32,12 @@ ssize_t sfwrite(Sfio_t*		f,	/* write to this stream. 	*/
 	ssize_t		w;
 	int		local;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);
 
-	if(!buf)
+	if(unlikely(!buf))
 		return (ssize_t)(n == 0 ? 0 : -1) ;
 
 	/* release peek lock */

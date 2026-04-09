@@ -34,7 +34,7 @@ ssize_t _sfputm(Sfio_t*  f,	/* write a portable ulong to this stream */
 	ptrdiff_t	p;
 	uchar		c[N_ARRAY];
 
-	if(!f || v > m || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
+	if(unlikely(!f || v > m || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0)))
 		return -1;
 	SFLOCK(f,0);
 

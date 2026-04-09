@@ -40,8 +40,9 @@ Sfoff_t sfmove(Sfio_t*	fr,	/* moving data from this stream */
 	Sfoff_t		n_move, sk, cur;
 	uchar		*rbuf = NULL;
 	ssize_t		rsize = 0;
+	size_t		rbuf_size = 0;
 
-	if(!(fr)) return 0;
+	if(unlikely(!(fr))) return 0;
 
 	for(n_move = 0; n != 0; )
 	{
@@ -133,7 +134,8 @@ Sfoff_t sfmove(Sfio_t*	fr,	/* moving data from this stream */
 					if(w >= maxw)
 						w = maxw;
 					else	w = ((w+fr->size-1)/fr->size)*fr->size;
-					if(rsize <= 0 && (rbuf = (uchar*)malloc((size_t)w)) )
+					rbuf_size = (size_t)w;
+					if(rsize <= 0 && likely(rbuf = (uchar*)malloc(rbuf_size)) )
 						rsize = w;
 					if(rbuf)
 					{	next = rbuf;
@@ -223,7 +225,7 @@ Sfoff_t sfmove(Sfio_t*	fr,	/* moving data from this stream */
 	}
 
 	if(rbuf)
-		free(rbuf);
+		free_sized(rbuf, rbuf_size);
 
 	if(fw)
 	{	SFOPEN(fw,0);

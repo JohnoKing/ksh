@@ -29,7 +29,7 @@ Sfoff_t sfsk(Sfio_t* f, Sfoff_t addr, int type, Sfdisc_t* disc)
 	ssize_t		s;
 	int		local, mode;
 
-	if(!f)
+	if(unlikely(!f))
 		return (Sfoff_t)(-1);
 
 	GETLOCAL(f,local);

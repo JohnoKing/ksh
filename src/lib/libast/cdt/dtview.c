@@ -28,7 +28,7 @@
 			 DT_ATTACH|DT_DETACH|DT_RELINK|DT_CLEAR| \
 			 DT_FLATTEN|DT_EXTRACT|DT_RESTORE|DT_STAT)
 
-static void* dtvsearch(Dt_t* dt, void* obj, int type)
+static hot void* dtvsearch(Dt_t* dt, void* obj, int type)
 {
 	int		cmp;
 	Dt_t		*d, *p;
@@ -40,8 +40,8 @@ static void* dtvsearch(Dt_t* dt, void* obj, int type)
 	o = NULL;
 
 	/* these ops look for the first appearance of an object of the right type */
-	if((type & (DT_MATCH|DT_SEARCH)) ||
-	   ((type & (DT_FIRST|DT_LAST|DT_ATLEAST|DT_ATMOST)) && !(dt->meth->type&DT_ORDERED) ) )
+	if(likely((type & (DT_MATCH|DT_SEARCH)) ||
+	   ((type & (DT_FIRST|DT_LAST|DT_ATLEAST|DT_ATMOST)) && !(dt->meth->type&DT_ORDERED) )) )
 	{	for(d = dt; d; d = d->view)
 			if((o = (*(d->meth->searchf))(d,obj,type)) )
 				break;
@@ -49,7 +49,7 @@ static void* dtvsearch(Dt_t* dt, void* obj, int type)
 		return o;
 	}
 
-	if(dt->meth->type & DT_ORDERED) /* ordered sets/bags */
+	if(likely(dt->meth->type & DT_ORDERED)) /* ordered sets/bags */
 	{	if(!(type & (DT_FIRST|DT_LAST|DT_NEXT|DT_PREV|DT_ATLEAST|DT_ATMOST)) )
 			return NULL;
 
@@ -79,7 +79,7 @@ static void* dtvsearch(Dt_t* dt, void* obj, int type)
 	}
 
 	/* unordered collections */
-	if(!(type&(DT_NEXT|DT_PREV)) )
+	if(unlikely(!(type&(DT_NEXT|DT_PREV))) )
 		return NULL;
 
 	if(!dt->walk )
@@ -110,16 +110,16 @@ static void* dtvsearch(Dt_t* dt, void* obj, int type)
 	}
 }
 
-Dt_t* dtview(Dt_t* dt, Dt_t* view)
+hot Dt_t* dtview(Dt_t *restrict dt, Dt_t *restrict view)
 {
 	Dt_t*	d;
 
-	if(view && view->meth != dt->meth) /* must use the same method */
+	if(unlikely(view && view->meth != dt->meth)) /* must use the same method */
 		return NULL;
 
 	/* make sure there won't be a cycle */
 	for(d = view; d; d = d->view)
-		if(d == dt)
+		if(unlikely(d == dt))
 			return NULL;
 
 	/* no more viewing lower dictionary */

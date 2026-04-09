@@ -338,7 +338,10 @@ static int expr_cond(State_t* state, Node_t *np)
 		np->num = 0;
 		np->type = T_NUM;
 		if (n = regcomp(&re, rp.str, REG_LEFT|REG_LENIENT))
+		{
 			regfatal(&re, ERROR_exit(2), n);
+			UNREACHABLE();
+		}
 		if (!(n = regexec(&re, cp, elementsof(match), match, 0)))
 		{
 			if (re.re_nsub > 0)
@@ -359,7 +362,10 @@ static int expr_cond(State_t* state, Node_t *np)
 				np->num = match[0].rm_eo - match[0].rm_so;
 		}
 		else if (n != REG_NOMATCH)
+		{
 			regfatal(&re, ERROR_exit(2), n);
+			UNREACHABLE();
+		}
 		else if (re.re_nsub)
 		{
 			np->str = "";

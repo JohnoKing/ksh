@@ -158,7 +158,7 @@ aso_init_semaphore(void* data, const char* details)
 		else
 			return NULL;
 	}
-	if (!(apl = newof(0, APL_t, 1, 0)))
+	if (unlikely(!(apl = newof(0, APL_t, 1, 0))))
 		return NULL;
 	apl->id = id;
 	apl->size = size - 1;

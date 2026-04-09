@@ -281,14 +281,14 @@ S2F_function(const char* str, char** end)
 				m -= 4 * (digits - fraction);
 			if (m < S2F_exp_2_min)
 			{
-				if ((m -= S2F_exp_2_min) < S2F_exp_2_min)
+				if (unlikely((m -= S2F_exp_2_min) < S2F_exp_2_min))
 				{
 					ERR(ERANGE);
 					return 0;
 				}
 				v = S2F_ldexp(v, S2F_exp_2_min);
 			}
-			else if (m > S2F_exp_2_max)
+			else if (unlikely(m > S2F_exp_2_max))
 			{
 				ERR(ERANGE);
 				return negative ? -INFINITY : INFINITY;
@@ -480,7 +480,7 @@ S2F_function(const char* str, char** end)
 	{
 		p = parts[part].batch;
 		c = digits - parts[part].digits;
-		if (c > S2F_exp_10_max)
+		if (unlikely(c > S2F_exp_10_max))
 		{
 			ERR(ERANGE);
 			return negative ? -INFINITY : INFINITY;
@@ -488,7 +488,7 @@ S2F_function(const char* str, char** end)
 		if (c > 0)
 		{
 #if _ast_mpy_overflow_fpe
-			if ((S2F_max / p) < S2F_pow10[c])
+			if (unlikely((S2F_max / p) < S2F_pow10[c]))
 			{
 				ERR(ERANGE);
 				return negative ? -INFINITY : INFINITY;
@@ -506,7 +506,7 @@ S2F_function(const char* str, char** end)
 			v /= S2F_pow10[S2F_exp_10_max];
 		}
 #if _ast_div_underflow_fpe
-		if ((S2F_min * p) > S2F_pow10[c])
+		if (unlikely((S2F_min * p) > S2F_pow10[c]))
 		{
 			ERR(ERANGE);
 			return negative ? -INFINITY : INFINITY;
@@ -520,12 +520,12 @@ S2F_function(const char* str, char** end)
 	 */
 
  check:
-	if (v < S2F_min)
+	if (unlikely(v < S2F_min))
 	{
 		ERR(ERANGE);
 		v = 0;
 	}
-	else if (v > S2F_max)
+	else if (unlikely(v > S2F_max))
 	{
 		ERR(ERANGE);
 		v = INFINITY;

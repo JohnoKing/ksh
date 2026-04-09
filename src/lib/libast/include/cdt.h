@@ -65,7 +65,6 @@ typedef int			(*Dtcompar_f)(Dt_t*,void*,void*,Dtdisc_t*);
 typedef unsigned int		(*Dthash_f)(Dt_t*,void*,Dtdisc_t*);
 typedef void*			(*Dtmemory_f)(Dt_t*,void*,size_t,Dtdisc_t*);
 typedef int			(*Dtevent_f)(Dt_t*,int,void*,Dtdisc_t*);
-typedef int			(*Dttype_f)(Dt_t*,int);
 
 struct _dtuser_s /* for application to access and use */
 {	unsigned int	lock;	/* used by dtapplock	*/
@@ -143,7 +142,6 @@ struct _dt_s
 	Dt_t*		view;	/* next on viewpath		*/
 	Dt_t*		walk;	/* dictionary being walked	*/
 	Dtuser_t*	user;	/* for user's usage		*/
-	Dttype_f	typef;	/* for binary compatibility	*/
 };
 
 /* structure to get status of a dictionary */
@@ -243,7 +241,7 @@ extern Dtmethod_t*	Dtdeque;
 
 extern Dt_t*		dtopen(Dtdisc_t*, Dtmethod_t*);
 extern int		dtclose(Dt_t*);
-extern Dt_t*		dtview(Dt_t*, Dt_t*);
+extern hot Dt_t*	dtview(Dt_t *restrict, Dt_t *restricr);
 extern Dtdisc_t*	dtdisc(Dt_t* dt, Dtdisc_t*, int);
 extern Dtmethod_t*	dtmethod(Dt_t*, Dtmethod_t*);
 extern int		dtwalk(Dt_t*, int(*)(Dt_t*,void*,void*), void*);
@@ -270,7 +268,8 @@ extern void*		dllmeth(const char*, const char*, unsigned long);
 #define _DTOBJ(dc,l)	((dc)->link >= 0 ? _DTO(dc,l) : ((Dthold_t*)(l))->obj )
 
 #define _DTK(dc,o)	((char*)(o) + (dc)->key) /* get key from object */
-#define _DTKEY(dc,o)	(void*)((dc)->size >= 0 ? _DTK(dc,o) : *((char**)_DTK(dc,o)) )
+/* TODO JNOTE: verify if this is true (gcov obfuscates it) */
+#define _DTKEY(dc,o)	(void*)(unlikely((dc)->size >= 0) ? _DTK(dc,o) : *((char**)_DTK(dc,o)) )
 
 #define _DTCMP(dt,k1,k2,dc) \
 			((dc)->comparf  ? (*(dc)->comparf)((dt), (k1), (k2), (dc)) : \

@@ -177,7 +177,7 @@ node(FTS* fts, FTSENT* parent, char* name, size_t namelen)
 	else
 	{
 		n = (namelen < MINNAME ? MINNAME : namelen + 1) - sizeof(int);
-		if (!(f = newof(0, FTSENT, 1, n)))
+		if (unlikely(!(f = newof(0, FTSENT, 1, n))))
 		{
 			fts->fts_errno = errno;
 			fts->state = FTS_error;
@@ -700,7 +700,7 @@ resize(FTS* fts, size_t inc)
 
 	n_old = fts->homesize;
 	fts->homesize = ((fts->homesize + inc + 4) / PATH_MAX + 1) * PATH_MAX;
-	if (!(newp = newof(0, char, fts->homesize, 0)))
+	if (unlikely(!(newp = newof(0, char, fts->homesize, 0))))
 	{
 		fts->fts_errno = errno;
 		fts->state = FTS_error;
@@ -728,7 +728,7 @@ fts_open(char* const* pathnames, int flags, int (*comparf)(FTSENT* const*, FTSEN
 {
 	FTS*	fts;
 
-	if (!(fts = newof(0, FTS, 1, sizeof(FTSENT))))
+	if (unlikely(!(fts = newof(0, FTS, 1, sizeof(FTSENT)))))
 		return NULL;
 	fts->flags = flags;
 	fts->cd = (flags & FTS_NOCHDIR) ? 1 : -1;
@@ -741,9 +741,9 @@ fts_open(char* const* pathnames, int flags, int (*comparf)(FTSENT* const*, FTSEN
 	fts->homesize = 2 * PATH_MAX;
 	for (;;)
 	{
-		if (!(fts->home = newof(fts->home, char, fts->homesize, 0)))
+		if (unlikely(!(fts->home = newof(fts->home, char, fts->homesize, 0))))
 		{
-			free(fts);
+			free_sized(fts, sizeof(FTS) * 1 + sizeof(FTSENT));
 			return NULL;
 		}
 		if (fts->cd > 0 || getcwd(fts->home, fts->homesize))
@@ -1555,7 +1555,7 @@ fts_notify(Notify_f notifyf, void* context)
 
 	if (context)
 	{
-		if (!(np = newof(0, Notify_t, 1, 0)))
+		if (unlikely(!(np = newof(0, Notify_t, 1, 0))))
 			return -1;
 		np->notifyf = notifyf;
 		np->context = context;

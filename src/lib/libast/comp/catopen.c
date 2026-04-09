@@ -102,7 +102,7 @@ sfprintf(sfstderr, "AHA#%d:%s %s\n", __LINE__, __FILE__, s);
 
 		if (s && (d = catopen(s, flag)) != (nl_catd)(-1) || !(s = 0) && (d = catopen(name, flag)) != (nl_catd)(-1))
 		{
-			if (!(cc = newof(0, Cc_t, 1, 0)))
+			if (unlikely(!(cc = newof(0, Cc_t, 1, 0))))
 			{
 				catclose(d);
 				return (_ast_nl_catd)(-1);
@@ -110,10 +110,10 @@ sfprintf(sfstderr, "AHA#%d:%s %s\n", __LINE__, __FILE__, s);
 			cc->cat = d;
 			if ((s || *name == '/') && (ast.locale.set & (1<<AST_LC_MESSAGES)))
 			{
-				if ((cc->cvt = iconv_open("", "utf")) == (iconv_t)(-1) || !(cc->tmp = sfstropen()))
+				if ((cc->cvt = iconv_open("", "utf")) == (iconv_t)(-1) || unlikely(!(cc->tmp = sfstropen())))
 				{
 					catclose(d);
-					free(cc);
+					free_sized(cc, sizeof(Cc_t));
 					return (_ast_nl_catd)(-1);
 				}
 			}

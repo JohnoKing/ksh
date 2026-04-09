@@ -41,7 +41,7 @@ typedef struct _fcin
 
 #if SHOPT_MULTIBYTE
 #   define fcmbget(x)	(mbwide()?_fcmbget(x):fcget())
-    extern int		_fcmbget(short*);
+    extern hot int	_fcmbget(short*);
 #else
 #   define fcmbget(x)	(fcget())
 #endif

@@ -44,7 +44,7 @@ initconformance(void)
 	static const char*	conf[] = { "CONFORMANCE", "HOSTTYPE", "UNIVERSE" };
 
 	p = 0;
-	if (sp = sfstropen())
+	if (likely(sp = sfstropen()))
 	{
 		for (i = h = 0, j = 1; i < elementsof(conf); i++)
 			if (*(m = astconf(conf[i], NULL, NULL)) && (h |= (1<<i)) || !i && (m = "ast"))
@@ -74,7 +74,7 @@ initconformance(void)
 			}
 		i = (size_t)sfstrtell(sp);
 		sfstrseek(sp, 0, SEEK_SET);
-		if (p = newof(0, char*, j, i))
+		if (likely(p = newof(0, char*, j, i)))
 		{
 			m = (char*)(p + j--);
 			memcpy(m, sfstrbase(sp), i);

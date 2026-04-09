@@ -65,7 +65,7 @@ int sfdctee(Sfio_t*	f,	/* stream to tee from	*/
 {
 	Tee_t*	te;
 
-	if(!(te = (Tee_t*)malloc(sizeof(Tee_t))) )
+	if(unlikely(!(te = (Tee_t*)malloc(sizeof(Tee_t)))) )
 		return -1;
 
 	te->disc.readf = NULL;
@@ -76,7 +76,7 @@ int sfdctee(Sfio_t*	f,	/* stream to tee from	*/
 	te->status = 0;
 
 	if(sfdisc(f,(Sfdisc_t*)te) != (Sfdisc_t*)te)
-	{	free(te);
+	{	free_sized(te, sizeof(Tee_t));
 		return -1;
 	}
 

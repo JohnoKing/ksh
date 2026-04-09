@@ -47,7 +47,7 @@ tmxduration(const char* s, char** e)
 	else
 	{
 		ns = strtod(s, &last) * TMX_RESOLUTION;
-		if (*last && (f = sfstropen()))
+		if (*last && likely(f = sfstropen()))
 		{
 			sfprintf(f, "exact %s", s);
 			t = sfstruse(f);

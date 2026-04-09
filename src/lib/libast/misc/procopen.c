@@ -82,7 +82,7 @@ ast_setenv(const char* name, const char* value, int overwrite)
 
 	if (overwrite || !getenv(name))
 	{
-		if (!(s = sfprints("%s=%s", name, value)) || !(s = strdup(s)))
+		if (!(s = sfprints("%s=%s", name, value)) || unlikely(!(s = strdup(s))))
 			return -1;
 		return setenviron(s) ? 0 : -1;
 	}
@@ -235,7 +235,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 	{
 		Modify_t*	m;
 
-		if (!(m = newof(NULL, Modify_t, 1, 0)))
+		if (unlikely(!(m = newof(NULL, Modify_t, 1, 0))))
 			return -1;
 		m->next = proc->mods;
 		proc->mods = m;
@@ -415,7 +415,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 	int		debug = PROC_OPT_EXEC;
 #endif /* DEBUG_PROC */
 
-	if (!argv && (flags & (PROC_ORPHAN|PROC_OVERLAY)))
+	if (unlikely(!argv && (flags & (PROC_ORPHAN|PROC_OVERLAY))))
 	{
 		errno = ENOEXEC;
 		return NULL;
@@ -441,7 +441,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 	}
 	if (proc_default.pid == -1)
 		proc = &proc_default;
-	else if (!(proc = newof(0, Proc_t, 1, 0)))
+	else if (unlikely(!(proc = newof(0, Proc_t, 1, 0))))
 		goto bad;
 	proc->pid = -1;
 	proc->pgrp = 0;
@@ -631,7 +631,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 		{
 			p = environ;
 			while (*p++);
-			if (!(oenviron = (char**)memdup(environ, (p - environ) * sizeof(char*))))
+			if (unlikely(!(oenviron = (char**)memdup(environ, (p - environ) * sizeof(char*)))))
 				goto cleanup;
 		}
 #endif /* _use_spawnveg */
@@ -692,7 +692,7 @@ procopen(const char* cmd, char** argv, char** envv, int64_t* modv, int flags)
 			if (!(flags & PROC_ARGMOD))
 			{
 				while (*p++);
-				if (!(v = newof(0, char*, (size_t)(p - argv + 2), 0)))
+				if (unlikely(!(v = newof(0, char*, (size_t)(p - argv + 2), 0))))
 					goto cleanup;
 				p = v + 2;
 				if (*argv)

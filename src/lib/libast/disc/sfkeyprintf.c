@@ -246,7 +246,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 		}
 		break;
 	case 's':
-		if (!s && (!h || !fp->tmp[1] && !(fp->tmp[1] = sfstropen()) || sfprintf(fp->tmp[1], "%I*d", sizeof(n), n) <= 0 || !(s = sfstruse(fp->tmp[1]))))
+		if (!s && (!h || !fp->tmp[1] && unlikely(!(fp->tmp[1] = sfstropen())) || sfprintf(fp->tmp[1], "%I*d", sizeof(n), n) <= 0 || !(s = sfstruse(fp->tmp[1]))))
 			s = "";
 		if (x)
 		{
@@ -265,7 +265,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 						fmt.fmt.form = v;
 						for (h = 0; h < (ssize_t)elementsof(fmt.tmp); h++)
 							fmt.tmp[h] = 0;
-						if (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
+						if (!fp->tmp[0] && unlikely(!(fp->tmp[0] = sfstropen())) || sfprintf(fp->tmp[0], "%!", &fmt) <= 0 || !(s = sfstruse(fp->tmp[0])))
 							s = "";
 						*(v - 1) = (char)d;
 						if (f.delimiter)
@@ -321,7 +321,7 @@ getfmt(Sfio_t* sp, void* vp, Sffmt_t* dp)
 		value->i = (int)n;
 		break;
 	default:
-		if ((!fp->convert || !(value->s = (*fp->convert)(fp->handle, &fp->fmt, a, s, n))) && (!fp->tmp[0] && !(fp->tmp[0] = sfstropen()) || sfprintf(fp->tmp[0], "%%%c", fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp->tmp[0]))))
+		if ((!fp->convert || !(value->s = (*fp->convert)(fp->handle, &fp->fmt, a, s, n))) && (!fp->tmp[0] && unlikely(!(fp->tmp[0] = sfstropen())) || sfprintf(fp->tmp[0], "%%%c", fp->fmt.fmt) <= 0 || !(value->s = sfstruse(fp->tmp[0]))))
 			value->s = "";
 		break;
 	}

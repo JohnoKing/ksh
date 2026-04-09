@@ -29,7 +29,7 @@ lib	fchmod,fcntl,fnmatch,fork,fsync
 lib	getconf,getdents,getdirentries,getdtablesize
 lib	gethostname,getpagesize,getrlimit,getuniverse
 lib	glob,iswblank,iswctype,killpg,link,localeconv,madvise
-lib	mbtowc,mbrtowc,memalign,memdup
+lib	aligned_alloc,mbtowc,mbrtowc,memalign,memdup
 lib	mktemp,mktime
 lib	opendir,openat,pathconf,pipe2,posix_close
 lib	rand_r
@@ -40,7 +40,7 @@ lib	clone,spawn,spawnve
 lib	strlcat,strlcpy
 lib	strmode,strftime,symlink,sysconf,sysinfo
 lib	telldir,tmpnam,tzset,universe,unlink,utime,wctype
-lib	ftruncate,truncate
+lib	free_aligned_sized,free_sized,ftruncate,truncate
 
 lib,npt	strtod,strtold,strtol,strtoll,strtoul,strtoull stdlib.h
 lib,npt	sigflag signal.h

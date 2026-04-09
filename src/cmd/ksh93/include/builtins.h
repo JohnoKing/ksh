@@ -66,8 +66,8 @@ extern int b_enum(int, char*[],Shbltin_t*);
 extern int b_exec(int, char*[],Shbltin_t*);
 extern int b_eval(int, char*[],Shbltin_t*);
 extern int b_return(int, char*[],Shbltin_t*);
-extern int b_true(int, char*[],Shbltin_t*);
-extern int b_false(int, char*[],Shbltin_t*);
+extern pure int b_true(int, char*[],Shbltin_t*);
+extern pure int b_false(int, char*[],Shbltin_t*);
 extern int b_readonly(int, char*[],Shbltin_t*);
 extern int b_set(int, char*[],Shbltin_t*);
 extern int b_shift(int, char*[],Shbltin_t*);
@@ -91,7 +91,7 @@ extern int b_getopts(int, char*[],Shbltin_t*);
 extern int b_mkservice(int, char*[],Shbltin_t*);
 extern int b_eloop(int, char*[],Shbltin_t*);
 #endif /* SHOPT_MKSERVICE */
-extern int b_hist(int, char*[],Shbltin_t*);
+extern int b_hist(int, char*[],Shbltin_t*) cold;
 extern int b_let(int, char*[],Shbltin_t*);
 extern int b_read(int, char*[],Shbltin_t*);
 extern int b_ulimit(int, char*[],Shbltin_t*);
@@ -113,7 +113,7 @@ extern int b_times(int, char*[],Shbltin_t*);
     extern int B_echo(int, char*[],Shbltin_t*);
 #endif /* SHOPT_ECHOPRINT */
 
-extern ssize_t		b_enum_nelem(Namfun_t*);
+extern ssize_t		b_enum_nelem(Namfun_t*) NONNULL(1);
 
 extern const char	e_alrm1[];
 extern const char	e_alrm2[];

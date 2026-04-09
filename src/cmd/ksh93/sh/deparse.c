@@ -94,7 +94,7 @@ static void p_tree(const Shnode_t *t,int tflags)
 	switch(t->tre.tretyp&COMMSK)
 	{
 		case TTIME:
-			if(t->tre.tretyp&COMSCAN)
+			if(likely(t->tre.tretyp&COMSCAN))
 			{
 				p_keyword("!",MIDDLE|NOTAB);
 				if(t->par.partre)

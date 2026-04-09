@@ -178,6 +178,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
 	Delim_t		*mp;
 	ssize_t		dlen, dsiz;
 	char		defdelim[2];
+	size_t		alloc_size = 0;
 
 	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	delim = 0;
@@ -232,6 +233,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
 		}
 		if(dlen < dsiz)
 		{
+			alloc_size = sizeof(Delim_t) * (size_t)dlen;
 			if (!(mp = newof(0, Delim_t, (size_t)dlen, 0)))
 			{
 				free(delim);
@@ -290,7 +292,7 @@ b_paste(int argc, char** argv, Shbltin_t* context)
 				sfclose(fp);
 	}
 	if (mp)
-		free(mp);
+		free_sized(mp,alloc_size);
 	free(delim);
 	return error_info.errors;
 }

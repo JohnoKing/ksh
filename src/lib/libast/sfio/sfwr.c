@@ -121,7 +121,7 @@ ssize_t sfwr(Sfio_t* f, const void* buf, size_t n, Sfdisc_t* disc)
 	Sfdisc_t*	dc;
 	int		local, oerrno;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);

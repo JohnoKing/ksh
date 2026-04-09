@@ -24,14 +24,6 @@
 **	Written by Kiem-Phong Vo (5/25/96)
 */
 
-/* map operation bits from the 2005 version to the current version */
-static int _dttype2005(Dt_t* dt, int type)
-{
-	if (type == DT_DELETE && (dt->meth->type&(DT_OBAG|DT_BAG)))
-		type = DT_REMOVE;
-	return type;
-}
-
 Dt_t* _dtopen(Dtdisc_t* disc, Dtmethod_t* meth, unsigned long version)
 {
 	Dtdata_t	*data;
@@ -39,7 +31,8 @@ Dt_t* _dtopen(Dtdisc_t* disc, Dtmethod_t* meth, unsigned long version)
 	int		ev;
 	unsigned int	type;
 
-	if(!disc || !meth)
+	NOT_USED(version);
+	if(unlikely(!disc || !meth))
 		return NULL;
 
 	dt = NULL;
@@ -52,11 +45,11 @@ Dt_t* _dtopen(Dtdisc_t* disc, Dtmethod_t* meth, unsigned long version)
 	dtdisc(&pdt,disc,0); /* note that this sets pdt.memoryf */
 
 	if(disc->eventf)
-	{	if((ev = (*disc->eventf)(&pdt,DT_OPEN,(&data),disc)) < 0)
+	{	if(unlikely((ev = (*disc->eventf)(&pdt,DT_OPEN,(&data),disc)) < 0))
 			return NULL; /* something bad happened */
 		else if(ev > 0)
 		{	if(data) /* shared data are being restored */
-			{	if((data->type & DT_METHODS) != meth->type)
+			{	if(unlikely((data->type & DT_METHODS) != meth->type))
 				{	DTERROR(&pdt, "Error in matching methods to restore dictionary");
 					return NULL;
 				}
@@ -77,7 +70,7 @@ Dt_t* _dtopen(Dtdisc_t* disc, Dtmethod_t* meth, unsigned long version)
 	/* now allocate/initialize the actual dictionary structure */
 	if(pdt.data->type&DT_INDATA)
 		dt = &pdt.data->dict;
-	else if(!(dt = (Dt_t*) malloc(sizeof(Dt_t))) )
+	else if(unlikely(!(dt = (Dt_t*) malloc(sizeof(Dt_t))) ))
 	{	(void)(*meth->eventf)(&pdt, DT_CLOSE, NULL);
 		DTERROR(&pdt, "Error in allocating a new dictionary");
 		return NULL;
@@ -90,17 +83,7 @@ Dt_t* _dtopen(Dtdisc_t* disc, Dtmethod_t* meth, unsigned long version)
 	if(disc->eventf) /* signal opening is done */
 		(void)(*disc->eventf)(dt, DT_ENDOPEN, NULL, disc);
 
-	/* set mapping of operation bits between versions as needed */
-	if(version < 20111111L)
-		dt->typef = _dttype2005;
-
 	return dt;
-}
-
-#undef dtopen /* deal with binary upward compatibility for op bits */
-Dt_t* dtopen(Dtdisc_t* disc, Dtmethod_t* meth)
-{
-	return _dtopen(disc, meth, 20050420L);
 }
 
 /* below are private functions used across CDT modules */
@@ -117,7 +100,7 @@ Dtlink_t* _dtmake(Dt_t* dt, void* obj, int type)
 		return _DTLNK(disc, obj);
 
 	/* create a holder to hold obj */
-	if((h = (Dthold_t*)(dt->memoryf)(dt, NULL, sizeof(Dthold_t), disc)) )
+	if(likely(h = (Dthold_t*)(dt->memoryf)(dt, NULL, sizeof(Dthold_t), disc)) )
 		h->obj = obj;
 	else
 	{	DTERROR(dt, "Error in allocating an object holder");

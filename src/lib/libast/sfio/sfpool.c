@@ -55,7 +55,7 @@ static Sfpool_t* newpool(int mode)
 	}
 
 	if(!p)
-	{	if(!(p = (Sfpool_t*) malloc(sizeof(Sfpool_t))) )
+	{	if(unlikely(!(p = (Sfpool_t*) malloc(sizeof(Sfpool_t)))) )
 			return NULL;
 
 		p->mode = 0;

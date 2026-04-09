@@ -34,7 +34,7 @@
 			if (a < (size_t)(n)) \
 				a = (size_t)roundof(n, 128); \
 			a *= 2; \
-			if (!((b)->re_buf = alloc(p->env->disc, (b)->re_buf, a))) \
+			if (unlikely(!((b)->re_buf = alloc(p->env->disc, (b)->re_buf, a)))) \
 			{ \
 				(b)->re_buf = (b)->re_cur = (b)->re_end = 0; \
 				c = REG_ESPACE; \
@@ -208,7 +208,7 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmat
 		size_t		i;
 		int		r;
 
-		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
+		if (unlikely(!(match = oldof(0, regmatch_t, nmatch, 0))))
 			return -1;
 		for (i = 0; i < nmatch; i++)
 		{

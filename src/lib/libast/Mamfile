@@ -71,7 +71,7 @@ make install virtual
 	shim - {
 	shim -     s=$1
 	shim -     shift
-	shim -     set -- %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS} "$@"
+	shim -     set -- %{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} "$@"
 	shim -     iffe %{IFFEFLAGS} -v -X ast -X std -c "$*" run "$s"
 	shim - }
 
@@ -279,7 +279,7 @@ make install virtual
 		note *
 		makp %{INSTALLROOT}/bin/mkreq
 		exec - set -o errexit
-		exec - mkreq %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} : %{LDFLAGS} : ast iconv w
+		exec - mkreq %{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} : %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} : ast iconv w
 		note *
 		note * some systems move -lc routines to -lm; see astmath.c for details
 		note *
@@ -287,7 +287,7 @@ make install virtual
 			make port/astmath.c
 				prev std/endian.h
 			done
-			setv _math_test %{CC} %{CCLDFLAGS} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS} -DN=$N -DIS -o astmath.exe %{<}
+			setv _math_test %{CC} %{CCLDFLAGS} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} -DN=$N -DIS -o astmath.exe %{<}
 			exec - X=1
 			exec - for N in 1 2 3 4 5 6 7 8
 			exec - do	if	%{_math_test} 2>/dev/null
@@ -358,7 +358,7 @@ make install virtual
 						exec - EOF
 					done
 					makp comp/conf.tab
-					setv _run_conf_ conf -v %{<} %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING}
+					setv _run_conf_ conf -v %{<} %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO}
 					exec - %{_run_conf_}
 				done
 				make conftab.h
@@ -606,7 +606,7 @@ make install virtual
 			done
 			make lcgen
 				makp port/lcgen.c
-				exec - %{CC} %{CCLDFLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS} -o lcgen port/lcgen.c
+				exec - %{CC} %{CCLDFLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} -o lcgen port/lcgen.c
 			done
 			makp port/lc.tab
 			setv _run_lcgen_ lcgen lc.h lctab.c < port/lc.tab
@@ -3659,7 +3659,7 @@ make install virtual
 	make %{INSTALLROOT}/dyn/lib/%{DYLIB_PRE}ast%{DYLIB_SUF} dontcare
 		prev libast.a
 		prev ast.req
-		exec - export LDFLAGS='%{LDFLAGS} %{CCLDFLAGS} %{mam_cc_LD_NOASNEEDED}'
+		exec - export LDFLAGS='%{mam_cc_LD_RELRO} %{LDFLAGS} %{CCLDFLAGS} %{mam_cc_LD_NOASNEEDED}'
 		exec - dylink -m ast -v %{DYLIB_VERSION} -p '%{DYLIB_PRE}' -s '%{DYLIB_SUF}' $(sed 1d %{<}) %{_libast_object_files_}
 	done
 
@@ -3742,9 +3742,9 @@ make install virtual
 				prev include/wait.h
 				prev std/stdio.h
 			done
-			exec - compile %{<} -D_PACKAGE_ast
+			exec - compile %{<} -D_PACKAGE_ast %{mam_cc_FPIE}
 		done
-		exec - %{CC} %{CCLDFLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS} -o %{@} %{<} %{mam_libast} || exit
+		exec - %{CC} %{CCLDFLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} -o %{@} %{<} %{mam_libast} || exit
 		note *
 		note * We purposely do not have a make target of %{INSTALLROOT}/bin/mamake here;
 		note * this helps to ensure that the package.sh-built version gets overwritten.

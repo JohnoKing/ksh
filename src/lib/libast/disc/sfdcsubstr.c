@@ -145,7 +145,7 @@ Sfio_t* sfdcsubstream(Sfio_t*	f,	/* stream */
 	if (!(sp = f) && !(sp = sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, dup(sffileno(parent)), parent->flags)))
 		return NULL;
 
-	if(!(su = (Subfile_t*)malloc(sizeof(Subfile_t))))
+	if(unlikely(!(su = (Subfile_t*)malloc(sizeof(Subfile_t)))))
 	{	if(sp != f)
 			sfclose(sp);
 		return NULL;
@@ -161,7 +161,7 @@ Sfio_t* sfdcsubstream(Sfio_t*	f,	/* stream */
 	su->extent = extent;
 
 	if(sfdisc(sp, (Sfdisc_t*)su) != (Sfdisc_t*)su)
-	{	free(su);
+	{	free_sized(su, sizeof(Subfile_t));
 		if(sp != f)
 			sfclose(sp);
 		return NULL;

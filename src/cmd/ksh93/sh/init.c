@@ -169,6 +169,7 @@ struct match
 	char		*nodes;
 	char		*names;
 	size_t		msize;
+	size_t		ndsz;
 	ptrdiff_t	vsize;
 	ptrdiff_t	vlen;
 	ssize_t		first;
@@ -220,7 +221,7 @@ static void		stat_init(void);
 /*
  * Exception callback routine for stk(3) and sh_*alloc wrappers.
  */
-static noreturn void *nomemory(size_t s)
+static cold noreturn void *nomemory(size_t s)
 {
 	errormsg(SH_DICT, ERROR_SYSTEM|ERROR_PANIC, "out of memory (needed %zu bytes)", s);
 	UNREACHABLE();
@@ -230,7 +231,7 @@ static noreturn void *nomemory(size_t s)
  * The following are wrapper functions for memory allocation.
  * These functions will error out if the allocation fails.
  */
-void *sh_malloc(size_t size)
+returns_nonnull malloc_attr void *sh_malloc(size_t size)
 {
 	void *cp;
 	cp = malloc(size);
@@ -239,7 +240,7 @@ void *sh_malloc(size_t size)
 	return cp;
 }
 
-void *sh_realloc(void *ptr, size_t size)
+returns_nonnull void *sh_realloc(void *ptr, size_t size)
 {
 	void *cp;
 	cp = realloc(ptr, size);
@@ -252,7 +253,7 @@ void *sh_realloc(void *ptr, size_t size)
 	return cp;
 }
 
-void *sh_calloc(size_t nmemb, size_t size)
+returns_nonnull malloc_attr void *sh_calloc(size_t nmemb, size_t size)
 {
 	void *cp;
 	cp = calloc(nmemb, size);
@@ -261,7 +262,7 @@ void *sh_calloc(size_t nmemb, size_t size)
 	return cp;
 }
 
-char *sh_strdup(const char *s)
+NONNULL(1) returns_nonnull malloc_attr char *sh_strdup(const char *s)
 {
 	char *dup;
 	dup = strdup(s);
@@ -270,7 +271,7 @@ char *sh_strdup(const char *s)
 	return dup;
 }
 
-void *sh_memdup(const void *s, size_t n)
+NONNULL(1) returns_nonnull malloc_attr void *sh_memdup(const void *s, size_t n)
 {
 	void *dup;
 	dup = memdup(s, n);
@@ -368,7 +369,7 @@ static Sfdouble_t nget_optindex(Namval_t *np, Namfun_t *fp)
 	return (Sfdouble_t)*lp;
 }
 
-static Namfun_t *clone_optindex(Namval_t *np, Namval_t *mp, int flags, Namfun_t *fp)
+static malloc_attr Namfun_t *clone_optindex(Namval_t *np, Namval_t *mp, int flags, Namfun_t *fp)
 {
 	Namfun_t *dp = (Namfun_t*)sh_malloc(sizeof(Namfun_t));
 	NOT_USED(flags);
@@ -556,7 +557,7 @@ static char* get_ifs(Namval_t *np, Namfun_t *fp)
 #define dtime(tp) ((double)((tp)->tv_sec)+1e-6*((double)((tp)->tv_usec)))
 #define tms	timeval
 
-static void put_seconds(Namval_t *np,const char *val,int flags,Namfun_t *fp)
+static NONNULL(1) void put_seconds(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 {
 	double d;
 	double *dp = np->nvalue;
@@ -581,7 +582,7 @@ static void put_seconds(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 	*dp = dtime(&tp)-d;
 }
 
-static char* get_seconds(Namval_t *np, Namfun_t *fp)
+static NONNULL(1) char* get_seconds(Namval_t *np, Namfun_t *fp)
 {
 	size_t places = nv_size(np);
 	struct tms tp;
@@ -595,7 +596,7 @@ static char* get_seconds(Namval_t *np, Namfun_t *fp)
 	return sfstruse(sh.strbuf);
 }
 
-static Sfdouble_t nget_seconds(Namval_t *np, Namfun_t *fp)
+static NONNULL(1) Sfdouble_t nget_seconds(Namval_t *np, Namfun_t *fp)
 {
 	struct tms tp;
 	double *dp = np->nvalue;
@@ -608,7 +609,7 @@ static Sfdouble_t nget_seconds(Namval_t *np, Namfun_t *fp)
 /*
  * Seeds the rand structure using the same algorithm as srand48()
  */
-static void seed_rand_uint(struct rand *rp, unsigned int seed)
+static NONNULL(1) void seed_rand_uint(struct rand *rp, unsigned int seed)
 {
 	rp->rand_seed[0] = 0x330e; /* Constant from POSIX spec. */
 	rp->rand_seed[1] = (unsigned short)seed;
@@ -618,7 +619,7 @@ static void seed_rand_uint(struct rand *rp, unsigned int seed)
 /*
  * These four functions are used to get and set the RANDOM variable
  */
-static void put_rand(Namval_t *np,const char *val,int flags,Namfun_t *fp)
+static NONNULL(1,4) void put_rand(Namval_t *np,const char *val,int flags,Namfun_t *fp)
 {
 	struct rand *rp = (struct rand*)fp;
 	Sfdouble_t n;
@@ -645,7 +646,7 @@ static void put_rand(Namval_t *np,const char *val,int flags,Namfun_t *fp)
  * get random number in range of 0 - 2**15
  * never pick same number twice in a row
  */
-static Sfdouble_t nget_rand(Namval_t *np, Namfun_t *fp)
+static NONNULL(1,2) Sfdouble_t nget_rand(Namval_t *np, Namfun_t *fp)
 {
 	struct rand *rp = (struct rand*)fp;
 	int32_t cur;
@@ -660,13 +661,13 @@ static Sfdouble_t nget_rand(Namval_t *np, Namfun_t *fp)
 	return (Sfdouble_t)cur;
 }
 
-static char* get_rand(Namval_t *np, Namfun_t *fp)
+static NONNULL(1,2) char* get_rand(Namval_t *np, Namfun_t *fp)
 {
 	intmax_t n = (intmax_t)nget_rand(np,fp);
 	return fmtint(n,1);
 }
 
-void sh_reseed_rand(struct rand *rp)
+NONNULL(1) void sh_reseed_rand(struct rand *rp)
 {
 	seed_rand_uint(rp, arc4random());
 	rp->rand_last = -1;
@@ -824,7 +825,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 	sh.subshell = 0;
 	if(index<0)
 	{
-		if(mp->nodes)
+		if(expect(!!(mp->nodes),1,0.95))
 		{
 			np = nv_namptr(mp->nodes,0);
 			if(mp->index==0)
@@ -852,9 +853,10 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 		return;
 	}
 	mp->index = index;
-	if(index==0)
+	if(expect(index==0,1,0.7))  /* gcov's likelihood is higher, but I'm skeptical */
 	{
-		if(mp->nodes)
+		size_t ndsz;
+		if(likely(mp->nodes))
 		{
 			np = nv_namptr(mp->nodes,0);
 			for(i=0; i < mp->nmatch; i++)
@@ -866,7 +868,8 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 				}
 				np = nv_namptr(np+1,0);
 			}
-			free(mp->nodes);
+			free_sized(mp->nodes,mp->ndsz);
+			mp->ndsz = 0;
 			mp->nodes = 0;
 		}
 		mp->vlen = 0;
@@ -879,7 +882,8 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 			sh.subshell = savesub;
 			return;
 		}
-		mp->nodes = sh_calloc((size_t)mp->nmatch*(NV_MINSZ+sizeof(void*)+3),1);
+		mp->ndsz = (size_t)mp->nmatch*(NV_MINSZ+sizeof(void*)+3);
+		mp->nodes = sh_calloc(mp->ndsz,1);
 		mp->names = mp->nodes + (size_t)mp->nmatch*(NV_MINSZ+sizeof(void*));
 		np = nv_namptr(mp->nodes,0);
 		nv_disc(SH_MATCHNOD,&mp->hdr,NV_LAST);
@@ -897,7 +901,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 			match2d(mp);
 	}
 	sh.subshell = savesub;
-	if(mp->nmatch)
+	if(likely(mp->nmatch))  /* acc. gcov */
 	{
 		for(n=mp->first+(mp->v-v),vsize=0,i=0; i < 2*nmatch; i++)
 		{
@@ -906,7 +910,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 		}
 		index *= 2*mp->nmatch;
 		i = (index+2*(ptrdiff_t)mp->nmatch)*(ptrdiff_t)sizeof(match[0]);
-		if(i >= (ssize_t)mp->msize)
+		if(unlikely(i >= (ssize_t)mp->msize))  /* acc. gcov */
 			mp->match = sh_realloc(mp->match, mp->msize = 2*(size_t)i);
 		if(vsize >= mp->vsize)
 		{
@@ -921,7 +925,7 @@ void sh_setmatch(const char *v, ptrdiff_t vsize, ssize_t nmatch, ssize_t match[]
 		}
 		while(i < 2*mp->nmatch)
 			mp->match[index+i++] = -1;
-		if(index==0)
+		if(likely(index==0))
 			v+= mp->first;
 		strlcpy(mp->val + mp->vlen, v, (size_t)(vsize - mp->vlen + 1));
 		mp->vlen = vsize;
@@ -1019,6 +1023,7 @@ static const Namdisc_t L_ARG_disc	= {  sizeof(Namfun_t), put_lastarg, get_lastar
 
 
 #define MAX_MATH_ARGS	3
+#define MATHNODE_SIZE	(MAX_MATH_ARGS*(NV_MINSZ+5))
 
 static char *name_math(Namval_t *np, Namfun_t *fp)
 {
@@ -1043,7 +1048,7 @@ static void math_init(void)
 	Namval_t	*np;
 	char		*name;
 	size_t		i;
-	sh.mathnodes = (char*)sh_calloc(1,MAX_MATH_ARGS*(NV_MINSZ+5));
+	sh.mathnodes = (char*)sh_calloc(1,MATHNODE_SIZE);
 	name = sh.mathnodes+MAX_MATH_ARGS*NV_MINSZ;
 	for(i=0; i < MAX_MATH_ARGS; i++)
 	{
@@ -1286,7 +1291,7 @@ Shell_t *sh_init(int argc,char *argv[], Shinit_f userinit)
 	if(argc>0)
 	{
 		/* check for restricted shell */
-		if(type&SH_TYPE_RESTRICTED)
+		if(unlikely(type&SH_TYPE_RESTRICTED))
 			sh_onoption(SH_RESTRICTED);
 		/* look for options */
 		/* sh.st.dolc is $#	*/
@@ -1535,13 +1540,13 @@ void sh_reinit(void)
 	freeup_tree(sh.typedict);
 	freeup_tree(sh.var_tree);
 #if SHOPT_STATS
-	free(sh.stats);
+	free_sized(sh.stats,(sizeof(int)*STAT_SUBSHELL+1));
 #endif
 	/* Re-init variables, functions and built-ins */
-	free(sh.bltin_cmds);
-	free(sh.bltin_nodes);
-	free(sh.mathnodes);
-	free(sh.init_context);
+	free_sized(sh.bltin_cmds,sizeof(Namval_t));
+	free_sized(sh.bltin_nodes,sizeof(Namval_t));
+	free_sized(sh.mathnodes,MATHNODE_SIZE);
+	free_sized(sh.init_context,sizeof(Init_t));
 	sh.init_context = nv_init();
 	/* Re-import the environment (re-exported in exscript()) */
 	env_init();
@@ -1877,6 +1882,8 @@ static inline int is_ctype_var(char *cp)
 		   (cp[3]=='C' && cp[4]=='T' && cp[5]=='Y' && cp[6]=='P' && cp[7]=='E' && cp[8]=='='))));
 }
 
+static size_t save_env_size;
+
 /* for env_init: import one env var */
 static void import1var(char *cp, size_t *save_env_n_ptr)
 {
@@ -1889,7 +1896,8 @@ static void import1var(char *cp, size_t *save_env_n_ptr)
 	 * child processes. Re-do this after forking, as the locale may change.
 	 */
 	n = ++(*save_env_n_ptr);
-	sh.save_env = sh_realloc(sh.save_env, n * sizeof(char*));
+	save_env_size = n * sizeof(char*);
+	sh.save_env = sh_realloc(sh.save_env, save_env_size);
 	sh.save_env[n - 1] = cp;
 }
 
@@ -1918,12 +1926,12 @@ static void env_init(void)
 	}
 	if(save_env_n==0 && sh.save_env)
 	{
-		free(sh.save_env);
+		free_sized(sh.save_env,save_env_size);
 		sh.save_env = NULL;
 	}
 	sh.save_env_n = save_env_n;
 	path_pwd();
-	if((cp = nv_getval(SHELLNOD)) && (sh_type(cp)&SH_TYPE_RESTRICTED))
+	if((cp = nv_getval(SHELLNOD)) && unlikely(sh_type(cp)&SH_TYPE_RESTRICTED))
 		sh_onoption(SH_RESTRICTED); /* restricted shell */
 }
 

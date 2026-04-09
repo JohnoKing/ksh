@@ -44,7 +44,7 @@
 int	b_return(int n, char *argv[],Shbltin_t *context)
 {
 	/* 'return' outside of function, dotscript and profile behaves like 'exit' */
-	const int do_exit = **argv=='e' || sh.fn_depth==0 && sh.dot_depth==0 && (!sh_isstate(SH_PROFILE) || sh.realsubshell);
+	const int do_exit = **argv=='e' || sh.fn_depth==0 && sh.dot_depth==0 && (likely(!sh_isstate(SH_PROFILE)) || sh.realsubshell);
 	NOT_USED(context);
 	while((n = optget(argv, **argv=='e' ? sh_optexit : sh_optreturn))) switch(n)
 	{

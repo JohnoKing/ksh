@@ -145,7 +145,7 @@ int    b_exec(int argc,char *argv[], Shbltin_t *context)
 #else
 			argv[0] = arg0;
 #endif /* _execve_ignores_argv0 */
-		if(job_close() < 0)
+		if(unlikely(job_close() < 0))
 			return 1;
 		/* if the main shell is about to be replaced, decrease SHLVL to cancel out a subsequent increase */
 		if(!sh.realsubshell)
@@ -312,7 +312,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 	errorpush(&buff.err,0);
 	error_info.id = argv[0];
 	jmpval = sigsetjmp(buff.buff,0);
-	if(jmpval == 0)
+	if(likely(jmpval == 0))
 	{
 		sh.dot_depth++;
 		update_sh_level();
@@ -327,12 +327,11 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 			buffer = sh_malloc(IOBSIZE+1);
 			iop = sfnew(NULL,buffer,IOBSIZE,fd,SFIO_READ);
 			sh_offstate(SH_NOFORK);
-			sh_eval(iop,sh_isstate(SH_PROFILE)?SH_FUNEVAL:0);
+			sh_eval(iop,unlikely(sh_isstate(SH_PROFILE))?SH_FUNEVAL:0);
 		}
 	}
 	sh_popcontext(&buff);
-	if(buffer)
-		free(buffer);
+	free(buffer);
 	if(!np)
 		free(tofree);
 	sh.dot_depth--;
@@ -350,7 +349,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 	memcpy(&sh.st, prevscope, sizeof(Shscope_t));
 	sh.topscope = (Shscope_t*)prevscope;
 	nv_putval(SH_PATHNAMENOD, sh.st.filename ,NV_NOFREE);
-	if(jmpval && jmpval!=SH_JMPFUN)
+	if(unlikely(jmpval) && jmpval!=SH_JMPFUN)
 		siglongjmp(*sh.jmplist,jmpval);
 	return sh.exitval;
 }
@@ -358,7 +357,7 @@ int    b_dot_cmd(int n,char *argv[],Shbltin_t *context)
 /*
  * null, true command
  */
-int    b_true(int argc,char *argv[],Shbltin_t *context)
+pure int    b_true(int argc,char *argv[],Shbltin_t *context)
 {
 	NOT_USED(argc);
 	NOT_USED(argv[0]);
@@ -369,7 +368,7 @@ int    b_true(int argc,char *argv[],Shbltin_t *context)
 /*
  * false command
  */
-int    b_false(int argc,char *argv[], Shbltin_t *context)
+pure int    b_false(int argc,char *argv[], Shbltin_t *context)
 {
 	NOT_USED(argc);
 	NOT_USED(argv[0]);

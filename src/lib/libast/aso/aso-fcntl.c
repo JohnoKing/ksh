@@ -37,6 +37,18 @@ typedef struct APL_s
 	char		path[1];
 } APL_t;
 
+static cold void *aso_init_fcntl_bad(APL_t *apl, int drop, int fd, const char *path)
+{
+	if (apl)
+		free(apl);
+	if (fd >= 0)
+		ast_close(fd);
+	if (drop)
+		remove(path);
+	return NULL;
+
+}
+
 static void*
 aso_init_fcntl(void* data, const char* details)
 {
@@ -101,7 +113,7 @@ aso_init_fcntl(void* data, const char* details)
 			{
 				size = strtoul(path + 5, NULL, 0);
 				if (size <= sizeof(references))
-					goto bad;
+					return aso_init_fcntl_bad(apl, drop, fd, path);
 				size -= sizeof(references);
 			}
 			path = opt + 1;
@@ -113,35 +125,38 @@ aso_init_fcntl(void* data, const char* details)
 		drop = 1;
 	}
 	if (!(apl = newof(0, APL_t, 1, strlen(path))))
-		goto bad;
+		return aso_init_fcntl_bad(apl, drop, fd, path);
 	if (fd >= 0 || (fd = open(path, O_RDWR|O_cloexec)) < 0 && (fd = open(path, O_CREAT|O_RDWR|O_cloexec, perm)) >= 0)
 	{
 		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 		references = 1;
 		if (write(fd, &references, sizeof(references)) != sizeof(references))
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 	}
 	else
 	{
-		if ((size = (size_t)lseek(fd, 0, SEEK_END)) <= sizeof(references))
-			goto bad;
+		off_t result = lseek(fd, 0, SEEK_END);
+		if (result <= (ssize_t)sizeof(references))
+			return aso_init_fcntl_bad(apl, drop, fd, path);
+		else
+			size = (size_t)result;
 		size -= sizeof(references);
 		lock.l_type = F_WRLCK;
 		lock.l_whence = SEEK_SET;
 		lock.l_start = 0;
 		lock.l_len = sizeof(references);
 		if (fcntl(fd, F_SETLKW, &lock) < 0)
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 		if (read(fd, &references, sizeof(references)) != sizeof(references))
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 		references++;
 		if (lseek(fd, (off_t)size, SEEK_SET) != (ssize_t)size)
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 		if (write(fd, &references, sizeof(references)) != sizeof(references))
-			goto bad;
+			return aso_init_fcntl_bad(apl, drop, fd, path);
 		lock.l_type = F_UNLCK;
 		fcntl(fd, F_SETLK, &lock);
 	}
@@ -149,14 +164,6 @@ aso_init_fcntl(void* data, const char* details)
 	apl->size = size;
 	strcpy(apl->path, path);
 	return apl;
- bad:
-	if (apl)
-		free(apl);
-	if (fd >= 0)
-		ast_close(fd);
-	if (drop)
-		remove(path);
-	return NULL;
 }
 
 static ssize_t

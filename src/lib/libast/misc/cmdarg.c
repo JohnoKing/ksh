@@ -93,6 +93,7 @@ cmdopen_20120411(char** argv, int argmax, ssize_t size, const char* argpat, Cmdd
 	ssize_t		x;
 
 	char**		post = 0;
+	size_t		alloc_size;
 
 	n = (ssize_t)sizeof(char**);
 	if (*argv)
@@ -133,7 +134,8 @@ cmdopen_20120411(char** argv, int argmax, ssize_t size, const char* argpat, Cmdd
 		size = x - m;
 	n = size - n;
 	m = ((disc->flags & CMD_INSERT) && argpat) ? ((ssize_t)strlen(argpat) + 1) : 0;
-	if (!(cmd = newof(0, Cmdarg_t, 1, (size_t)(n + m))))
+	alloc_size = sizeof(Cmdarg_t) * 1 + (size_t)(n + m);
+	if (unlikely(!(cmd = newof(0, Cmdarg_t, 1, (size_t)(n + m)))))
 	{
 		if (disc->errorf)
 			(*disc->errorf)(NULL, sh, ERROR_SYSTEM|2, "out of memory");
@@ -167,7 +169,7 @@ cmdopen_20120411(char** argv, int argmax, ssize_t size, const char* argpat, Cmdd
 				(*cmd->errorf)(NULL, cmd, ERROR_SYSTEM|2, "%s: command not found", exe);
 			if (disc->flags & CMD_EXIT)
 				(*error_info.exit)(ret);
-			free(cmd);
+			free_sized(cmd,alloc_size);
 			return NULL;
 		}
 		exe = s;

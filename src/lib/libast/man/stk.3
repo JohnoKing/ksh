@@ -14,7 +14,7 @@
 \f3
 #include <stk.h>
 
-Stk_t *stkopen(int \fIflags\fP);
+malloc_attr Stk_t *stkopen(int \fIflags\fP);
 void stkoverflow(Stk_t *\fIstack\fP, void *(\fIoverflow\fP)(size_t));
 Stk_t *stkinstall(Stk_t *\fIstack\fP, char *(\fIoverflow\fP)(size_t));
 int stkclose(Stk_t *\fIstack\fP);

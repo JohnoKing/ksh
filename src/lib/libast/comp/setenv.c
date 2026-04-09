@@ -39,9 +39,9 @@ setenv(const char* name, const char* value, int overwrite)
 
 	if (overwrite || !getenv(name))
 	{
-		if (!(s = sfprints("%s=%s", name, value)) || !(s = strdup(s)))
+		if (!(s = sfprints("%s=%s", name, value)) || unlikely(!(s = strdup(s))))
 			return -1;
-		return setenviron(s) ? 0 : -1;
+		return likely(setenviron(s)) ? 0 : -1;
 	}
 	return 0;
 }

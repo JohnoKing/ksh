@@ -83,13 +83,13 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, ssize_t n, re
 	 * 0 and empty patterns are special
 	 */
 
-	if (!p || !b)
+	if (unlikely(!p || !b))
 	{
 		if (!p && !b)
 			regcache(NULL, 0, NULL);
 		return 0;
 	}
-	if (!*p)
+	if (unlikely(!*p))
 	{
 		if (sub && n > 0)
 			sub[0] = sub[1] = 0;
@@ -120,9 +120,9 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, ssize_t n, re
 		reflags |= REG_NOSUB;
 	if (!(re = regcache(p, reflags, NULL)))
 		return 0;
-	if (n > matchstate.nmatch)
+	if (unlikely(n > matchstate.nmatch))
 	{
-		if (!(matchstate.match = newof(matchstate.match, regmatch_t, (size_t)n, 0)))
+		if (unlikely(!(matchstate.match = newof(matchstate.match, regmatch_t, (size_t)n, 0))))
 			return 0;
 		matchstate.nmatch = n;
 	}
@@ -148,7 +148,7 @@ strngrpmatch(const char* b, size_t z, const char* p, ssize_t* sub, ssize_t n, re
 ssize_t
 strmatch(const char* s, const char* p)
 {
-	return strngrpmatch(s, s ? strlen(s) : 0, p, NULL, 0, STR_MAXIMAL|STR_LEFT|STR_RIGHT);
+	return strngrpmatch(s, likely(s) ? strlen(s) : 0, p, NULL, 0, STR_MAXIMAL|STR_LEFT|STR_RIGHT);
 }
 
 /*
@@ -164,11 +164,11 @@ strsubmatch(const char* s, const char* p, regflags_t flags)
 {
 	ssize_t	match[2];
 
-	return strngrpmatch(s, s ? strlen(s) : 0, p, match, 1, (flags ? STR_MAXIMAL : 0)|STR_LEFT) ? (char*)s + match[1] : NULL;
+	return strngrpmatch(s, likely(s) ? strlen(s) : 0, p, match, 1, (flags ? STR_MAXIMAL : 0)|STR_LEFT) ? (char*)s + match[1] : NULL;
 }
 
 ssize_t
 strgrpmatch(const char* b, const char* p, ssize_t* sub, ssize_t n, regflags_t flags)
 {
-	return strngrpmatch(b, b ? strlen(b) : 0, p, sub, n, flags);
+	return strngrpmatch(b, likely(b) ? strlen(b) : 0, p, sub, n, flags);
 }

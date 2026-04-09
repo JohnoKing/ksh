@@ -36,7 +36,7 @@ ptrdiff_t _sffilbuf(Sfio_t*	f,	/* fill the read buffer of this stream */
 	int		first, local, rc, justseek;
 	unsigned int	rcrv;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);

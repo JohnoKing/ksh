@@ -270,7 +270,7 @@ addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char*
 	{
 		if (!endslash && (gp->gl_flags & GLOB_MARK) && (type = (*gp->gl_type)(gp, stkptr(globstk,MATCHPATH(gp)), 0)))
 		{
-			if ((gp->gl_flags & GLOB_COMPLETE) && type != GLOB_EXE)
+			if (unlikely(gp->gl_flags & GLOB_COMPLETE) && type != GLOB_EXE)
 			{
 				stkseek(globstk,0);
 				return;
@@ -284,7 +284,7 @@ addmatch(glob_t* gp, const char* dir, const char* pat, const char* rescan, char*
 		gp->gl_pathc++;
 	}
 	ap->gl_flags = MATCH_RAW|meta;
-	if (gp->gl_flags & GLOB_COMPLETE)
+	if (unlikely(gp->gl_flags & GLOB_COMPLETE))
 		ap->gl_flags |= MATCH_MAKE;
 }
 
@@ -411,7 +411,7 @@ again:
 	if (pat == prefix)
 	{
 		prefix = 0;
-		if (!rescan && (gp->gl_flags & GLOB_COMPLETE))
+		if (!rescan && unlikely(gp->gl_flags & GLOB_COMPLETE))
 		{
 			complete = 1;
 			dirname = 0;
@@ -551,7 +551,7 @@ skip:
 				 */
 				if (!(matchdir && (pat[0] == '.' && (!pat[1] || pat[1] == '.' && !pat[2]) || strchr(pat,'/')))
 				&& name[0] == '.' && (!name[1] || name[1] == '.' && !name[2])
-				&& !(gp->gl_flags & GLOB_FCOMPLETE))
+				&& likely(!(gp->gl_flags & GLOB_FCOMPLETE)))
 					continue;
 				if (notdir = (gp->gl_status & GLOB_NOTDIR))
 					gp->gl_status &= ~GLOB_NOTDIR;
@@ -590,7 +590,7 @@ skip:
 		regfree(prec);
 	if (prei)
 		regfree(prei);
-	if (err == REG_ESPACE)
+	if (unlikely(err == REG_ESPACE))
 		gp->gl_error = GLOB_NOSPACE;
 }
 
@@ -692,9 +692,9 @@ _ast_glob(const char* pattern, int flags, int (*errfn)(const char*, int), glob_t
 		}
 		if (gp->gl_flags & GLOB_STACK)
 			gp->gl_stak = 0;
-		else if (!(gp->gl_stak = stkopen(0)))
+		else if (unlikely(!(gp->gl_stak = stkopen(0))))
 			return GLOB_NOSPACE;
-		if ((gp->gl_flags & GLOB_COMPLETE) && !gp->gl_nextdir)
+		if (unlikely(gp->gl_flags & GLOB_COMPLETE) && !gp->gl_nextdir)
 			gp->gl_nextdir = gl_nextdir;
 	}
 	skip = gp->gl_pathc;

@@ -146,9 +146,9 @@ vecopen(ssize_t inc, size_t siz)
 
 	if (inc <= 0)
 		inc = 16;
-	if (!(sp = stkopen(STK_SMALL|STK_NULL)))
+	if (unlikely(!(sp = stkopen(STK_SMALL|STK_NULL))))
 		return NULL;
-	if (!(v = stkseek(sp, (ptrdiff_t)(sizeof(Vector_t) + (size_t)inc * siz))))
+	if (unlikely(!(v = stkseek(sp, (ptrdiff_t)(sizeof(Vector_t) + (size_t)inc * siz)))))
 	{
 		stkclose(sp);
 		return NULL;
@@ -205,7 +205,7 @@ stkpush(Stk_t* sp, size_t size)
 
 	stknew(sp, &p);
 	size = sizeof(Stk_frame_t) + sizeof(size_t) + size - 1;
-	if (!(f = stkalloc(sp, sizeof(Stk_frame_t) + sizeof(Stk_frame_t*) + size - 1)))
+	if (unlikely(!(f = stkalloc(sp, sizeof(Stk_frame_t) + sizeof(Stk_frame_t*) + size - 1))))
 		return NULL;
 	f->pos = p;
 	stkframe(sp) = f;
@@ -250,7 +250,7 @@ _matchpush(Env_t* env, Rex_t* rex)
 
 	if (rex->re.group.number <= 0 || (num = rex->re.group.last - rex->re.group.number + 1) <= 0)
 		num = 0;
-	if (!(f = stkpush(env->mst, sizeof(Match_frame_t) + (size_t)(num > 0 ? num - 1 : 0) * sizeof(regmatch_t))))
+	if (unlikely(!(f = stkpush(env->mst, sizeof(Match_frame_t) + (size_t)(num > 0 ? num - 1 : 0) * sizeof(regmatch_t)))))
 	{
 		env->error = REG_ESPACE;
 		return 1;
@@ -271,12 +271,12 @@ _matchpush(Env_t* env, Rex_t* rex)
  * allocate a frame and push a pos onto the stack
  */
 
-static int
+static hot int
 pospush(Env_t* env, Rex_t* rex, unsigned char* p, short be)
 {
 	Pos_t*	pos;
 
-	if (!(pos = vector(Pos_t, env->pos, env->pos->cur)))
+	if (unlikely(!(pos = vector(Pos_t, env->pos, env->pos->cur))))
 	{
 		env->error = REG_ESPACE;
 		return 1;
@@ -962,7 +962,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			if (!(rex->flags & REG_MINIMAL))
 			{
 				intmax_t i;
-				if (!(b = stkpush(env->mst, (size_t)n)))
+				if (unlikely(!(b = stkpush(env->mst, (size_t)n))))
 				{
 					env->error = REG_ESPACE;
 					return BAD;
@@ -1066,7 +1066,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 			memcpy(&env->best[1], &env->match[1], (size_t)r * sizeof(regmatch_t));
 			cur_save = env->pos->cur;
 			pos = vector(Pos_t, env->bestpos, cur_save);
-			if (!pos)
+			if (unlikely(!pos))
 			{
 				env->error = REG_ESPACE;
 				return BAD;
@@ -1117,7 +1117,7 @@ DEBUG_TEST(0x0008,(sfprintf(sfstdout, "AHA#%04d 0x%04x parse %s `%-.*s'\n", __LI
 				else
 				{
 					intmax_t i;
-					if (!(b = stkpush(env->mst, (size_t)n)))
+					if (unlikely(!(b = stkpush(env->mst, (size_t)n))))
 					{
 						env->error = REG_ESPACE;
 						return BAD;
@@ -1461,7 +1461,7 @@ DEBUG_TEST(0x0200,(sfprintf(sfstdout,"AHA#%04d 0x%04x parse %s=>%s `%-.*s'\n", _
 				}
 				else
 				{
-					if (!(b = stkpush(env->mst, (size_t)n)))
+					if (unlikely(!(b = stkpush(env->mst, (size_t)n))))
 					{
 						env->error = REG_ESPACE;
 						return BAD;
@@ -1803,7 +1803,7 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
 
 	DEBUG_INIT();
 	DEBUG_TEST(0x0001,(sfprintf(sfstdout, "AHA#%04d 0x%04x regnexec %d 0x%08x `%-.*s'\n", __LINE__, debug_flag, nmatch, flags, len, s)),(0));
-	if (!p || !(env = p->env))
+	if (unlikely(!p || !(env = p->env)))
 		return REG_BADPAT;
 	if (!s)
 		return fatal(env->disc, REG_BADPAT, NULL);
@@ -1822,9 +1822,9 @@ regnexec_20120528(const regex_t* p, const char* s, size_t len, size_t nmatch, re
 	if (env->stack = env->hard || !(env->flags & REG_NOSUB) && nmatch)
 	{
 		n = (ssize_t)env->nsub;
-		if (!(env->match = stkpush(env->mst, 2 * (size_t)(n + 1) * sizeof(regmatch_t))) ||
+		if (unlikely(!(env->match = stkpush(env->mst, 2 * (size_t)(n + 1) * sizeof(regmatch_t))) ||
 		    !env->pos && !(env->pos = vecopen(16, sizeof(Pos_t))) ||
-		    !env->bestpos && !(env->bestpos = vecopen(16, sizeof(Pos_t))))
+		    !env->bestpos && !(env->bestpos = vecopen(16, sizeof(Pos_t)))))
 		{
 			k = REG_ESPACE;
 			goto done;
@@ -1935,7 +1935,7 @@ regnexec(const regex_t* p, const char* s, size_t len, size_t nmatch, oldregmatch
 		size_t		i;
 		int		r;
 
-		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
+		if (unlikely(!(match = oldof(0, regmatch_t, nmatch, 0))))
 			return -1;
 		if (!(r = regnexec_20120528(p, s, len, nmatch, match, flags)))
 			for (i = 0; i < nmatch; i++)

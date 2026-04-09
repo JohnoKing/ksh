@@ -32,7 +32,7 @@
 #include <ctype.h>
 
 unsigned long
-strelapsed(const char* s, char** e, int n)
+strelapsed(const char *restrict s, char **restrict e, int n)
 {
 	int		c;
 	unsigned long	v;

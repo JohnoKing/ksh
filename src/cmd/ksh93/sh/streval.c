@@ -100,7 +100,7 @@ typedef int        (*Math_3i_f)(Sfdouble_t,Sfdouble_t,Sfdouble_t);
 /*
  * set error message string and return 0
  */
-static int _seterror(struct vars *vp,const char *msg)
+static cold int _seterror(struct vars *vp,const char *msg)
 {
 	if(!vp->errmsg.value)
 		vp->errmsg.value = (char*)msg;
@@ -110,14 +110,16 @@ static int _seterror(struct vars *vp,const char *msg)
 }
 
 
-static void arith_error(const char *message,const char *expr, int mode)
+static cold void arith_error(const char *message,const char *expr, int mode)
 {
 	mode = (mode&3)!=0;
 	errormsg(SH_DICT,ERROR_exit(mode),message,expr);
+	if(mode)
+		UNREACHABLE();  /* tell GCC/Clang this state can't be reached */
 }
 
 #if _ast_no_um2fm
-static Sfdouble_t U2F(Sfulong_t u)
+static pure Sfdouble_t U2F(Sfulong_t u)
 {
 	Sflong_t	s = u;
 	Sfdouble_t	f;
@@ -135,7 +137,7 @@ static Sfdouble_t U2F(Sfulong_t u)
 #define U2F(x)		x
 #endif
 
-Sfdouble_t	arith_exec(Arith_t *ep)
+hot NONNULL(1) Sfdouble_t	arith_exec(Arith_t *ep)
 {
 	Sfdouble_t	num=0,*dp,*sp;
 	unsigned char	*cp = ep->code;
@@ -173,7 +175,11 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 			if(type==1 || ((c&T_BINARY) && (c&T_OP)!=A_MOD  && tp[-1]==1))
 				arith_error(e_incompatible,ep->expr,ep->emode);
 		}
-		switch(c&T_OP)
+		/*
+		 * Note: A_PUSHV is only hit in around ~45% of cases, but it needs
+		 * to remain in the hot code path for better overall performance.
+		 */
+		switch(expect((c&T_OP),A_PUSHV,0.90))
 		{
 		    case A_JMP: case A_JMPZ: case A_JMPNZ:
 			c &= T_OP;
@@ -240,18 +246,18 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 				arith_error(node.value,ptr,ep->emode);
 			*++sp = num;
 			type = node.isfloat;
-			if(isinf(num) || isnan(num) || num > LDBL_ULLONG_MAX || num < LDBL_LLONG_MIN)
+			if(unlikely(isinf(num) || isnan(num) || num > LDBL_ULLONG_MAX || num < LDBL_LLONG_MIN))
 				type = 1;
 			else
 			{
 				Sfdouble_t d=num;
-				if(num > LDBL_LLONG_MAX && num <= LDBL_ULLONG_MAX)
+				if(unlikely(num > LDBL_LLONG_MAX && num <= LDBL_ULLONG_MAX))
 				{
 					type = 2;
 					d -= LDBL_LLONG_MAX;
 				}
 				/* must use <= >= not < >, as we have reduced precision at these sizes */
-				if(d <= LDBL_LLONG_MIN || d >= LDBL_LLONG_MAX || (Sflong_t)d!=d)
+				if(unlikely(d <= LDBL_LLONG_MIN || d >= LDBL_LLONG_MAX || (Sflong_t)d!=d))
 					type = 1;
 			}
 			*++tp = type;
@@ -478,7 +484,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 		*sp = num;
 		*tp = type;
 	}
-	if(sh.arithrecursion>0)
+	if(likely(sh.arithrecursion>0))
 		sh.arithrecursion--;
 	if(type==0 && !num)
 		num = 0;
@@ -488,7 +494,7 @@ Sfdouble_t	arith_exec(Arith_t *ep)
 /*
  * This returns operator tokens or A_REG or A_NUM
  */
-static int gettok(struct vars *vp)
+static hot NONNULL(1) int gettok(struct vars *vp)
 {
 	int c,op;
 	vp->errchr = vp->nextchr;
@@ -555,7 +561,7 @@ static int gettok(struct vars *vp)
 /*
  * evaluate a subexpression with precedence
  */
-static int expr(struct vars *vp,int precedence)
+static hot NONNULL(1) int expr(struct vars *vp,int precedence)
 {
 	int		c, op;
 	int		invalid,wasop=0;
@@ -570,7 +576,7 @@ static int expr(struct vars *vp,int precedence)
 again:
 	op = gettok(vp);
 	c = 2*MAXPREC+1;
-	switch(op)
+	switch(expect(op,A_EXPECTNONE,0.95))  /* acc. gcov */
 	{
 	    case A_PLUS:
 		goto again;
@@ -611,7 +617,51 @@ again:
 		{
 			if(!wasop)
 				ERROR(vp,e_synbad);
-			goto number;
+		number:
+			wasop = 0;
+			if(*vp->nextchr=='L' && vp->nextchr[1]=='\'')
+			{
+				vp->nextchr++;
+				op = A_LIT;
+			}
+			pos = vp->nextchr;
+			lvalue.isfloat = 0;
+			lvalue.expr = vp->expr;
+			lvalue.emode = vp->emode;
+			if(op==A_LIT)
+			{
+				/* character constants */
+				if(pos[1]=='\\' && pos[2]=='\'' && pos[3]!='\'')
+				{
+					d = '\\';
+					vp->nextchr +=2;
+				}
+				else
+					d = chresc(pos+1,(char**)&vp->nextchr);
+				/* POSIX allows the trailing ' to be optional */
+				if(*vp->nextchr=='\'')
+					vp->nextchr++;
+			}
+			else
+				d = (*vp->convert)(&vp->nextchr, &lvalue, LOOKUP, 0);
+			if (vp->nextchr == pos)
+			{
+				if(vp->errmsg.value = lvalue.value)
+					vp->errstr = pos;
+				ERROR(vp,op==A_LIT?e_charconst:e_synbad);
+			}
+			if(op==A_DIG || op==A_LIT)
+			{
+				sfputc(sh.stk,A_PUSHN);
+				if(vp->staksize++>=vp->stakmaxsize)
+					vp->stakmaxsize = vp->staksize;
+				stkpush(sh.stk,vp,d,Sfdouble_t);
+				sfputc(sh.stk,lvalue.isfloat);
+			}
+			/* check for function call */
+			if(lvalue.fun)
+				continue;
+			goto after;
 		}
 		if(wasop++ && op!=A_LPAR)
 			ERROR(vp,e_synbad);
@@ -667,6 +717,35 @@ again:
 		}
 		switch(op)
 		{
+		case A_AND:	case A_OR:	case A_XOR:	case A_LSHIFT:
+		case A_RSHIFT:	case A_MOD:
+			op |= T_NOFLOAT;
+			/* FALLTHROUGH */
+		case A_PLUS:	case A_MINUS:	case A_TIMES:	case A_DIV:
+		case A_EQ:	case A_NEQ:	case A_LT:	case A_LE:
+		case A_GT:	case A_GE:	case A_POW:
+			sfputc(sh.stk,op|T_BINARY);
+			vp->staksize--;
+			break;
+		case A_PLUSPLUS:
+		case A_MINUSMINUS:
+			wasop=0;
+			op |= T_NOFLOAT;
+			/* FALLTHROUGH */
+		case A_ASSIGN:
+			if(!lvalue.value)
+				ERROR(vp,e_notlvalue);
+			if(op==A_ASSIGN)
+			{
+				sfputc(sh.stk,A_STORE);
+				stkpush(sh.stk,vp,lvalue.value,char*);
+				stkpush(sh.stk,vp,lvalue.flag,short);
+				vp->staksize--;
+			}
+			else
+				sfputc(sh.stk,op);
+			lvalue.value = 0;
+			break;
 		case A_RPAR:
 			if(!vp->paren)
 				ERROR(vp,e_paren);
@@ -740,26 +819,6 @@ again:
 			break;
 		}
 
-		case A_PLUSPLUS:
-		case A_MINUSMINUS:
-			wasop=0;
-			op |= T_NOFLOAT;
-			/* FALLTHROUGH */
-		case A_ASSIGN:
-			if(!lvalue.value)
-				ERROR(vp,e_notlvalue);
-			if(op==A_ASSIGN)
-			{
-				sfputc(sh.stk,A_STORE);
-				stkpush(sh.stk,vp,lvalue.value,char*);
-				stkpush(sh.stk,vp,lvalue.flag,short);
-				vp->staksize--;
-			}
-			else
-				sfputc(sh.stk,op);
-			lvalue.value = 0;
-			break;
-
 		case A_QUEST:
 		{
 			int offset1,offset2;
@@ -807,65 +866,12 @@ again:
 			wasop=0;
 			break;
 		}
-		case A_AND:	case A_OR:	case A_XOR:	case A_LSHIFT:
-		case A_RSHIFT:	case A_MOD:
-			op |= T_NOFLOAT;
-			/* FALLTHROUGH */
-		case A_PLUS:	case A_MINUS:	case A_TIMES:	case A_DIV:
-		case A_EQ:	case A_NEQ:	case A_LT:	case A_LE:
-		case A_GT:	case A_GE:	case A_POW:
-			sfputc(sh.stk,op|T_BINARY);
-			vp->staksize--;
-			break;
 		case A_NOT: case A_TILDE:
 		default:
 			ERROR(vp,e_synbad);
-		number:
-			wasop = 0;
-			if(*vp->nextchr=='L' && vp->nextchr[1]=='\'')
-			{
-				vp->nextchr++;
-				op = A_LIT;
-			}
-			pos = vp->nextchr;
-			lvalue.isfloat = 0;
-			lvalue.expr = vp->expr;
-			lvalue.emode = vp->emode;
-			if(op==A_LIT)
-			{
-				/* character constants */
-				if(pos[1]=='\\' && pos[2]=='\'' && pos[3]!='\'')
-				{
-					d = '\\';
-					vp->nextchr +=2;
-				}
-				else
-					d = chresc(pos+1,(char**)&vp->nextchr);
-				/* POSIX allows the trailing ' to be optional */
-				if(*vp->nextchr=='\'')
-					vp->nextchr++;
-			}
-			else
-				d = (*vp->convert)(&vp->nextchr, &lvalue, LOOKUP, 0);
-			if (vp->nextchr == pos)
-			{
-				if(vp->errmsg.value = lvalue.value)
-					vp->errstr = pos;
-				ERROR(vp,op==A_LIT?e_charconst:e_synbad);
-			}
-			if(op==A_DIG || op==A_LIT)
-			{
-				sfputc(sh.stk,A_PUSHN);
-				if(vp->staksize++>=vp->stakmaxsize)
-					vp->stakmaxsize = vp->staksize;
-				stkpush(sh.stk,vp,d,Sfdouble_t);
-				sfputc(sh.stk,lvalue.isfloat);
-			}
-			/* check for function call */
-			if(lvalue.fun)
-				continue;
-			break;
+			goto number;
 		}
+	after:
 		invalid = 0;
 		if(assignop.value)
 		{
@@ -895,7 +901,7 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 	cur.errmsg.value = 0;
 	cur.errmsg.emode = emode;
 	stkseek(sh.stk,sizeof(Arith_t));
-	if(!expr(&cur,0) && cur.errmsg.value)
+	if(unlikely(!expr(&cur,0) && cur.errmsg.value))
 	{
 		if(cur.errstr)
 			string = cur.errstr;
@@ -917,7 +923,7 @@ Arith_t *arith_compile(const char *string,char **last,Sfdouble_t(*fun)(const cha
 	ep->emode = emode;
 	ep->size = offset - sizeof(Arith_t);
 	ep->staksize = cur.stakmaxsize+1;
-	if(last)
+	if(likely(last))
 		*last = (char*)(cur.nextchr);
 	return ep;
 }

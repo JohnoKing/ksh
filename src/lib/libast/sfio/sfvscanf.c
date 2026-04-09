@@ -315,7 +315,7 @@ int sfvscanf(Sfio_t*		f,		/* file to be scanned */
 
 	SFCVINIT();	/* initialize conversion tables */
 
-	if(!f || !form || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
+	if(unlikely(!f || !form || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)))
 		return -1;
 	SFLOCK(f,0);
 
@@ -682,7 +682,7 @@ loop_fmt:
 				fmstk->ft = ft = argv.ft;
 			}
 			else			/* stack a new environment */
-			{	if(!(fm = (Fmt_t*)malloc(sizeof(Fmt_t))) )
+			{	if(unlikely(!(fm = (Fmt_t*)malloc(sizeof(Fmt_t)))) )
 					goto done;
 
 				ft = fm->ft = argv.ft;

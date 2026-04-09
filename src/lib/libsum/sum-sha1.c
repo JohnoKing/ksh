@@ -147,14 +147,14 @@ do_R4(uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d,
 /*
  * Hash a single 512-bit block. This is the core of the algorithm.
  */
-static void
+static vecdisp void
 sha1_transform(uint32_t state[5], const unsigned char buffer[64]) {
 	uint32_t a, b, c, d, e;
 	CHAR64LONG16 *block;
 	CHAR64LONG16 workspace;
 
 	block = &workspace;
-	(void)memcpy(block, buffer, 64);
+	memcpy(block, buffer, 64);
 
 	/* Copy sha->state[] to working vars */
 	a = state[0];
@@ -216,7 +216,7 @@ sha1_block(Sum_t* p, const void* s, size_t len)
 			sha->count[1] += (len >> 29) + 1;
 		j = (j >> 3) & 63;
 		if ((j + len) > 63) {
-			(void)memcpy(&sha->buffer[j], data, (i = 64 - j));
+			memcpy(&sha->buffer[j], data, (i = 64 - j));
 			sha1_transform(sha->state, sha->buffer);
 			for ( ; i + 63 < len; i += 64)
 				sha1_transform(sha->state, &data[i]);
@@ -225,12 +225,12 @@ sha1_block(Sum_t* p, const void* s, size_t len)
 			i = 0;
 		}
 
-		(void)memcpy(&sha->buffer[j], &data[i], len - i);
+		memcpy(&sha->buffer[j], &data[i], len - i);
 	}
 	return 0;
 }
 
-static int
+static vecdisp int
 sha1_init(Sum_t* p)
 {
 	Sha1_t*	sha = (Sha1_t*)p;
@@ -250,7 +250,7 @@ sha1_open(const Method_t* method, const char* name)
 {
 	Sha1_t*	sha;
 
-	if (sha = newof(0, Sha1_t, 1, 0))
+	if (likely(sha = newof(0, Sha1_t, 1, 0)))
 	{
 		sha->method = (Method_t*)method;
 		sha->name = name;
@@ -266,7 +266,7 @@ sha1_open(const Method_t* method, const char* name)
 static const unsigned char final_200 = 128;
 static const unsigned char final_0 = 0;
 
-static int
+static vecdisp int
 sha1_done(Sum_t* p)
 {
 	Sha1_t*	sha = (Sha1_t*)p;

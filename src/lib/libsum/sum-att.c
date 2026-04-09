@@ -50,7 +50,7 @@
 #endif
 
 /* Inmos transputer would love this algorithm */
-static int
+static vecdisp int
 att_block(Sum_t* p, const void* s, size_t n)
 {
 	uint32_t	c = ((Integral_t*)p)->sum;

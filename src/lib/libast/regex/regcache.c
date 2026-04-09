@@ -94,7 +94,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 		j = 0;
 		if (reflags > matchstate.size)
 		{
-			if (matchstate.cache = newof(matchstate.cache, Cache_t*, reflags, 0))
+			if (likely(matchstate.cache = newof(matchstate.cache, Cache_t*, reflags, 0)))
 				matchstate.size = reflags;
 			else
 			{
@@ -108,7 +108,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 	}
 	if (!matchstate.cache)
 	{
-		if (!(matchstate.cache = newof(0, Cache_t*, CACHE, 0)))
+		if (unlikely(!(matchstate.cache = newof(0, Cache_t*, CACHE, 0))))
 			return NULL;
 		matchstate.size = CACHE;
 	}
@@ -153,7 +153,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 			else
 				unused = empty;
 		}
-		if (!(cp = matchstate.cache[unused]) && !(cp = matchstate.cache[unused] = newof(0, Cache_t, 1, 0)))
+		if (!(cp = matchstate.cache[unused]) && unlikely(!(cp = matchstate.cache[unused] = newof(0, Cache_t, 1, 0))))
 		{
 			if (status)
 				*status = REG_ESPACE;
@@ -167,7 +167,7 @@ regcache(const char* pattern, regflags_t reflags, int* status)
 		if ((i = (ssize_t)strlen(pattern) + 1) > (ssize_t)cp->size)
 		{
 			cp->size = (size_t)roundof(i, ROUND);
-			if (!(cp->pattern = newof(cp->pattern, char, cp->size, 0)))
+			if (unlikely(!(cp->pattern = newof(cp->pattern, char, cp->size, 0))))
 			{
 				if (status)
 					*status = REG_ESPACE;

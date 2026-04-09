@@ -122,7 +122,7 @@ int _sfsetpool(Sfio_t* f)
 		}
 		else	/* allocate a larger array */
 		{	n = (p->sf != p->array ? p->s_sf : (p->s_sf/4 + 1)*4) + 4;
-			if(!(array = (Sfio_t**)malloc((size_t)n*sizeof(Sfio_t*))) )
+			if(unlikely(!(array = (Sfio_t**)malloc((size_t)n*sizeof(Sfio_t*)))) )
 				goto done;
 
 			/* move old array to new one */
@@ -153,7 +153,7 @@ Sfrsrv_t* _sfrsrv(Sfio_t* f, ssize_t size)
 	/* make buffer if nothing yet */
 	size = ((size + SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
 	if(!(rsrv = f->rsrv) || size > rsrv->size)
-	{	if(!(rs = (Sfrsrv_t*)malloc((size_t)size+sizeof(Sfrsrv_t))))
+	{	if(unlikely(!(rs = (Sfrsrv_t*)malloc((size_t)size+sizeof(Sfrsrv_t)))))
 			size = -1;
 		else
 		{	if(rsrv)
@@ -180,7 +180,7 @@ int _sfpopen(Sfio_t* f, int fd, int pid, int stdio)	/* stdio popen() does not re
 	if(f->proc)
 		return 0;
 
-	if(!(p = f->proc = (Sfproc_t*)malloc(sizeof(Sfproc_t))) )
+	if(unlikely(!(p = f->proc = (Sfproc_t*)malloc(sizeof(Sfproc_t)))) )
 		return -1;
 
 	p->pid = pid;
@@ -206,7 +206,7 @@ int _sfpclose(Sfio_t* f)
 	Sfproc_t*	p;
 	int		status;
 
-	if(!(p = f->proc))
+	if(unlikely(!(p = f->proc)))
 		return -1;
 	f->proc = NULL;
 
@@ -223,7 +223,7 @@ int _sfpclose(Sfio_t* f)
 		/* wait for process termination */
 		sigcritical(SIG_REG_EXEC|SIG_REG_PROC);
 		status = -1;
-		while (waitpid(p->pid,&status,0) == -1 && errno == EINTR)
+		while (waitpid(p->pid,&status,0) == -1 && unlikely(errno == EINTR))
 			;
 		status = status == -1 ?
 			 EXIT_QUIT :
@@ -247,7 +247,7 @@ static int _sfpmode(Sfio_t* f, int type)
 {
 	Sfproc_t*	p;
 
-	if(!(p = f->proc) )
+	if(unlikely(!(p = f->proc)))
 		return -1;
 
 	if(type == SFIO_WRITE)
@@ -256,7 +256,7 @@ static int _sfpmode(Sfio_t* f, int type)
 		if(p->ndata > p->size)
 		{	if(p->rdata)
 				free(p->rdata);
-			if((p->rdata = (uchar*)malloc((size_t)p->ndata)) )
+			if(likely(p->rdata = (uchar*)malloc((size_t)p->ndata)) )
 				p->size = p->ndata;
 			else
 			{	p->size = 0;

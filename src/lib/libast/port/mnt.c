@@ -254,29 +254,30 @@ void*
 mntopen(const char* path, const char* mode)
 {
 	Handle_t*	mp;
-	int		n;
+	int		m;
+	size_t		n;
 
 	FIXARGS(path, mode, 0);
 #if _lib_getfsstat
-	if ((n = getfsstat(NULL, 0, MNT_WAIT)) <= 0)
+	if ((m = getfsstat(NULL, 0, MNT_WAIT)) <= 0)
 		return NULL;
 	n = (n - 1) * (int)sizeof(struct statfs);
 #else
 	n = 0;
 #endif
-	if (!(mp = newof(0, Handle_t, 1, (size_t)n)))
+	if (unlikely(!(mp = newof(0, Handle_t, 1, (size_t)n))))
 		return NULL;
 #if _lib_getfsstat
 	n = getfsstat(mp->next = mp->buf, (size_t)n + sizeof(struct statfs), MNT_WAIT);
 #else
-	n = getmntinfo(&mp->next, 0);
+	m = getmntinfo(&mp->next, 0);
 #endif
-	if (n <= 0)
+	if (m <= 0)
 	{
-		free(mp);
+		free_sized(mp, sizeof(Handle_t) * 1 + (size_t)n);
 		return NULL;
 	}
-	mp->last = mp->next + n;
+	mp->last = mp->next + m;
 	return mp;
 }
 
@@ -346,11 +347,11 @@ mntopen(const char* path, const char* mode)
 	Handle_t*	mp;
 
 	FIXARGS(path, mode, 0);
-	if (!(mp = newof(0, Handle_t, 1, SIZE)))
+	if (unlikely(!(mp = newof(0, Handle_t, 1, SIZE))))
 		return NULL;
 	if ((mp->count = mntctl(MCTL_QUERY, sizeof(Handle_t) + SIZE, &mp->info)) <= 0)
 	{
-		free(mp);
+		free_sized(mp, sizeof(Handle_t) * 1 + SIZE);
 		return NULL;
 	}
 	mp->next = mp->info;
@@ -517,11 +518,11 @@ mntopen(const char* path, const char* mode)
 	Handle_t*	mp;
 
 	FIXARGS(path, mode, MOUNTED);
-	if (!(mp = newof(0, Handle_t, 1, 0)))
+	if (unlikely(!(mp = newof(0, Handle_t, 1, 0))))
 		return NULL;
 	if (!(mp->fp = setmntent(path, mode)))
 	{
-		free(mp);
+		free_sized(mp, sizeof(Handle_t));
 		return NULL;
 	}
 	return mp;
@@ -631,7 +632,7 @@ mntopen(const char* path, const char* mode)
 	Handle_t*	mp;
 
 	FIXARGS(path, mode, MOUNTED);
-	if (!(mp = newof(0, Handle_t, 1, 0)))
+	if (unlikely(!(mp = newof(0, Handle_t, 1, 0))))
 		return NULL;
 #if _lib_w_getmntent
 	if ((mp->count = w_getmntent(mp->buf, sizeof(mp->buf))) > 0)
@@ -642,7 +643,7 @@ mntopen(const char* path, const char* mode)
 	if (!(mp->fp = sfopen(NULL, path, mode)))
 #endif
 	{
-		free(mp);
+		free_sized(mp, sizeof(Handle_t));
 		return NULL;
 	}
 	return mp;

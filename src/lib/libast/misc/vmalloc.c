@@ -40,7 +40,7 @@ typedef struct Vmblock
 /*
  * Helper function for failure handling.
  */
-static void *fail(Vmalloc_t *vm, size_t size)
+static cold void *fail(Vmalloc_t *vm, size_t size)
 {
 	if (vm->outofmemory)
 		(*vm->outofmemory)(size); /* may abort or longjmp */
@@ -50,7 +50,7 @@ static void *fail(Vmalloc_t *vm, size_t size)
 /*
  * Open a new region.
  */
-Vmalloc_t *vmopen(void)
+malloc_attr Vmalloc_t *vmopen(void)
 {
 	return calloc(1, sizeof(Vmalloc_t));
 }
@@ -58,7 +58,7 @@ Vmalloc_t *vmopen(void)
 /*
  * Allocate a block in a region.
  */
-void *vmalloc(Vmalloc_t *vm, size_t size)
+malloc_attr void *vmalloc(Vmalloc_t *vm, size_t size)
 {
 	Vmblock_t	*bp;
 
@@ -137,7 +137,7 @@ void *_Vm_newoldof_(Vmalloc_t *vm, void *ap, size_t size, int init)
 /*
  * Return a copy of s using vmalloc, or NULL on failure.
  */
-char *vmstrdup(Vmalloc_t *vm, const char *s)
+malloc_attr char *vmstrdup(Vmalloc_t *vm, const char *s)
 {
 	Vmblock_t	*bp;
 	size_t		size;

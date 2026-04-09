@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 		sh_onoption(SH_DICTIONARY);
 		sh_onoption(SH_NOEXEC);
 	}
-	if(nflag)
+	if(unlikely(nflag))
 		sh_onoption(SH_NOEXEC);
 	if(vflag)
 		sh_onoption(SH_VERBOSE);

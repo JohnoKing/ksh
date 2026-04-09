@@ -47,7 +47,7 @@ Sfoff_t sfseek(Sfio_t*	f,	/* seek to a new location in this stream */
 	Sfoff_t		r, s;
 	int		mode, local, hardseek, mustsync;
 
-	if(!f)
+	if(unlikely(!f))
 		return (Sfoff_t)(-1);
 
 	GETLOCAL(f,local);

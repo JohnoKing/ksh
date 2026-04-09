@@ -68,7 +68,7 @@ fdopen(int fd, const char* mode)
 {
 	unsigned short	flags;
 
-	if (fd < 0 || !(flags = _sftype(mode, NULL, NULL)))
+	if (unlikely(fd < 0 || !(flags = _sftype(mode, NULL, NULL))))
 		return NULL;
 	return sfnew(NULL, NULL, (size_t)SFIO_UNBOUND, fd, flags);
 }
@@ -314,7 +314,7 @@ sprintf(char* s, const char* fmt, ...)
 	int	v;
 
 	va_start(args, fmt);
-	v = s ? (int)sfvsprintf(s, SIZE_MAX, fmt, args) : -1;
+	v = likely(s) ? (int)sfvsprintf(s, SIZE_MAX, fmt, args) : -1;
 	va_end(args);
 	return v;
 }
@@ -350,10 +350,10 @@ vasprintf(char** s, const char* fmt, va_list args)
 	Sfio_t*	f;
 	int	v;
 
-	if (f = sfstropen())
+	if (likely(f = sfstropen()))
 	{
 		v = (int)sfvprintf(f, fmt, args);
-		if (!(*s = strdup(sfstruse(f))))
+		if (unlikely(!(*s = strdup(sfstruse(f)))))
 			v = -1;
 		sfstrclose(f);
 	}
@@ -396,11 +396,11 @@ vsnprintf(char* s, size_t n, const char* form, va_list args)
 	int rv;
 
 	/* make a temp stream */
-	if(!(f = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND,
-			-1,SFIO_WRITE|SFIO_STRING)) )
+	if(unlikely(!(f = sfnew(NULL,NULL,(size_t)SFIO_UNBOUND,
+			-1,SFIO_WRITE|SFIO_STRING))) )
 		return -1;
 
-	if((rv = (int)sfvprintf(f,form,args)) >= 0 )
+	if(likely((rv = (int)sfvprintf(f,form,args)) >= 0) )
 	{	if(s && n > 0)
 		{	if((rv+1) >= (int)n)
 				n--;

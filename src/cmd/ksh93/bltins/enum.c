@@ -111,7 +111,7 @@ struct Enum
 /*
  * For range checking in arith.c
  */
-ssize_t b_enum_nelem(Namfun_t *fp)
+NONNULL(1) ssize_t b_enum_nelem(Namfun_t *fp)
 {
 	return ((struct Enum *)fp)->nelem;
 }
@@ -296,8 +296,8 @@ int b_enum(int argc, char** argv, Shbltin_t *context)
 		ep->hdr.disc = &ENUM_disc;
 		ep->hdr.type = tp;
 		nv_onattr(tp, NV_RDONLY);
-		nv_disc(tp, &ep->hdr,NV_FIRST);
 		memset(&optdisc,0,sizeof(optdisc));
+		nv_disc(tp, &ep->hdr,NV_FIRST);
 		optdisc.opt.infof = enuminfo;
 		optdisc.np = tp;
 		nv_addtype(tp, enum_type, &optdisc.opt, sizeof(optdisc));

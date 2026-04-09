@@ -146,7 +146,7 @@ void sh_delay(double t, int sflag)
 	 * (^Z), the forked ksh process freezes in the nanosleep(2) function in libsystem_c.dylib.
 	 * As a workaround, make it impossible to suspend sleep in that case, by ignoring SIGTSTP.
 	 */
-	if (sh_isstate(SH_INTERACTIVE))
+	if (unlikely(sh_isstate(SH_INTERACTIVE)))
 		signal(SIGTSTP,SIG_IGN);
 #endif
 	while(tvsleep(&ts, &tx) < 0)
@@ -158,7 +158,7 @@ void sh_delay(double t, int sflag)
 		ts = tx;
 	}
 #if __APPLE__ && __MACH__
-	if (sh_isstate(SH_INTERACTIVE) && !(sh.sigflag[SIGTSTP] & SH_SIGOFF))
+	if (unlikely(sh_isstate(SH_INTERACTIVE)) && !(sh.sigflag[SIGTSTP] & SH_SIGOFF))
 		signal(SIGTSTP,sh_fault);
 #endif
 }

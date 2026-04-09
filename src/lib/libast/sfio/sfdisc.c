@@ -60,7 +60,7 @@ static ssize_t _dccaread(Sfio_t* f, void* buf, size_t size, Sfdisc_t* disc)
 	Sfdisc_t	*prev;
 	Dccache_t	*dcca;
 
-	if(!f) /* bad stream */
+	if(unlikely(!f)) /* bad stream */
 		return -1;
 
 	/* make sure that this is on the discipline stack */
@@ -147,7 +147,8 @@ Sfdisc_t* sfdisc(Sfio_t* f, Sfdisc_t* disc)
 
 		/* trick the new discipline into processing already buffered data */
 		if((f->mode&SFIO_READ) && n > 0 && disc && disc->readf )
-		{	if(!(dcca = (Dccache_t*)malloc(sizeof(Dccache_t)+(size_t)n)) )
+		{	void *data;
+			if(unlikely(!(dcca = (Dccache_t*)malloc(sizeof(Dccache_t)+(size_t)n))) )
 				goto done;
 			memclear(dcca, sizeof(Dccache_t));
 
@@ -157,8 +158,9 @@ Sfdisc_t* sfdisc(Sfio_t* f, Sfdisc_t* disc)
 			/* move buffered data into the temp discipline */
 			dcca->data = ((uchar*)dcca) + sizeof(Dccache_t);
 			dcca->endb = dcca->data + n;
-			memcpy(dcca->data, f->next, (size_t)n);
+			data = f->next;
 			f->endb = f->next = f->endr = f->endw = f->data;
+			memcpy(dcca->data, data, (size_t)n);
 		}
 	}
 

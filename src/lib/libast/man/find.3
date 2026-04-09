@@ -43,8 +43,7 @@ find \- fastfind algorithm interface
 .EX
 #include <find.h>
 
-void* findopen(const char* \fIpattern\fP);
-char* findnext(void* \fIhandle\fP);
+void* findopen(const char* \fIfile\fP, const char* \fIpattern\fP, const char* \fItype\fP, Finddisc_t* \fIdisc\fP) NONNULL(4);
 void findclose(void* \fIhandle\fP);
 .EE
 .SH DESCRIPTION
@@ -64,14 +63,6 @@ stream for the
 .I ksh
 file pattern
 .IR pattern .
-.L findnext
-returns the next pathname that matches the pattern specified by
-.IR handle .
-.L findnext
-returns
-.L 0
-when no more pathnames match the pattern.
-Finally,
 .L findclose
 closes the
 .I fastfind

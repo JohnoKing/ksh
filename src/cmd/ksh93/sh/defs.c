@@ -26,7 +26,7 @@
 #include	"jobs.h"
 #include	"shlex.h"
 
-Shell_t			sh = {0};
+Shell_t			sh = { .pwdfd = -1 };
 
 Dtdisc_t	_Nvdisc =
 {

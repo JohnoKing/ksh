@@ -55,7 +55,7 @@ Wc_t* wc_init(int mode)
 	int	w;
 	Wc_t*	wp;
 
-	if (!(wp = stkalloc(stkstd,sizeof(Wc_t))))
+	if (unlikely(!(wp = stkalloc(stkstd,sizeof(Wc_t)))))
 		return NULL;
 	if (!mbwide())
 		wp->mb = 0;

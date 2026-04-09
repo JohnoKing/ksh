@@ -122,7 +122,7 @@ md4_open(const Method_t* method, const char* name)
 {
 	Md4_t*	lmd;
 
-	if (lmd = newof(0, Md4_t, 1, 0))
+	if (likely(lmd = newof(0, Md4_t, 1, 0)))
 	{
 		lmd->method = (Method_t*)method;
 		lmd->name = name;
@@ -162,7 +162,7 @@ md5_open(const Method_t* method, const char* name)
 {
 	Md5_t*	lmd;
 
-	if (lmd = newof(0, Md5_t, 1, 0))
+	if (likely(lmd = newof(0, Md5_t, 1, 0)))
 	{
 		lmd->method = (Method_t*)method;
 		lmd->name = name;
@@ -203,7 +203,7 @@ sha1_open(const Method_t* method, const char* name)
 {
 	Sha1_t*	lmd;
 
-	if (lmd = newof(0, Sha1_t, 1, 0))
+	if (likely(lmd = newof(0, Sha1_t, 1, 0)))
 	{
 		lmd->method = (Method_t*)method;
 		lmd->name = name;
@@ -243,7 +243,7 @@ sha256_open(const Method_t* method, const char* name)
 {
 	Sha256_t*	lmd;
 
-	if (lmd = newof(0, Sha256_t, 1, 0))
+	if (likely(lmd = newof(0, Sha256_t, 1, 0)))
 	{
 		lmd->method = (Method_t*)method;
 		lmd->name = name;
@@ -277,7 +277,7 @@ sha384_open(const Method_t* method, const char* name)
 {
 	Sha384_t*	lmd;
 
-	if (lmd = newof(0, Sha384_t, 1, 0))
+	if (likely(lmd = newof(0, Sha384_t, 1, 0)))
 	{
 		lmd->method = (Method_t*)method;
 		lmd->name = name;
@@ -311,7 +311,7 @@ sha512_open(const Method_t* method, const char* name)
 {
 	Sha512_t*	lmd;
 
-	if (lmd = newof(0, Sha512_t, 1, 0))
+	if (likely(lmd = newof(0, Sha512_t, 1, 0)))
 	{
 		lmd->method = (Method_t*)method;
 		lmd->name = name;

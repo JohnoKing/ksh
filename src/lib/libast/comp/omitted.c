@@ -394,7 +394,7 @@ getuid(void)
 		for (e = environ; s = *e; e++)
 			if ((n = convert(d, s)) && (m = cygwin_win32_to_posix_path_list_buf_size(s + n)) > 0)
 			{
-				if (!(t = malloc(n + m + 1)))
+				if (unlikely(!(t = malloc(n + m + 1))))
 					break;
 				*e = t;
 				memcpy(t, s, n);
@@ -486,7 +486,7 @@ runve(int mode, const char* path, char* const* argv, char* const* envv)
 		ux = 1;
 		p = (char**)argv;
 		while (*p++);
-		if (!(v = (char**)malloc((p - (char**)argv + 2) * sizeof(char*))))
+		if (unlikely(!(v = (char**)malloc((p - (char**)argv + 2) * sizeof(char*)))))
 		{
 			errno = EAGAIN;
 			return -1;
@@ -546,7 +546,7 @@ runve(int mode, const char* path, char* const* argv, char* const* envv)
 		{
 			n = p - (char**)envv + 1;
 			p = (char**)envv;
-			if (v = (char**)malloc(n * sizeof(char*)))
+			if (likely(v = (char**)malloc(n * sizeof(char*))))
 			{
 				m2 = v;
 				envv = (char* const*)v;
@@ -559,7 +559,7 @@ runve(int mode, const char* path, char* const* argv, char* const* envv)
 			for (p = (char**)envv; s = *p; p++)
 				if ((n = convert(d, s)) && (m = cygwin_posix_to_win32_path_list_buf_size(s + n)) > 0)
 				{
-					if (!(t = malloc(n + m + 1)))
+					if (unlikely(!(t = malloc(n + m + 1))))
 						break;
 					*p = t;
 					memcpy(t, s, n);
@@ -748,7 +748,7 @@ open(const char* path, int flags, ...)
 	if (fd >= 0 && fd < elementsof(exe) && strlen(path) < PATH_MAX &&
 	    (flags & (O_CREAT|O_TRUNC)) == (O_CREAT|O_TRUNC) && (mode & 0111))
 	{
-		if (!suffix(path) && !fstat(fd, &st) && (exe[fd] || (exe[fd] = (Exe_test_t*)malloc(sizeof(Exe_test_t)))))
+		if (!suffix(path) && !fstat(fd, &st) && (exe[fd] || likely(exe[fd] = (Exe_test_t*)malloc(sizeof(Exe_test_t)))))
 		{
 			exe[fd]->test = -1;
 			exe[fd]->ino = st.st_ino;

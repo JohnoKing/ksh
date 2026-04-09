@@ -39,7 +39,7 @@ re_comp(const char* pattern)
 {
 	int	r;
 
-	if (!pattern || !*pattern)
+	if (unlikely(!pattern || !*pattern))
 	{
 		if (state.valid)
 			return NULL;

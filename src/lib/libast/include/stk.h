@@ -47,15 +47,15 @@
 
 extern Sfio_t		_Stk_data;
 
-extern Stk_t*		stkopen(int);
+extern Stk_t*		stkopen(int) malloc_attr;
 extern Stk_t*		stkinstall(Stk_t*, char*(*)(size_t));	/* deprecated */
 extern void		stkoverflow(Stk_t*, void*(*)(size_t));
 extern int		stkclose(Stk_t*);
 extern unsigned int	stklink(Stk_t*);
-extern void*		stkalloc(Stk_t*, size_t);
+extern void*		stkalloc(Stk_t*, size_t) hot;
 extern char*		stkcopy(Stk_t*, const char*);
 extern void*		stkset(Stk_t*, void*, ptrdiff_t);
-extern void*		_stkseek(Stk_t*, ptrdiff_t);
-extern void*		stkfreeze(Stk_t*, size_t);
+extern void*		_stkseek(Stk_t*, ptrdiff_t) hot;
+extern void*		stkfreeze(Stk_t*, size_t) hot;
 
 #endif

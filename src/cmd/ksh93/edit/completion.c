@@ -244,7 +244,7 @@ static char *find_begin(char outbuff[], char *last, int endchar, int *type)
  * mode is '=' cause files to be listed in select format
  */
 
-int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
+cold int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 {
 	struct comnod	*comptr;
 	struct argnod	*ap;
@@ -587,7 +587,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
  * look for edit macro named _i
  * if found, puts the macro definition into lookahead buffer and returns 1
  */
-int ed_macro(Edit_t *ep, int i)
+cold int ed_macro(Edit_t *ep, int i)
 {
 	char *out;
 	Namval_t *np;
@@ -631,7 +631,7 @@ int ed_macro(Edit_t *ep, int i)
 /*
  * Enter the fc command on the current history line
  */
-int ed_fulledit(Edit_t *ep)
+cold int ed_fulledit(Edit_t *ep)
 {
 	char *cp;
 	if(!sh.hist_ptr)

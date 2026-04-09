@@ -33,7 +33,7 @@ void* sfreserve(Sfio_t*	f,	/* file to peek */
 	void*		data;
 	int		mode, local;
 
-	if(!f)
+	if(unlikely(!f))
 		return NULL;
 
 	sz = size < 0 ? -size : size;

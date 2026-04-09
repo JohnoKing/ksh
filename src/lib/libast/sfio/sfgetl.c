@@ -30,7 +30,7 @@ Sflong_t sfgetl(Sfio_t* f)
 	uchar		*s, *ends, c;
 	ptrdiff_t	p;
 
-	if(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
+	if(unlikely(!f || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)))
 		return (Sflong_t)(-1);
 	SFLOCK(f,0);
 

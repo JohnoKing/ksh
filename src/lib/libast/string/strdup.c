@@ -35,11 +35,11 @@ _ast_strdup(const char* s)
 	char*	t;
 	size_t	n;
 
-	if (s)
+	if (likely(s))
 	{
 		n = strlen(s) + 1;
 		t = malloc(n);
-		if (t)
+		if (likely(t))
 			return memcpy(t, s, n);
 	}
 	return NULL;

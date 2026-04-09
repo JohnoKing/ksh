@@ -100,8 +100,8 @@ static noreturn void	mac_error(void);
 static ssize_t substring(const char*, size_t, const char*, ssize_t[], regflags_t);
 static void	copyto(Mac_t*, int, char);
 static void	comsubst(Mac_t*, Shnode_t*, char);
-static int	varsub(Mac_t*);
-static void	mac_copy(Mac_t*,const char*, ptrdiff_t);
+static int	varsub(Mac_t*) NONNULL(1);
+static void	mac_copy(Mac_t*,const char*, ptrdiff_t) NONNULL(1,2);
 static void	tilde_expand2(ptrdiff_t);
 static char 	*sh_tilde(const char*);
 static char	*special(int);
@@ -131,10 +131,11 @@ char *sh_mactry(char *string)
 		int		jmp_val;
 		int		savexit = sh.savexit;
 		struct checkpt	buff;
-		Lex_t		*lexp = (Lex_t*)sh.lex_context, savelex = *lexp;
+		Lex_t		*lexp = (Lex_t*)sh.lex_context, savelex;
 		sh_pushcontext(&buff,SH_JMPSUB);
+		memcpy(&savelex,lexp,sizeof(Lex_t));
 		jmp_val = sigsetjmp(buff.buff,0);
-		if(jmp_val == 0)
+		if(likely(jmp_val == 0))
 			string = sh_mactrim(string,0);
 		sh_popcontext(&buff);
 		*lexp = savelex;
@@ -224,7 +225,7 @@ int sh_macexpand(struct argnod *argp, struct argnod **arghead,int flag)
 	mp->arith = ((flag&ARG_ARITH)!=0);
 	mp->split = !(flag&ARG_ASSIGN);
 	mp->assign = !mp->split;
-	mp->pattern = mp->split && !(flag&ARG_NOGLOB) && (!sh_isoption(SH_NOGLOB) || sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE));
+	mp->pattern = mp->split && !(flag&ARG_NOGLOB) && (!sh_isoption(SH_NOGLOB) || unlikely(sh_isstate(SH_COMPLETE) || sh_isstate(SH_FCOMPLETE)));
 	mp->arrayok = mp->arith || (flag&ARG_ARRAYOK);
 	str = argp->argval;
 	fcsopen(str);
@@ -275,8 +276,9 @@ void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
 	Mac_t		*mp = (Mac_t*)sh.mac_context;
 	Lex_t		*lp = (Lex_t*)sh.lex_context;
 	Fcin_t		save;
-	Mac_t		savemac = *mp;
+	Mac_t		savemac;
 	Stk_t		*stkp = sh.stk;
+	memcpy(&savemac,mp,sizeof(Mac_t));
 	stkseek(stkp,0);
 	nv_setoptimize(NULL);
 	mp->sp = outfile;
@@ -1031,7 +1033,7 @@ static char *getdolarg(ptrdiff_t n, ptrdiff_t *size)
 /*
  * get the prefix after name reference resolution
  */
-static char *prefix(char *id)
+static malloc_attr NONNULL(1) returns_nonnull char *prefix(char *id)
 {
 	Namval_t *np;
 	char *sub=0, *cp = strchr(id,'.');
@@ -1158,7 +1160,7 @@ static char *nextname(Mac_t *mp,const char *prefix, ptrdiff_t len)
  * This routine handles $param, ${param}, and ${param op word}
  * The input stream is assumed to be a string
  */
-static int varsub(Mac_t *mp)
+static NONNULL(1) int varsub(Mac_t *mp)
 {
 	ptrdiff_t	c, mode=0;
 	int		type=0; /* M_xxx */
@@ -1500,7 +1502,7 @@ retry1:
 		/*
 		 * Check if the parameter is set or unset.
 		 */
-		if(np && type==M_BRACE && nv_getoptimize())
+		if(np && type==M_BRACE && unlikely(nv_getoptimize()))
 			nv_optimize(np);  /* needed before calling nv_isnull() */
 		if(np && (type==M_BRACE ? !nv_isnull(np) : (type==M_TREE || !c || !ap)))
 		{
@@ -1577,7 +1579,7 @@ retry1:
 		if(ap)
 		{
 			ap = nv_arrayptr(np_orig); /* update */
-			if(nv_getoptimize())
+			if(unlikely(nv_getoptimize()))
 				nv_optimize(np);
 			if(isastchar(mode) && array_elem(ap)> !c)
 				dolg = -1;
@@ -1853,7 +1855,7 @@ retry1:
 					char *vp = v;
 					while(slicelength-- > 0)
 					{
-						if((c=mbsize(vp))<1)
+						if(unlikely((c=mbsize(vp))<1))
 							c = 1;
 						vp += c;
 					}
@@ -1964,7 +1966,7 @@ retry2:
 							ptrdiff_t sz;
 							nmatch = 0;
 							/* copy, and advance v by, one character */
-							if ((sz = mbsize(v)) < 1)
+							if (unlikely((sz = mbsize(v)) < 1))
 								sz = 1;
 							mac_copy(mp, v, sz);
 							v += sz;
@@ -1997,7 +1999,7 @@ retry2:
 					{
 						int	sz;
 						/* copy, and advance v by, one character */
-						if ((sz = mbsize(v)) < 1)
+						if (unlikely((sz = mbsize(v)) < 1))
 							sz = 1;
 						mac_copy(mp, v, sz);
 						v += sz;
@@ -2035,11 +2037,12 @@ retry2:
 					else /* no multibyte */
 					{
 						char	*cp, *cq, *buf;
-						buf = sh_malloc((size_t)(match[1] - match[0]));
+						size_t	buf_size = (size_t)(match[1] - match[0]);
+						buf = sh_malloc(buf_size);
 						for (cp = v + match[0], cq = buf; cp < v + match[1]; cp++, cq++)
 							*cq = (char)(c == '^' ? toupper(*cp) : tolower(*cp));
 						mac_copy(mp, buf, (ptrdiff_t)(match[1] - match[0]));
-						free(buf);
+						free_sized(buf,buf_size);
 					}
 					v += match[1];
 					vsize -= match[1];
@@ -2148,7 +2151,7 @@ retry2:
 						if(!ofs_size)		/* only calculate this once per expansion */
 						{
 							ofs_size = mbsize(mp->ifsp);
-							if(ofs_size<0)	/* invalid mb char: fall back to using first byte */
+							if(unlikely(ofs_size<0))	/* invalid mb char: fall back to using first byte */
 								ofs_size = 1;
 						}
 						sfwrite(sfio_ptr, mp->ifsp, (size_t)ofs_size);
@@ -2245,7 +2248,6 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 	Stk_t			*stkp = sh.stk;
 	Fcin_t			save;
 	struct slnod            *saveslp = sh.st.staklist;
-	Mac_t			savemac = *mp;
 	ptrdiff_t		savtop = stktell(stkp);
 	char			lastc = '\0';
 	void			*savptr = stkfreeze(stkp,0);
@@ -2256,9 +2258,11 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 	ssize_t			bufsize;
 	Sfoff_t			foff;
 	Namval_t		*np;
-	savemac.wasexpan = 1;
+	Mac_t			savemac;
+	memcpy(&savemac,mp,sizeof(Mac_t));
 	nv_setoptimize(NULL);
 	sh.st.staklist=0;
+	savemac.wasexpan = 1;
 	if(type)
 	{
 		sp = 0;
@@ -2334,7 +2338,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 			sh_pushcontext(&buff,SH_JMPIO);
 			if((ip=t->tre.treio) &&
 				((ip->iofile&IOLSEEK) || !(ip->iofile&IOUFD)) &&
-				(r=sigsetjmp(buff.buff,0))==0)
+				likely((r=sigsetjmp(buff.buff,0))==0))
 				fd = sh_redirect(ip,3);
 			else
 				fd = sh_chkopen(e_devnull);
@@ -2365,7 +2369,7 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 		sp = sfopen(NULL,"","sr");
 	sh_freeup();
 	sh.st.staklist = saveslp;
-	if(was_history)
+	if(unlikely(was_history))
 		sh_onstate(SH_HISTORY);
 	if(was_verbose)
 		sh_onstate(SH_VERBOSE);
@@ -2440,14 +2444,14 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 			str[c] = 0;
 		else
 		{
-			/* can't write past buffer so save last character */
+			/* can't write past buffer so save last byte */
 			c -= 1;
 			lastc = str[c];
 			str[c] = 0;
 		}
 		mac_copy(mp,str,(ptrdiff_t)c);
 	}
-	if(was_interactive)
+	if(unlikely(was_interactive))
 		sh_onstate(SH_INTERACTIVE);
 	if(--newlines>0 && sh.ifstable['\n']==S_DELIM)
 	{
@@ -2471,13 +2475,14 @@ static void comsubst(Mac_t *mp,Shnode_t* t, char type)
 /*
  * copy <str> onto the stack
  */
-static void mac_copy(Mac_t *mp,const char *str, ptrdiff_t size)
+static NONNULL(1,2) void mac_copy(Mac_t *mp,const char *str, ptrdiff_t size)
 {
 	const char	*cp=str;
 	ptrdiff_t	c;
 	int		n,nopat,len;
 	Stk_t		*stkp=sh.stk;
 	char		oldpat = mp->pattern;
+	const char	multibyte = mbwide() && size > 1;
 	nopat = (mp->quote||(mp->assign==1)||mp->arith);
 	if(mp->sp)
 		sfwrite(mp->sp,str,(size_t)size);
@@ -2488,7 +2493,7 @@ static void mac_copy(Mac_t *mp,const char *str, ptrdiff_t size)
 		/* insert \ before file expansion characters */
 		while(size-->0)
 		{
-			if(mbwide() && (len=mbsize(cp))>1)
+			if(multibyte && (len=mbsize(cp))>1)
 			{
 				cp += len;
 				size -= (len-1);
@@ -2565,7 +2570,7 @@ static void mac_copy(Mac_t *mp,const char *str, ptrdiff_t size)
 		while(size-->0)
 		{
 			n = ifs_state[c = *(unsigned char*)cp++];
-			if(mbwide() && n!=S_MBYTE && (len=mbsize(cp-1))>1)
+			if(multibyte && n!=S_MBYTE && (len=mbsize(cp-1))>1)
 			{
 				sfwrite(stkp,cp-1,(size_t)len);
 				cp += --len;
@@ -2586,7 +2591,7 @@ static void mac_copy(Mac_t *mp,const char *str, ptrdiff_t size)
 				mp->patfound = mp->pattern;
 			else if(n && mp->ifs)
 			{
-				if(mbwide() && n==S_MBYTE)
+				if(multibyte && n==S_MBYTE)
 				{
 					if(sh_strchr(mp->ifsp,cp-1)<0)
 					{
@@ -2610,7 +2615,7 @@ static void mac_copy(Mac_t *mp,const char *str, ptrdiff_t size)
 				{
 					while(size>0 && ((n = ifs_state[c = *(unsigned char*)cp++])==S_SPACE || n==S_NL))
 						size--;
-					if(mbwide() && n==S_MBYTE && sh_strchr(mp->ifsp,cp-1)>=0)
+					if(multibyte && n==S_MBYTE && sh_strchr(mp->ifsp,cp-1)>=0)
 					{
 						n = mbsize(cp-1) - 1;
 						if(n==-2)
@@ -2760,7 +2765,7 @@ static ssize_t substring(const char *string,size_t len,const char *pat,ssize_t m
 		ssize_t c;
 		while(*str)
 		{
-			if((c=mbsize(str))<0)
+			if(unlikely((c=mbsize(str))<0))
 				c = 1;
 			if(str+c > endstring)
 				break;
@@ -2946,7 +2951,7 @@ static char *special(int c)
 	    case '?':
 		return ltos(sh.savexit);
 	    case 0:
-		if(sh_isstate(SH_PROFILE) || sh.fn_depth==0 || !sh.st.cmdname)
+		if(unlikely(sh_isstate(SH_PROFILE)) || sh.fn_depth==0 || !sh.st.cmdname)
 			return sh.shname;
 		else
 			return sh.st.cmdname;

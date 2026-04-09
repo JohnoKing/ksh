@@ -176,12 +176,12 @@ extern Namval_t		*nv_addnode(Namval_t*, int);
 extern Namval_t		*nv_parent(Namval_t*);
 extern Namval_t		*nv_mount(Namval_t*, const char *name, Dt_t*);
 extern Namval_t		*nv_arraychild(Namval_t*, Namval_t*, int);
-extern int		nv_compare(Dt_t*, void*, void*, Dtdisc_t*);
+extern hot pure int	nv_compare(Dt_t*, void*, void*, Dtdisc_t*);
 extern void		nv_outnode(Namval_t*,Sfio_t*, int, int);
-extern int		nv_subsaved(Namval_t*, int);
+extern int		nv_subsaved(Namval_t*, int) NONNULL(1);
 extern void		nv_typename(Namval_t*, Sfio_t*);
 extern Namval_t		*nv_typeparent(Namval_t*);
-extern int		nv_istable(Namval_t*);
+extern int		nv_istable(Namval_t*) hot;
 extern size_t		nv_datasize(Namval_t*, size_t*);
 extern Namfun_t		*nv_mapchar(Namval_t*, const char*);
 #if SHOPT_FIXEDARRAY

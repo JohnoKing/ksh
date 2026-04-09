@@ -88,7 +88,7 @@ static inline int xaccess(const char *path, int mode)
 	if (!pgsz)
 		pgsz = astconf_ulong(CONF_PAGESIZE);
 
-	if (!path || !*path)
+	if (unlikely(!path || !*path))
 	{
 		errno = EFAULT;
 		goto err;
@@ -96,12 +96,12 @@ static inline int xaccess(const char *path, int mode)
 
 	do
 		ret = statvfs(path, &vfs);
-	while (ret < 0 && errno == EINTR);
+	while (unlikely(ret < 0 && errno == EINTR));
 
-	if (ret < 0)
+	if (unlikely(ret < 0))
 		goto err;
 
-	if (vfs.f_frsize*vfs.f_bavail < pgsz)
+	if (unlikely(vfs.f_frsize*vfs.f_bavail < pgsz))
 	{
 		errno = ENOSPC;
 		goto err;
@@ -226,7 +226,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 					s++;
 					n++;
 				}
-				if (!(tmp.vec = newof(0, char*, (size_t)n, strlen(x) + 1)))
+				if (unlikely(!(tmp.vec = newof(0, char*, (size_t)n, strlen(x) + 1))))
 					return NULL;
 				tmp.dir = tmp.vec;
 				x = strcpy((char*)(tmp.dir + n), x);
@@ -246,7 +246,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 			{
 				if (((d = tmp.tmpdir) || (d = getenv(TMP_ENV))) && !VALID(d))
 					d = 0;
-				if (!(tmp.vec = newof(0, char*, 2, d ? (strlen(d) + 1) : 0)))
+				if (unlikely(!(tmp.vec = newof(0, char*, 2, d ? (strlen(d) + 1) : 0))))
 					return NULL;
 				if (d)
 					*tmp.vec = strcpy((char*)(tmp.vec + 2), d);
@@ -258,13 +258,13 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 			tmp.dir = tmp.vec;
 			d = *tmp.dir++;
 		}
-		if (!d && (!*(d = astconf("TMP", NULL, NULL)) || xaccess(d, W_OK|X_OK)) && xaccess(d = TMP1, W_OK|X_OK) && xaccess(d = TMP2, W_OK|X_OK))
+		if (unlikely(!d && (!*(d = astconf("TMP", NULL, NULL)) || xaccess(d, W_OK|X_OK)) && xaccess(d = TMP1, W_OK|X_OK) && xaccess(d = TMP2, W_OK|X_OK)))
 			return NULL;
 	}
 	if (!len)
 		len = PATH_MAX;
 	len--;
-	if (!(b = buf) && !(b = newof(0, char, len, 1)))
+	if (!(b = buf) && unlikely(!(b = newof(0, char, len, 1))))
 		return NULL;
 	z = 0;
 	if (!pfx && !(pfx = tmp.pfx))
@@ -354,7 +354,7 @@ pathtemp(char* buf, size_t len, const char* dir, const char* pfx, int* fdp)
 		sfsprintf(s, len, "%-.*s%s%-.*s", l, keybuf, z ? "." : "", r, keybuf + sizeof(keybuf) / 2);
 		if (fdp)
 		{
-			if ((n = open(b, O_CREAT|O_RDWR|O_EXCL|O_TEMPORARY, tmp.mode)) >= 0)
+			if (likely((n = open(b, O_CREAT|O_RDWR|O_EXCL|O_TEMPORARY, tmp.mode)) >= 0))
 			{
 				*fdp = n;
 				return b;

@@ -42,7 +42,7 @@ int         dtclose(Dt_t* dt);
 void        dtclear(dt);
 Dtdisc_t*   dtdisc(Dt_t* dt, const Dtdisc_t* disc, int type);
 Dtmethod_t* dtmethod(Dt_t* dt, const Dtmethod_t* meth);
-Dt_t*       dtview(Dt_t* dt, Dt_t* view);
+Dt_t*       dtview(Dt_t *restrict dt, Dt_t *restrict view);
 int         dtcustomize(Dt_t* dt, int type, int action);
 int         dtuserlock(Dt_t* dt, unsigned int key, int action);
 void*       dtuserdata(Dt_t* dt, void* data, int set);
@@ -105,7 +105,7 @@ Dt_t*     dtvnext(Dt_t* dt);
 ssize_t   dtvcount(Dt_t* dt);
 Dt_t*     dtvhere(Dt_t* dt);
 ssize_t   dtsize(Dt_t* dt);
-ssize_t   dtstat(Dt_t* dt, Dtstat_t* st);
+ssize_t   dtstat(Dt_t* dt, Dtstat_t* st) cold;
 .Ce
 .Ss "HASH FUNCTION"
 .Cs
@@ -181,7 +181,7 @@ If \f3meth\fP is \f3NULL\fP, \f3dtmethod()\fP returns the current method.
 Otherwise, it changes the storage method of \f3dt\fP to \f3meth\fP.
 Objects may be rehashed, reordered, or removed as appropriate.
 \f3dtmethod()\fP returns the previous method or \f3NULL\fP on error.
-.Ss "  Dt_t* dtview(Dt_t* dt, Dt_t* view)"
+.Ss "  Dt_t* dtview(Dt_t *restrict dt, Dt_t *restrict view)"
 A viewpath allows a search or walk starting from a dictionary
 to continue to another.
 \f3dtview()\fP first terminates any current view from \f3dt\fP
@@ -682,7 +682,7 @@ This returns the dictionary \f3v\fP viewable from \f3dt\fP
 where an object was found from the most recent search or walk operation.
 .Ss "  ssize_t dtsize(Dt_t* dt)"
 This function returns the number of objects stored in \f3dt\fP.
-.Ss "  ssize_t dtstat(Dt_t *dt, Dtstat_t* st)"
+.Ss "  cold ssize_t dtstat(Dt_t *dt, Dtstat_t* st)"
 This function reports dictionary statistics.
 It returns the number of objects stored in \f3dt\fP.
 .PP

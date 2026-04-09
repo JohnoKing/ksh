@@ -76,7 +76,7 @@ long_open(const Method_t* method, const char* name)
 {
 	Integral_t*	p;
 
-	if (p = newof(0, Integral_t, 1, 0))
+	if (likely(p = newof(0, Integral_t, 1, 0)))
 	{
 		p->method = (Method_t*)method;
 		p->name = name;

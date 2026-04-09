@@ -6,7 +6,7 @@ note *
 setv MAMAKE_STRICT 5
 setv INSTALLROOT ../../..
 setv CC cc
-setv mam_cc_FLAGS %{mam_cc_TARGET} %{mam_cc_DLL} %{-debug-symbols?1?%{mam_cc_DEBUG} -D_BLD_DEBUG?%{mam_cc_OPTIMIZE}?} %{mam_cc_NOSTRICTALIASING} -DERROR_CATALOG=\""libcmd"\" -DHOSTTYPE=\""%{mam_cc_HOSTTYPE}"\" -D_BLD_cmd
+setv mam_cc_FLAGS %{mam_cc_TARGET} %{mam_cc_DLL} %{-debug-symbols?1?%{mam_cc_DEBUG} -D_BLD_DEBUG?%{mam_cc_OPTIMIZE}?} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} -DERROR_CATALOG=\""libcmd"\" -DHOSTTYPE=\""%{mam_cc_HOSTTYPE}"\" -D_BLD_cmd
 setv CCFLAGS
 setv IFFEFLAGS
 setv LDFLAGS
@@ -26,14 +26,14 @@ make install virtual
 	bind -lsum
 	make cmd.req
 		makp %{INSTALLROOT}/bin/mkreq
-		exec - mkreq %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} : %{LDFLAGS} : cmd fsg md ast
+		exec - mkreq %{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} : %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS} : cmd fsg md ast
 	done
 
 	note *
 	note * Header dependencies and feature tests
 	note *
 
-	setv run_iffe iffe %{IFFEFLAGS} -v -c "%{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{LDFLAGS}" ref -I%{INCLUDE_AST} -I%{INSTALLROOT}/include %{mam_libutil} %{mam_libast} : run
+	setv run_iffe iffe %{IFFEFLAGS} -v -c "%{CC} %{mam_cc_FLAGS} %{mam_cc_FPIE} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} %{mam_cc_LD_PIE} %{mam_cc_LD_RELRO} %{LDFLAGS}" ref -I%{INCLUDE_AST} -I%{INSTALLROOT}/include %{mam_libutil} %{mam_libast} : run
 
 	make c_sources virtual
 		make cmdinit.c
@@ -340,7 +340,7 @@ make install virtual
 				note * declared, so we declare the dependency on it here instead.
 				prev cmdext.h
 				prev %{OBJ}.c
-				exec - %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} -I. -I%{INCLUDE_AST} -DERROR_CATALOG=\""libcmd"\" -DHOSTTYPE=\""%{mam_cc_HOSTTYPE}"\" -D_BLD_cmd -c %{<}
+				exec - %{CC} %{mam_cc_FLAGS} %{CCFLAGS} %{mam_cc_NOSTRICTALIASING} %{mam_cc_NOFASTMATH} %{mam_cc_NOMATHERRNO} -I. -I%{INCLUDE_AST} -DERROR_CATALOG=\""libcmd"\" -DHOSTTYPE=\""%{mam_cc_HOSTTYPE}"\" -D_BLD_cmd -c %{<}
 			done
 		done
 		make sumlib.o
@@ -364,7 +364,7 @@ make install virtual
 	make %{INSTALLROOT}/dyn/lib/%{DYLIB_PRE}cmd%{DYLIB_SUF} dontcare
 		prev libcmd.a
 		prev cmd.req
-		exec - export LDFLAGS='%{LDFLAGS} %{CCLDFLAGS} %{mam_cc_LD_NOASNEEDED}'
+		exec - export LDFLAGS='%{mam_cc_LD_RELRO} %{LDFLAGS} %{CCLDFLAGS} %{mam_cc_LD_NOASNEEDED}'
 		exec - dylink -m cmd -v %{DYLIB_VERSION} -p '%{DYLIB_PRE}' -s '%{DYLIB_SUF}' $(sed 1d %{<}) %{_libcmd_object_files_}
 	done
 

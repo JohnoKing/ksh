@@ -38,7 +38,7 @@ int sfvsscanf(const char* s, const char* form, va_list args)
 {
 	Sfio_t	f;
 
-	if(!s || !form)
+	if(unlikely(!s || !form))
 		return -1;
 
 	/* make a fake stream */

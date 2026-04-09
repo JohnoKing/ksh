@@ -90,7 +90,7 @@ int	b_read(int argc,char *argv[], Shbltin_t *context)
 		q = rp->plen;
 		goto bypass;
 	}
-	while((ret = optget(argv,sh_optread))) switch(ret)
+	while((ret = optget(argv,sh_optread))) switch(expect(ret,'s',0.01))
 	{
 	    case 'A':
 		flags |= A_FLAG;
@@ -363,7 +363,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 	{
 		sh_pushcontext(&buff,1);
 		jmpval = sigsetjmp(buff.buff,0);
-		if(jmpval)
+		if(unlikely(jmpval))
 			goto done;
 		if(timeout)
 	                timeslot = sh_timeradd((Sfulong_t)timeout,0,timedout,iop);
@@ -465,7 +465,7 @@ int sh_readline(char **names, volatile int fd, int flags, ssize_t size, Sflong_t
 
 						*cur = 0;
 						x = z = 0;
-						while (up < cur && (z = mbsize(up)) > 0)
+						while (up < cur && likely((z = mbsize(up)) > 0))
 						{
 							up += z;
 							x++;
@@ -857,7 +857,7 @@ done:
 	if(flags&S_FLAG)
 		hist_flush(sh.hist_ptr);
 #endif
-	if(jmpval > 1)
+	if(unlikely(jmpval > 1))
 		siglongjmp(*sh.jmplist,jmpval);
 	return jmpval;
 }

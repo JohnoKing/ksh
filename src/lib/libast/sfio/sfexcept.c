@@ -32,7 +32,7 @@ int _sfexcept(Sfio_t*	f,	/* stream where the exception happened */
 	ssize_t		size;
 	uchar*		data;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	GETLOCAL(f,local);
@@ -76,7 +76,7 @@ int _sfexcept(Sfio_t*	f,	/* stream where the exception happened */
 			if((io -= size) <= 0)
 				io = SFIO_GRAIN;
 			size = ((size+io+SFIO_GRAIN-1)/SFIO_GRAIN)*SFIO_GRAIN;
-			if(!(data = realloc(f->data,(size_t)size)))
+			if(unlikely(!(data = realloc(f->data,(size_t)size))))
 				goto chk_stack;
 			f->endb = data + size;
 			f->next = data + (f->next - f->data);

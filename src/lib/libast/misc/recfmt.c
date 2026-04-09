@@ -91,7 +91,7 @@ recfmt(const void* buf, size_t size, off_t total)
 	 * check fixed length record frequencies
 	 */
 
-	if (!(q = newof(0, Sample_t, 1, 0)))
+	if (unlikely(!(q = newof(0, Sample_t, 1, 0))))
 		return REC_N_TYPE();
 	x = 0;
 	for (i = 0; i < size; i++)

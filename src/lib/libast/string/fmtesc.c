@@ -42,7 +42,7 @@
  */
 
 char*
-fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
+fmtquote(const char *restrict as, const char *restrict qb, const char *restrict qe, size_t n, int flags)
 {
 	unsigned char*	s = (unsigned char*)as;
 	unsigned char*	e = s + n;
@@ -220,7 +220,7 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
  */
 
 char*
-fmtnesq(const char* as, const char* qs, size_t n)
+fmtnesq(const char *restrict as, const char *restrict qs, size_t n)
 {
 	return fmtquote(as, NULL, qs, n, 0);
 }
@@ -230,7 +230,7 @@ fmtnesq(const char* as, const char* qs, size_t n)
  */
 
 char*
-fmtesq(const char* as, const char* qs)
+fmtesq(const char *restrict as, const char *restrict qs)
 {
 	return fmtquote(as, NULL, qs, strlen((char*)as), 0);
 }

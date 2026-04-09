@@ -201,7 +201,7 @@ static void **array_getup(Namval_t *np, Namarr_t *arp, int update)
 	struct fixed_array *fp;
 #endif /* SHOPT_FIXEDARRAY */
 	int	nofree=0;
-	if(!arp)
+	if(unlikely(!arp))
 		return &np->nvalue;
 	if(is_associative(ap))
 	{
@@ -1053,6 +1053,43 @@ Namval_t *nv_arraychild(Namval_t *np, Namval_t *nq, int c)
 	return nq;
 }
 
+#if SHOPT_FIXEDARRAY
+static vecdisp int nv_nextsub_fixed(Namval_t *np, struct fixed_array *fp, struct index_array *ap)
+{
+	unsigned dot;
+	if(ap->header.nelem&ARRAY_FIXED)
+	{
+		while(++fp->curi < fp->nelem)
+		{
+			nv_putsub(np,0,fp->curi|ARRAY_FIXED|ARRAY_SCAN);
+			if(fp->ptr && *(((char**)fp->data)+fp->curi))
+				return 1;
+		}
+		ap->header.nelem &= ~ARRAY_FIXED;
+		return 0;
+	}
+	dot = fp->dim;
+	if((fp->cur[dot]+1) < fp->max[dot])
+	{
+		fp->cur[dot]++;
+		for(fp->curi=0,dot=0; dot < fp->ndim; dot++)
+			fp->curi +=  fp->incr[dot]*fp->cur[dot];
+		return 1;
+	}
+	if(fp->level)
+	{
+		dot= --fp->dim;
+		while((dot+1) < fp->ndim)
+			fp->cur[++dot] = 0;
+		fp->level--;
+		fp->curi = 0;
+	}
+	else
+	ap->header.nelem &= ~(ARRAY_SCAN|ARRAY_NOCHILD);
+	return 0;
+}
+#endif
+
 /*
  * This routine sets subscript of <np> to the next element, if any.
  * The return value is zero, if there are no more elements
@@ -1077,38 +1114,7 @@ int nv_nextsub(Namval_t *np)
 	}
 #if SHOPT_FIXEDARRAY
 	else if(fp = (struct fixed_array*)ap->header.fixed)
-	{
-		if(ap->header.nelem&ARRAY_FIXED)
-		{
-			while(++fp->curi < fp->nelem)
-			{
-				nv_putsub(np,0,fp->curi|ARRAY_FIXED|ARRAY_SCAN);
-				if(fp->ptr && *(((char**)fp->data)+fp->curi))
-					return 1;
-			}
-			ap->header.nelem &= ~ARRAY_FIXED;
-			return 0;
-		}
-		dot = fp->dim;
-		if((fp->cur[dot]+1) < fp->max[dot])
-		{
-			fp->cur[dot]++;
-			for(fp->curi=0,dot=0; dot < fp->ndim; dot++)
-				fp->curi +=  fp->incr[dot]*fp->cur[dot];
-			return 1;
-		}
-		if(fp->level)
-		{
-			dot= --fp->dim;
-			while((dot+1) < fp->ndim)
-				fp->cur[++dot] = 0;
-			fp->level--;
-			fp->curi = 0;
-		}
-		else
-		ap->header.nelem &= ~(ARRAY_SCAN|ARRAY_NOCHILD);
-		return 0;
-	}
+		return nv_nextsub_fixed(np,fp,ap);
 #endif /* SHOPT_FIXEDARRAY */
 	if(!(ap->header.nelem&ARRAY_NOSCOPE))
 		ar = (struct index_array*)ap->header.scope;
@@ -1592,7 +1598,7 @@ char	*nv_getsub(Namval_t* np)
 	struct index_array *ap;
 	ssize_t dot, n;
 	char *cp = &numbuff[NUMSIZE];
-	if(!np || !(ap = (struct index_array*)nv_arrayptr(np)))
+	if(unlikely(!np) || unlikely(!(ap = (struct index_array*)nv_arrayptr(np))))
 		return NULL;
 	if(is_associative(ap))
 		return (char*)((*ap->header.fun)(np,NULL,NV_ANAME));
@@ -1621,7 +1627,7 @@ char	*nv_getsub(Namval_t* np)
 int nv_aindex(Namval_t* np)
 {
 	Namarr_t *ap = nv_arrayptr(np);
-	if(!ap)
+	if(unlikely(!ap))  /* acc. gcov */
 		return 0;
 	else if(is_associative(ap))
 		return -1;

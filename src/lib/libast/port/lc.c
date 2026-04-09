@@ -329,7 +329,7 @@ canonical(const Lc_language_t* lp, const Lc_territory_t* tp, const Lc_charset_t*
 			if (r)
 			{
 				*s = 0;
-				if ((p = setlocale(LC_MESSAGES, 0)) && (p = strdup(p)))
+				if ((p = setlocale(LC_MESSAGES, 0)) && likely(p = strdup(p)))
 				{
 					if (!setlocale(LC_MESSAGES, buf))
 					{
@@ -604,7 +604,7 @@ lcmake(const char* name)
 
 				s = (char*)name;
 				z = strlen(s) + 1;
-				if (!(lp = newof(0, Lc_language_t, 1, z)))
+				if (unlikely(!(lp = newof(0, Lc_language_t, 1, z))))
 					return NULL;
 				name = ((Lc_language_t*)lp)->code = ((Lc_language_t*)lp)->name = (const char*)(lp + 1);
 				memcpy((char*)lp->code, s, z - 1);
@@ -705,7 +705,7 @@ lcmake(const char* name)
 				for (j = 0; j < elementsof(lp->attributes) && (ap = lp->attributes[j]); j++)
 					if (match(w, ap->name, 5, 0))
 					{
-						if (ai = newof(0, Lc_attribute_list_t, 1, 0))
+						if (likely(ai = newof(0, Lc_attribute_list_t, 1, 0)))
 						{
 							ai->attribute = ap;
 							ai->next = al;
@@ -768,7 +768,7 @@ lcmake(const char* name)
 			}
 			break;
 		}
-	if (!(lc = newof(0, Lc_t, 1, n + z)))
+	if (unlikely(!(lc = newof(0, Lc_t, 1, n + z))))
 		return NULL;
 	strcpy((char*)(lc->name = (const char*)(lc + 1)), name);
 	lc->code = lc->name + n;
@@ -801,8 +801,10 @@ lcmake(const char* name)
 #endif
 	lc->next = lcs;
 	lcs = lc;
+#if AHA
 	if ((ast.locale.set & AST_LC_debug) && !(ast.locale.set & AST_LC_internal))
 		sfprintf(sfstderr, "locale make %17s %16s %16s %16s language=%s territory=%s charset=%s%s\n", "", lc->name, lc->code, "", lc->language->name, lc->territory->name, lc->charset->code, (lc->flags & LC_local) ? " local" : "");
+#endif
 	return lc;
 }
 
@@ -830,7 +832,7 @@ lcscan(Lc_t* lc)
 
 	if (!(ls = (Lc_scan_t*)lc))
 	{
-		if (!(ls = newof(0, Lc_scan_t, 1, 0)))
+		if (unlikely(!(ls = newof(0, Lc_scan_t, 1, 0))))
 			return NULL;
 		ls->lc.code = ls->lc.name = ls->buf;
 		ls->territory = -1;

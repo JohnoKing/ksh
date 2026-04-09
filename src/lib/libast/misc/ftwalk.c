@@ -75,7 +75,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 		if (!path || !(flags & FTS_ONEPATH) && !(path = (const char*)(*((char**)path))))
 			return -1;
 		ns = strlen(path) + 1;
-		if (!(e = newof(0, FTSENT, 1, ns)))
+		if (unlikely(!(e = newof(0, FTSENT, 1, ns))))
 			return -1;
 		e->fts_accpath = e->fts_name = e->fts_path = strcpy((char*)(e + 1), path);
 		e->fts_namelen = e->fts_pathlen = ns;
@@ -83,7 +83,7 @@ ftwalk(const char* path, int (*userf)(Ftw_t*), int flags, int (*comparf)(Ftw_t*,
 		e->parent = e;
 		e->parent->link = e;
 		rv = (*userf)((Ftw_t*)e);
-		free(e);
+		free_sized(e, sizeof(FTSENT) * 1 + ns);
 		return rv;
 	}
 	rv = 0;

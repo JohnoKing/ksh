@@ -110,7 +110,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 	fixargs(av,0);
 	sh_init(ac,av,userinit);
 	time(&mailtime);
-	if(rshflag=sh_isoption(SH_RESTRICTED))
+	if(unlikely(rshflag=sh_isoption(SH_RESTRICTED)))
 		sh_offoption(SH_RESTRICTED);
 	/*
 	 * return here for shell script execution
@@ -139,7 +139,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 		if(!sh_isoption(SH_INTERACTIVE) && !sh_isoption(SH_TFLAG) && !sh_isoption(SH_CFLAG) &&
 		   sh_isoption(SH_SFLAG) && tty_check(0) && tty_check(ERRIO))
 			sh_onoption(SH_INTERACTIVE);
-		if(sh_isoption(SH_INTERACTIVE))
+		if(unlikely(sh_isoption(SH_INTERACTIVE)))
 		{
 			const struct shtable2 *tp;
 			sh_onoption(SH_BGNICE);
@@ -164,7 +164,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 #endif
 		for(i=0; i<elementsof(sh.offoptions.v); i++)
 			sh.options.v[i] &= ~sh.offoptions.v[i];
-		if(sh_isoption(SH_INTERACTIVE))
+		if(unlikely(sh_isoption(SH_INTERACTIVE)))
 		{
 #ifdef SIGXCPU
 			signal(SIGXCPU,SIG_DFL);
@@ -187,7 +187,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 		}
 		/* make sure PWD is set up correctly */
 		path_pwd();
-		if(!sh_isoption(SH_NOEXEC))
+		if(likely(!sh_isoption(SH_NOEXEC)))
 		{
 			if(!sh_isoption(SH_NOUSRPROFILE) && !sh_isoption(SH_PRIVILEGED) && sh_isoption(SH_RC))
 			{
@@ -203,7 +203,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 					free(name);
 				}
 			}
-			else if(sh_isoption(SH_INTERACTIVE) && sh_isoption(SH_PRIVILEGED))
+			else if(unlikely(sh_isoption(SH_INTERACTIVE)) && sh_isoption(SH_PRIVILEGED))
 				sh_source(iop, e_suidprofile);
 		}
 		sh.st.cmdname = error_info.id = command;
@@ -253,7 +253,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 					else
 						sh.st.filename = path_fullname(name);
 					sp = 0;
-					if(fdin < 0 && !strchr(name,'/'))
+					if(unlikely(fdin < 0) && !strchr(name,'/'))
 					{
 						if(path_absolute(name,NULL,0))
 							sp = stkptr(sh.stk,PATH_OFFSET);
@@ -315,7 +315,7 @@ noreturn void sh_main(int ac, char *av[], Shinit_f userinit)
 		sh.columns = 80;
 	if(!sh.lines)
 		sh.lines = 24;
-	if(sh_isoption(SH_INTERACTIVE))
+	if(unlikely(sh_isoption(SH_INTERACTIVE)))
 	{
 		sh_onstate(SH_INTERACTIVE);
 #if SHOPT_ESH
@@ -395,7 +395,7 @@ static void	exfile(Sfio_t *iop,int fno)
 		fno = -1;
 	beenhere = 1;
 	sh.infd = fno;
-	if(sh_isstate(SH_INTERACTIVE))
+	if(unlikely(sh_isstate(SH_INTERACTIVE)))
 	{
 		if(nv_isnull(PS1NOD))
 			nv_putval(PS1NOD,(sh.euserid?e_stdprompt:e_supprompt),NV_RDONLY);
@@ -405,7 +405,7 @@ static void	exfile(Sfio_t *iop,int fno)
 	}
 	else
 	{
-		if(!sh_isstate(SH_PROFILE))
+		if(likely(!sh_isstate(SH_PROFILE)))
 		{
 			buff.mode = SH_JMPEXIT;
 			sh_onoption(SH_TRACKALL);
@@ -425,12 +425,12 @@ static void	exfile(Sfio_t *iop,int fno)
 		sfsync(sh.outpool);
 		sh.st.breakcnt = 0;
 		/* check for return from profile or env file */
-		if(sh_isstate(SH_PROFILE) && (jmpval==SH_JMPFUN || jmpval==SH_JMPEXIT))
+		if(unlikely(sh_isstate(SH_PROFILE) && (jmpval==SH_JMPFUN || jmpval==SH_JMPEXIT)))
 		{
 			sh_setstate(states);
 			goto done;
 		}
-		if(!sh_isoption(SH_INTERACTIVE) || sh_isstate(SH_FORKED) || (jmpval > SH_JMPERREXIT && job_close() >=0))
+		if(likely(!sh_isoption(SH_INTERACTIVE)) || sh_isstate(SH_FORKED) || (jmpval > SH_JMPERREXIT && job_close() >=0))
 		{
 			sh_offstate(SH_INTERACTIVE);
 			sh_offstate(SH_MONITOR);
@@ -450,7 +450,7 @@ static void	exfile(Sfio_t *iop,int fno)
 		 * closed and set to NULL. For now we only do this when we get
 		 * here in an interactive shell and we have a leftover heredoc.
 		 */
-		if(sh_isstate(SH_INTERACTIVE) && jmpval==SH_JMPERREXIT && sh.heredocs)
+		if(unlikely(sh_isstate(SH_INTERACTIVE)) && jmpval==SH_JMPERREXIT && unlikely(sh.heredocs))
 		{
 			Lex_t *lp;
 			sfclose(sh.heredocs);
@@ -473,7 +473,7 @@ static void	exfile(Sfio_t *iop,int fno)
 	error_info.line = 1;
 	sh.inlineno = 1;
 	sh.binscript = 0;
-	if(sfeof(iop))
+	if(unlikely(sfeof(iop)))
 		goto eof_or_error;
 	/* command loop */
 	while(1)
@@ -491,13 +491,13 @@ static void	exfile(Sfio_t *iop,int fno)
 			sh_onstate(SH_VERBOSE);
 		sh_onstate(SH_ERREXIT);
 		/* -eim flags don't apply to profiles */
-		if(sh_isstate(SH_PROFILE))
+		if(unlikely(sh_isstate(SH_PROFILE)))
 		{
 			sh_offstate(SH_INTERACTIVE);
 			sh_offstate(SH_ERREXIT);
 			sh_offstate(SH_MONITOR);
 		}
-		if(sh_isstate(SH_INTERACTIVE) && !tdone)
+		if(unlikely(sh_isstate(SH_INTERACTIVE)) && !tdone)
 		{
 			char *mail;
 			sh_offstate(SH_MONITOR);
@@ -542,7 +542,7 @@ static void	exfile(Sfio_t *iop,int fno)
 			int	sferr;
 		eof_or_error:
 			sferr = sferror(iop);
-			if(sh_isstate(SH_INTERACTIVE))
+			if(unlikely(sh_isstate(SH_INTERACTIVE)))
 			{
 				if(!sferr)
 				{
@@ -574,30 +574,30 @@ static void	exfile(Sfio_t *iop,int fno)
 		}
 		sh.exitval = sh.savexit;
 		maxtry = IOMAXTRY;
-		if(sh_isstate(SH_INTERACTIVE) && sh.hist_ptr)
+		if(unlikely(sh_isstate(SH_INTERACTIVE)) && sh.hist_ptr)
 		{
 			job_wait(0);
 			hist_eof(sh.hist_ptr);
 			sfsync(sfstderr);
 		}
-		if(sh_isoption(SH_HISTORY))
+		if(unlikely(sh_isoption(SH_HISTORY)))
 			sh_onstate(SH_HISTORY);
 		job.waitall = job.curpgid = 0;
 		error_info.flags |= ERROR_INTERACTIVE;
 		t = (Shnode_t*)sh_parse(iop,0);
-		if(!sh_isstate(SH_INTERACTIVE) && !sh_isoption(SH_CFLAG))
+		if(likely(!sh_isstate(SH_INTERACTIVE)) && !sh_isoption(SH_CFLAG))
 			error_info.flags &= ~ERROR_INTERACTIVE;
 		sh.readscript = 0;
-		if(sh_isstate(SH_INTERACTIVE) && sh.hist_ptr)
+		if(unlikely(sh_isstate(SH_INTERACTIVE)) && sh.hist_ptr)
 			hist_flush(sh.hist_ptr);
 		sh_offstate(SH_HISTORY);
 		if(t)
 		{
 			execflags = sh_state(SH_ERREXIT)|sh_state(SH_INTERACTIVE);
 			/* The last command may not have to fork */
-			if(!sh_isstate(SH_PROFILE) && !sh_isstate(SH_INTERACTIVE) &&
-				(fno<0 || !(sh.fdstatus[fno]&(IOTTY|IONOSEEK)))
-				&& !sfreserve(iop,0,0))
+			if(likely(!sh_isstate(SH_PROFILE) && !sh_isstate(SH_INTERACTIVE)) &&
+				unlikely((fno<0 || !(sh.fdstatus[fno]&(IOTTY|IONOSEEK)))
+				&& !sfreserve(iop,0,0)))
 			{
 					execflags |= sh_state(SH_NOFORK);
 			}
@@ -616,7 +616,7 @@ static void	exfile(Sfio_t *iop,int fno)
 	}
 done:
 	sh_popcontext(&buff);
-	if(sh_isstate(SH_INTERACTIVE))
+	if(unlikely(sh_isstate(SH_INTERACTIVE)))
 	{
 		if(isatty(0) && !sh_isoption(SH_CFLAG))
 			sfputc(sfstderr,'\n');

@@ -136,7 +136,7 @@ static int pathchk(char* path, int mode)
 		{
 			if(name_max==0||path_max==0)
 			{
-				if(!(cpold = getcwd(NULL, 0)) && errno == EINVAL && (cpold = newof(0, char, PATH_MAX, 0)) && !getcwd(cpold, PATH_MAX))
+				if(!(cpold = getcwd(NULL, 0)) && errno == EINVAL && likely(cpold = newof(0, char, PATH_MAX, 0)) && !getcwd(cpold, PATH_MAX))
 				{
 					free(cpold);
 					cpold = 0;

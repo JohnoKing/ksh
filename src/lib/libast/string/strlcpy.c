@@ -39,11 +39,11 @@ NoN(strlcpy)
  */
 
 extern size_t
-strlcpy(char* s, const char* t, size_t n)
+strlcpy(char *restrict s, const char *restrict t, size_t n)
 {
 	const char*	o = t;
 
-	if (n)
+	if (likely(n))
 		do
 		{
 			if (!--n)

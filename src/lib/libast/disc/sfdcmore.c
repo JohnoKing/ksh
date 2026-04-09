@@ -268,8 +268,9 @@ static int moreexcept(Sfio_t* f, int type, void* data, Sfdisc_t* dp)
 
 int sfdcmore(Sfio_t* f, const char* prompt, int rows, int cols)
 {
-	More_t*	more;
-	size_t			n;
+	More_t*		more;
+	size_t		n;
+	size_t		alloc_size;
 
 	/*
 	 * this is a writeonly discipline for interactive io
@@ -280,7 +281,8 @@ int sfdcmore(Sfio_t* f, const char* prompt, int rows, int cols)
 	if (!prompt)
 		prompt = "\033[7m More\033[m";
 	n = strlen(prompt) + 1;
-	if (!(more = (More_t*)malloc(sizeof(More_t) + n)))
+	alloc_size = sizeof(More_t) + n;
+	if (unlikely(!(more = (More_t*)malloc(alloc_size))))
 		return -1;
 	memset(more, 0, sizeof(*more));
 
@@ -303,7 +305,7 @@ int sfdcmore(Sfio_t* f, const char* prompt, int rows, int cols)
 
 	if (sfdisc(f, &more->disc) != &more->disc)
 	{
-		free(more);
+		free_sized(more,alloc_size);
 		return -1;
 	}
 	if (f == sfstdout)

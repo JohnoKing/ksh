@@ -29,7 +29,7 @@ Sfoff_t sftell(Sfio_t* f)
 	Sfoff_t	p;
 
 	/* set the stream to the right mode */
-	if(!f || ((mode = f->mode&SFIO_RDWR) != (int)f->mode && _sfmode(f,mode,0) < 0))
+	if(unlikely(!f || ((mode = f->mode&SFIO_RDWR) != (int)f->mode && _sfmode(f,mode,0) < 0)))
 		return (Sfoff_t)(-1);
 
 	/* throw away ungetc data */

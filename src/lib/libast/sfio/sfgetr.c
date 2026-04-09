@@ -34,7 +34,7 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 	int		found;
 	Sfrsrv_t*	rsrv;
 
-	if(!f || rc < 0 || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0))
+	if(unlikely(!f || rc < 0 || (f->mode != SFIO_READ && _sfmode(f,SFIO_READ,0) < 0)))
 		return NULL;
 	SFLOCK(f,0);
 
@@ -124,7 +124,7 @@ char* sfgetr(Sfio_t*	f,	/* stream to read from	*/
 		un += n;
 		ends = f->next;
 		f->next += n;
-		MEMCPY(s,ends,(size_t)n);
+		memcpy(s,ends,(size_t)n);
 	}
 
 done:

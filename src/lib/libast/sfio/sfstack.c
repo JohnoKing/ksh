@@ -31,11 +31,11 @@ Sfio_t* sfstack(Sfio_t*	f1,	/* base of stack	*/
 	Sfio_t*		rf;
 	Sfrsrv_t*	rsrv;
 
-	if(f1 && (f1->mode&SFIO_RDWR) != f1->mode && _sfmode(f1,0,0) < 0)
+	if(unlikely(f1 && (f1->mode&SFIO_RDWR) != f1->mode && _sfmode(f1,0,0) < 0))
 		return NULL;
-	if(f2 && (f2->mode&SFIO_RDWR) != f2->mode && _sfmode(f2,0,0) < 0)
+	if(unlikely(f2 && (f2->mode&SFIO_RDWR) != f2->mode && _sfmode(f2,0,0) < 0))
 		return NULL;
-	if(!f1)
+	if(unlikely(!f1))
 		return f2;
 
 	/* give access to other internal functions */

@@ -144,32 +144,32 @@ typedef struct edit
 #define TCAP_CURSOR_UP	"up"
 #define TCAP_ERASE_EOS	"cd"
 
-extern void	ed_putchar(Edit_t*, int);
-extern void	ed_putstring(Edit_t*, const char*);
-extern void	ed_ringbell(void);
-extern void	ed_setup(Edit_t*,int, int);
-extern void	ed_flush(Edit_t*);
-extern int	ed_getchar(Edit_t*,int);
-extern int	ed_virt_to_phys(Edit_t*,genchar*,genchar*,int,int,int);
-extern int	ed_window(void);
-extern void	ed_ungetchar(Edit_t*,int);
-extern int	ed_viread(void*, int, char*, int, int);
-extern int	ed_read(void*, int, char*, int, int);
-extern int	ed_emacsread(void*, int, char*, int, int);
-extern Edpos_t	ed_curpos(Edit_t*, genchar*, int, int, Edpos_t);
-extern int	ed_setcursor(Edit_t*, genchar*, int, int, int);
+extern void	ed_putchar(Edit_t*, int) cold;
+extern void	ed_putstring(Edit_t*, const char*) cold;
+extern void	ed_ringbell(void) cold;
+extern void	ed_setup(Edit_t*,int, int) cold;
+extern void	ed_flush(Edit_t*) cold;
+extern int	ed_getchar(Edit_t*,int) cold;
+extern int	ed_virt_to_phys(Edit_t*,genchar*,genchar*,int,int,int) cold;
+extern int	ed_window(void) cold;
+extern void	ed_ungetchar(Edit_t*,int) cold;
+extern int	ed_viread(void*, int, char*, int, int) cold NONNULL(1,3);
+extern int	ed_read(void*, int, char*, int, int) NONNULL(1,3);
+extern int	ed_emacsread(void*, int, char*, int, int) cold NONNULL(1,3);
+extern Edpos_t	ed_curpos(Edit_t*, genchar*, int, int, Edpos_t) cold;
+extern int	ed_setcursor(Edit_t*, genchar*, int, int, int) cold;
 #if SHOPT_ESH || SHOPT_VSH
-extern int	ed_macro(Edit_t*,int);
+extern int	ed_macro(Edit_t*,int) cold;
 #endif
-extern int	ed_expand(Edit_t*, char[],int*,int*,int,int);
-extern int	ed_fulledit(Edit_t*);
-extern void	*ed_open(void);
+extern int	ed_expand(Edit_t*, char[],int*,int*,int,int) cold;
+extern int	ed_fulledit(Edit_t*) cold;
+extern void	*ed_open(void) cold;
 #if SHOPT_MULTIBYTE
-	extern int ed_internal(const char*, genchar*);
-	extern int ed_external(const genchar*, char*);
-	extern void ed_gencpy(genchar*,const genchar*);
-	extern void ed_genncpy(genchar*,const genchar*,size_t);
-	extern size_t ed_genlen(const genchar*);
+	extern int ed_internal(const char*, genchar*) cold;
+	extern int ed_external(const genchar*, char*) cold;
+	extern void ed_gencpy(genchar*,const genchar*) cold;
+	extern void ed_genncpy(genchar*,const genchar*,size_t) cold;
+	extern size_t ed_genlen(const genchar*) cold;
 #endif /* SHOPT_MULTIBYTE */
 
 extern const char	e_runvi[];
@@ -199,17 +199,17 @@ extern const char	e_runvi[];
 
 #define HIST_FLAG_RETURN_MASK	(HIST_EVENT|HIST_PRINT|HIST_ERROR)
 
-extern void hist_setchars(char *);
-extern int hist_expand(const char *, char **);
+extern void hist_setchars(char *) cold NONNULL(1);
+extern int hist_expand(const char *, char **) cold NONNULL(2);
 
 #endif /* SHOPT_HISTEXPAND */
 
 #if SHOPT_ESH
-extern void	emacs_redraw(void*);
+extern void	emacs_redraw(void*) cold NONNULL(1);
 #endif /* SHOPT_ESH */
 
 #if SHOPT_VSH
-extern void	vi_redraw(void*);
+extern void	vi_redraw(void*) cold;
 #endif /* SHOPT_VSH */
 
 #endif /* !_EDIT_H */

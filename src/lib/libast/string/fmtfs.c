@@ -77,7 +77,7 @@ fmtfs(struct stat* st)
 		if (mnt && mnt->type)
 			s = mnt->type;
 	}
-	if (!dict || !(ip = newof(0, Id_t, 1, strlen(s))))
+	if (!dict || unlikely(!(ip = newof(0, Id_t, 1, strlen(s)))))
 	{
 		if (!mp)
 			return s;

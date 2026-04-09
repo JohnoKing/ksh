@@ -24,7 +24,7 @@
 ** Written by Kiem-Phong Vo
 */
 
-ssize_t dtstat(Dt_t* dt, Dtstat_t* dtst)
+cold ssize_t dtstat(Dt_t* dt, Dtstat_t* dtst)
 {
 	ssize_t	sz, k, maxk;
 	char	*str;

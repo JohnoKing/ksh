@@ -31,7 +31,7 @@ ptrdiff_t sfputr(Sfio_t*		f,	/* write to this stream	*/
 	uchar		*ps;
 	char		*ss;
 
-	if(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0))
+	if(unlikely(!f || (f->mode != SFIO_WRITE && _sfmode(f,SFIO_WRITE,0) < 0)))
 		return -1;
 
 	SFLOCK(f,0);

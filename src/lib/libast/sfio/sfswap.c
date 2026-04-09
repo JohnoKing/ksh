@@ -34,11 +34,11 @@ Sfio_t* sfswap(Sfio_t* f1, Sfio_t* f2)
 	int		f1flags, f2flags;
 	unsigned int	f1mode, f2mode;
 
-	if(!f1 || (f1->mode&SFIO_AVAIL) || (SFFROZEN(f1) && (f1->mode&SFIO_PUSH)) )
+	if(unlikely(!f1 || (f1->mode&SFIO_AVAIL) || (SFFROZEN(f1) && (f1->mode&SFIO_PUSH))) )
 		return NULL;
-	if(f2 && SFFROZEN(f2) && (f2->mode&SFIO_PUSH) )
+	if(unlikely(f2 && SFFROZEN(f2) && (f2->mode&SFIO_PUSH)) )
 		return NULL;
-	if(f1 == f2)
+	if(unlikely(f1 == f2))
 		return f2;
 
 	f1mode = f1->mode;
@@ -55,7 +55,7 @@ Sfio_t* sfswap(Sfio_t* f1, Sfio_t* f2)
 		     f1->file == 1 ? sfstdout :
 		     f1->file == 2 ? sfstderr : NULL;
 		if((!f2 || !(f2->mode&SFIO_AVAIL)) )
-		{	if(!(f2 = (Sfio_t*)malloc(sizeof(Sfio_t))) )
+		{	if(unlikely(!(f2 = (Sfio_t*)malloc(sizeof(Sfio_t)))) )
 			{	f1->mode = f1mode;
 				SFOPEN(f1,0);
 				return NULL;

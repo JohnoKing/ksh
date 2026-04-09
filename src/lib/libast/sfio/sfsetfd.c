@@ -29,12 +29,12 @@ static int _sfdup(int fd, int newfd, int cloexec)
 	int	dupfd;
 
 #if F_dupfd_cloexec == F_DUPFD
-	while((dupfd = fcntl(fd,F_DUPFD,newfd)) < 0 && errno == EINTR)
+	while(unlikely((dupfd = fcntl(fd,F_DUPFD,newfd)) < 0) && errno == EINTR)
 		errno = 0;
-	if(cloexec && dupfd > -1)
+	if(cloexec && likely(dupfd > -1))
 		fcntl(dupfd,F_SETFD,FD_CLOEXEC);
 #else
-	while((dupfd = fcntl(fd,cloexec?F_dupfd_cloexec:F_DUPFD,newfd)) < 0 && errno == EINTR)
+	while(unlikely((dupfd = fcntl(fd,cloexec?F_dupfd_cloexec:F_DUPFD,newfd)) < 0) && errno == EINTR)
 		errno = 0;
 #endif
 	return dupfd;
@@ -44,7 +44,7 @@ static int sfsetfd_internal(Sfio_t* f, int newfd, int cloexec)
 {
 	int		oldfd;
 
-	if(!f)
+	if(unlikely(!f))
 		return -1;
 
 	if(f->flags&SFIO_STRING)

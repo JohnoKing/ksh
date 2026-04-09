@@ -503,7 +503,7 @@ void job_init(void)
 	signal(SIGCHLD,job_waitsafe);
 	if(njob_savelist < NJOB_SAVELIST)
 		init_savelist();
-	if(!sh_isoption(SH_INTERACTIVE))
+	if(likely(!sh_isoption(SH_INTERACTIVE)))
 		return;
 	job.mypgid = getpgrp();
 	/* some systems have job control, but not initialized */
@@ -891,6 +891,18 @@ static int also_send_sigcont(struct process *pw,int sig)
 	return !sh_isoption(SH_POSIX) && (sig==SIGHUP || sig==SIGTERM) && pw && (pw->p_flag & P_STOPPED);
 }
 
+static cold void job_kill_error(struct process *pw)
+{
+	const char *msg;
+	if(errno == EPERM)
+		msg = sh_translate(e_access);
+	else if(pw && by_number)
+		msg = sh_translate(e_no_proc);
+	else
+		msg = sh_translate(e_no_job);
+	sfprintf(sfstderr,"kill: %s: %s\n", job_string, msg);
+}
+
 /*
  * Kill a job or process
  */
@@ -898,7 +910,6 @@ int job_kill(struct process *pw,int sig)
 {
 	pid_t pid;
 	int r = -1;
-	const char *msg;
 	job_lock();
 	errno = ECHILD;
 	if(!pw)
@@ -966,13 +977,7 @@ int job_kill(struct process *pw,int sig)
 	if(r<0 && job_string)
 	{
 	error:
-		if(pw && by_number)
-			msg = sh_translate(e_no_proc);
-		else
-			msg = sh_translate(e_no_job);
-		if(errno == EPERM)
-			msg = sh_translate(e_access);
-		sfprintf(sfstderr,"kill: %s: %s\n",job_string, msg);
+		job_kill_error(pw);
 		r = 2;
 	}
 	sh_delay(.001,0);
@@ -1052,13 +1057,13 @@ void	job_clear(void)
 		while(px=pw)
 		{
 			pw = pw->p_nxtproc;
-			free(px);
+			free_sized(px,sizeof(struct process));
 		}
 	}
 	for(jp=bck.list; jp;jp=jpnext)
 	{
 		jpnext = jp->next;
-		free(jp);
+		free_sized(jp,sizeof(struct jobs));
 	}
 	bck.list = 0;
 	if(njob_savelist < NJOB_SAVELIST)
@@ -1165,7 +1170,7 @@ int job_post(pid_t pid, pid_t join)
 		(Sflong_t)pw->p_pid,(Sflong_t)pw->p_pgrp,job.savesig,join);
 	sfsync(sfstderr);
 #endif /* DEBUG */
-	if(hp && !sh_isstate(SH_PROFILE) && !sh.realsubshell)
+	if(hp && likely(!sh_isstate(SH_PROFILE)) && !sh.realsubshell)
 		pw->p_name=hist_tell(sh.hist_ptr,(int)hp->histind-1);
 	else
 		pw->p_name = -1;
@@ -1242,7 +1247,7 @@ static void job_prmsg(struct process *pw)
 			dump =  sh_translate(e_coredump);
 		else
 			dump = "";
-		if(sh_isstate(SH_INTERACTIVE))
+		if(unlikely(sh_isstate(SH_INTERACTIVE)))
 			sfprintf(sfstderr,"%s%s\n",msg,dump);
 		else
 			errormsg(SH_DICT,2,"%jd: %s%s",(Sflong_t)pw->p_pid,msg,dump);
@@ -1332,7 +1337,7 @@ int	job_wait(pid_t pid)
 						job_list(px,JOB_NFLAG|JOB_NLFLAG);
 						sfsync(sfstderr);
 					}
-					else if(!sh_isoption(SH_INTERACTIVE) && (px->p_flag&P_SIGNALLED))
+					else if(likely(!sh_isoption(SH_INTERACTIVE)) && (px->p_flag&P_SIGNALLED))
 					{
 						job_prmsg(px);
 						px->p_flag &= ~P_NOTIFY;
@@ -1419,7 +1424,7 @@ int	job_wait(pid_t pid)
 		{
 			job.parent = 0;
 			/* make sure the main shell handles ^Z and is not suspended itself */
-			if(sh_isstate(SH_INTERACTIVE))
+			if(unlikely(sh_isstate(SH_INTERACTIVE)))
 				signal(SIGTSTP, sh.sigflag[SIGTSTP]&SH_SIGOFF ? SIG_IGN : sh_fault);
 			kill(sh.current_pid,SIGTSTP);
 		}
@@ -1732,7 +1737,7 @@ again:
 			job_savelist = jp;
 		}
 		else
-			free(jp);
+			free_sized(jp,sizeof(struct jobs));
 	}
 	return r;
 }
@@ -1780,7 +1785,7 @@ void job_subrestore(void* ptr)
 		job_unpost(pw,0);
 	}
 
-	free(bp);
+	free_sized(bp,sizeof(struct back_save));
 	job_unlock();
 }
 

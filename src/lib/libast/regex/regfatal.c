@@ -26,7 +26,7 @@
 
 #include <error.h>
 
-void
+cold void
 regfatalpat(regex_t* p, int level, int code, const char* pat)
 {
 	char	buf[128];
@@ -39,7 +39,7 @@ regfatalpat(regex_t* p, int level, int code, const char* pat)
 		error(level, "regular expression: %s", buf);
 }
 
-void
+cold void
 regfatal(regex_t* p, int level, int code)
 {
 	regfatalpat(p, level, code, NULL);

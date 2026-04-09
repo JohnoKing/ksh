@@ -106,7 +106,7 @@ static int test_strmatch(const char *str, const char *pat)
 	n = strgrpmatch(str, pat, match, (ssize_t)m, STR_GROUP|STR_MAXIMAL|STR_LEFT|STR_RIGHT);
 	if(m==0 && n==1)
 		match[1] = (ssize_t)strlen(str);
-	if(n)
+	if(likely(n))
 		sh_setmatch(str, -1, n, match, 0);
 	return n != 0;
 }
@@ -130,11 +130,11 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 		}
 	}
 	/* POSIX requires the test builtin to return 1 if expression is missing */
-	if(argc <= 1)
+	if(unlikely(argc <= 1))
 		return 1;
 	cp = argv[1];
 	/* Compat kludge: if there are up to 5 args and the first and last are parentheses, remove the parentheses... */
-	if(c_eq(cp,'(') && argc<=6 && c_eq(argv[argc-1],')'))
+	if(unlikely(c_eq(cp,'(') && argc<=6 && c_eq(argv[argc-1],')')))
 	{
 		/* ...except if the middle arg is a binary operator, as in test '(' = ')', which must return false in POSIX */
 		if(!(argc==4 && sh_lookup(argv[2],shtab_testops)))
@@ -151,7 +151,7 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 		case 5:
 			if(!not)
 				break;
-			if(posix_andor(argv[3]))
+			if(unlikely(posix_andor(argv[3])))
 			{	/*
 				 * In POSIX mode, enforce a violation of basic logic that sadly made it to every other shell:
 				 * "test ! foo -o bar" must return 1, i.e., is same as "test ! \( -n foo -o -n bar \)"
@@ -167,13 +167,13 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 		case 4:
 		{
 			unsigned int op = sh_lookup(cp=argv[2],shtab_testops);
-			if(op&TEST_ANDOR)
+			if(unlikely(op&TEST_ANDOR))
 			{
 				if(sh_isoption(SH_POSIX))
 					return !(op==TEST_AND ? *argv[1] && *argv[3] : *argv[1] || *argv[3]);
 				break;
 			}
-			if(!op)
+			if(unlikely(!op))
 			{
 				if(argc==5)
 					break;
@@ -191,7 +191,7 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 		case 3:
 			if(not)
 				return *argv[2] != 0;
-			if(cp[0] != '-' || cp[2] || cp[1]=='?')
+			if(unlikely(cp[0] != '-' || cp[2] || cp[1]=='?'))
 			{	/*
 				 * The following ugly hack supports 'test --man --' and '[ --man -- ]' and related
 				 * getopts documentation options (which all overload the error message mechanism).
@@ -318,7 +318,7 @@ static int e3(struct test *tp,int inparens)
 	cp = nxtarg(tp,1);
 	if(cp!=0 && (c_eq(cp,'=') || c2_eq(cp,'!','=')))
 		goto skip;
-	if(!sh_isoption(SH_POSIX) && c2_eq(arg,'-','t'))
+	if(!sh_isoption(SH_POSIX) && unlikely(c2_eq(arg,'-','t')))
 	{	/*
 		 * Ancient compatibility hack supporting test -t with no arguments == test -t 1.
 		 * This is only reached when doing a compound expression like: test 1 -eq 1 -a -t
@@ -359,7 +359,7 @@ skip:
 		errormsg(SH_DICT,ERROR_exit(2),e_badop,cp);
 		UNREACHABLE();
 	}
-	if(bop&TEST_ANDOR)
+	if(unlikely(bop&TEST_ANDOR))
 		tp->ap--;
 	else
 		cp = nxtarg(tp,0);
@@ -498,7 +498,7 @@ int test_unop(int op,const char *arg)
  */
 int test_binop(unsigned int op,const char *left,const char *right)
 {
-	if(op&TEST_ARITH)
+	if(unlikely(op&TEST_ARITH))
 	{
 		Sfdouble_t lnum, rnum;
 		if(sh.bltinfun==b_test && sh_isoption(SH_POSIX))
@@ -601,7 +601,7 @@ static int test_time(const char *file1,const char *file2)
 int test_inode(const char *file1,const char *file2)
 {
 	struct stat stat1,stat2;
-	if(test_stat(file1,&stat1)>=0  && test_stat(file2,&stat2)>=0)
+	if(likely(test_stat(file1,&stat1)>=0) && likely(test_stat(file2,&stat2)>=0))
 		if(stat1.st_dev == stat2.st_dev && stat1.st_ino == stat2.st_ino)
 			return 1;
 	return 0;
@@ -712,16 +712,16 @@ static int test_mode(const char *file)
  */
 static int test_stat(const char *name,struct stat *buff)
 {
-	if(*name==0)
+	if(unlikely(*name==0))
 	{
 		errno = ENOENT;
 		return -1;
 	}
 #if _lib_openat
-	if(sh.pwdfd > -1 && strcmp(name,e_dot)==0)
+	if(strcmp(name,e_dot)==0 && likely(sh.pwdfd > -1))
 		return fstat(sh.pwdfd,buff);
 #endif
-	if(sh_isdevfd(name))
+	if(unlikely(sh_isdevfd(name)))
 		return fstat((int)strtol(name+8, NULL, 10),buff);
 	return stat(name,buff);
 }

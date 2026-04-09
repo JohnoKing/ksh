@@ -92,7 +92,7 @@ static const char Omsg[] = "out of memory while growing stack\n";
 /*
  * default overflow exception
  */
-static noreturn void *overflow(size_t n)
+static cold noreturn void *overflow(size_t n)
 {
 	NoP(n);
 	write(2,Omsg, sizeof(Omsg)-1);
@@ -103,7 +103,7 @@ static noreturn void *overflow(size_t n)
 /*
  * initialize stkstd, sfio operations may have already occurred
  */
-static void stkinit(size_t size)
+static cold void stkinit(size_t size)
 {
 	Sfio_t *sp;
 	init = size;
@@ -180,7 +180,7 @@ static int stkexcept(Sfio_t *stream, int type, void* val, Sfdisc_t* dp)
 /*
  * create a stack
  */
-Sfio_t *stkopen(int flags)
+malloc_attr Sfio_t *stkopen(int flags)
 {
 	size_t bsize;
 	Sfio_t *stream;
@@ -188,7 +188,7 @@ Sfio_t *stkopen(int flags)
 	struct frame *fp;
 	Sfdisc_t *dp;
 	char *cp;
-	if(!(stream=newof(NULL,Sfio_t, 1, sizeof(*dp)+sizeof(*sp))))
+	if(unlikely(!(stream=newof(NULL,Sfio_t, 1, sizeof(*dp)+sizeof(*sp)))))
 		return NULL;
 	dp = (Sfdisc_t*)(stream+1);
 	dp->exceptf = stkexcept;
@@ -203,9 +203,9 @@ Sfio_t *stkopen(int flags)
 	else
 		bsize = roundof(bsize,STK_FSIZE);
 	bsize -= sizeof(struct frame);
-	if(!(fp=newof(NULL,struct frame, 1,bsize)))
+	if(unlikely(!(fp=newof(NULL,struct frame, 1,bsize))))
 	{
-		free(stream);
+		free_sized(stream,sizeof(Sfio_t)*1+sizeof(*dp)+sizeof(*sp));
 		return NULL;
 	}
 	cp = (char*)(fp+1);
@@ -214,7 +214,7 @@ Sfio_t *stkopen(int flags)
 	fp->nalias = 0;
 	fp->aliases = 0;
 	fp->end = sp->stkend = cp+bsize;
-	if(!sfnew(stream,cp,bsize,-1,SFIO_STRING|SFIO_WRITE|SFIO_STATIC|SFIO_EOF))
+	if(unlikely(!sfnew(stream,cp,bsize,-1,SFIO_STRING|SFIO_WRITE|SFIO_STATIC|SFIO_EOF)))
 		return NULL;
 	sfdisc(stream,dp);
 	return stream;
@@ -237,17 +237,17 @@ Sfio_t *stkinstall(Sfio_t *stream, _old_stk_overflow_ oflow)
 		return NULL;
 	}
 	old = stkcur?stk2stream(stkcur):0;
-	if(stream)
+	if(likely(stream))
 	{
 		sp = stream2stk(stream);
 		while(sfstack(stkstd, SFIO_POPSTACK));
-		if(stream!=stkstd)
+		if(likely(stream!=stkstd))
 			sfstack(stkstd,stream);
 		stkcur = sp;
 	}
 	else
 		sp = stkcur;
-	if(oflow)
+	if(likely(oflow))
 		sp->stkoverflow = (_stk_overflow_)oflow;
 	return old;
 }
@@ -310,7 +310,7 @@ void *stkset(Sfio_t *stream, void *address, ptrdiff_t offset)
 		fp = (struct frame*)sp->stkbase;
 		cp = sp->stkbase + roundof(sizeof(struct frame), STK_ALIGN);
 		n = fp->nalias;
-		while(n-->0)
+		while(unlikely(n-->0))
 		{
 			if(loc==fp->aliases[n])
 			{
@@ -319,9 +319,9 @@ void *stkset(Sfio_t *stream, void *address, ptrdiff_t offset)
 			}
 		}
 		/* see whether <loc> is in current stack frame */
-		if(loc>=cp && loc<=sp->stkend)
+		if(likely(loc>=cp && loc<=sp->stkend))
 		{
-			if(frames)
+			if(unlikely(frames))  /* acc. gcov */
 				sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
 			stream->_data = (unsigned char*)(cp + roundof((size_t)(loc-cp),STK_ALIGN));
 			stream->_next = (unsigned char*)loc+offset;
@@ -338,11 +338,11 @@ void *stkset(Sfio_t *stream, void *address, ptrdiff_t offset)
 		frames++;
 	}
 	/* not found: produce a useful stack trace now instead of a useless one later */
-	if(loc)
+	if(unlikely(loc))
 		abort();
 	/* set stack back to the beginning */
 	cp = (char*)(fp+1);
-	if(frames)
+	if(unlikely(frames))  /* acc. gcov */
 		sfsetbuf(stream,cp,(size_t)(sp->stkend-cp));
 	else
 		stream->_data = stream->_next = (unsigned char*)cp;
@@ -353,13 +353,13 @@ found:
 /*
  * allocate <n> bytes on the current stack
  */
-void *stkalloc(Sfio_t *stream, size_t n)
+hot void *stkalloc(Sfio_t *stream, size_t n)
 {
 	unsigned char *old;
 	if(!init)
 		stkinit(n);
 	n = roundof(n,STK_ALIGN);
-	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
+	if(unlikely(stkleft(stream) <= (ssize_t)n) && unlikely(!stkgrow(stream,n)))
 		return NULL;
 	old = stream->_data;
 	stream->_data = stream->_next = old+n;
@@ -369,11 +369,11 @@ void *stkalloc(Sfio_t *stream, size_t n)
 /*
  * begin a new stack word of at least <n> bytes
  */
-void *_stkseek(Sfio_t *stream, ptrdiff_t n)
+hot void *_stkseek(Sfio_t *stream, ptrdiff_t n)
 {
 	if(!init)
 		stkinit((size_t)n);
-	if(stkleft(stream) <= n && !stkgrow(stream,(size_t)n))
+	if(unlikely(stkleft(stream) <= n) && unlikely(!stkgrow(stream,(size_t)n)))
 		return NULL;
 	stream->_next = stream->_data+n;
 	return stream->_data;
@@ -383,7 +383,7 @@ void *_stkseek(Sfio_t *stream, ptrdiff_t n)
  * advance the stack to the current top
  * if extra is non-zero, first add extra bytes and zero the first
  */
-void	*stkfreeze(Sfio_t *stream, size_t extra)
+hot void *stkfreeze(Sfio_t *stream, size_t extra)
 {
 	unsigned char *old, *top;
 	if(!init)
@@ -392,7 +392,7 @@ void	*stkfreeze(Sfio_t *stream, size_t extra)
 	top = stream->_next;
 	if(extra)
 	{
-		if((ssize_t)extra > (stream->_endb-stream->_next))
+		if(unlikely((ssize_t)extra > (stream->_endb-stream->_next)))
 		{
 			if (!(top = (unsigned char*)stkgrow(stream,extra)))
 				return NULL;
@@ -414,11 +414,11 @@ char	*stkcopy(Sfio_t *stream, const char* str)
 	size_t n;
 	size_t off = (size_t)stktell(stream);
 	char buff[40], *tp=buff;
-	if(off)
+	if(unlikely(off))
 	{
 		if(off > sizeof(buff))
 		{
-			if(!(tp = malloc(off)))
+			if(unlikely(!(tp = malloc(off))))
 			{
 				struct stk *sp = stream2stk(stream);
 				if(!sp->stkoverflow || !(tp = (*sp->stkoverflow)(off)))
@@ -431,19 +431,19 @@ char	*stkcopy(Sfio_t *stream, const char* str)
 	n = roundof((size_t)(cp-(unsigned char*)str),STK_ALIGN);
 	if(!init)
 		stkinit(n);
-	if(stkleft(stream) <= (ssize_t)n && !stkgrow(stream,n))
+	if(unlikely(stkleft(stream) <= (ssize_t)n) && unlikely(!stkgrow(stream,n)))
 		cp = 0;
 	else
 	{
 		strcpy((char*)(cp=stream->_data),str);
 		stream->_data = stream->_next = cp+n;
-		if(off)
+		if(unlikely(off))
 		{
 			_stkseek(stream,(ptrdiff_t)off);
 			memcpy(stream->_data, tp, off);
 		}
 	}
-	if(tp!=buff)
+	if(unlikely(tp!=buff))
 		free(tp);
 	return (char*)cp;
 }
@@ -471,7 +471,7 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	else
 		n = roundof(n,STK_FSIZE);
 	/* see whether current frame can be extended */
-	if(stkptr(stream,0)==sp->stkbase+sizeof(struct frame))
+	if(unlikely(stkptr(stream,0)==sp->stkbase+sizeof(struct frame)))
 	{
 		nn = fp->nalias+1;
 		dp=sp->stkbase;
@@ -481,14 +481,14 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	}
 	endoff = end - dp;
 	cp = newof(dp, char, n, (size_t)nn*sizeof(char*));
-	if(!cp && (!sp->stkoverflow || !(cp = (*sp->stkoverflow)(n))))
+	if(unlikely(!cp) && unlikely(!sp->stkoverflow || !(cp = (*sp->stkoverflow)(n))))
 		return NULL;
-	if(dp==cp)
+	if(unlikely(dp==cp))
 	{
 		nn--;
 		add = 0;
 	}
-	else if(dp)
+	else if(unlikely(dp))
 	{
 		dp = cp;
 		end = dp + endoff;
@@ -499,7 +499,7 @@ static char *stkgrow(Sfio_t *stream, size_t size)
 	sp->stkend = fp->end = cp+n;
 	cp = (char*)(fp+1);
 	cp = sp->stkbase + roundof((size_t)(cp-sp->stkbase),STK_ALIGN);
-	if(fp->nalias=nn)
+	if(unlikely(fp->nalias=nn))
 	{
 		fp->aliases = (char**)fp->end;
 		if(end && nn>add)

@@ -25,16 +25,16 @@
 
 #include <ast.h>
 
-char*
+returns_nonnull char*
 pathbin(void)
 {
 	char*		bin;
 
 	static char*	val;
 
-	if ((!(bin = getenv("PATH")) || !*bin) && !(bin = val))
+	if ((unlikely(!(bin = getenv("PATH"))) || !*bin) && !(bin = val))
 	{
-		if (!*(bin = astconf("PATH", NULL, NULL)) || !(bin = strdup(bin)))
+		if (!*(bin = astconf("PATH", NULL, NULL)) || unlikely(!(bin = strdup(bin))))
 			abort();
 		val = bin;
 	}

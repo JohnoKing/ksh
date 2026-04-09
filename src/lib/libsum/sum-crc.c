@@ -125,7 +125,7 @@ crc_open(const Method_t* method, const char* name)
 	Crcnum_t	polynomial;
 	Crcnum_t	x;
 
-	if (sum = newof(0, Crc_t, 1, 0))
+	if (likely(sum = newof(0, Crc_t, 1, 0)))
 	{
 		sum->method = (Method_t*)method;
 		sum->name = name;

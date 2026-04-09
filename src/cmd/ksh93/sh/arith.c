@@ -58,7 +58,7 @@ static Namval_t FunNode =
 	"?",
 };
 
-static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
+static hot NONNULL(2) Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 {
 	int	flag = lvalue->flag;
 	char	*sub=0, *cp=(char*)np;
@@ -72,7 +72,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 	if(nosub<0 && lvalue->ovalue)
 		return (Namval_t*)lvalue->ovalue;
 	lvalue->ovalue = 0;
-	if(cp>=lvalue->expr &&  cp < lvalue->expr+lvalue->elen)
+	if(cp>=lvalue->expr && cp < lvalue->expr+lvalue->elen)
 	{
 		int offset;
 		/* do binding to node now */
@@ -133,16 +133,14 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 		int		hasdot = 0;
 		cp = (char*)&lvalue->expr[flag];
 		if(sub)
-		{
 			goto skip;
-		}
 		sub = cp;
 		while(1)
 		{
 			Namarr_t	*ap;
 			Namval_t	*nq;
 			cp = nv_endsubscript(np,cp,0);
-			if(c || *cp=='.')
+			if(unlikely(c || *cp=='.'))
 			{
 				c = '.';
 				while(*cp=='.')
@@ -159,14 +157,14 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 			}
 			flag = *cp;
 			*cp = 0;
-			if(c || hasdot)
+			if(unlikely(c || hasdot))
 			{
 				sfputr(sh.strbuf,nv_name(np),-1);
 				sfputr(sh.strbuf,sub,-1);
 				sub = sfstruse(sh.strbuf);
 			}
 			*cp = flag;
-			if(c || hasdot)
+			if(unlikely(c || hasdot))
 			{
 				np = nv_open(sub,sh.var_tree,NV_VARNAME|assign);
 				return np;
@@ -177,7 +175,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 #else
 			cp = nv_endsubscript(np,sub,NV_ADD);
 #endif /* SHOPT_FIXEDARRAY */
-			if(*cp!='[')
+			if(likely(*cp!='['))
 				break;
 		skip:
 			if(nq = nv_opensub(np))
@@ -195,7 +193,7 @@ static Namval_t *scope(Namval_t *np,struct lval *lvalue,int assign)
 			sub = cp;
 		}
 	}
-	else if(nosub>0)
+	else if(unlikely(nosub>0))
 		nv_putsub(np,NULL,nosub-1);
 	return np;
 }
@@ -210,7 +208,7 @@ static Math_f sh_mathstdfun(const char *fname, size_t fsize, short * nargs)
 	{
 		if(tp->fname[1]==c && strncmp(&tp->fname[1],fname,fsize)==0 && tp->fname[fsize+1]==0)
 		{
-			if(nargs)
+			if(likely(nargs))
 				*nargs = *tp->fname;
 			return tp->fnptr;
 		}
@@ -223,18 +221,18 @@ int	sh_mathstd(const char *name)
 	return sh_mathstdfun(name,strlen(name),NULL)!=0;
 }
 
-static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdouble_t n)
+static hot NONNULL(1,2) Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdouble_t n)
 {
 	Sfdouble_t r= 0;
 	char *str = (char*)*ptr;
 	char *cp;
-	switch(type)
+	switch(expect(type,MESSAGE,0.001))
 	{
 	    case ASSIGN:
 	    {
 		Namval_t *np;
 		unsigned short attr;
-		if (lvalue->sub && lvalue->nosub > 0) /* indexed array ARITH_ASSIGNOP */
+		if (unlikely(lvalue->sub && lvalue->nosub > 0)) /* indexed array ARITH_ASSIGNOP */
 		{
 			np = (Namval_t*)lvalue->sub; /* use saved subscript reference instead of last worked value */
 			nv_putsub(np, NULL, lvalue->nosub-1);
@@ -252,7 +250,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			Namfun_t *fp = nv_hasdisc(np, &ENUM_disc);
 			if(fp && (n < 0.0 || n > (Sfdouble_t)(b_enum_nelem(fp) - 1)))
 			{
-				errormsg(SH_DICT, ERROR_exit(1), "%s: value %ld out of enum range", nv_name(np), (long)n);
+				errormsg(SH_DICT, ERROR_exit(1), "%s: value %jd out of enum range", nv_name(np), (intmax_t)n);
 				UNREACHABLE();
 			}
 		}
@@ -289,7 +287,11 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 		else if((attr & NV_INT32)==NV_INT32)		/* normal signed integer */
 			r = (int32_t)((intmax_t)n);
 #if _AST_release
-		else	r = n;					/* should never happen */
+		else
+		{
+			r = n;					/* should never happen (the error message marks this path cold) */
+			errormsg(SH_DICT, ERROR_warn(0), "%s: value %jd has improper attributes (bug)", nv_name(np), (intmax_t)n);
+		}
 #else
 		else	abort();
 #endif
@@ -358,7 +360,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				break;
 			}
 			*str = 0;
-			if(sh_isoption(SH_NOEXEC))
+			if(unlikely(sh_isoption(SH_NOEXEC)))
 				np = L_ARGNOD;
 			else
 			{
@@ -389,7 +391,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				}
 				*str = 0;
 				cp = (char*)*ptr;
-				if(!sh_isoption(SH_POSIX) && (cp[0] == 'i' || cp[0] == 'I') && (cp[1] == 'n' || cp[1] == 'N') && (cp[2] == 'f' || cp[2] == 'F') && cp[3] == 0)
+				if(!sh_isoption(SH_POSIX) && unlikely((cp[0] == 'i' || cp[0] == 'I') && (cp[1] == 'n' || cp[1] == 'N') && (cp[2] == 'f' || cp[2] == 'F') && cp[3] == 0))
 				{
 					if (!Infnod.nvalue)
 					{
@@ -399,7 +401,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 					}
 					np = &Infnod;
 				}
-				else if(!sh_isoption(SH_POSIX) && (cp[0] == 'n' || cp[0] == 'N') && (cp[1] == 'a' || cp[1] == 'A') && (cp[2] == 'n' || cp[2] == 'N') && cp[3] == 0)
+				else if(!sh_isoption(SH_POSIX) && unlikely((cp[0] == 'n' || cp[0] == 'N') && (cp[1] == 'a' || cp[1] == 'A') && (cp[2] == 'n' || cp[2] == 'N') && cp[3] == 0))
 				{
 					if (!NaNnod.nvalue)
 					{
@@ -414,13 +416,13 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 					lvalue->value = (char*)*ptr;
 					lvalue->flag =  str-lvalue->value;
 				}
-				if(saveptr != stkptr(sh.stk,0))
+				if(likely(saveptr != stkptr(sh.stk,0)))
 					stkset(sh.stk,saveptr,offset);
 				else
 					stkseek(sh.stk,offset);
 			}
 			*str = c;
-			if(!np && lvalue->value)
+			if(unlikely(!np && lvalue->value))
 				break;
 			lvalue->value = (char*)np;
 			/* bind subscript later */
@@ -432,13 +434,13 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				lvalue->flag = (str-lvalue->expr);
 				do
 				{
-					while(c=='.')
+					while(unlikely(c=='.'))
 					{
 						str++;
 						while(xp=str, c=mbchar(str), isaname(c));
 						c = *(str = xp);
 					}
-					if(c=='[')
+					if(likely(c=='['))
 						str = nv_endsubscript(np,str,0);
 				}
 				while((c= *str)=='[' || c=='.');
@@ -451,33 +453,33 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			lvalue->isenum = 0;
 			errno = 0;
 			r = strtonll(val,&str, &lastbase,-1);
-			if(lastbase==8 && *val=='0' && !sh_isoption(sh.bltinfun==b_let ? SH_LETOCTAL : SH_POSIX))
+			if(unlikely(lastbase==8 && *val=='0' && !sh_isoption(sh.bltinfun==b_let ? SH_LETOCTAL : SH_POSIX)))
 			{
 				/* disable leading-0 octal by reparsing as decimal */
 				lastbase=10;
 				errno = 0;
 				r = strtonll(val,&str, &lastbase,-1);
 			}
-			if(lastbase<=1)
+			if(likely(lastbase<=1))
 				lastbase=10;
-			if(*val=='0')
+			if(expect(*val=='0',1,0.1))
 			{
 				while(*val=='0')
 					val++;
 				if(*val==0 || *val=='.' || *val=='x' || *val=='X')
 					val--;
 			}
-			if(r==LLONG_MAX && errno)
+			if(unlikely(r==LLONG_MAX && errno))
 				c='e';
 			else
 				c = *str;
-			if(c=='.' && sh.radixpoint!='.')
+			if(c=='.' && unlikely(sh.radixpoint!='.'))
 			{
 				sfprintf(sh.strbuf, "%s: radix point '.' requires LC_NUMERIC=C", val);
 				lvalue->value = sfstruse(sh.strbuf);
 				return r;
 			}
-			if(c==sh.radixpoint || c=='e' || c == 'E' || lastbase == 16 && (c == 'p' || c == 'P'))
+			if(expect(c==sh.radixpoint || c=='e' || c == 'E' || lastbase == 16 && (c == 'p' || c == 'P'),1,0.1))
 			{
 				lvalue->isfloat=1;
 				r = strtold(val,&str);
@@ -486,7 +488,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			{
 				if(val[2]=='#')
 					val += 3;
-				if((str-val)>2*sizeof(Sflong_t))
+				if(unlikely((str-val)>2*(ptrdiff_t)sizeof(Sflong_t)))
 				{
 					Sfdouble_t rr;
 					rr = strtold(val,&str);
@@ -504,12 +506,12 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 	    case VALUE:
 	    {
 		Namval_t *np = (Namval_t*)(lvalue->value);
-		if(sh_isoption(SH_NOEXEC))
+		if(unlikely(sh_isoption(SH_NOEXEC)))
 			return 0;
 		np = scope(np,lvalue,0);
-		if(!np)
+		if(unlikely(!np))
 		{
-			if(sh_isoption(SH_NOUNSET))
+			if(unlikely(sh_isoption(SH_NOUNSET)))
 			{
 				*ptr = lvalue->value;
 				goto skip;
@@ -522,7 +524,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			lvalue->enum_p = nv_hasdisc(np,&ENUM_disc);
 			lvalue->isenum = 0;
 		}
-		else if(lvalue->enum_p && !nv_hasdisc(np,&ENUM_disc) && !nv_isattr(np,NV_INTEGER))
+		else if(unlikely(lvalue->enum_p && !nv_hasdisc(np,&ENUM_disc) && !nv_isattr(np,NV_INTEGER)))
 		{
 			/* convert the enum rvalue of the lvalue's enum type to its number */
 			Namval_t *mp,node;
@@ -535,7 +537,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			nv_unset(&node,0);
 			return r;
 		}
-		if(((lvalue->emode&2) || lvalue->level>1 || sh_isoption(SH_NOUNSET)) && nv_isnull(np) && !nv_isattr(np,NV_INTEGER))
+		if(unlikely(((lvalue->emode&2) || lvalue->level>1 || sh_isoption(SH_NOUNSET)) && nv_isnull(np) && !nv_isattr(np,NV_INTEGER)))
 		{
 			*ptr = nv_name(np);
 		skip:
@@ -560,6 +562,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 		if(lvalue->emode&ARITH_COMP)
 			return -1;
 		errormsg(SH_DICT,ERROR_exit((lvalue->emode&3)!=0),lvalue->value,*ptr);
+		ASSUME(!(lvalue->emode&3));
 	}
 	*ptr = str;
 	return r;
@@ -570,11 +573,11 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
  * ptr is set to the last character processed
  * if mode>0, an error will be fatal with value <mode>
  */
-Sfdouble_t sh_strnum(const char *str, char** ptr, int mode)
+NONNULL(1) Sfdouble_t sh_strnum(const char *str, char** ptr, int mode)
 {
 	Sfdouble_t d;
 	char base = (sh_isoption(sh.bltinfun==b_let ? SH_LETOCTAL : SH_POSIX) ? 0 : 10), *last;
-	if(*str==0)
+	if(unlikely(*str==0))
 	{
 		d = 0.0;
 		last = (char*)str;
@@ -583,7 +586,7 @@ Sfdouble_t sh_strnum(const char *str, char** ptr, int mode)
 	{
 		errno = 0;
 		d = strtonll(str,&last,&base,-1);
-		if(*last && sh_isstate(SH_INIT))
+		if(*last && unlikely(sh_isstate(SH_INIT)))
 		{
 			/* Handle floating point or "base#value" literals if we're importing untrusted env vars. */
 			errno = 0;
@@ -594,7 +597,7 @@ Sfdouble_t sh_strnum(const char *str, char** ptr, int mode)
 		}
 		if(*last || errno)
 		{
-			if(sh_isstate(SH_INIT))
+			if(unlikely(sh_isstate(SH_INIT)))
 				/*
 				 * Initializing means importing untrusted env vars. The string does not appear to be
 				 * a recognized numeric literal, so give up. We can't safely call arith_strval(), because
@@ -603,7 +606,7 @@ Sfdouble_t sh_strnum(const char *str, char** ptr, int mode)
 				d = 0.0;
 			else
 			{
-				if(!last || *last!=sh.radixpoint || last[1]!=sh.radixpoint)
+				if(likely(!last || *last!=sh.radixpoint || last[1]!=sh.radixpoint))
 					d = arith_strval(str,&last,arith,mode);
 				if(!ptr && *last && mode>0)
 				{
@@ -612,7 +615,7 @@ Sfdouble_t sh_strnum(const char *str, char** ptr, int mode)
 				}
 			}
 		}
-		else if(!d && *str=='-')
+		else if(unlikely(!d && *str=='-'))
 			d = -0.0;
 	}
 	if(ptr)

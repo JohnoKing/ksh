@@ -51,10 +51,10 @@ static void rehash(Namval_t *np,void *data)
 /*
  * Obtain a file descriptor >9 to the directory "path" relative to directory "dir"
  */
-int sh_diropenat(int dir, const char *path)
+NONNULL(2) int sh_diropenat(int dir, const char *path)
 {
 	int fd, needs_cloexec = 0;
-	if((fd = openat(dir, path, O_DIRECTORY|O_NONBLOCK|O_cloexec|O_SEARCH)) < 0)
+	if(unlikely((fd = openat(dir, path, O_DIRECTORY|O_NONBLOCK|O_cloexec|O_SEARCH)) < 0))
 	{
 #if !_openat_enotdir
 		struct stat fs;
@@ -67,12 +67,12 @@ int sh_diropenat(int dir, const char *path)
 #endif
 		return fd;
 	}
-	if(fd < 10)
+	if(likely(fd < 10))
 	{
 		/* Duplicate the fd */
 		int shfd = fcntl(fd, F_dupfd_cloexec, 10);
 		ast_close(fd);
-		if(shfd < 0)
+		if(unlikely(shfd < 0))
 			return shfd;
 		if(F_dupfd_cloexec == F_DUPFD)
 			needs_cloexec = 1;
@@ -150,7 +150,7 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 	}
 	if(argc==2)
 		dir = sh_substitute(oldpwd,dir,argv[1]);
-	else if(!dir)
+	else if(unlikely(!dir))
 		dir = nv_getval(sh_scoped(HOME));
 	else if(*dir == '-' && dir[1]==0)
 		dir = nv_getval(opwdnod);
@@ -164,10 +164,10 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 	 * we must fork any virtual subshell now to avoid the possibility of ending up in the wrong PWD on exit.
 	 */
 #if _lib_openat
-	if(sh.subshell && !sh.subshare && (!sh_validate_subpwdfd() || !test_inode(sh.pwd,e_dot)))
+	if(sh.subshell && !sh.subshare && unlikely(!sh_validate_subpwdfd() || !test_inode(sh.pwd,e_dot)))
 		sh_subfork();
 #else
-	if(sh.subshell && !sh.subshare && !test_inode(sh.pwd,e_dot))
+	if(sh.subshell && !sh.subshare && unlikely(!test_inode(sh.pwd,e_dot)))
 		sh_subfork();
 #endif /* _lib_openat */
 	/*
@@ -232,11 +232,11 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 		}
 #if _lib_openat
 		cp = path_relative(stkptr(sh.stk,PATH_OFFSET));
-		rval = newdirfd = sh_diropenat((sh.pwdfd>0)?sh.pwdfd:AT_FDCWD,cp);
-		if(newdirfd>0)
+		rval = newdirfd = sh_diropenat(likely(sh.pwdfd>0)?sh.pwdfd:AT_FDCWD,cp);
+		if(likely(newdirfd>0))
 		{
 			/* chdir for directories on HSM/tapeworms may take minutes */
-			if((rval=fchdir(newdirfd)) >= 0)
+			if(likely((rval=fchdir(newdirfd)) >= 0))
 			{
 				sh_pwdupdate(newdirfd);
 				goto success;
@@ -252,21 +252,21 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 		if(saverrno==0)
 			saverrno=errno;
 #else
-		if((rval=chdir(path_relative(stkptr(sh.stk,PATH_OFFSET)))) >= 0)
+		if(likely((rval=chdir(path_relative(stkptr(sh.stk,PATH_OFFSET)))) >= 0))
 			goto success;
 		if(errno!=ENOENT && saverrno==0)
 			saverrno=errno;
 #endif /* _lib_openat */
 	}
 	while(cdpath);
-	if(rval<0 && *dir=='/' && *(path_relative(stkptr(sh.stk,PATH_OFFSET)))!='/')
+	if(unlikely(rval<0 && *dir=='/' && *(path_relative(stkptr(sh.stk,PATH_OFFSET)))!='/'))
 	{
 #if _lib_openat
-		rval = newdirfd = sh_diropenat((sh.pwdfd>0)?sh.pwdfd:AT_FDCWD,dir);
-		if(newdirfd>0)
+		rval = newdirfd = sh_diropenat(likely(sh.pwdfd>0)?sh.pwdfd:AT_FDCWD,dir);
+		if(likely(newdirfd>0))
 		{
 			/* chdir for directories on HSM/tapeworms may take minutes */
-			if((rval=fchdir(newdirfd)) >= 0)
+			if(likely((rval=fchdir(newdirfd)) >= 0))
 			{
 				sh_pwdupdate(newdirfd);
 				goto success;
@@ -309,7 +309,7 @@ success:
 		sfputr(sfstdout,dir,'\n');
 	nv_putval(opwdnod,oldpwd,NV_RDONLY);
 	free(sh.pwd);
-	if(*dir == '/')
+	if(likely(*dir == '/'))
 	{
 		size_t len = strlen(dir);
 		/* delete trailing '/' */

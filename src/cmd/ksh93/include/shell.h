@@ -449,15 +449,15 @@ extern void 		sh_delay(double,int);
 extern void		*sh_parse(Sfio_t*,int);
 extern int 		sh_trap(const char*,int);
 extern int 		sh_fun(Namval_t*,Namval_t*, char*[]);
-extern int 		sh_funscope(int,char*[],int(*)(void*),void*,int);
+extern NONNULL(2,4) int 	sh_funscope(int,char*[],int(*)(void*),void*,int);
 extern Sfio_t		*sh_iogetiop(int,int);
 extern noreturn void	sh_main(int, char*[], Shinit_f);
 extern int		sh_run(int, char*[]);
-extern void		sh_menu(Sfio_t*, int, char*[]);
+extern void		sh_menu(Sfio_t*, int, char*[]) cold;
 extern Namval_t		*sh_addbuiltin(const char*, int(*)(int, char*[],Shbltin_t*), void*);
 extern char		*sh_fmtq(const char*);
 extern char		*sh_fmtqf(const char*, int, int);
-extern Sfdouble_t	sh_strnum(const char*, char**, int);
+extern Sfdouble_t	sh_strnum(const char*, char**, int) NONNULL(1);
 extern int		sh_access(const char*,int);
 extern int 		sh_close(int);
 extern int		sh_chdir(const char*);
@@ -481,7 +481,7 @@ extern void		sh_sigcheck(void);
 extern uint64_t		sh_isoption(uint64_t);
 extern uint64_t		sh_onoption(uint64_t);
 extern uint64_t		sh_offoption(uint64_t);
-extern int		sh_exec(const Shnode_t*,int);
+extern int		sh_exec(const Shnode_t*,int) hot;
 
 /*
  * As of 93u+m, direct access to sh is no longer obsolete;

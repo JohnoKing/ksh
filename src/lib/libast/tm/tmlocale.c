@@ -357,7 +357,7 @@ native_lc_time(Lc_info_t* li)
 	n = nt + ns + nl;
 	for (i = 0; i < elementsof(map); i++)
 		n += GetLocaleInfo(lcid, map[i].native, 0, 0);
-	if (!(b = newof(0, char*, TM_NFORM, (size_t)n)))
+	if (unlikely(!(b = newof(0, char*, TM_NFORM, (size_t)n))))
 		return;
 	s = (char*)(b + TM_NFORM);
 	for (i = 0; i < (int)elementsof(map); i++)
@@ -425,7 +425,7 @@ native_lc_time(Lc_info_t* li)
 	fixup(li, b);
 	return;
  bad:
-	free(b);
+	free_sized(b, sizeof(char*) * TM_NFORM + n);
 }
 
 #else
@@ -520,7 +520,7 @@ native_lc_time(Lc_info_t* li)
 			t = tm_data.format[map[i].local];
 		n += strlen(t) + 1;
 	}
-	if (!(b = newof(0, char*, TM_NFORM, n)))
+	if (unlikely(!(b = newof(0, char*, TM_NFORM, n))))
 		return;
 	s = (char*)(b + TM_NFORM);
 	for (i = 0; i < elementsof(map); i++)
@@ -577,7 +577,7 @@ load(Lc_info_t* li)
 		{
 			if (u[0] == 0xef && u[1] == 0xbb && u[2] == 0xbf && (cvt = iconv_open("", "utf")) != (iconv_t)(-1))
 			{
-				if (tp = sfstropen())
+				if (likely(tp = sfstropen()))
 				{
 					sfread(sp, u, 3);
 					n = (ssize_t)iconv_move(cvt, sp, tp, (size_t)SFIO_UNBOUND, NULL);
@@ -587,7 +587,7 @@ load(Lc_info_t* li)
 			if (!tp)
 				sfread(sp, u, 0);
 		}
-		if (b = newof(0, char*, TM_NFORM, (size_t)n + 2))
+		if (likely(b = newof(0, char*, TM_NFORM, (size_t)n + 2)))
 		{
 			v = b;
 			e = b + TM_NFORM;
@@ -605,7 +605,7 @@ load(Lc_info_t* li)
 				fixup(li, b);
 			}
 			else
-				free(b);
+				free_sized(b, sizeof(char*) * TM_NFORM + (n + 2));
 		}
 		if (tp)
 			sfclose(tp);

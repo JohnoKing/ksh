@@ -55,7 +55,7 @@ tokopen(char* s, int f)
 
 	if (p = freelist)
 		freelist = freelist->ptr.nxt;
-	else if (!(p = newof(0, Tok_t, 1, 0)))
+	else if (unlikely(!(p = newof(0, Tok_t, 1, 0))))
 		return NULL;
 	p->chr = *(p->ptr.end = s);
 	p->flg = f ? FLG_RESTORE : 0;

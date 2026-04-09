@@ -79,7 +79,7 @@ static int _tmprmfile(Sfio_t* f, int type, void* val, Sfdisc_t* disc)
 				(*_Sfnotify)(f,SFIO_CLOSING,f->file);
 			ast_close(f->file);
 			f->file = -1;
-			while(remove(ff->name) < 0 && errno == EINTR)
+			while(remove(ff->name) < 0 && unlikely(errno == EINTR))
 				errno = 0;
 
 			free(ff);
@@ -111,7 +111,7 @@ static int _rmtmp(char* file)
 	if(!File)
 		atexit(_rmfiles);
 
-	if(!(ff = (File_t*)malloc(sizeof(File_t)+strlen(file))) )
+	if(unlikely(!(ff = (File_t*)malloc(sizeof(File_t)+strlen(file)))) )
 		return -1;
 	ff->f = f;
 	strcpy(ff->name,file);
@@ -119,7 +119,7 @@ static int _rmtmp(char* file)
 	File = ff;
 
 #else	/* can remove now */
-	while(remove(file) < 0 && errno == EINTR)
+	while(remove(file) < 0 && unlikely(errno == EINTR))
 		errno = 0;
 #endif
 
@@ -248,7 +248,7 @@ Sfio_t* sftmp(size_t s)
 	_Sfnotify = 0; /* local computation so no notification */
 	f = sfnew(NULL,NULL,s,-1,SFIO_STRING|SFIO_READ|SFIO_WRITE);
 	_Sfnotify = notify;
-	if(!f)
+	if(unlikely(!f))
 		return NULL;
 
 	if(s != (size_t)SFIO_UNBOUND)	/* set up a discipline for out-of-bound, etc. */
